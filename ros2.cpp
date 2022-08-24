@@ -27,6 +27,8 @@
 #include "spdp.hpp"
 #include "udp.hpp"
 
+#define USE_FIFOIF_ETHERNET
+
 #define TX_BUF_SIZE	512
 
 class tx_buf {
@@ -50,6 +52,15 @@ public:
 		return head == len;
 	}
 
+#ifdef USE_FIFOIF_ETHERNET
+	/* Cyber func=inline */
+	void shift_out(hls_stream<uint8_t> &out)
+	{
+#pragma HLS inline
+		if (!empty())
+			out.write(deque());
+	}
+#else // !USE_FIFOIF_ETHERNET
 	/* Cyber func=inline */
 	void shift_out(hls_stream<hls_uint<9>> &out)
 	{
@@ -61,7 +72,40 @@ public:
 			out.write(data | (end ? 0x100 : 0));
 		}
 	}
+#endif // USE_FIFOIF_ETHERNET
 };
+
+#ifdef USE_FIFOIF_ETHERNET
+/* Cyber func=inline */
+void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
+{
+#pragma HLS inline
+	static uint16_t offset = 0;
+	static uint16_t len = 0;
+
+	uint8_t x;
+
+	if (!in.read_nb(x))
+		return;
+
+	switch (offset) {
+	case IP_HDR_OFFSET_TOT_LEN:
+		len = (uint16_t)x << 8;
+		break;
+	case IP_HDR_OFFSET_TOT_LEN + 1:
+		len |= (uint16_t)x;
+	}
+
+	offset++;
+	if (offset >= IP_HDR_SIZE && offset == len) {
+		out.write(x | 0x100);
+		offset = 0;
+		len = 0;
+	} else {
+		out.write(x);
+	}
+};
+#endif // USE_FIFOIF_ETHERNET
 
 /* Cyber func=inline */
 static void ros2_in(hls_stream<uint8_t> &in,
@@ -87,7 +131,11 @@ static void ros2_in(hls_stream<uint8_t> &in,
 
 	hls_uint<9> x;
 
+#ifdef USE_FIFOIF_ETHERNET
+	pre_ip_in(in, s1);
+#else // !USE_FIFOIF_ETHERNET
 	slip_in(in, s1);
+#endif // USE_FIFOIF_ETHERNET
 	ip_in(s1, s2, ip_parity_error);
 	udp_in(s2, s3, udp_parity_error);
 
@@ -591,8 +639,10 @@ static void ros2_out(hls_stream<uint8_t> &out,
 
 	static int64_t app_seqnum;
 
+#ifndef USE_FIFOIF_ETHERNET
 	static hls_stream<hls_uint<9>> s/* Cyber fifo_size=16 */;
 #pragma HLS stream variable=s depth=16
+#endif // !USE_FIFOIF_ETHERNET
 
 	static uint32_t clk_cnt;
 
@@ -656,9 +706,13 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		APP_WRITER_OUT(3);
 	}
 
+#ifdef USE_FIFOIF_ETHERNET
+	tx_buf.shift_out(out);
+#else // !USE_FIFOIF_ETHERNET
 	tx_buf.shift_out(s);
 
 	slip_out(s, out);
+#endif // USE_FIFOIF_ETHERNET
 
 	clk_cnt++;
 	if (clk_cnt == CLOCK_COUNT_CYCLE)
