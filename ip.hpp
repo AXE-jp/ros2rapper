@@ -45,6 +45,16 @@
 
 #define IP_MULTICAST_ADDR	{0xef, 0xff, 0x00, 0x01} // 239.255.0.1
 
+#define MTU 1500
+#define IP_MAX_PAYLOAD_LEN (MTU - IP_HDR_SIZE)
+#define IP_FRAGMEMT_OFFSET_BASE (IP_MAX_PAYLOAD_LEN >> 3)
+
+#define HAS_MORE_FRAGMENTS(flags) (((flags) & 0x2000) == 0x2000)
+#define GET_FRAGMENT_OFFSET(flags) ((flags) & 0x1FFF)
+
+#define MAX_IP_FRAGMENTS  4
+#define MAX_PENDINGS      2
+
 void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 	   bool &parity_error);
 void ip_out(const uint8_t src_addr[4],
