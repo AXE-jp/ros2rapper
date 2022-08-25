@@ -97,7 +97,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
 	}
 
 	offset++;
-	if (offset >= IP_HDR_SIZE && offset == len) {
+	if (offset == len) {
 		out.write(x | 0x100);
 		offset = 0;
 		len = 0;
