@@ -486,11 +486,10 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 #endif
     break;
   case IPIN_STATE_FRAGMENT_ERROR:
-    /*
     out.write(len >> 8);
     out.write(0x100 | (len & 0xff));
     parity_error = true; // TODO: error reporting
-    */
+
     state = IPIN_STATE_WAIT_DATAGRAM_END;
 #ifndef __SYNTHESIS__
     printf("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
