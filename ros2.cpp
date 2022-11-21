@@ -85,6 +85,9 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
 
 	uint8_t x;
 
+	if (out.full())
+		return;
+
 	if (!in.read_nb(x))
 		return;
 

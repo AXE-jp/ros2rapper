@@ -75,10 +75,12 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 		offset++;
 		if (offset == IP_HDR_SIZE) {
 			if (sum == 0xffff) {
+				// FIXME: multiple write while one function call may fifo deadlock
 				out.write(len >> 8);
 				out.write((end ? 0x100 : 0) | (len & 0xff));
 				state = 5;
 			} else {
+				// FIXME: multiple write while one function call may fifo deadlock
 				out.write(len >> 8);
 				out.write(0x100 | (len & 0xff));
 				parity_error = true;
@@ -222,14 +224,28 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 	   bool &parity_error)
 {
 #pragma HLS inline
-	static hls_uint<3> state;
-#define IPIN_STATE_HEADER               0
-#define IPIN_STATE_PAYLOAD              1
-#define IPIN_STATE_PAYLOAD_TO_MEMORY    2
-#define IPIN_STATE_PAYLOAD_FROM_MEMORY  3
-#define IPIN_STATE_PARITY_ERROR         4
-#define IPIN_STATE_FRAGMENT_ERROR       5
-#define IPIN_STATE_WAIT_DATAGRAM_END    6
+	static hls_uint<5> state;
+#define IPIN_STATE_HEADER                     0
+#define IPIN_STATE_PAYLOAD_PRE_0              1
+#define IPIN_STATE_PAYLOAD_PRE_1              2
+#define IPIN_STATE_PAYLOAD_PRE_2              3
+#define IPIN_STATE_PAYLOAD_PRE_3              4
+#define IPIN_STATE_PAYLOAD_PRE_4              5
+#define IPIN_STATE_PAYLOAD_PRE_5              6
+#define IPIN_STATE_PAYLOAD                    7
+#define IPIN_STATE_PAYLOAD_TO_MEMORY          8
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_0  9
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_1  10
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_2  11
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_3  12
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_4  13
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_5  14
+#define IPIN_STATE_PAYLOAD_FROM_MEMORY        15
+#define IPIN_STATE_PARITY_ERROR_0             16
+#define IPIN_STATE_PARITY_ERROR_1             17
+#define IPIN_STATE_FRAGMENT_ERROR_0           18
+#define IPIN_STATE_FRAGMENT_ERROR_1           19
+#define IPIN_STATE_WAIT_DATAGRAM_END          20
 
 	static uint16_t len;
 	static uint16_t offset;
@@ -262,18 +278,20 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
   static uint8_t payloads[MAX_PENDINGS][IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS];
   static pending_index_t pending_index = INVALID_PENDING_INDEX;
 
+  hls_uint<9> x;
+  uint8_t data;
+  bool end;
+
   tick_pendings(pendings);
 
   switch (state) {
   case IPIN_STATE_HEADER:
     {
-      hls_uint<9> x;
-
       if (!in.read_nb(x))
         return;
 
-      uint8_t data = x & 0xff;
-      bool end = x & 0x100;
+      data = x & 0xff;
+      end = x & 0x100;
 
       checksum(sum, offset, data);
 
@@ -317,7 +335,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
       if (offset == IP_HDR_SIZE) {
         if (sum != 0xffff) {
-          state = IPIN_STATE_PARITY_ERROR;
+          state = IPIN_STATE_PARITY_ERROR_0;
 #ifndef __SYNTHESIS__
           printf("%s: state changed to PARITY_ERROR\n", __func__);
 #endif
@@ -326,7 +344,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
           if (findex == -1) {
             // can't process
-            state = IPIN_STATE_FRAGMENT_ERROR;
+            state = IPIN_STATE_FRAGMENT_ERROR_0;
 #ifndef __SYNTHESIS__
             printf("%s: state changed to FRAGMENT_ERROR\n", __func__);
 #endif
@@ -336,7 +354,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
               pending_index = find_pending_info(pendings, id);
               if (pending_index == INVALID_PENDING_INDEX) {
                 // no room for new datagram
-                state = IPIN_STATE_FRAGMENT_ERROR;
+                state = IPIN_STATE_FRAGMENT_ERROR_0;
 #ifndef __SYNTHESIS__
                 printf("%s: state changed to FRAGMENT_ERROR\n", __func__);
 #endif
@@ -353,21 +371,13 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
               }
             } else {
               // not fragmented
-              state = IPIN_STATE_PAYLOAD;
+              state = IPIN_STATE_PAYLOAD_PRE_0;
 #ifndef __SYNTHESIS__
               printf("%s: state changed to PAYLOAD\n", __func__);
 #endif
             }
 
             switch (state) {
-            case IPIN_STATE_PAYLOAD:
-              out.write(src_addr[0]);
-              out.write(src_addr[1]);
-              out.write(src_addr[2]);
-              out.write(src_addr[3]);
-              out.write(len >> 8);
-              out.write((end ? 0x100 : 0) | (len & 0xff));
-              break;
             case IPIN_STATE_PAYLOAD_TO_MEMORY:
               offset = fragment_offset << 3;
               pendings[pending_index].len += len;
@@ -389,14 +399,37 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
       }
     }
     break;
+  case IPIN_STATE_PAYLOAD_PRE_0:
+    out.write(src_addr[0]);
+    state = IPIN_STATE_PAYLOAD_PRE_1;
+    break;
+  case IPIN_STATE_PAYLOAD_PRE_1:
+    out.write(src_addr[1]);
+    state = IPIN_STATE_PAYLOAD_PRE_2;
+    break;
+  case IPIN_STATE_PAYLOAD_PRE_2:
+    out.write(src_addr[2]);
+    state = IPIN_STATE_PAYLOAD_PRE_3;
+    break;
+  case IPIN_STATE_PAYLOAD_PRE_3:
+    out.write(src_addr[3]);
+    state = IPIN_STATE_PAYLOAD_PRE_4;
+    break;
+  case IPIN_STATE_PAYLOAD_PRE_4:
+    out.write(len >> 8);
+    state = IPIN_STATE_PAYLOAD_PRE_5;
+    break;
+  case IPIN_STATE_PAYLOAD_PRE_5:
+    out.write((end ? 0x100 : 0) | (len & 0xff));
+    state = IPIN_STATE_PAYLOAD;
+    break;
   case IPIN_STATE_PAYLOAD:
     {
-      hls_uint<9> x;
-
       if (!in.read_nb(x))
         return;
 
-      bool end = x & 0x100;
+      data = x & 0xff;
+      end = x & 0x100;
 
       out.write(x);
       offset++;
@@ -415,13 +448,11 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     break;
   case IPIN_STATE_PAYLOAD_TO_MEMORY:
     {
-      hls_uint<9> x;
-
       if (!in.read_nb(x))
         return;
 
-      uint8_t data = x & 0xff;
-      bool end = x & 0x100;
+      data = x & 0xff;
+      end = x & 0x100;
 
       payloads[pending_index][offset] = data;
       offset++;
@@ -443,17 +474,11 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 #endif
         } else if (pendings[pending_index].n_arrived == pendings[pending_index].n_total) {
           // all fragments arrived
-          state = IPIN_STATE_PAYLOAD_FROM_MEMORY;
+          state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_0;
 #ifndef __SYNTHESIS__
           printf("%s: state changed to PAYLOAD_FROM_MEMORY\n", __func__);
 #endif
           offset = 0;
-          out.write(src_addr[0]);
-          out.write(src_addr[1]);
-          out.write(src_addr[2]);
-          out.write(src_addr[3]);
-          out.write(pendings[pending_index].len >> 8);
-          out.write(pendings[pending_index].len & 0xff);
         } else {
           reset_state();
 #ifndef __SYNTHESIS__
@@ -463,6 +488,31 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
       }
     }
     break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_0:
+    out.write(src_addr[0]);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_1;
+    break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_1:
+    out.write(src_addr[1]);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_2;
+    break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_2:
+    out.write(src_addr[2]);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_3;
+    break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_3:
+    out.write(src_addr[3]);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_4;
+    break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_4:
+    out.write(pendings[pending_index].len >> 8);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_5;
+    break;
+  case IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_5:
+    out.write(pendings[pending_index].len & 0xff);
+    state = IPIN_STATE_PAYLOAD_FROM_MEMORY;
+    break;
+
   case IPIN_STATE_PAYLOAD_FROM_MEMORY:
     if (offset == pendings[pending_index].len - 1) {
       out.write(0x100 | payloads[pending_index][offset]);
@@ -476,8 +526,11 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
       offset++;
     }
     break;
-  case IPIN_STATE_PARITY_ERROR:
+  case IPIN_STATE_PARITY_ERROR_0:
     out.write(len >> 8);
+    state = IPIN_STATE_PARITY_ERROR_1;
+    break;
+  case IPIN_STATE_PARITY_ERROR_1:
     out.write(0x100 | (len & 0xff));
     parity_error = true;
     state = IPIN_STATE_WAIT_DATAGRAM_END;
@@ -485,11 +538,13 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     printf("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
 #endif
     break;
-  case IPIN_STATE_FRAGMENT_ERROR:
+  case IPIN_STATE_FRAGMENT_ERROR_0:
     out.write(len >> 8);
+    state = IPIN_STATE_FRAGMENT_ERROR_1;
+    break;
+  case IPIN_STATE_FRAGMENT_ERROR_1:
     out.write(0x100 | (len & 0xff));
     parity_error = true; // TODO: error reporting
-
     state = IPIN_STATE_WAIT_DATAGRAM_END;
 #ifndef __SYNTHESIS__
     printf("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
@@ -497,12 +552,11 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     break;
   case IPIN_STATE_WAIT_DATAGRAM_END:
     {
-      hls_uint<9> x;
-
       if (!in.read_nb(x))
         return;
 
-      bool end = x & 0x100;
+      data = x & 0xff;
+      end = x & 0x100;
 
       if (end) {
         reset_state();
