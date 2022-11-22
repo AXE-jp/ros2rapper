@@ -52,7 +52,7 @@
 #define HAS_MORE_FRAGMENTS(flags) (((flags) & 0x2000) == 0x2000)
 #define GET_FRAGMENT_OFFSET(flags) ((flags) & 0x1FFF)
 
-#define MAX_IP_FRAGMENTS  4
+#define MAX_IP_FRAGMENTS  2
 #define MAX_PENDINGS      2
 
 void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,

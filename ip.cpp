@@ -204,19 +204,36 @@ void tick_pendings(pending_info *pendings)
 int8_t get_fragment_index(uint16_t fragment_offset)
 {
 #pragma HLS inline
-  // max 4 fragments
+#if MAX_IP_FRAGMENTS == 2
   switch (fragment_offset) {
   case (IP_FRAGMEMT_OFFSET_BASE * 0):
     return 0;
   case (IP_FRAGMEMT_OFFSET_BASE * 1):
     return 1;
-  case (IP_FRAGMEMT_OFFSET_BASE * 2):
-    return 2;
-  case (IP_FRAGMEMT_OFFSET_BASE * 3):
-    return 3;
   default:
     return -1;
   }
+#else
+  #error "not implemented!"
+#endif
+}
+
+/* Cyber func=inline */
+int8_t get_payload_offset(pending_index_t pindex)
+{
+#pragma HLS inline
+#if MAX_PENDINGS == 2
+  switch (pindex) {
+  case 0:
+    return 0;
+  case 1:
+    return (IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS);
+  default:
+    return 0;
+  }
+#else
+  #error "not implemented!"
+#endif
 }
 
 /* Cyber func=inline */
@@ -275,7 +292,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
   static pending_info pendings[MAX_PENDINGS];
 #pragma HLS array_partition variable=pendings complete dim=0
-  static uint8_t payloads[MAX_PENDINGS][IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS];
+  static uint8_t payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS];
   static pending_index_t pending_index = INVALID_PENDING_INDEX;
 
   hls_uint<9> x;
@@ -454,7 +471,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
       data = x & 0xff;
       end = x & 0x100;
 
-      payloads[pending_index][offset] = data;
+      payloads[get_payload_offset(pending_index) + offset] = data;
       offset++;
 
       if (end) {
@@ -515,14 +532,14 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
   case IPIN_STATE_PAYLOAD_FROM_MEMORY:
     if (offset == pendings[pending_index].len - 1) {
-      out.write(0x100 | payloads[pending_index][offset]);
+      out.write(0x100 | payloads[get_payload_offset(pending_index) + offset]);
       purge_pending_info(&pendings[pending_index]);
       reset_state();
 #ifndef __SYNTHESIS__
       printf("%s: state changed to HEADER\n", __func__);
 #endif
     } else {
-      out.write(payloads[pending_index][offset]);
+      out.write(payloads[get_payload_offset(pending_index) + offset]);
       offset++;
     }
     break;
