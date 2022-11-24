@@ -162,16 +162,16 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	static bool udp_parity_error = false;
 
 #pragma HLS inline
-	static hls_stream<hls_uint<9>> s1/* Cyber fifo_size=16 */;
-	static hls_stream<hls_uint<9>> s2/* Cyber fifo_size=16 */;
-	static hls_stream<hls_uint<9>> s3/* Cyber fifo_size=16 */;
-	static hls_stream<hls_uint<9>> s4/* Cyber fifo_size=16 */;
-	static hls_stream<hls_uint<9>> s5/* Cyber fifo_size=16 */;
-#pragma HLS stream variable=s1 depth=16
-#pragma HLS stream variable=s2 depth=16
-#pragma HLS stream variable=s3 depth=16
-#pragma HLS stream variable=s4 depth=16
-#pragma HLS stream variable=s5 depth=16
+	static hls_stream<hls_uint<9>> s1/* Cyber fifo_size=2 */;
+	static hls_stream<hls_uint<9>> s2/* Cyber fifo_size=2 */;
+	static hls_stream<hls_uint<9>> s3/* Cyber fifo_size=2 */;
+	static hls_stream<hls_uint<9>> s4/* Cyber fifo_size=2 */;
+	static hls_stream<hls_uint<9>> s5/* Cyber fifo_size=2 */;
+#pragma HLS stream variable=s1 depth=2
+#pragma HLS stream variable=s2 depth=2
+#pragma HLS stream variable=s3 depth=2
+#pragma HLS stream variable=s4 depth=2
+#pragma HLS stream variable=s5 depth=2
 
 	hls_uint<9> x;
 
@@ -646,8 +646,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	static int64_t app_seqnum;
 
 #ifndef USE_FIFOIF_ETHERNET
-	static hls_stream<hls_uint<9>> s/* Cyber fifo_size=16 */;
-#pragma HLS stream variable=s depth=16
+	static hls_stream<hls_uint<9>> s/* Cyber fifo_size=2 */;
+#pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
 	static uint32_t clk_cnt;
