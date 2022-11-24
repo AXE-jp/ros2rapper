@@ -29,7 +29,48 @@
 
 #define USE_FIFOIF_ETHERNET
 
-#define TX_BUF_SIZE	512
+
+#define SPDP_WRITER_RTPS_PKT_LEN			\
+	SPDP_WRITER_TOT_LEN
+#define SPDP_WRITER_UDP_PKT_LEN				\
+	(UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
+#define SPDP_WRITER_IP_PKT_LEN				\
+	(IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
+
+#define SEDP_WRITER_RTPS_PKT_LEN			\
+	SEDP_WRITER_TOT_LEN
+#define SEDP_WRITER_UDP_PKT_LEN				\
+	(UDP_HDR_SIZE + SEDP_WRITER_RTPS_PKT_LEN)
+#define SEDP_WRITER_IP_PKT_LEN				\
+	(IP_HDR_SIZE + SEDP_WRITER_UDP_PKT_LEN)
+
+#define SEDP_HEARTBEAT_RTPS_PKT_LEN			\
+	SEDP_HEARTBEAT_TOT_LEN
+#define SEDP_HEARTBEAT_UDP_PKT_LEN			\
+	(UDP_HDR_SIZE + SEDP_HEARTBEAT_RTPS_PKT_LEN)
+#define SEDP_HEARTBEAT_IP_PKT_LEN			\
+	(IP_HDR_SIZE + SEDP_HEARTBEAT_UDP_PKT_LEN)
+
+#define SEDP_ACKNACK_RTPS_PKT_LEN			\
+	SEDP_ACKNACK_TOT_LEN
+#define SEDP_ACKNACK_UDP_PKT_LEN			\
+	(UDP_HDR_SIZE + SEDP_ACKNACK_RTPS_PKT_LEN)
+#define SEDP_ACKNACK_IP_PKT_LEN				\
+	(IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
+
+#define APP_DATA	"Hello world!"
+#define APP_DATA_LEN	13
+
+#define APP_WRITER_RTPS_PKT_LEN				\
+	APP_TOT_LEN(APP_DATA_LEN)
+#define APP_WRITER_UDP_PKT_LEN				\
+	(UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN)
+#define APP_WRITER_IP_PKT_LEN				\
+	(IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN)
+
+
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define TX_BUF_SIZE	(MAX(MAX(MAX(MAX(SPDP_WRITER_IP_PKT_LEN, SEDP_WRITER_IP_PKT_LEN), SEDP_HEARTBEAT_IP_PKT_LEN), SEDP_ACKNACK_IP_PKT_LEN), APP_WRITER_IP_PKT_LEN))
 
 class tx_buf {
 public:
@@ -156,13 +197,6 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    app_reader_tbl);
 }
 
-#define SPDP_WRITER_RTPS_PKT_LEN			\
-	SPDP_WRITER_TOT_LEN
-#define SPDP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
-#define SPDP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
-
 /* Cyber func=process */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    const uint8_t default_port[2],
@@ -216,13 +250,6 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 	tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
 }
 
-#define SEDP_WRITER_RTPS_PKT_LEN			\
-	SEDP_WRITER_TOT_LEN
-#define SEDP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + SEDP_WRITER_RTPS_PKT_LEN)
-#define SEDP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SEDP_WRITER_UDP_PKT_LEN)
-
 /* Cyber func=process */
 static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    const uint8_t dst_addr[4],
@@ -275,13 +302,6 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
-
-#define SEDP_HEARTBEAT_RTPS_PKT_LEN			\
-	SEDP_HEARTBEAT_TOT_LEN
-#define SEDP_HEARTBEAT_UDP_PKT_LEN			\
-	(UDP_HDR_SIZE + SEDP_HEARTBEAT_RTPS_PKT_LEN)
-#define SEDP_HEARTBEAT_IP_PKT_LEN			\
-	(IP_HDR_SIZE + SEDP_HEARTBEAT_UDP_PKT_LEN)
 
 /* Cyber func=process */
 static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
@@ -337,13 +357,6 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_HEARTBEAT_IP_PKT_LEN;
 }
-
-#define SEDP_ACKNACK_RTPS_PKT_LEN			\
-	SEDP_ACKNACK_TOT_LEN
-#define SEDP_ACKNACK_UDP_PKT_LEN			\
-	(UDP_HDR_SIZE + SEDP_ACKNACK_RTPS_PKT_LEN)
-#define SEDP_ACKNACK_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
 
 /* Cyber func=process */
 static void sedp_acknack_out(const uint8_t writer_entity_id[4],
@@ -401,16 +414,6 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_ACKNACK_IP_PKT_LEN;
 }
-
-#define APP_DATA	"Hello world!"
-#define APP_DATA_LEN	13
-
-#define APP_WRITER_RTPS_PKT_LEN				\
-	APP_TOT_LEN(APP_DATA_LEN)
-#define APP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN)
-#define APP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN)
 
 /* Cyber func=process */
 static void app_writer_out(const uint8_t writer_entity_id[4],
