@@ -20,6 +20,7 @@ clone:
 copy-src:
 	mkdir -p ${SRCDIR}
 	-cp arty_a7_eth/arty_a7_eth.srcs/sources_1/imports/arty_a7_eth/*.v ${SRCDIR}
+	-cp arty_a7_eth/arty_a7_eth.srcs/sources_1/imports/arty_a7_eth/*.vh ${SRCDIR}
 	-cp ip_tx_rx/ip_tx/proj_ip_tx/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ip_tx_rx/ip_rx/proj_ip_rx/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ros2/proj_ros2/solution1/syn/verilog/*.v ${SRCDIR}
