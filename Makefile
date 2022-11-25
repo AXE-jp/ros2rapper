@@ -13,11 +13,16 @@ cleanall: clean
 	-rm -rf ip_tx_rx
 	-rm -rf ros2rapper
 
-clone:
+clone: cleanall
 	git clone -b master laxer-git@www4.axe.bz:/opt/git/ip_tx_rx.git
 	git clone -b use-fifoif-ethernet laxer-git@www4.axe.bz:/opt/git/ros2rapper.git
 
-copy-src: clone
+synth: clone
+	(cd ip_tx_rx/ip_tx; vitis_hls run_hls.tcl)
+	(cd ip_tx_rx/ip_rx; vitis_hls run_hls.tcl)
+	(cd ros2rapper; vitis_hls run_hls.tcl)
+
+copy-src: synth
 	mkdir -p ${SRCDIR}
 	cp ether-src/*.v ${SRCDIR}
 	cp ether-src/*.vh ${SRCDIR}
@@ -26,10 +31,5 @@ copy-src: clone
 	cp ros2rapper/proj_ros2/solution1/syn/verilog/*.v ${SRCDIR}
 	cp ros2rapper/proj_ros2/solution1/syn/verilog/*.dat ${SRCDIR}
 
-synth: copy-src
-	(cd ip_tx_rx/ip_tx; vitis_hls run_hls.tcl)
-	(cd ip_tx_rx/ip_rx; vitis_hls run_hls.tcl)
-	(cd ros2rapper; vitis_hls run_hls.tcl)
-
-create-proj: synth
+create-proj: copy-src
 	vivado -mode batch -source create_project.tcl
