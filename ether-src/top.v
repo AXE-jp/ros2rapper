@@ -4,8 +4,6 @@
 
 `include "ether_config.vh"
 
-// `define NO_IP
-
 module top (
     input  wire       clk,
     input  wire       reset_n,
@@ -33,9 +31,9 @@ wire mmcm_rst = ~reset_n;
 wire mmcm_locked;
 wire mmcm_clkfb;
 
-`ifdef NO_IP
+`ifdef TARGET_ASIC
 assign clk_ibufg = clk;
-`else
+`elsif TARGET_XILINX
 IBUFG
 clk_ibufg_inst(
     .I(clk),
@@ -46,11 +44,11 @@ clk_ibufg_inst(
 wire clk_25mhz_mmcm_out;
 wire clk_25mhz_int;
 
-`ifdef NO_IP
+`ifdef TARGET_ASIC
 assign clk_mmcm_out = clk_ibufg;
 assign clk_25mhz_mmcm_out = clk_ibufg;
 assign mmcm_locked = ~mmcm_rst;
-`else
+`elsif TARGET_XILINX
 MMCME2_BASE #(
     .BANDWIDTH("OPTIMIZED"),
     .CLKOUT0_DIVIDE_F(10),
@@ -104,9 +102,9 @@ clk_mmcm_inst (
 );
 `endif
 
-`ifdef NO_IP
+`ifdef TARGET_ASIC
 assign clk_int = clk_mmcm_out;
-`else
+`elsif TARGET_XILINX
 BUFG
 clk_bufg_inst (
     .I(clk_mmcm_out),
@@ -114,9 +112,9 @@ clk_bufg_inst (
 );
 `endif
 
-`ifdef NO_IP
+`ifdef TARGET_ASIC
 assign clk_25mhz_int = clk_25mhz_mmcm_out;
-`else
+`elsif TARGET_XILINX
 BUFG
 clk_25mhz_bufg_inst (
     .I(clk_25mhz_mmcm_out),
@@ -175,9 +173,9 @@ wire [31:0] gateway_ip  = {8'd192, 8'd168, 8'd1,   8'd1};
 wire [31:0] subnet_mask = {8'd255, 8'd255, 8'd255, 8'd0};
 
 verilog_ethernet #(
-`ifdef NO_IP
+`ifdef TARGET_ASIC
     .TARGET("GENERIC")
-`else
+`elsif TARGET_XILINX
     .TARGET("XILINX")
 `endif
 )

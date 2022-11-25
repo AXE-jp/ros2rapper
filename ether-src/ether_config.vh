@@ -1,3 +1,7 @@
+// synthesis target
+//`define TARGET_ASIC
+//`define TARGET_XILINX
+
 `define MAC_TX_FIFO_DEPTH  512
 `define MAC_RX_FIFO_DEPTH  2048
 
