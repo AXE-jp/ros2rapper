@@ -231,6 +231,8 @@ int8_t get_payload_offset(pending_index_t pindex)
   default:
     return 0;
   }
+#elif MAX_PENDINGS == 1
+  return 0;
 #else
   #error "not implemented!"
 #endif

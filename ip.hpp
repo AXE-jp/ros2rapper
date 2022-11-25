@@ -53,7 +53,7 @@
 #define GET_FRAGMENT_OFFSET(flags) ((flags) & 0x1FFF)
 
 #define MAX_IP_FRAGMENTS  2
-#define MAX_PENDINGS      2
+#define MAX_PENDINGS      1
 
 void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 	   bool &parity_error);
