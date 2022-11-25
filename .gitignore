@@ -9,3 +9,5 @@ verilog-ethernet/
 project.cache/
 project.hw/
 project.runs/
+project.sim/
+project.ip_user_files/
