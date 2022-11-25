@@ -1,12 +1,9 @@
-src/
-arty_a7_eth/
+gensrc/
 ip_tx_rx/
 ros2/
-verilog-ethernet/
 *.jou
 *.log
 *.xpr
-*.xdc
 project.cache/
 project.hw/
 project.runs/

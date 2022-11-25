@@ -3,7 +3,7 @@
 set     project_directory   [file dirname [info script]]
 set     project_name        "project"
 set     device_part         "xc7a100tcsg324-1"
-set     design_xdc_file [file join $project_directory "arty_a7_eth.xdc" ]
+set     design_xdc_file [file join $project_directory "constrs" "arty_a7_eth.xdc" ]
 
 # Create project
 create_project -force $project_name $project_directory
@@ -52,9 +52,9 @@ if {[string equal [get_runs -quiet impl_1] ""]} {
 current_run -implementation [get_runs impl_1]
 
 # Import sources
-add_files -norecurse -fileset sources_1 [ glob ./src/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ./src/*.vh ]
-add_files -norecurse -fileset sources_1 [ glob ./src/*.dat ]
+add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.vh ]
+add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.dat ]
 
 # Import xdc files
 if {[info exists design_xdc_file]} {
