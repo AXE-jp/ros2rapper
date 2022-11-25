@@ -38,6 +38,7 @@ if {[string equal [get_runs -quiet synth_1] ""]} {
     set_property flow     $synth_1_flow     [get_runs synth_1]
     set_property strategy $synth_1_strategy [get_runs synth_1]
 }
+set_property -name "steps.synth_design.args.more options" -value "-verilog_define TARGET_XILINX=1" -objects [get_runs synth_1]
 current_run -synthesis [get_runs synth_1]
 
 # Create run "impl_1" and set property
