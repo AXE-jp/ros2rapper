@@ -3,3 +3,9 @@ arty_a7_eth/
 ip_tx_rx/
 ros2/
 verilog-ethernet/
+*.jou
+*.log
+*.xpr
+project.cache/
+project.hw/
+project.runs/
