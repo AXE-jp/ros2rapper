@@ -6,6 +6,7 @@ verilog-ethernet/
 *.jou
 *.log
 *.xpr
+*.xdc
 project.cache/
 project.hw/
 project.runs/
