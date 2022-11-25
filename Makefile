@@ -1,17 +1,17 @@
 SRCDIR = gensrc
 
-.PHONY: all clean clone copy-src synth create-proj
+.PHONY: all clean cleanall clone copy-src synth create-proj
 
 all:
 
 clean:
 	-rm -rf ${SRCDIR}
-	-rm -rf arty_a7_eth
-	-rm -rf ip_tx_rx
-	-rm -rf ros2
-	-rm -rf verilog-ethernet
 	-rm *.jou *.log *.xpr
 	-rm -rf project.hw project.cache project.runs project.sim project.ip_user_files
+
+cleanall: clean
+	-rm -rf ip_tx_rx
+	-rm -rf ros2
 
 clone:
 	git clone -b master laxer-git@www4.axe.bz:/opt/git/ip_tx_rx.git
