@@ -282,19 +282,7 @@ rx_fifo (
     .empty(rx_fifo_empty)
 );
 
-// echo_0
-// echo_i (
-//     .ap_clk(clk_int),
-//     .ap_rst(rst_int),
-//     .din_V_dout(rx_fifo_dout),
-//     .din_V_empty_n(~rx_fifo_empty),
-//     .din_V_read(rx_fifo_rd_en),
-//     .dout_V_din(tx_fifo_din),
-//     .dout_V_full_n(~tx_fifo_full),
-//     .dout_V_write(tx_fifo_wr_en)
-// );
-
-ros2_0
+ros2
 ros2_i (
     .ap_clk(clk_int),
     .ap_rst(rst_int),
@@ -306,7 +294,7 @@ ros2_i (
     .out_V_write(tx_fifo_wr_en)
 );
 
-ip_tx_0
+ip_tx
 ip_tx_i (
     .ap_clk(clk_int),
     .ap_rst_n(~rst_int),
@@ -328,11 +316,11 @@ ip_tx_i (
     .tx_payload_TREADY(tx_ip_payload_axis_tready),
     .tx_payload_TDATA(tx_ip_payload_axis_tdata),
     .tx_payload_TLAST(tx_ip_payload_axis_tlast),
-    .tx_payload_TKEEP(1'b1),
-    .tx_payload_TSTRB(1'b1)
+    .tx_payload_TKEEP(),
+    .tx_payload_TSTRB()
 );
 
-ip_rx_0
+ip_rx
 ip_rx_i (
     .ap_clk(clk_int),
     .ap_rst_n(~rst_int),
