@@ -204,12 +204,32 @@ void tick_pendings(pending_info *pendings)
 int8_t get_fragment_index(uint16_t fragment_offset)
 {
 #pragma HLS inline
-#if MAX_IP_FRAGMENTS == 2
+#if MAX_IP_FRAGMENTS == 4
   switch (fragment_offset) {
   case (IP_FRAGMEMT_OFFSET_BASE * 0):
     return 0;
   case (IP_FRAGMEMT_OFFSET_BASE * 1):
     return 1;
+  case (IP_FRAGMEMT_OFFSET_BASE * 2):
+    return 2;
+  case (IP_FRAGMEMT_OFFSET_BASE * 3):
+    return 3;
+  default:
+    return -1;
+  }
+#elif MAX_IP_FRAGMENTS == 2
+  switch (fragment_offset) {
+  case (IP_FRAGMEMT_OFFSET_BASE * 0):
+    return 0;
+  case (IP_FRAGMEMT_OFFSET_BASE * 1):
+    return 1;
+  default:
+    return -1;
+  }
+#elif MAX_IP_FRAGMENTS == 1
+  switch (fragment_offset) {
+  case (IP_FRAGMEMT_OFFSET_BASE * 0):
+    return 0;
   default:
     return -1;
   }
