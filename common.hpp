@@ -21,7 +21,6 @@
 #define COMMON_HPP
 
 #define TARGET_CLOCK_FREQ	100000000 // Arty A7-100T: 100 MHz
-#define TARGET_IP_ADDR		{0xc0, 0xa8, 0x01, 0x80} // 192.168.1.128
 #define TARGET_UDP_PORT		{0xcb, 0x20}		 // 52000
 #define TARGET_DOMAIN_ID	0
 #define TARGET_PARTICIPANT_ID	1
