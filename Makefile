@@ -15,7 +15,7 @@ cleanall: clean
 
 clone: cleanall
 	git clone -b master laxer-git@www4.axe.bz:/opt/git/ip_tx_rx.git
-	git clone -b use-fifoif-ethernet laxer-git@www4.axe.bz:/opt/git/ros2rapper.git
+	git clone -b connect-to-cpu laxer-git@www4.axe.bz:/opt/git/ros2rapper.git
 
 synth: clone
 	(cd ip_tx_rx/ip_tx; vitis_hls run_hls.tcl)
