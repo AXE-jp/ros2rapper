@@ -209,7 +209,7 @@ eth_mac_inst (
     .rx_fifo_bad_frame(),
     .rx_fifo_good_frame(),
 
-    .ifg_delay(12)
+    .ifg_delay(8'd12)
 );
 
 eth_axis_rx
@@ -347,7 +347,7 @@ ip_complete_inst (
     .local_ip(local_ip),
     .gateway_ip(gateway_ip),
     .subnet_mask(subnet_mask),
-    .clear_arp_cache(0)
+    .clear_arp_cache(1'b0)
 );
 
 endmodule

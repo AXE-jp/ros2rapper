@@ -147,7 +147,7 @@ eth_mac_1g_inst (
     .rx_axis_tvalid(rx_axis_tvalid),
     .rx_axis_tlast(rx_axis_tlast),
     .rx_axis_tuser(rx_axis_tuser),
-    .gmii_rxd(mac_mii_rxd),
+    .gmii_rxd({mac_mii_rxd, mac_mii_rxd}),
     .gmii_rx_dv(mac_mii_rx_dv),
     .gmii_rx_er(mac_mii_rx_er),
     .gmii_txd(mac_mii_txd),
