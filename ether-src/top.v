@@ -289,7 +289,11 @@ ros2_i (
     .in_V_read(rx_fifo_rd_en),
     .out_V_din(tx_fifo_din),
     .out_V_full_n(~tx_fifo_full),
-    .out_V_write(tx_fifo_wr_en)
+    .out_V_write(tx_fifo_wr_en),
+    .target_ip_addr_0(8'd192),
+    .target_ip_addr_1(8'd168),
+    .target_ip_addr_2(8'd1),
+    .target_ip_addr_3(8'd123)
 );
 
 ip_tx
