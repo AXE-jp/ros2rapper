@@ -44,7 +44,8 @@ static void compare_guid_prefix(const uint8_t x,
 /* Cyber func=inline */
 void spdp_reader(hls_stream<hls_uint<9>> &in,
 		 sedp_reader_id_t &reader_cnt,
-		 sedp_endpoint reader_tbl[SEDP_READER_MAX])
+		 sedp_endpoint reader_tbl[SEDP_READER_MAX],
+		 uint16_t port_num_seed)
 {
 #pragma HLS inline
 	static const uint8_t par_reader_id[4]/* Cyber array=REG */ =
@@ -226,7 +227,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in,
 				flags |= (hls_uint<3>)FLAGS_FOUND_GUID;
 			} else if (param_id ==
 				   PID_METATRAFFIC_UNICAST_LOCATOR) {
-				if (DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID) {
+				if (udp_port == port_num_seed /*DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID*/) {
 					flags |= (hls_uint<3>)
 						FLAGS_UNMATCH_DOMAIN;
 				}

@@ -156,7 +156,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    sedp_reader_id_t &sedp_reader_cnt,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
-		    app_endpoint app_reader_tbl[APP_READER_MAX])
+		    app_endpoint app_reader_tbl[APP_READER_MAX],
+		    const config_t &conf)
 {
 	static bool ip_parity_error = false;
 	static bool udp_parity_error = false;
@@ -191,30 +192,29 @@ static void ros2_in(hls_stream<uint8_t> &in,
 
 	spdp_reader(s4,
 		    sedp_reader_cnt,
-		    sedp_reader_tbl);
+		    sedp_reader_tbl,
+		    conf.port_num_seed);
 	sedp_reader(s5,
 		    app_reader_cnt,
-		    app_reader_tbl);
+		    app_reader_tbl,
+		    conf.port_num_seed,
+		    conf.guid_prefix);
 }
 
 /* Cyber func=process */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    const uint8_t default_port[2],
 			    tx_buf &tx_buf,
-					uint8_t src_addr[4])
+			    const uint8_t src_addr[4],
+			    const uint8_t src_port[2],
+			    const uint8_t writer_guid_prefix[12],
+			    uint16_t port_num_seed)
 {
-	static const uint8_t src_port[2]/* Cyber array=REG */ =
-		TARGET_UDP_PORT;
-	static const uint8_t writer_guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=src_addr complete dim=0
-#pragma HLS array_partition variable=src_port complete dim=0
-#pragma HLS array_partition variable=writer_guid_prefix complete dim=0
-
 	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
 		IP_MULTICAST_ADDR;
-	static const uint8_t dst_port[2]/* Cyber array=REG */ =
-		DISCOVERY_TRAFFIC_MULTICAST_PORT(TARGET_DOMAIN_ID);
+	static uint8_t dst_port[2]/* Cyber array=REG */;
+	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(port_num_seed);
+	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(port_num_seed);
 #pragma HLS array_partition variable=dst_addr complete dim=0
 #pragma HLS array_partition variable=dst_port complete dim=0
 
@@ -258,16 +258,10 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    const uint8_t usertraffic_port[2],
 			    const uint8_t app_entity_id[4],
 			    tx_buf &tx_buf,
-					uint8_t src_addr[4])
+			    const uint8_t src_addr[4],
+			    const uint8_t src_port[2],
+			    const uint8_t writer_guid_prefix[12])
 {
-	static const uint8_t src_port[2]/* Cyber array=REG */ =
-		TARGET_UDP_PORT;
-	static const uint8_t writer_guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=src_addr complete dim=0
-#pragma HLS array_partition variable=src_port complete dim=0
-#pragma HLS array_partition variable=writer_guid_prefix complete dim=0
-
 	uint8_t rtps_pkt[SEDP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
 	uint8_t udp_pkt[SEDP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
@@ -311,16 +305,10 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 			       const int64_t last_seqnum,
 			       tx_buf &tx_buf,
 			       uint32_t &cnt,
-						 uint8_t src_addr[4])
+			       const uint8_t src_addr[4],
+			       const uint8_t src_port[2],
+			       const uint8_t writer_guid_prefix[12])
 {
-	static const uint8_t src_port[2]/* Cyber array=REG */ =
-		TARGET_UDP_PORT;
-	static const uint8_t writer_guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=src_addr complete dim=0
-#pragma HLS array_partition variable=src_port complete dim=0
-#pragma HLS array_partition variable=writer_guid_prefix complete dim=0
-
 	uint8_t rtps_pkt[SEDP_HEARTBEAT_RTPS_PKT_LEN]/* Cyber array=REG */;
 	uint8_t udp_pkt[SEDP_HEARTBEAT_UDP_PKT_LEN]/* Cyber array=REG */;
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
@@ -366,16 +354,10 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 			     const uint8_t bitmap[4],
 			     tx_buf &tx_buf,
 			     uint32_t &cnt,
-					 uint8_t src_addr[4])
+			     const uint8_t src_addr[4],
+			     const uint8_t src_port[2],
+			     const uint8_t writer_guid_prefix[12])
 {
-	static const uint8_t src_port[2]/* Cyber array=REG */ =
-		TARGET_UDP_PORT;
-	static const uint8_t writer_guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=src_addr complete dim=0
-#pragma HLS array_partition variable=src_port complete dim=0
-#pragma HLS array_partition variable=writer_guid_prefix complete dim=0
-
 	uint8_t rtps_pkt[SEDP_ACKNACK_RTPS_PKT_LEN]/* Cyber array=REG */;
 	uint8_t udp_pkt[SEDP_ACKNACK_UDP_PKT_LEN]/* Cyber array=REG */;
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
@@ -419,16 +401,10 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t reader_entity_id[4],
 			   tx_buf &tx_buf,
 			   int64_t &seqnum,
-				 uint8_t src_addr[4])
+			   const uint8_t src_addr[4],
+			   const uint8_t src_port[2],
+			   const uint8_t writer_guid_prefix[12])
 {
-	static const uint8_t src_port[2]/* Cyber array=REG */ =
-		TARGET_UDP_PORT;
-	static const uint8_t writer_guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=src_addr complete dim=0
-#pragma HLS array_partition variable=src_port complete dim=0
-#pragma HLS array_partition variable=writer_guid_prefix complete dim=0
-
 	static const uint8_t app_data[APP_DATA_LEN]/* Cyber array=REG */ =
 		APP_DATA;
 #pragma HLS array_partition variable=app_data complete dim=0
@@ -490,7 +466,10 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		spdp_writer_out(metatraffic_port,			\
 				default_port,				\
 				tx_buf,				\
-				target_ip_addr);  \
+				conf.ip_addr,				\
+				conf.node_udp_port,				\
+				conf.guid_prefix,				\
+				conf.port_num_seed);				\
 	} while (0)
 
 #define SEDP_PUB_WRITER_OUT(id)						\
@@ -505,7 +484,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				default_port,				\
 				app_writer_entity_id,			\
 				tx_buf,				\
-				target_ip_addr);  \
+				conf.ip_addr,				\
+				conf.node_udp_port,				\
+				conf.guid_prefix);				\
 		}							\
 	} while (0)
 
@@ -524,7 +505,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				1,					\
 				tx_buf,					\
 				sedp_pub_heartbeat_cnt[(id)],		\
-				target_ip_addr);  \
+				conf.ip_addr,		\
+				conf.node_udp_port,		\
+				conf.guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -541,7 +524,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				0,					\
 				tx_buf,					\
 				sedp_sub_heartbeat_cnt[(id)],		\
-				target_ip_addr);  \
+				conf.ip_addr,		\
+				conf.node_udp_port,		\
+				conf.guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -559,7 +544,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				bitmap,					\
 				tx_buf,					\
 				sedp_pub_acknack_cnt[(id)],		\
-				target_ip_addr);  \
+				conf.ip_addr,		\
+				conf.node_udp_port,		\
+				conf.guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -577,7 +564,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				bitmap,					\
 				tx_buf,					\
 				sedp_sub_acknack_cnt[(id)],		\
-				target_ip_addr);  \
+				conf.ip_addr,		\
+				conf.node_udp_port,		\
+				conf.guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -592,7 +581,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				app_reader_tbl[(id)].entity_id,		\
 				tx_buf,					\
 				app_seqnum,				\
-				target_ip_addr);  \
+				conf.ip_addr,				\
+				conf.node_udp_port,				\
+				conf.guid_prefix);				\
 		}							\
 	} while (0)							\
 
@@ -602,7 +593,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
-				 uint8_t target_ip_addr[4])
+		     const config_t &conf)
 {
 #pragma HLS inline
 	static const uint8_t pub_writer_entity_id[4]/* Cyber array=REG */ =
@@ -622,12 +613,14 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS array_partition variable=pub_reader_entity_id complete dim=0
 #pragma HLS array_partition variable=sub_reader_entity_id complete dim=0
 
-	static const uint8_t metatraffic_port[2]/* Cyber array=REG */ =
-		DISCOVERY_TRAFFIC_UNICAST_PORT(TARGET_DOMAIN_ID,
-					       TARGET_PARTICIPANT_ID);
-	static const uint8_t default_port[2]/* Cyber array=REG */ =
-		USER_TRAFFIC_UNICAST_PORT(TARGET_DOMAIN_ID,
-					  TARGET_PARTICIPANT_ID);
+	static uint8_t metatraffic_port[2]/* Cyber array=REG */;
+	metatraffic_port[0] = DISCOVERY_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+	metatraffic_port[1] = DISCOVERY_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+
+	static uint8_t default_port[2]/* Cyber array=REG */;
+	default_port[0] = USER_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+	default_port[1] = USER_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+
 #pragma HLS array_partition variable=metatraffic_port complete dim=0
 #pragma HLS array_partition variable=default_port complete dim=0
 
@@ -731,10 +724,12 @@ static void ros2_out(hls_stream<uint8_t> &out,
 /* Cyber func=process_pipeline */
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
-		uint8_t target_ip_addr[4])
+	  const config_t &conf)
 {
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
+#pragma HLS interface ap_none port=conf
+#pragma HLS disaggregate variable=conf
 #pragma HLS interface ap_ctrl_none port=return
 
 #pragma HLS dataflow
@@ -750,12 +745,13 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		sedp_reader_cnt,
 		sedp_reader_tbl,
 		app_reader_cnt,
-		app_reader_tbl);
+		app_reader_tbl,
+		conf);
 
 	ros2_out(out,
 		 sedp_reader_cnt,
 		 sedp_reader_tbl,
 		 app_reader_cnt,
 		 app_reader_tbl,
-		 target_ip_addr);
+		 conf);
 }

@@ -23,6 +23,23 @@
 #include <cstdint>
 #include "hls.hpp"
 
-void ros2(hls_stream<uint8_t> &in, hls_stream<uint8_t> &out);
+#define MAX_NODE_NAME_LEN        32
+#define MAX_TOPIC_NAME_LEN       32
+#define MAX_TOPIC_TYPE_NAME_LEN  64
+
+typedef struct {
+		uint8_t ip_addr[4];
+		uint8_t node_name[MAX_NODE_NAME_LEN];
+		uint8_t node_name_len;
+		uint8_t node_udp_port[2];
+		uint16_t port_num_seed;
+		uint8_t guid_prefix[12];
+		uint8_t topic_name[MAX_TOPIC_NAME_LEN];
+		uint8_t topic_name_len;
+		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN];
+		uint8_t topic_type_name_len;
+} config_t;
+
+void ros2(hls_stream<uint8_t> &in, hls_stream<uint8_t> &out, config_t &conf);
 
 #endif // !ROS2_HPP

@@ -61,13 +61,11 @@ static void compare_entity_id(const uint8_t x,
 /* Cyber func=inline */
 void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 app_reader_id_t &reader_cnt,
-		 app_endpoint reader_tbl[APP_READER_MAX])
+		 app_endpoint reader_tbl[APP_READER_MAX],
+		 uint16_t port_num_seed,
+		 const uint8_t guid_prefix[12])
 {
 #pragma HLS inline
-	static const uint8_t guid_prefix[12]/* Cyber array=REG */ =
-		TARGET_GUID_PREFIX;
-#pragma HLS array_partition variable=guid_prefix complete dim=0
-
 	static const uint8_t sub_reader_id[4]/* Cyber array=REG */ =
 		ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable=sub_reader_id complete dim=0
@@ -346,7 +344,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 			if (param_id == PID_ENDPOINT_GUID) {
 				flags |= (hls_uint<5>)FLAGS_FOUND_GUID;
 			} else if (param_id == PID_UNICAST_LOCATOR) {
-				if (DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID) {
+				if (udp_port == port_num_seed /*DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID*/) {
 					flags |= (hls_uint<5>)
 						FLAGS_UNMATCH_DOMAIN;
 				}
