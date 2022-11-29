@@ -212,7 +212,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 {
 	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
 		IP_MULTICAST_ADDR;
-	static uint8_t dst_port[2]/* Cyber array=REG */;
+	uint8_t dst_port[2]/* Cyber array=REG */;
 	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(port_num_seed);
 	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(port_num_seed);
 #pragma HLS array_partition variable=dst_addr complete dim=0
@@ -613,11 +613,11 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS array_partition variable=pub_reader_entity_id complete dim=0
 #pragma HLS array_partition variable=sub_reader_entity_id complete dim=0
 
-	static uint8_t metatraffic_port[2]/* Cyber array=REG */;
+	uint8_t metatraffic_port[2]/* Cyber array=REG */;
 	metatraffic_port[0] = DISCOVERY_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 	metatraffic_port[1] = DISCOVERY_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 
-	static uint8_t default_port[2]/* Cyber array=REG */;
+	uint8_t default_port[2]/* Cyber array=REG */;
 	default_port[0] = USER_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 	default_port[1] = USER_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 
