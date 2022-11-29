@@ -64,10 +64,10 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 app_endpoint reader_tbl[APP_READER_MAX],
 		 uint16_t port_num_seed,
 		 const uint8_t guid_prefix[12],
-		 uint8_t topic_name_len,
 		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
-		 uint8_t type_name_len,
-		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN])
+		 uint8_t topic_name_len,
+		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t type_name_len)
 {
 #pragma HLS inline
 	static const uint8_t sub_reader_id[4]/* Cyber array=REG */ =
@@ -376,10 +376,10 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t usertraffic_port[2],
 		 const uint8_t app_entity_id[4],
 		 uint8_t buf[SEDP_WRITER_TOT_LEN],
-		 uint8_t topic_name_len,
 		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
-		 uint8_t type_name_len,
-		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN])
+		 uint8_t topic_name_len,
+		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t type_name_len)
 {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
@@ -425,6 +425,7 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 	int32_t seqnum_h = seqnum >> 32;
 	uint32_t seqnum_l = seqnum & 0xffffffff;
 
+#if MAX_TOPIC_NAME_LEN == 32 && MAX_TOPIC_TYPE_NAME_LEN == 64
 	buf[0] = 'R';
 	buf[1] = 'T';
 	buf[2] = 'P';
@@ -837,6 +838,9 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 	buf[401] = S_BYTE1(PID_SENTINEL);
 	buf[402] = 0; // PID_SENTINEL_SIZE
 	buf[403] = 0; // PID_SENTINEL_SIZE
+#else
+	#error "not implemented!"
+#endif
 }
 
 /* Cyber func=inline */

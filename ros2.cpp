@@ -198,23 +198,24 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    app_reader_cnt,
 		    app_reader_tbl,
 		    conf.port_num_seed,
-		    conf.guid_prefix);
+		    conf.guid_prefix,
+		    conf.topic_name,
+		    conf.topic_name_len,
+		    conf.topic_type_name,
+		    conf.topic_type_name_len);
 }
 
 /* Cyber func=process */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    const uint8_t default_port[2],
 			    tx_buf &tx_buf,
-			    const uint8_t src_addr[4],
-			    const uint8_t src_port[2],
-			    const uint8_t writer_guid_prefix[12],
-			    uint16_t port_num_seed)
+			    const config_t &conf)
 {
 	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
 		IP_MULTICAST_ADDR;
 	uint8_t dst_port[2]/* Cyber array=REG */;
-	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(port_num_seed);
-	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(port_num_seed);
+	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(conf.port_num_seed);
+	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(conf.port_num_seed);
 #pragma HLS array_partition variable=dst_addr complete dim=0
 #pragma HLS array_partition variable=dst_port complete dim=0
 
@@ -223,22 +224,24 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
 #pragma HLS array_partition variable=udp_pkt complete dim=0
 
-	spdp_writer(writer_guid_prefix,
-		    src_addr,
+	spdp_writer(conf.guid_prefix,
+		    conf.ip_addr,
 		    metatraffic_port,
-		    src_addr,
+		    conf.ip_addr,
 		    default_port,
-		    rtps_pkt);
+		    rtps_pkt,
+		    conf.node_name,
+		    conf.node_name_len);
 
-	udp_out(src_addr,
-		src_port,
+	udp_out(conf.ip_addr,
+		conf.node_udp_port,
 		dst_addr,
 		dst_port,
 		rtps_pkt,
 		SPDP_WRITER_RTPS_PKT_LEN,
 		udp_pkt);
 
-	ip_out(src_addr,
+	ip_out(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_MULTICAST,
 	       udp_pkt,
@@ -258,33 +261,35 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    const uint8_t usertraffic_port[2],
 			    const uint8_t app_entity_id[4],
 			    tx_buf &tx_buf,
-			    const uint8_t src_addr[4],
-			    const uint8_t src_port[2],
-			    const uint8_t writer_guid_prefix[12])
+			    const config_t &conf)
 {
 	uint8_t rtps_pkt[SEDP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
 	uint8_t udp_pkt[SEDP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
 #pragma HLS array_partition variable=udp_pkt complete dim=0
 
-	sedp_writer(writer_guid_prefix,
+	sedp_writer(conf.guid_prefix,
 		    writer_entity_id,
 		    reader_guid_prefix,
 		    reader_entity_id,
-		    src_addr,
+		    conf.ip_addr,
 		    usertraffic_port,
 		    app_entity_id,
-		    rtps_pkt);
+		    rtps_pkt,
+		    conf.topic_name,
+		    conf.topic_name_len,
+		    conf.topic_type_name,
+		    conf.topic_type_name_len);
 
-	udp_out(src_addr,
-		src_port,
+	udp_out(conf.ip_addr,
+		conf.node_udp_port,
 		dst_addr,
 		dst_port,
 		rtps_pkt,
 		SEDP_WRITER_RTPS_PKT_LEN,
 		udp_pkt);
 
-	ip_out(src_addr,
+	ip_out(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
@@ -466,10 +471,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		spdp_writer_out(metatraffic_port,			\
 				default_port,				\
 				tx_buf,				\
-				conf.ip_addr,				\
-				conf.node_udp_port,				\
-				conf.guid_prefix,				\
-				conf.port_num_seed);				\
+				conf);				\
 	} while (0)
 
 #define SEDP_PUB_WRITER_OUT(id)						\
@@ -484,9 +486,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				default_port,				\
 				app_writer_entity_id,			\
 				tx_buf,				\
-				conf.ip_addr,				\
-				conf.node_udp_port,				\
-				conf.guid_prefix);				\
+				conf);				\
 		}							\
 	} while (0)
 

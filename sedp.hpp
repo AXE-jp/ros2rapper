@@ -48,7 +48,12 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 app_reader_id_t &reader_cnt,
 		 app_endpoint reader_tbl[APP_READER_MAX],
 		 uint16_t port_num_seed,
-		 const uint8_t guid_prefix[12]);
+		 const uint8_t guid_prefix[12],
+		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
+		 uint8_t topic_name_len,
+		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t type_name_len);
+
 void sedp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t writer_entity_id[4],
 		 const uint8_t reader_guid_prefix[12],
@@ -56,7 +61,12 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t usertraffic_addr[4],
 		 const uint8_t usertraffic_port[2],
 		 const uint8_t app_entity_id[4],
-		 uint8_t buf[SEDP_WRITER_TOT_LEN]);
+		 uint8_t buf[SEDP_WRITER_TOT_LEN],
+		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
+		 uint8_t topic_name_len,
+		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t type_name_len);
+
 void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 		    const uint8_t writer_entity_id[4],
 		    const uint8_t reader_guid_prefix[12],
@@ -65,6 +75,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 		    const int64_t last_seqnum,
 		    const uint32_t cnt,
 		    uint8_t buf[SEDP_HEARTBEAT_TOT_LEN]);
+
 void sedp_acknack(const uint8_t writer_guid_prefix[12],
 		  const uint8_t writer_entity_id[4],
 		  const uint8_t reader_guid_prefix[12],

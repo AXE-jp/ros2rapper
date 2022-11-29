@@ -316,6 +316,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 	int32_t seqnum_h = seqnum >> 32;
 	uint32_t seqnum_l = seqnum & 0xffffffff;
 
+#if MAX_NODE_NAME_LEN == 32
 	buf[0] = 'R';
 	buf[1] = 'T';
 	buf[2] = 'P';
@@ -587,4 +588,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 	buf[213] = S_BYTE1(PID_SENTINEL);
 	buf[214] = 0; // PID_SENTINEL_SIZE
 	buf[215] = 0; // PID_SENTINEL_SIZE
+#else
+	#error "not implemented!"
+#endif
 }
