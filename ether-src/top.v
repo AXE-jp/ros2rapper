@@ -21,6 +21,85 @@ module top (
     output wire       phy_reset_n
 );
 
+wire [47:0] mac_addr         = 48'h02_00_00_00_00_00;
+wire [31:0] ip_addr          = {8'd192, 8'd168, 8'd1,   8'd100};
+wire [31:0] gateway_ip_addr  = {8'd192, 8'd168, 8'd1,   8'd1};
+wire [31:0] subnet_mask      = {8'd255, 8'd255, 8'd255, 8'd0};
+wire [255:0] ros2_node_name = "talker";
+wire [7:0] ros2_node_name_len = 8'd7;
+wire [15:0] ros2_node_udp_port = 16'd52000;
+wire [15:0] ros2_port_num_seed = 32'd0;
+wire [95:0] ros2_guid_prefix = 96'h01_0f_37_ad_de_09_00_00_01_00_00_00;
+wire [255:0] ros2_topic_name = "rt/chatter";
+wire [7:0] ros2_topic_name_len = 8'd11;
+wire [511:0] ros2_topic_type_name = "std_msgs::msg::dds_::String_";
+wire [7:0] ros2_topic_type_name_len = 8'd29;
+
+ros2_ether ros2 (
+    .clk(clk),
+    .reset_n(reset_n),
+    .phy_ref_clk(phy_ref_clk),
+    .phy_rx_clk(phy_rx_clk),
+    .phy_rxd(phy_rxd),
+    .phy_rx_dv(phy_rx_dv),
+    .phy_rx_er(phy_rx_er),
+    .phy_tx_clk(phy_tx_clk),
+    .phy_txd(phy_txd),
+    .phy_tx_en(phy_tx_en),
+    .phy_col(phy_col),
+    .phy_crs(phy_crs),
+    .phy_reset_n(phy_reset_n),
+    .mac_addr(mac_addr),
+    .ip_addr(ip_addr),
+    .gateway_ip_addr(gateway_ip_addr),
+    .subnet_mask(subnet_mask),
+    .ros2_ip_addr(ros2_ip_addr),
+    .ros2_node_name(ros2_node_name),
+    .ros2_node_name_len(ros2_node_name_len),
+    .ros2_node_udp_port(ros2_node_udp_port),
+    .ros2_port_num_seed(ros2_port_num_seed),
+    .ros2_guid_prefix(ros2_guid_prefix),
+    .ros2_topic_name(ros2_topic_name),
+    .ros2_topic_name_len(ros2_topic_name_len),
+    .ros2_topic_type_name(ros2_topic_type_name),
+    .ros2_topic_type_name_len(ros2_topic_type_name_len),
+);
+
+endmodule
+
+module ros2_ether (
+    input  wire       clk,
+    input  wire       reset_n,
+
+    output wire       phy_ref_clk,
+    input  wire       phy_rx_clk,
+    input  wire [3:0] phy_rxd,
+    input  wire       phy_rx_dv,
+    input  wire       phy_rx_er,
+    input  wire       phy_tx_clk,
+    output wire [3:0] phy_txd,
+    output wire       phy_tx_en,
+    input  wire       phy_col,
+    input  wire       phy_crs,
+    output wire       phy_reset_n,
+
+    input wire [47:0] mac_addr,
+    input wire [31:0] ip_addr,
+    input wire [31:0] gateway_ip_addr,
+    input wire [31:0] subnet_mask,
+
+    input  [31:0] ros2_ip_addr,
+    input  [255:0] ros2_node_name,
+    input  [7:0] ros2_node_name_len,
+    input  [15:0] ros2_node_udp_port,
+    input  [15:0] ros2_port_num_seed,
+    input  [95:0] ros2_guid_prefix,
+    input  [255:0] ros2_topic_name,
+    input  [7:0] ros2_topic_name_len,
+    input  [511:0] ros2_topic_type_name,
+    input  [7:0] ros2_topic_type_name_len
+);
+
 wire clk_ibufg;
 
 wire clk_mmcm_out;
@@ -167,11 +246,6 @@ wire rx_ip_payload_axis_tvalid;
 wire rx_ip_payload_axis_tready;
 wire rx_ip_payload_axis_tlast;
 
-wire [47:0] local_mac   = 48'h02_00_00_00_00_00;
-wire [31:0] local_ip    = {8'd192, 8'd168, 8'd1,   8'd128};
-wire [31:0] gateway_ip  = {8'd192, 8'd168, 8'd1,   8'd1};
-wire [31:0] subnet_mask = {8'd255, 8'd255, 8'd255, 8'd0};
-
 verilog_ethernet #(
 `ifdef TARGET_ASIC
     .TARGET("GENERIC")
@@ -230,9 +304,9 @@ verilog_ethernet_inst (
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
 
-    .local_mac(local_mac),
-    .local_ip(local_ip),
-    .gateway_ip(gateway_ip),
+    .local_mac(mac_addr),
+    .local_ip(ip_addr),
+    .gateway_ip(gateway_ip_addr),
     .subnet_mask(subnet_mask)
 );
 
@@ -290,10 +364,16 @@ ros2_i (
     .out_V_din(tx_fifo_din),
     .out_V_full_n(~tx_fifo_full),
     .out_V_write(tx_fifo_wr_en),
-    .target_ip_addr_0(8'd192),
-    .target_ip_addr_1(8'd168),
-    .target_ip_addr_2(8'd1),
-    .target_ip_addr_3(8'd123)
+    .conf_ip_addr(ros2_ip_addr),
+    .conf_node_name(ros2_node_name),
+    .conf_node_name_len(ros2_node_name_len),
+    .conf_node_udp_port(ros2_node_udp_port),
+    .conf_port_num_seed(ros2_port_num_seed),
+    .conf_guid_prefix(ros2_guid_prefix),
+    .conf_topic_name(ros2_topic_name),
+    .conf_topic_name_len(ros2_topic_name_len),
+    .conf_topic_type_name(ros2_topic_type_name),
+    .conf_topic_type_name_len(ros2_topic_type_name_len),
 );
 
 ip_tx
