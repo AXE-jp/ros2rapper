@@ -26,7 +26,7 @@
 #include "rtps.hpp"
 #include "timestamp.hpp"
 
-#define SPDP_DATA_SIZE	168
+#define SPDP_DATA_SIZE	156
 
 #define SPDP_WRITER_OCTETS_TO_NEXT_HEADER			\
 	(SBM_DATA_HDR_SIZE + SP_HDR_SIZE + SPDP_DATA_SIZE)

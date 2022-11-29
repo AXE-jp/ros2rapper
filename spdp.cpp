@@ -262,7 +262,9 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t metatraffic_port[2],
 		 const uint8_t default_addr[4],
 		 const uint8_t default_port[2],
-		 uint8_t buf[SPDP_WRITER_TOT_LEN])
+		 uint8_t buf[SPDP_WRITER_TOT_LEN],
+		 const uint8_t entity_name[MAX_NODE_NAME_LEN],
+		 uint8_t entity_name_len)
 {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
@@ -303,9 +305,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 		ENDPOINT_PARTICIPANT_MESSAGE_DATA_WRITER |
 		ENDPOINT_PARTICIPANT_MESSAGE_DATA_READER;
 
-	static const uint32_t entity_name_len = 7;
-	static const uint16_t pid_entity_name_size =
-		SP_DATA_SIZE(entity_name_len);
+	const uint16_t pid_entity_name_size = SP_DATA_SIZE(entity_name_len);
 
 	static const uint32_t user_data_len = 25;
 	static const uint16_t pid_user_data_size =
@@ -512,52 +512,79 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 	buf[177] = L_BYTE1(entity_name_len);
 	buf[178] = L_BYTE2(entity_name_len);
 	buf[179] = L_BYTE3(entity_name_len);
-	buf[180] = 't';
-	buf[181] = 'a';
-	buf[182] = 'l';
-	buf[183] = 'k';
-	buf[184] = 'e';
-	buf[185] = 'r';
-	buf[186] = '\0';
-	buf[187] = 0; // padding
-	buf[188] = S_BYTE0(PID_USER_DATA);
-	buf[189] = S_BYTE1(PID_USER_DATA);
-	buf[190] = S_BYTE0(pid_user_data_size);
-	buf[191] = S_BYTE1(pid_user_data_size);
-	buf[192] = L_BYTE0(user_data_len);
-	buf[193] = L_BYTE1(user_data_len);
-	buf[194] = L_BYTE2(user_data_len);
-	buf[195] = L_BYTE3(user_data_len);
-	buf[196] = 'n';
-	buf[197] = 'a';
-	buf[198] = 'm';
-	buf[199] = 'e';
-	buf[200] = '=';
-	buf[201] = 't';
-	buf[202] = 'a';
-	buf[203] = 'l';
-	buf[204] = 'k';
-	buf[205] = 'e';
-	buf[206] = 'r';
-	buf[207] = ';';
-	buf[208] = 'n';
-	buf[209] = 'a';
-	buf[210] = 'm';
-	buf[211] = 'e';
-	buf[212] = 's';
-	buf[213] = 'p';
-	buf[214] = 'a';
-	buf[215] = 'c';
-	buf[216] = 'e';
-	buf[217] = '=';
-	buf[218] = '/';
-	buf[219] = ';';
-	buf[220] = '\0';
-	buf[221] = 0; // padding
-	buf[222] = 0; // padding
-	buf[223] = 0; // padding
-	buf[224] = S_BYTE0(PID_SENTINEL);
-	buf[225] = S_BYTE1(PID_SENTINEL);
-	buf[226] = 0; // PID_SENTINEL_SIZE
-	buf[227] = 0; // PID_SENTINEL_SIZE
+	buf[180] = entity_name[0];
+	buf[181] = entity_name[1];
+	buf[182] = entity_name[2];
+	buf[183] = entity_name[3];
+	buf[184] = entity_name[4];
+	buf[185] = entity_name[5];
+	buf[186] = entity_name[6];
+	buf[187] = entity_name[7];
+	buf[188] = entity_name[8];
+	buf[189] = entity_name[9];
+	buf[190] = entity_name[10];
+	buf[191] = entity_name[11];
+	buf[192] = entity_name[12];
+	buf[193] = entity_name[13];
+	buf[194] = entity_name[14];
+	buf[195] = entity_name[15];
+	buf[196] = entity_name[16];
+	buf[197] = entity_name[17];
+	buf[198] = entity_name[18];
+	buf[199] = entity_name[19];
+	buf[200] = entity_name[20];
+	buf[201] = entity_name[21];
+	buf[202] = entity_name[22];
+	buf[203] = entity_name[23];
+	buf[204] = entity_name[24];
+	buf[205] = entity_name[25];
+	buf[206] = entity_name[26];
+	buf[207] = entity_name[27];
+	buf[208] = entity_name[28];
+	buf[209] = entity_name[29];
+	buf[210] = entity_name[30];
+	buf[211] = entity_name[31];
+	// TODO: Store node and namespace name in user data (cf. https://github.com/ros2/ros2/issues/438)
+	/*
+	buf[] = S_BYTE0(PID_USER_DATA);
+	buf[] = S_BYTE1(PID_USER_DATA);
+	buf[] = S_BYTE0(pid_user_data_size);
+	buf[] = S_BYTE1(pid_user_data_size);
+	buf[] = L_BYTE0(user_data_len);
+	buf[] = L_BYTE1(user_data_len);
+	buf[] = L_BYTE2(user_data_len);
+	buf[] = L_BYTE3(user_data_len);
+	buf[] = 'n';
+	buf[] = 'a';
+	buf[] = 'm';
+	buf[] = 'e';
+	buf[] = '=';
+	buf[] = 't';
+	buf[] = 'a';
+	buf[] = 'l';
+	buf[] = 'k';
+	buf[] = 'e';
+	buf[] = 'r';
+	buf[] = ';';
+	buf[] = 'n';
+	buf[] = 'a';
+	buf[] = 'm';
+	buf[] = 'e';
+	buf[] = 's';
+	buf[] = 'p';
+	buf[] = 'a';
+	buf[] = 'c';
+	buf[] = 'e';
+	buf[] = '=';
+	buf[] = '/';
+	buf[] = ';';
+	buf[] = '\0';
+	buf[] = 0; // padding
+	buf[] = 0; // padding
+	buf[] = 0; // padding
+	*/
+	buf[212] = S_BYTE0(PID_SENTINEL);
+	buf[213] = S_BYTE1(PID_SENTINEL);
+	buf[214] = 0; // PID_SENTINEL_SIZE
+	buf[215] = 0; // PID_SENTINEL_SIZE
 }
