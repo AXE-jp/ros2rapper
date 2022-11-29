@@ -22,10 +22,7 @@
 
 #include <cstdint>
 #include "hls.hpp"
-
-#define MAX_NODE_NAME_LEN        32
-#define MAX_TOPIC_NAME_LEN       32
-#define MAX_TOPIC_TYPE_NAME_LEN  64
+#include "common.hpp"
 
 typedef struct {
 		uint8_t ip_addr[4];
