@@ -184,8 +184,10 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	if (!s3.read_nb(x))
 		return;
 
-	s4.write(x);
-	s5.write(x);
+	if (conf.ctrl & CTRL_ENABLE) {
+		s4.write(x);
+		s5.write(x);
+	}
 
 	spdp_reader(s4,
 		    sedp_reader_cnt,
@@ -565,7 +567,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		}							\
 	} while (0)
 
-#define APP_WRITER_OUT(id)						\
+#define APP_WRITER_OUT(id, app_data, app_data_len)						\
 	do {								\
 		if (app_reader_cnt > (id)) {				\
 			app_writer_out(					\
@@ -579,8 +581,8 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				conf.ip_addr,				\
 				conf.node_udp_port,				\
 				conf.guid_prefix,				\
-				conf.app_data,				\
-				conf.app_data_len);				\
+				(app_data),				\
+				(app_data_len));				\
 		}							\
 	} while (0)							\
 
@@ -696,13 +698,25 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(3)) {
 		SEDP_SUB_ACKNACK_OUT(3);
 	} else if (clk_cnt == APP_WRITER_CYCLE(0)) {
-		APP_WRITER_OUT(0);
+		if (conf.ctrl & CTRL_PINGPONG)
+			APP_WRITER_OUT(0, conf.app_data_b, conf.app_data_len_b);
+		else
+			APP_WRITER_OUT(0, conf.app_data_a, conf.app_data_len_a);
 	} else if (clk_cnt == APP_WRITER_CYCLE(1)) {
-		APP_WRITER_OUT(1);
+		if (conf.ctrl & CTRL_PINGPONG)
+			APP_WRITER_OUT(1, conf.app_data_b, conf.app_data_len_b);
+		else
+			APP_WRITER_OUT(1, conf.app_data_a, conf.app_data_len_a);
 	} else if (clk_cnt == APP_WRITER_CYCLE(2)) {
-		APP_WRITER_OUT(2);
+		if (conf.ctrl & CTRL_PINGPONG)
+			APP_WRITER_OUT(2, conf.app_data_b, conf.app_data_len_b);
+		else
+			APP_WRITER_OUT(2, conf.app_data_a, conf.app_data_len_a);
 	} else if (clk_cnt == APP_WRITER_CYCLE(3)) {
-		APP_WRITER_OUT(3);
+		if (conf.ctrl & CTRL_PINGPONG)
+			APP_WRITER_OUT(3, conf.app_data_b, conf.app_data_len_b);
+		else
+			APP_WRITER_OUT(3, conf.app_data_a, conf.app_data_len_a);
 	}
 
 #ifdef USE_FIFOIF_ETHERNET
@@ -737,6 +751,12 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable=sedp_reader_tbl complete dim=0
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
+
+	if (!(conf.ctrl & CTRL_ENABLE)) {
+		// reset
+		sedp_reader_cnt = 0;
+		app_reader_cnt = 0;
+	}
 
 	ros2_in(in,
 		sedp_reader_cnt,
