@@ -34,6 +34,8 @@ wire [255:0] ros2_topic_name = "rettahc/tr";
 wire [7:0] ros2_topic_name_len = 8'd11;
 wire [511:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
 wire [7:0] ros2_topic_type_name_len = 8'd29;
+wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
+wire [7:0] ros2_app_data_len = 8'd35;
 
 ros2_ether ros2 (
     .clk(clk),
@@ -61,7 +63,9 @@ ros2_ether ros2 (
     .ros2_topic_name(ros2_topic_name),
     .ros2_topic_name_len(ros2_topic_name_len),
     .ros2_topic_type_name(ros2_topic_type_name),
-    .ros2_topic_type_name_len(ros2_topic_type_name_len)
+    .ros2_topic_type_name_len(ros2_topic_type_name_len),
+    .ros2_app_data(ros2_app_data),
+    .ros2_app_data_len(ros2_app_data_len)
 );
 
 endmodule
@@ -95,7 +99,9 @@ module ros2_ether (
     input wire [255:0] ros2_topic_name,
     input wire [7:0] ros2_topic_name_len,
     input wire [511:0] ros2_topic_type_name,
-    input wire [7:0] ros2_topic_type_name_len
+    input wire [7:0] ros2_topic_type_name_len,
+    input wire [511:0] ros2_app_data,
+    input wire [7:0] ros2_app_data_len
 );
 
 wire clk_ibufg;
@@ -371,7 +377,9 @@ ros2_i (
     .conf_topic_name(ros2_topic_name),
     .conf_topic_name_len(ros2_topic_name_len),
     .conf_topic_type_name(ros2_topic_type_name),
-    .conf_topic_type_name_len(ros2_topic_type_name_len)
+    .conf_topic_type_name_len(ros2_topic_type_name_len),
+    .conf_app_data(ros2_app_data),
+    .conf_app_data_len(ros2_app_data_len)
 );
 
 ip_tx
