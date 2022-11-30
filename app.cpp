@@ -47,10 +47,10 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 	static const uint16_t ext_flags = 0;
 	static const uint16_t rep_opt = 0;
 
-	uint16_t tot_len =
-		APP_TOT_LEN(app_data_len);
-	uint16_t octets_to_next_header =
-		APP_OCTETS_TO_NEXT_HEADER(app_data_len);
+	const uint16_t tot_len =
+		APP_TOT_LEN(MAX_APP_DATA_LEN);
+	const uint16_t octets_to_next_header =
+		APP_OCTETS_TO_NEXT_HEADER(MAX_APP_DATA_LEN);
 
 	int32_t seqnum_h = seqnum >> 32;
 	uint32_t seqnum_l = seqnum & 0xffffffff;
