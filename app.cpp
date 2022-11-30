@@ -144,7 +144,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 #pragma HLS unroll
 		if (i < APP_HDR_SIZE)
 			buf[i] = app_hdr[i];
-		else if (i < APP_HDR_SIZE + app_data_len)
+		else if (i < APP_HDR_SIZE + MAX_APP_DATA_LEN)
 			buf[i] = app_data[i-APP_HDR_SIZE];
 		else
 			buf[i] = 0; // padding

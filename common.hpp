@@ -26,6 +26,7 @@
 #define MAX_NODE_NAME_LEN        32
 #define MAX_TOPIC_NAME_LEN       32
 #define MAX_TOPIC_TYPE_NAME_LEN  64
+#define MAX_APP_DATA_LEN         64
 
 #define ENTITYID_APP_WRITER	{0x00, 0x00, 0x10, 0x03}
 #define ENTITYID_APP_READER	{0x00, 0x00, 0x10, 0x04}

@@ -58,11 +58,8 @@
 #define SEDP_ACKNACK_IP_PKT_LEN				\
 	(IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
 
-#define APP_DATA	"Hello world!"
-#define APP_DATA_LEN	13
-
 #define APP_WRITER_RTPS_PKT_LEN				\
-	APP_TOT_LEN(APP_DATA_LEN)
+	APP_TOT_LEN(MAX_APP_DATA_LEN)
 #define APP_WRITER_UDP_PKT_LEN				\
 	(UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN)
 #define APP_WRITER_IP_PKT_LEN				\
@@ -408,12 +405,10 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   int64_t &seqnum,
 			   const uint8_t src_addr[4],
 			   const uint8_t src_port[2],
-			   const uint8_t writer_guid_prefix[12])
+			   const uint8_t writer_guid_prefix[12],
+			   const uint8_t app_data[MAX_APP_DATA_LEN],
+			   uint8_t app_data_len)
 {
-	static const uint8_t app_data[APP_DATA_LEN]/* Cyber array=REG */ =
-		APP_DATA;
-#pragma HLS array_partition variable=app_data complete dim=0
-
 	uint8_t rtps_pkt[APP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
 	uint8_t udp_pkt[APP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
 #pragma HLS array_partition variable=rtps_pkt complete dim=0
@@ -426,7 +421,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		   reader_entity_id,
 		   seqnum,
 		   app_data,
-		   APP_DATA_LEN,
+		   app_data_len,
 		   rtps_pkt);
 
 	udp_out(src_addr,
@@ -583,7 +578,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				app_seqnum,				\
 				conf.ip_addr,				\
 				conf.node_udp_port,				\
-				conf.guid_prefix);				\
+				conf.guid_prefix,				\
+				conf.app_data,				\
+				conf.app_data_len);				\
 		}							\
 	} while (0)							\
 

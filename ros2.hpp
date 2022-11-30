@@ -35,6 +35,8 @@ typedef struct {
 		uint8_t topic_name_len;
 		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN];
 		uint8_t topic_type_name_len;
+		uint8_t app_data[MAX_APP_DATA_LEN];
+		uint8_t app_data_len;
 } config_t;
 
 void ros2(hls_stream<uint8_t> &in, hls_stream<uint8_t> &out, config_t &conf);
