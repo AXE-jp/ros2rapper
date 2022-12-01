@@ -21,89 +21,6 @@ module top (
     output wire       phy_reset_n
 );
 
-wire [47:0] mac_addr         = 48'h02_00_00_00_00_00;
-wire [31:0] ip_addr          = {8'd192, 8'd168, 8'd1,   8'd100};
-wire [31:0] gateway_ip_addr  = {8'd192, 8'd168, 8'd1,   8'd1};
-wire [31:0] subnet_mask      = {8'd255, 8'd255, 8'd255, 8'd0};
-wire [255:0] ros2_node_name = "reklat";
-wire [7:0] ros2_node_name_len = 8'd7;
-wire [15:0] ros2_node_udp_port = 16'd52000;
-wire [15:0] ros2_port_num_seed = 16'd7400;
-wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
-wire [255:0] ros2_topic_name = "rettahc/tr";
-wire [7:0] ros2_topic_name_len = 8'd11;
-wire [511:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
-wire [7:0] ros2_topic_type_name_len = 8'd29;
-wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
-wire [7:0] ros2_app_data_len = 8'd35;
-
-ros2_ether ros2 (
-    .clk(clk),
-    .reset_n(reset_n),
-    .phy_ref_clk(phy_ref_clk),
-    .phy_rx_clk(phy_rx_clk),
-    .phy_rxd(phy_rxd),
-    .phy_rx_dv(phy_rx_dv),
-    .phy_rx_er(phy_rx_er),
-    .phy_tx_clk(phy_tx_clk),
-    .phy_txd(phy_txd),
-    .phy_tx_en(phy_tx_en),
-    .phy_col(phy_col),
-    .phy_crs(phy_crs),
-    .phy_reset_n(phy_reset_n),
-    .mac_addr(mac_addr),
-    .ip_addr(ip_addr),
-    .gateway_ip_addr(gateway_ip_addr),
-    .subnet_mask(subnet_mask),
-    .ros2_node_name(ros2_node_name),
-    .ros2_node_name_len(ros2_node_name_len),
-    .ros2_node_udp_port(ros2_node_udp_port),
-    .ros2_port_num_seed(ros2_port_num_seed),
-    .ros2_guid_prefix(ros2_guid_prefix),
-    .ros2_topic_name(ros2_topic_name),
-    .ros2_topic_name_len(ros2_topic_name_len),
-    .ros2_topic_type_name(ros2_topic_type_name),
-    .ros2_topic_type_name_len(ros2_topic_type_name_len),
-    .ros2_app_data(ros2_app_data),
-    .ros2_app_data_len(ros2_app_data_len)
-);
-
-endmodule
-
-module ros2_ether (
-    input  wire       clk,
-    input  wire       reset_n,
-
-    output wire       phy_ref_clk,
-    input  wire       phy_rx_clk,
-    input  wire [3:0] phy_rxd,
-    input  wire       phy_rx_dv,
-    input  wire       phy_rx_er,
-    input  wire       phy_tx_clk,
-    output wire [3:0] phy_txd,
-    output wire       phy_tx_en,
-    input  wire       phy_col,
-    input  wire       phy_crs,
-    output wire       phy_reset_n,
-
-    input wire [47:0] mac_addr,
-    input wire [31:0] ip_addr,
-    input wire [31:0] gateway_ip_addr,
-    input wire [31:0] subnet_mask,
-
-    (* mark_debug = "true" *) input wire [255:0] ros2_node_name,
-    input wire [7:0] ros2_node_name_len,
-    input wire [15:0] ros2_node_udp_port,
-    input wire [15:0] ros2_port_num_seed,
-    input wire [95:0] ros2_guid_prefix,
-    input wire [255:0] ros2_topic_name,
-    input wire [7:0] ros2_topic_name_len,
-    input wire [511:0] ros2_topic_type_name,
-    input wire [7:0] ros2_topic_type_name_len,
-    input wire [511:0] ros2_app_data,
-    input wire [7:0] ros2_app_data_len
-);
-
 wire clk_ibufg;
 
 wire clk_mmcm_out;
@@ -215,6 +132,121 @@ sync_reset_inst (
 );
 
 assign phy_ref_clk = clk_25mhz_int;
+
+wire [47:0] mac_addr         = 48'h02_00_00_00_00_00;
+wire [31:0] ip_addr          = {8'd192, 8'd168, 8'd1,   8'd100};
+wire [31:0] gateway_ip_addr  = {8'd192, 8'd168, 8'd1,   8'd1};
+wire [31:0] subnet_mask      = {8'd255, 8'd255, 8'd255, 8'd0};
+wire [255:0] ros2_node_name = "reklat";
+wire [7:0] ros2_node_name_len = 8'd7;
+wire [15:0] ros2_node_udp_port = 16'd52000;
+wire [15:0] ros2_port_num_seed = 16'd7400;
+wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
+wire [255:0] ros2_topic_name = "rettahc/tr";
+wire [7:0] ros2_topic_name_len = 8'd11;
+wire [511:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
+wire [7:0] ros2_topic_type_name_len = 8'd29;
+
+wire [511:0] ros2_app_data_a = "!retsiger gifnoc morf dlrow ,olleh";
+wire [7:0] ros2_app_data_len_a = 8'd35;
+wire [511:0] ros2_app_data_b = "******";
+wire [7:0] ros2_app_data_len_b = 8'd7;
+
+reg [31:0] counter;
+reg [4:0] stop_counter;
+reg pattern;
+reg enable;
+
+wire [7:0] ros2_ctrl = {6'b0, pattern, enable};
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        counter <= 0;
+        stop_counter <= 0;
+        pattern <= 0;
+        enable <= 1;
+    end else begin
+        if (stop_counter == 20) begin
+            enable <= 0;
+        end else if (counter == 32'd100000000) begin
+            counter <= 32'd0;
+            pattern <= ~pattern;
+            stop_counter <= stop_counter + 1;
+        end else
+            counter <= counter + 32'd1;
+    end
+end
+
+ros2_ether ros2 (
+    .clk_int(clk_int),
+    .rst_int(rst_int),
+    .phy_rx_clk(phy_rx_clk),
+    .phy_rxd(phy_rxd),
+    .phy_rx_dv(phy_rx_dv),
+    .phy_rx_er(phy_rx_er),
+    .phy_tx_clk(phy_tx_clk),
+    .phy_txd(phy_txd),
+    .phy_tx_en(phy_tx_en),
+    .phy_col(phy_col),
+    .phy_crs(phy_crs),
+    .phy_reset_n(phy_reset_n),
+    .mac_addr(mac_addr),
+    .ip_addr(ip_addr),
+    .gateway_ip_addr(gateway_ip_addr),
+    .subnet_mask(subnet_mask),
+    .ros2_node_name(ros2_node_name),
+    .ros2_node_name_len(ros2_node_name_len),
+    .ros2_node_udp_port(ros2_node_udp_port),
+    .ros2_port_num_seed(ros2_port_num_seed),
+    .ros2_guid_prefix(ros2_guid_prefix),
+    .ros2_topic_name(ros2_topic_name),
+    .ros2_topic_name_len(ros2_topic_name_len),
+    .ros2_topic_type_name(ros2_topic_type_name),
+    .ros2_topic_type_name_len(ros2_topic_type_name_len),
+    .ros2_app_data_a(ros2_app_data_a),
+    .ros2_app_data_len_a(ros2_app_data_len_a),
+    .ros2_app_data_b(ros2_app_data_b),
+    .ros2_app_data_len_b(ros2_app_data_len_b),
+    .ros2_ctrl(ros2_ctrl)
+);
+
+endmodule
+
+module ros2_ether (
+    input  wire       clk_int,
+    input  wire       rst_int,
+
+    input  wire       phy_rx_clk,
+    input  wire [3:0] phy_rxd,
+    input  wire       phy_rx_dv,
+    input  wire       phy_rx_er,
+    input  wire       phy_tx_clk,
+    output wire [3:0] phy_txd,
+    output wire       phy_tx_en,
+    input  wire       phy_col,
+    input  wire       phy_crs,
+    output wire       phy_reset_n,
+
+    input wire [47:0] mac_addr,
+    input wire [31:0] ip_addr,
+    input wire [31:0] gateway_ip_addr,
+    input wire [31:0] subnet_mask,
+
+    input wire [255:0] ros2_node_name,
+    input wire [7:0] ros2_node_name_len,
+    input wire [15:0] ros2_node_udp_port,
+    input wire [15:0] ros2_port_num_seed,
+    input wire [95:0] ros2_guid_prefix,
+    input wire [255:0] ros2_topic_name,
+    input wire [7:0] ros2_topic_name_len,
+    input wire [511:0] ros2_topic_type_name,
+    input wire [7:0] ros2_topic_type_name_len,
+    input wire [511:0] ros2_app_data_a,
+    input wire [7:0] ros2_app_data_len_a,
+    input wire [511:0] ros2_app_data_b,
+    input wire [7:0] ros2_app_data_len_b,
+    input wire [7:0] ros2_ctrl
+);
 
 wire tx_ip_hdr_valid;
 wire tx_ip_hdr_ready;
@@ -378,8 +410,11 @@ ros2_i (
     .conf_topic_name_len(ros2_topic_name_len),
     .conf_topic_type_name(ros2_topic_type_name),
     .conf_topic_type_name_len(ros2_topic_type_name_len),
-    .conf_app_data(ros2_app_data),
-    .conf_app_data_len(ros2_app_data_len)
+    .conf_app_data_a(ros2_app_data_a),
+    .conf_app_data_len_a(ros2_app_data_len_a),
+    .conf_app_data_b(ros2_app_data_b),
+    .conf_app_data_len_b(ros2_app_data_len_b),
+    .conf_ctrl(ros2_ctrl)
 );
 
 ip_tx
