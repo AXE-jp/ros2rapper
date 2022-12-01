@@ -1,6 +1,6 @@
 gensrc/
 ip_tx_rx/
-ros2/
+ros2rapper/
 *.jou
 *.log
 *.xpr
