@@ -4,7 +4,7 @@
 
 `include "ether_config.vh"
 
-module top (
+module ether_top (
     input  wire       clk,
     input  wire       reset_n,
 
