@@ -1,6 +1,6 @@
 `default_nettype none
 
-module RAM_WRAP#(parameter AWIDTH=32, DWIDTH=32, OPT=0)(CLK, CEB_N, WEB_N, ADDR, DIN, DOUT);
+module RAM_WRAP_2#(parameter AWIDTH=32, DWIDTH=32, OPT=0)(CLK, CEB_N, WEB_N, ADDR, DIN, DOUT);
     input wire CLK, CEB_N, WEB_N;
     input wire [AWIDTH-1:0] ADDR;
     input wire [DWIDTH-1:0] DIN;
