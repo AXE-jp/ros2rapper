@@ -218,6 +218,7 @@ eth_axis_rx_inst (
     .rst(rst),
 
     .s_axis_tdata(rx_axis_tdata),
+    .s_axis_tkeep(1'b1),
     .s_axis_tvalid(rx_axis_tvalid),
     .s_axis_tready(rx_axis_tready),
     .s_axis_tlast(rx_axis_tlast),
@@ -249,6 +250,7 @@ eth_axis_tx_inst (
     .s_eth_src_mac(tx_eth_src_mac),
     .s_eth_type(tx_eth_type),
     .s_eth_payload_axis_tdata(tx_eth_payload_axis_tdata),
+    .s_eth_payload_axis_tkeep(1'b1),
     .s_eth_payload_axis_tvalid(tx_eth_payload_axis_tvalid),
     .s_eth_payload_axis_tready(tx_eth_payload_axis_tready),
     .s_eth_payload_axis_tlast(tx_eth_payload_axis_tlast),

@@ -552,7 +552,7 @@ always @(posedge m_clk) begin
     end
 
     for (j = PIPELINE_OUTPUT-1; j > 0; j = j - 1) begin
-        if (m_axis_tready || ((~m_axis_tvalid_pipe_reg) >> j)) begin
+        if (m_axis_tready || |((~m_axis_tvalid_pipe_reg) >> j)) begin
             // output ready or bubble in pipeline; transfer down pipeline
             m_axis_tvalid_pipe_reg[j] <= m_axis_tvalid_pipe_reg[j-1];
             m_axis_pipe_reg[j] <= m_axis_pipe_reg[j-1];
@@ -560,7 +560,7 @@ always @(posedge m_clk) begin
         end
     end
 
-    if (m_axis_tready || ~m_axis_tvalid_pipe_reg) begin
+    if (m_axis_tready || |(~m_axis_tvalid_pipe_reg)) begin
         // output ready or bubble in pipeline; read new data from FIFO
         m_axis_tvalid_pipe_reg[0] <= 1'b0;
         m_axis_pipe_reg[0] <= mem[rd_ptr_reg[ADDR_WIDTH-1:0]];

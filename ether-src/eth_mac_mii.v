@@ -153,6 +153,8 @@ eth_mac_1g_inst (
     .gmii_txd(mac_mii_txd),
     .gmii_tx_en(mac_mii_tx_en),
     .gmii_tx_er(mac_mii_tx_er),
+    .tx_ptp_ts(96'b0),
+    .rx_ptp_ts(96'b0),
     .rx_clk_enable(1'b1),
     .tx_clk_enable(1'b1),
     .rx_mii_select(1'b1),
