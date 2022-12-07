@@ -147,10 +147,8 @@ wire [7:0] ros2_topic_name_len = 8'd11;
 wire [511:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
 wire [7:0] ros2_topic_type_name_len = 8'd29;
 
-wire [511:0] ros2_app_data_a = "!retsiger gifnoc morf dlrow ,olleh";
-wire [7:0] ros2_app_data_len_a = 8'd35;
-wire [511:0] ros2_app_data_b = "******";
-wire [7:0] ros2_app_data_len_b = 8'd7;
+wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
+wire [7:0] ros2_app_data_len = 8'd35;
 
 reg [31:0] counter;
 reg [4:0] stop_counter;
@@ -203,11 +201,11 @@ ros2_ether ros2 (
     .ros2_topic_name_len(ros2_topic_name_len),
     .ros2_topic_type_name(ros2_topic_type_name),
     .ros2_topic_type_name_len(ros2_topic_type_name_len),
-    .ros2_app_data_a(ros2_app_data_a),
-    .ros2_app_data_len_a(ros2_app_data_len_a),
-    .ros2_app_data_b(ros2_app_data_b),
-    .ros2_app_data_len_b(ros2_app_data_len_b),
-    .ros2_ctrl(ros2_ctrl)
+    .ros2_app_data(ros2_app_data),
+    .ros2_app_data_len(ros2_app_data_len),
+    .ros2_ctrl(ros2_ctrl),
+    .ros2_cpu_req(1'b0),
+    .ros2_cpu_rel(1'b0)
 );
 
 endmodule
@@ -241,11 +239,12 @@ module ros2_ether (
     input wire [7:0] ros2_topic_name_len,
     input wire [511:0] ros2_topic_type_name,
     input wire [7:0] ros2_topic_type_name_len,
-    input wire [511:0] ros2_app_data_a,
-    input wire [7:0] ros2_app_data_len_a,
-    input wire [511:0] ros2_app_data_b,
-    input wire [7:0] ros2_app_data_len_b,
-    input wire [7:0] ros2_ctrl
+    input wire [511:0] ros2_app_data,
+    input wire [7:0] ros2_app_data_len,
+    input wire [7:0] ros2_ctrl,
+    input wire ros2_cpu_req,
+    input wire ros2_cpu_rel,
+    output wire ros2_cpu_grant
 );
 
 wire tx_ip_hdr_valid;
@@ -390,6 +389,38 @@ rx_fifo (
     .empty(rx_fifo_empty)
 );
 
+// arbiter for sharing app_data between CPU and ROS2rapper IP
+localparam GRANT_NONE = 2'b00;
+localparam GRANT_IP   = 2'b01;
+localparam GRANT_CPU  = 2'b10;
+reg [1:0] r_ros2_grant;
+wire ros2_ip_req, ros2_ip_rel, ros2_ip_grant;
+assign ros2_ip_grant = r_ros2_grant[0];
+assign ros2_cpu_grant = r_ros2_grant[1];
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        r_ros2_grant <= GRANT_NONE;
+    end else begin
+        case (r_ros2_grant)
+            GRANT_NONE: begin
+                case ({ros2_ip_req, ros2_cpu_req})
+                    4'b00: r_ros2_grant <= GRANT_NONE;
+                    4'b01: r_ros2_grant <= GRANT_CPU;
+                    4'b10: r_ros2_grant <= GRANT_IP;
+                    4'b11: r_ros2_grant <= GRANT_IP;
+                endcase
+            end
+            GRANT_IP:
+                if (ros2_ip_rel) r_ros2_grant <= GRANT_NONE;
+            GRANT_CPU:
+                if (ros2_cpu_rel) r_ros2_grant <= GRANT_NONE;
+            default:
+                r_ros2_grant <= GRANT_NONE;
+        endcase
+    end
+end
+
 ros2
 ros2_i (
     .ap_clk(clk_int),
@@ -410,11 +441,12 @@ ros2_i (
     .conf_topic_name_len(ros2_topic_name_len),
     .conf_topic_type_name(ros2_topic_type_name),
     .conf_topic_type_name_len(ros2_topic_type_name_len),
-    .conf_app_data_a(ros2_app_data_a),
-    .conf_app_data_len_a(ros2_app_data_len_a),
-    .conf_app_data_b(ros2_app_data_b),
-    .conf_app_data_len_b(ros2_app_data_len_b),
-    .conf_ctrl(ros2_ctrl)
+    .conf_app_data(ros2_app_data),
+    .conf_app_data_len(ros2_app_data_len),
+    .conf_ctrl(ros2_ctrl),
+    .app_data_req(ros2_ip_req),
+    .app_data_rel(ros2_ip_rel),
+    .app_data_grant(ros2_ip_grant)
 );
 
 ip_tx
