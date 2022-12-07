@@ -742,8 +742,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface ap_fifo port=out
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
-#pragma HLS interface ap_vld port=app_data_req
-#pragma HLS interface ap_vld port=app_data_rel
+#pragma HLS interface ap_vld port=app_data_req register
+#pragma HLS interface ap_vld port=app_data_rel register
 #pragma HLS interface ap_none port=app_data_grant
 #pragma HLS interface ap_ctrl_none port=return
 
