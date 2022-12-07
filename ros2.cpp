@@ -567,9 +567,11 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		}							\
 	} while (0)
 
-#define APP_WRITER_OUT(id, app_data, app_data_len)						\
+#define APP_WRITER_OUT(id)						\
 	do {								\
-		if (app_reader_cnt > (id)) {				\
+		*app_data_req = 0; ap_wait(); \
+		grant = *app_data_grant; \
+		if (grant == 1 && app_reader_cnt > (id)) {				\
 			app_writer_out(					\
 				app_writer_entity_id,			\
 				app_reader_tbl[(id)].ip_addr,		\
@@ -581,8 +583,9 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				conf.ip_addr,				\
 				conf.node_udp_port,				\
 				conf.guid_prefix,				\
-				(app_data),				\
-				(app_data_len));				\
+				conf.app_data,				\
+				conf.app_data_len);				\
+				*app_data_rel = 0; ap_wait(); \
 		}							\
 	} while (0)							\
 
@@ -592,7 +595,10 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
-		     const config_t &conf)
+		     const config_t &conf,
+		     volatile uint8_t *app_data_req,
+		     volatile uint8_t *app_data_rel,
+		     volatile uint8_t *app_data_grant)
 {
 #pragma HLS inline
 	static const uint8_t pub_writer_entity_id[4]/* Cyber array=REG */ =
@@ -647,6 +653,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 
 	static uint32_t clk_cnt;
 
+	uint8_t grant;
+
 	if (conf.ctrl & CTRL_ENABLE) {
 		if (clk_cnt == SPDP_WRITER_CYCLE) {
 			SPDP_WRITER_OUT();
@@ -699,25 +707,13 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(3)) {
 			SEDP_SUB_ACKNACK_OUT(3);
 		} else if (clk_cnt == APP_WRITER_CYCLE(0)) {
-			if (conf.ctrl & CTRL_PINGPONG)
-				APP_WRITER_OUT(0, conf.app_data_b, conf.app_data_len_b);
-			else
-				APP_WRITER_OUT(0, conf.app_data_a, conf.app_data_len_a);
+			APP_WRITER_OUT(0);
 		} else if (clk_cnt == APP_WRITER_CYCLE(1)) {
-			if (conf.ctrl & CTRL_PINGPONG)
-				APP_WRITER_OUT(1, conf.app_data_b, conf.app_data_len_b);
-			else
-				APP_WRITER_OUT(1, conf.app_data_a, conf.app_data_len_a);
+			APP_WRITER_OUT(1);
 		} else if (clk_cnt == APP_WRITER_CYCLE(2)) {
-			if (conf.ctrl & CTRL_PINGPONG)
-				APP_WRITER_OUT(2, conf.app_data_b, conf.app_data_len_b);
-			else
-				APP_WRITER_OUT(2, conf.app_data_a, conf.app_data_len_a);
+			APP_WRITER_OUT(2);
 		} else if (clk_cnt == APP_WRITER_CYCLE(3)) {
-			if (conf.ctrl & CTRL_PINGPONG)
-				APP_WRITER_OUT(3, conf.app_data_b, conf.app_data_len_b);
-			else
-				APP_WRITER_OUT(3, conf.app_data_a, conf.app_data_len_a);
+			APP_WRITER_OUT(3);
 		}
 	}
 
@@ -737,15 +733,20 @@ static void ros2_out(hls_stream<uint8_t> &out,
 /* Cyber func=process_pipeline */
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
-	  const config_t &conf)
+	  const config_t &conf,
+	  volatile uint8_t *app_data_req,
+	  volatile uint8_t *app_data_rel,
+	  volatile uint8_t *app_data_grant)
 {
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
+#pragma HLS interface ap_vld port=app_data_req
+#pragma HLS interface ap_vld port=app_data_rel
+#pragma HLS interface ap_none port=app_data_grant
 #pragma HLS interface ap_ctrl_none port=return
 
-#pragma HLS dataflow
 	static sedp_reader_id_t sedp_reader_cnt;
 	static app_reader_id_t app_reader_cnt;
 
@@ -772,5 +773,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 sedp_reader_tbl,
 		 app_reader_cnt,
 		 app_reader_tbl,
-		 conf);
+		 conf,
+		 app_data_req,
+		 app_data_rel,
+		 app_data_grant);
 }

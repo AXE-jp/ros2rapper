@@ -35,16 +35,21 @@ typedef struct {
 		uint8_t topic_name_len;
 		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN];
 		uint8_t topic_type_name_len;
-		uint8_t app_data_a[MAX_APP_DATA_LEN];
-		uint8_t app_data_len_a;
-		uint8_t app_data_b[MAX_APP_DATA_LEN];
-		uint8_t app_data_len_b;
+		uint8_t app_data[MAX_APP_DATA_LEN];
+		uint8_t app_data_len;
 		uint8_t ctrl;
 } config_t;
 
 #define CTRL_ENABLE 0x1
 #define CTRL_PINGPONG 0x2
 
-void ros2(hls_stream<uint8_t> &in, hls_stream<uint8_t> &out, config_t &conf);
+void ros2(
+		hls_stream<uint8_t> &in,
+		hls_stream<uint8_t> &out,
+		config_t &conf,
+		volatile uint8_t *app_data_req,
+	  volatile uint8_t *app_data_rel,
+	  volatile uint8_t *app_data_grant
+);
 
 #endif // !ROS2_HPP
