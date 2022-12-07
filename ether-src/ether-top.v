@@ -444,8 +444,8 @@ ros2_i (
     .conf_app_data(ros2_app_data),
     .conf_app_data_len(ros2_app_data_len),
     .conf_ctrl(ros2_ctrl),
-    .app_data_req(ros2_ip_req),
-    .app_data_rel(ros2_ip_rel),
+    .app_data_req_ap_vld(ros2_ip_req),
+    .app_data_rel_ap_vld(ros2_ip_rel),
     .app_data_grant(ros2_ip_grant)
 );
 
