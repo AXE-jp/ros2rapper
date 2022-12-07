@@ -569,7 +569,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 
 #define APP_WRITER_OUT(id)						\
 	do {								\
-		*app_data_req = 0; ap_wait(); \
+		*app_data_req = 0; ap_wait(); ap_wait(); \
 		grant = *app_data_grant; \
 		if (grant == 1 && app_reader_cnt > (id)) {				\
 			app_writer_out(					\
@@ -585,7 +585,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 				conf.guid_prefix,				\
 				conf.app_data,				\
 				conf.app_data_len);				\
-				*app_data_rel = 0; ap_wait(); \
+				*app_data_rel = 0; ap_wait(); ap_wait(); \
 		}							\
 	} while (0)							\
 
