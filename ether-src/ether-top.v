@@ -446,7 +446,7 @@ ros2_i (
     .conf_ctrl(ros2_ctrl),
     .app_data_req_ap_vld(ros2_ip_req),
     .app_data_rel_ap_vld(ros2_ip_rel),
-    .app_data_grant(ros2_ip_grant)
+    .app_data_grant({7'b0, ros2_ip_grant})
 );
 
 ip_tx
