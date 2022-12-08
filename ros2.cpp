@@ -567,27 +567,42 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		}							\
 	} while (0)
 
+#define REQ_APP_DATA \
+	do { \
+		*app_data_req = 0/*write dummy value to assert ap_vld*/; \
+		ap_wait(); \
+		grant = *app_data_grant; \
+	} while (0)
+
+#define REL_APP_DATA \
+	do { \
+		*app_data_rel = 0/*write dummy value to assert ap_vld*/; \
+		ap_wait(); \
+	} while (0)
+
 #define APP_WRITER_OUT(id)						\
 	do {								\
-		*app_data_req = 0; ap_wait(); ap_wait(); \
-		grant = *app_data_grant; \
-		if (grant == 1 && app_reader_cnt > (id)) {				\
-			app_writer_out(					\
-				app_writer_entity_id,			\
-				app_reader_tbl[(id)].ip_addr,		\
-				app_reader_tbl[(id)].udp_port,		\
-				app_reader_tbl[(id)].guid_prefix,	\
-				app_reader_tbl[(id)].entity_id,		\
-				tx_buf,					\
-				app_seqnum,				\
-				conf.ip_addr,				\
-				conf.node_udp_port,				\
-				conf.guid_prefix,				\
-				conf.app_data,				\
-				conf.app_data_len);				\
-				*app_data_rel = 0; ap_wait(); ap_wait(); \
+		if (app_reader_cnt > (id)) {				\
+			REQ_APP_DATA; \
+			if (grant == 1) { \
+				app_writer_out(					\
+					app_writer_entity_id,			\
+					app_reader_tbl[(id)].ip_addr,		\
+					app_reader_tbl[(id)].udp_port,		\
+					app_reader_tbl[(id)].guid_prefix,	\
+					app_reader_tbl[(id)].entity_id,		\
+					tx_buf,					\
+					app_seqnum,				\
+					conf.ip_addr,				\
+					conf.node_udp_port,				\
+					conf.guid_prefix,				\
+					conf.app_data,				\
+					conf.app_data_len);				\
+					*app_data_rel = 0; ap_wait(); \
+			} \
+			REL_APP_DATA; \
 		}							\
-	} while (0)							\
+	} while (0)
 
 /* Cyber func=inline */
 static void ros2_out(hls_stream<uint8_t> &out,
