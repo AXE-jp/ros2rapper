@@ -571,6 +571,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 	do { \
 		*app_data_req = 0/*write dummy value to assert ap_vld*/; \
 		ap_wait(); \
+		ap_wait(); \
 		grant = *app_data_grant; \
 	} while (0)
 
@@ -598,7 +599,6 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 					conf.guid_prefix,				\
 					conf.app_data,				\
 					conf.app_data_len);				\
-					*app_data_rel = 0; ap_wait(); \
 			} \
 			REL_APP_DATA; \
 		}							\
