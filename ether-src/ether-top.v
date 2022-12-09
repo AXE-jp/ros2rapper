@@ -156,7 +156,7 @@ wire [7:0] ros2_ctrl = 8'b00000001;
 (* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] udp_rxbuf_addr;
 (* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_ce;
 (* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_we;
-(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] udp_rxbuf_d;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] udp_rxbuf_wdata;
 
 ros2_ether ros2 (
     .clk_int(clk_int),
@@ -194,7 +194,7 @@ ros2_ether ros2 (
     .udp_rxbuf_addr(udp_rxbuf_addr),
     .udp_rxbuf_ce(udp_rxbuf_ce),
     .udp_rxbuf_we(udp_rxbuf_we),
-    .udp_rxbuf_d(udp_rxbuf_d)
+    .udp_rxbuf_wdata(udp_rxbuf_wdata)
 );
 
 endmodule
@@ -240,7 +240,7 @@ module ros2_ether (
     output wire [5:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
-    output wire [31:0] udp_rxbuf_d
+    output wire [31:0] udp_rxbuf_wdata
 );
 
 wire tx_ip_hdr_valid;
@@ -421,9 +421,9 @@ end
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
 localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
 reg r_udp_rxbuf_grant;
-(* mark_debug="true" *) wire udp_rxbuf_ip_req, udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
-(* mark_debug="true" *) assign udp_rxbuf_ip_grant = ~r_udp_rxbuf_grant;
-(* mark_debug="true" *) assign udp_rxbuf_cpu_grant = r_udp_rxbuf_grant;
+wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
+assign udp_rxbuf_ip_grant = ~r_udp_rxbuf_grant;
+assign udp_rxbuf_cpu_grant = r_udp_rxbuf_grant;
 
 always @(posedge clk_int) begin
     if (rst_int) begin
@@ -451,7 +451,7 @@ ros2_i (
     .udp_rxbuf_address0(udp_rxbuf_addr),
     .udp_rxbuf_ce0(udp_rxbuf_ce),
     .udp_rxbuf_we0(udp_rxbuf_we),
-    .udp_rxbuf_d0(udp_rxbuf_d),
+    .udp_rxbuf_d0(udp_rxbuf_wdata),
     .conf_ip_addr({ip_addr[7:0],ip_addr[15:8],ip_addr[23:16],ip_addr[31:24]}),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
