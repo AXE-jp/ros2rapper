@@ -93,12 +93,12 @@ void udp_in(hls_stream<hls_uint<9>> &in,
 		case IN_STREAM_OFFSET_SRC_ADDR_1: src_addr[1] = data; break;
 		case IN_STREAM_OFFSET_SRC_ADDR_2: src_addr[2] = data; break;
 		case IN_STREAM_OFFSET_SRC_ADDR_3: src_addr[3] = data; break;
-		case IN_STREAM_OFFSET_TOT_LEN_0:  tot_len[0] = data; break;
-		case IN_STREAM_OFFSET_TOT_LEN_1:  tot_len[1] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT):   src_port[0] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT+1): src_port[1] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):   dst_port[0] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT+1): dst_port[1] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_0:  tot_len[1] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_1:  tot_len[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT):   src_port[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT+1): src_port[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):   dst_port[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT+1): dst_port[0] = data; break;
 		}
 
 		offset++;
