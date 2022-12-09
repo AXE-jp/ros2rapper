@@ -151,30 +151,12 @@ wire [7:0] ros2_topic_type_name_len = 8'd29;
 wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
 wire [7:0] ros2_app_data_len = 8'd35;
 
-reg [31:0] counter;
-reg [4:0] stop_counter;
-reg pattern;
-reg enable;
+wire [7:0] ros2_ctrl = 8'b00000001;
 
-wire [7:0] ros2_ctrl = {6'b0, pattern, enable};
-
-always @(posedge clk_int) begin
-    if (rst_int) begin
-        counter <= 0;
-        stop_counter <= 0;
-        pattern <= 0;
-        enable <= 1;
-    end else begin
-        if (stop_counter == 20) begin
-            enable <= 0;
-        end else if (counter == 32'd100000000) begin
-            counter <= 32'd0;
-            pattern <= ~pattern;
-            stop_counter <= stop_counter + 1;
-        end else
-            counter <= counter + 32'd1;
-    end
-end
+(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] udp_rxbuf_addr;
+(* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_ce;
+(* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_we;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] udp_rxbuf_d;
 
 ros2_ether ros2 (
     .clk_int(clk_int),
@@ -208,7 +190,11 @@ ros2_ether ros2 (
     .ros2_ctrl(ros2_ctrl),
     .ros2_app_data_cpu_req(1'b0),
     .ros2_app_data_cpu_rel(1'b0),
-    .ros2_udp_rxbuf_cpu_rel(1'b0)
+    .udp_rxbuf_cpu_rel(1'b0),
+    .udp_rxbuf_addr(udp_rxbuf_addr),
+    .udp_rxbuf_ce(udp_rxbuf_ce),
+    .udp_rxbuf_we(udp_rxbuf_we),
+    .udp_rxbuf_d(udp_rxbuf_d)
 );
 
 endmodule
@@ -249,8 +235,12 @@ module ros2_ether (
     input wire ros2_app_data_cpu_req,
     input wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
-    input wire ros2_udp_rxbuf_cpu_rel,
-    output wire ros2_udp_rxbuf_cpu_grant
+    input wire udp_rxbuf_cpu_rel,
+    output wire udp_rxbuf_cpu_grant,
+    output wire [5:0] udp_rxbuf_addr,
+    output wire udp_rxbuf_ce,
+    output wire udp_rxbuf_we,
+    output wire [31:0] udp_rxbuf_d
 );
 
 wire tx_ip_hdr_valid;
@@ -430,20 +420,20 @@ end
 // arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
 localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
-reg r_ros2_udp_rxbuf_grant;
-wire ros2_udp_rxbuf_ip_req, ros2_udp_rxbuf_ip_rel, ros2_udp_rxbuf_ip_grant;
-assign ros2_udp_rxbuf_ip_grant = ~r_ros2_udp_rxbuf_grant;
-assign ros2_udp_rxbuf_cpu_grant = r_ros2_udp_rxbuf_grant;
+reg r_udp_rxbuf_grant;
+(* mark_debug="true" *) wire udp_rxbuf_ip_req, udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
+(* mark_debug="true" *) assign udp_rxbuf_ip_grant = ~r_udp_rxbuf_grant;
+(* mark_debug="true" *) assign udp_rxbuf_cpu_grant = r_udp_rxbuf_grant;
 
 always @(posedge clk_int) begin
     if (rst_int) begin
-        r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
+        r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
     end else begin
-        case (r_ros2_udp_rxbuf_grant)
+        case (r_udp_rxbuf_grant)
             UDP_RXBUF_GRANT_IP:
-                if (ros2_udp_rxbuf_ip_rel) r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_CPU;
+                if (udp_rxbuf_ip_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_CPU;
             UDP_RXBUF_GRANT_CPU:
-                if (ros2_udp_rxbuf_cpu_rel) r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
+                if (udp_rxbuf_cpu_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
         endcase
     end
 end
@@ -458,6 +448,10 @@ ros2_i (
     .out_V_din(tx_fifo_din),
     .out_V_full_n(~tx_fifo_full),
     .out_V_write(tx_fifo_wr_en),
+    .udp_rxbuf_address0(udp_rxbuf_addr),
+    .udp_rxbuf_ce0(udp_rxbuf_ce),
+    .udp_rxbuf_we0(udp_rxbuf_we),
+    .udp_rxbuf_d0(udp_rxbuf_d),
     .conf_ip_addr({ip_addr[7:0],ip_addr[15:8],ip_addr[23:16],ip_addr[31:24]}),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
@@ -475,8 +469,8 @@ ros2_i (
     .app_data_req_ap_vld(ros2_app_data_ip_req),
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
     .app_data_grant({7'b0, ros2_app_data_ip_grant}),
-    .udp_rxbuf_rel_ap_vld(ros2_udp_rxbuf_ip_rel),
-    .udp_rxbuf_grant({7'b0, ros2_udp_rxbuf_ip_grant})
+    .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
+    .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant})
 );
 
 ip_tx
