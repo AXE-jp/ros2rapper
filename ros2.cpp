@@ -150,11 +150,14 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
 
 /* Cyber func=inline */
 static void ros2_in(hls_stream<uint8_t> &in,
+		    uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
 		    sedp_reader_id_t &sedp_reader_cnt,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
 		    app_endpoint app_reader_tbl[APP_READER_MAX],
-		    const config_t &conf)
+		    const config_t &conf,
+		    volatile uint8_t *udp_rxbuf_rel,
+		    volatile uint8_t *udp_rxbuf_grant)
 {
 	static bool ip_parity_error = false;
 	static bool udp_parity_error = false;
@@ -179,7 +182,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
 	ip_in(s1, s2, ip_parity_error);
-	udp_in(s2, s3, udp_parity_error);
+	udp_in(s2, s3, conf.cpu_udp_port, udp_rxbuf, udp_rxbuf_rel, udp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))
 		return;
@@ -748,18 +751,24 @@ static void ros2_out(hls_stream<uint8_t> &out,
 /* Cyber func=process_pipeline */
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
+	  uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
 	  const config_t &conf,
 	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
-	  volatile uint8_t *app_data_grant)
+	  volatile uint8_t *app_data_grant,
+	  volatile uint8_t *udp_rxbuf_rel,
+	  volatile uint8_t *udp_rxbuf_grant)
 {
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
+#pragma HLS interface ap_memory port=udp_rxbuf
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
 #pragma HLS interface ap_vld port=app_data_req register
 #pragma HLS interface ap_vld port=app_data_rel register
 #pragma HLS interface ap_none port=app_data_grant
+#pragma HLS interface ap_vld port=udp_rxbuf_rel register
+#pragma HLS interface ap_none port=udp_rxbuf_grant
 #pragma HLS interface ap_ctrl_none port=return
 
 	static sedp_reader_id_t sedp_reader_cnt;
@@ -777,11 +786,14 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	}
 
 	ros2_in(in,
+		udp_rxbuf,
 		sedp_reader_cnt,
 		sedp_reader_tbl,
 		app_reader_cnt,
 		app_reader_tbl,
-		conf);
+		conf,
+		udp_rxbuf_rel,
+		udp_rxbuf_grant);
 
 	ros2_out(out,
 		 sedp_reader_cnt,

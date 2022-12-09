@@ -29,6 +29,7 @@ typedef struct {
 		uint8_t node_name[MAX_NODE_NAME_LEN];
 		uint8_t node_name_len;
 		uint8_t node_udp_port[2];
+		uint8_t cpu_udp_port[2];
 		uint16_t port_num_seed;
 		uint8_t guid_prefix[12];
 		uint8_t topic_name[MAX_TOPIC_NAME_LEN];
@@ -41,7 +42,8 @@ typedef struct {
 } config_t;
 
 #define CTRL_ENABLE 0x1
-#define CTRL_PINGPONG 0x2
+
+#define UDP_RXBUF_DEPTH 64
 
 void ros2(
 		hls_stream<uint8_t> &in,
@@ -49,7 +51,9 @@ void ros2(
 		config_t &conf,
 		volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
-	  volatile uint8_t *app_data_grant
+	  volatile uint8_t *app_data_grant,
+	  volatile uint8_t *udp_rxbuf_rel,
+	  volatile uint8_t *udp_rxbuf_grant
 );
 
 #endif // !ROS2_HPP

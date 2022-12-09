@@ -36,45 +36,133 @@
 // checksum(sum, 9, PSEUDO_HDR_PROTOCOL);
 // printf("0x%04x\n", sum);
 
+#define IN_STREAM_OFFSET_SRC_ADDR_0 0
+#define IN_STREAM_OFFSET_SRC_ADDR_1 1
+#define IN_STREAM_OFFSET_SRC_ADDR_2 2
+#define IN_STREAM_OFFSET_SRC_ADDR_3 3
+#define IN_STREAM_OFFSET_TOT_LEN_0  4
+#define IN_STREAM_OFFSET_TOT_LEN_1  5
 #define IN_STREAM_HDR_SIZE	6 // src_addr[4] (4 bytes) + tot_len (2 bytes)
 
+#define UDP_IN_STATE_READ_HEADER  0
+#define UDP_IN_STATE_OUT_RTPS     1
+#define UDP_IN_STATE_OUT_UDP      2
+#define UDP_IN_STATE_DISCARD      3
+
+#define QUAD_UINT8(a,b,c,d) ((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
+
 /* Cyber func=inline */
-void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
+void udp_in(hls_stream<hls_uint<9>> &in,
+	    hls_stream<hls_uint<9>> &out,
+	    const uint8_t cpu_udp_port[2],
+	    uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
+	    volatile uint8_t *udp_rxbuf_rel,
+	    volatile uint8_t *udp_rxbuf_grant,
 	    bool &parity_error)
 {
 #pragma HLS inline
-	static hls_uint<1> state;
+	static hls_uint<2> state;
 	static uint16_t offset;
+	static uint16_t ram_offset;
 	static uint16_t sum = PRE_CHECKSUM;
+	static uint8_t src_addr[4];
+	static uint8_t src_port[2];
+	static uint8_t dst_port[2];
+	static uint8_t tot_len[2];
+	static hls_uint<2> data_pos;
+	static uint8_t data_buf[4];
 
 	hls_uint<9> x;
 
-	if (!in.read_nb(x))
-		return;
+	uint8_t data;
+	bool end;
 
-	uint8_t data = x & 0xff;
-	bool end = x & 0x100;
+#define READ_AND_CHECKSUM do { \
+	if (!in.read_nb(x)) \
+		return; \
+	data = x & 0xff; \
+	end = x & 0x100; \
+} while (0)
 
 	switch (state) {
-	case 0:
-		checksum(sum, offset, data);
+	case UDP_IN_STATE_READ_HEADER:
+		READ_AND_CHECKSUM;
+
+		switch (offset) {
+		case IN_STREAM_OFFSET_SRC_ADDR_0: src_addr[0] = data; break;
+		case IN_STREAM_OFFSET_SRC_ADDR_1: src_addr[1] = data; break;
+		case IN_STREAM_OFFSET_SRC_ADDR_2: src_addr[2] = data; break;
+		case IN_STREAM_OFFSET_SRC_ADDR_3: src_addr[3] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_0:  tot_len[0] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_1:  tot_len[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT):   src_port[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT+1): src_port[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):   dst_port[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT+1): dst_port[1] = data; break;
+		}
+
 		offset++;
-		if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE)
-			state = 1;
+		if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
+			if (dst_port[0] == cpu_udp_port[0] && dst_port[1] == cpu_udp_port[1]) {
+				if (*udp_rxbuf_grant == 1) {
+					state = UDP_IN_STATE_OUT_UDP;
+				} else {
+					state = UDP_IN_STATE_DISCARD;
+				}
+			} else {
+				state = UDP_IN_STATE_OUT_RTPS;
+			}
+		}
 		break;
-	case 1:
-		checksum(sum, offset, data);
+	case UDP_IN_STATE_OUT_RTPS:
+		READ_AND_CHECKSUM;
+
 		out.write(x);
 		offset++;
+		break;
+	case UDP_IN_STATE_OUT_UDP:
+		switch (ram_offset) {
+		case 0:
+			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_addr[0], src_addr[1], src_addr[2], src_addr[3]);
+			break;
+		case 1:
+			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_port[0], src_port[1], tot_len[1], tot_len[1]);
+			break;
+		default:
+			READ_AND_CHECKSUM;
+
+			data_buf[data_pos] = data;
+			if (data_pos == 3 || end)
+				udp_rxbuf[ram_offset++] = QUAD_UINT8(data_buf[0], data_buf[1], data_buf[2], data_buf[3]);
+			data_pos++;
+
+			offset++;
+			break;
+		}
+		break;
+	case UDP_IN_STATE_DISCARD:
+		READ_AND_CHECKSUM;
+
+		offset++;
+		break;
 	}
 
 	if (end) {
 		if (sum != 0xffff)
 			parity_error = true;
 
-		state = 0;
+		if (state == UDP_IN_STATE_OUT_UDP)
+			*udp_rxbuf_rel = 0; /*write dummy value to assert ap_vld*/
+
 		offset = 0;
+		ram_offset = 0;
+		data_buf[0] = 0;
+		data_buf[1] = 0;
+		data_buf[2] = 0;
+		data_buf[3] = 0;
+		data_pos = 0;
 		sum = PRE_CHECKSUM;
+		state = UDP_IN_STATE_READ_HEADER;
 	}
 }
 

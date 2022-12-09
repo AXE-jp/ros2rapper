@@ -37,6 +37,9 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
 	hls_uint<9> x;
 
+	if (out.full())
+		return;
+
 	if (!in.read_nb(x))
 		return;
 
@@ -322,6 +325,9 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
   bool end;
 
   tick_pendings(pendings);
+
+  if (out.full())
+    return;
 
   switch (state) {
   case IPIN_STATE_HEADER:

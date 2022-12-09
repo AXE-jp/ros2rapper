@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include "hls.hpp"
+#include "ros2.hpp"
 
 #define UDP_HDR_SIZE	8
 
@@ -40,7 +41,12 @@
 #define PSEUDO_HDR_PROTOCOL	0x11 // UDP
 
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
+	    const uint8_t cpu_udp_port[2],
+	    uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
+	    volatile uint8_t *udp_rxbuf_rel,
+	    volatile uint8_t *udp_rxbuf_grant,
 	    bool &parity_error);
+
 void udp_out(const uint8_t src_addr[4],
 	     const uint8_t src_port[2],
 	     const uint8_t dst_addr[4],
