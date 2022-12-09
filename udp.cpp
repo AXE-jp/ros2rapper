@@ -124,10 +124,10 @@ void udp_in(hls_stream<hls_uint<9>> &in,
 		switch (ram_offset) {
 		case 0:
 			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_addr[0], src_addr[1], src_addr[2], src_addr[3]);
-			break;
+			return;
 		case 1:
 			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_port[0], src_port[1], tot_len[1], tot_len[1]);
-			break;
+			return;
 		default:
 			READ_AND_CHECKSUM;
 
