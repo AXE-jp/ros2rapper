@@ -140,6 +140,7 @@ wire [31:0] subnet_mask      = {8'd255, 8'd255, 8'd255, 8'd0};
 wire [255:0] ros2_node_name = "reklat";
 wire [7:0] ros2_node_name_len = 8'd7;
 wire [15:0] ros2_node_udp_port = 16'd52000;
+wire [15:0] ros2_cpu_udp_port = 16'd1234;
 wire [15:0] ros2_port_num_seed = 16'd7400;
 wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
 wire [255:0] ros2_topic_name = "rettahc/tr";
@@ -195,6 +196,7 @@ ros2_ether ros2 (
     .ros2_node_name(ros2_node_name),
     .ros2_node_name_len(ros2_node_name_len),
     .ros2_node_udp_port(ros2_node_udp_port),
+    .ros2_cpu_udp_port(ros2_cpu_udp_port),
     .ros2_port_num_seed(ros2_port_num_seed),
     .ros2_guid_prefix(ros2_guid_prefix),
     .ros2_topic_name(ros2_topic_name),
@@ -234,6 +236,7 @@ module ros2_ether (
     input wire [255:0] ros2_node_name,
     input wire [7:0] ros2_node_name_len,
     input wire [15:0] ros2_node_udp_port,
+    input wire [15:0] ros2_cpu_udp_port,
     input wire [15:0] ros2_port_num_seed,
     input wire [95:0] ros2_guid_prefix,
     input wire [255:0] ros2_topic_name,
@@ -419,7 +422,7 @@ always @(posedge clk_int) begin
             APP_DATA_GRANT_CPU:
                 if (ros2_app_data_cpu_rel) r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
             default:
-                r_ros2_grant <= APP_DATA_GRANT_NONE;
+                r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
         endcase
     end
 end
@@ -437,10 +440,10 @@ always @(posedge clk_int) begin
         r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
     end else begin
         case (r_ros2_udp_rxbuf_grant)
-            GRANT_IP:
-                if (ros2_udp_rxbuf_ip_rel) r_ros2_udp_rxbuf_grant <= GRANT_CPU;
-            GRANT_CPU:
-                if (ros2_udp_rxbuf_cpu_rel) r_ros2_udp_rxbuf_grant <= GRANT_IP;
+            UDP_RXBUF_GRANT_IP:
+                if (ros2_udp_rxbuf_ip_rel) r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_CPU;
+            UDP_RXBUF_GRANT_CPU:
+                if (ros2_udp_rxbuf_cpu_rel) r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
         endcase
     end
 end
@@ -459,6 +462,7 @@ ros2_i (
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port(ros2_node_udp_port),
+    .conf_cpu_udp_port(ros2_cpu_udp_port),
     .conf_port_num_seed(ros2_port_num_seed),
     .conf_guid_prefix(ros2_guid_prefix),
     .conf_topic_name(ros2_topic_name),
