@@ -204,8 +204,9 @@ ros2_ether ros2 (
     .ros2_app_data(ros2_app_data),
     .ros2_app_data_len(ros2_app_data_len),
     .ros2_ctrl(ros2_ctrl),
-    .ros2_cpu_req(1'b0),
-    .ros2_cpu_rel(1'b0)
+    .ros2_app_data_cpu_req(1'b0),
+    .ros2_app_data_cpu_rel(1'b0),
+    .ros2_udp_rxbuf_cpu_rel(1'b0)
 );
 
 endmodule
@@ -242,9 +243,11 @@ module ros2_ether (
     input wire [511:0] ros2_app_data,
     input wire [7:0] ros2_app_data_len,
     input wire [7:0] ros2_ctrl,
-    input wire ros2_cpu_req,
-    input wire ros2_cpu_rel,
-    output wire ros2_cpu_grant
+    input wire ros2_app_data_cpu_req,
+    input wire ros2_app_data_cpu_rel,
+    output wire ros2_app_data_cpu_grant,
+    input wire ros2_udp_rxbuf_cpu_rel,
+    output wire ros2_udp_rxbuf_cpu_grant
 );
 
 wire tx_ip_hdr_valid;
@@ -390,33 +393,54 @@ rx_fifo (
 );
 
 // arbiter for sharing app_data between CPU and ROS2rapper IP
-localparam GRANT_NONE = 2'b00;
-localparam GRANT_IP   = 2'b01;
-localparam GRANT_CPU  = 2'b10;
-reg [1:0] r_ros2_grant;
-wire ros2_ip_req, ros2_ip_rel, ros2_ip_grant;
-assign ros2_ip_grant = r_ros2_grant[0];
-assign ros2_cpu_grant = r_ros2_grant[1];
+localparam APP_DATA_GRANT_NONE = 2'b00;
+localparam APP_DATA_GRANT_IP   = 2'b01;
+localparam APP_DATA_GRANT_CPU  = 2'b10;
+reg [1:0] r_ros2_app_data_grant;
+wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
+assign ros2_app_data_ip_grant = r_ros2_app_data_grant[0];
+assign ros2_app_data_cpu_grant = r_ros2_app_data_grant[1];
 
 always @(posedge clk_int) begin
     if (rst_int) begin
-        r_ros2_grant <= GRANT_NONE;
+        r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
-        case (r_ros2_grant)
-            GRANT_NONE: begin
-                case ({ros2_ip_req, ros2_cpu_req})
-                    4'b00: r_ros2_grant <= GRANT_NONE;
-                    4'b01: r_ros2_grant <= GRANT_CPU;
-                    4'b10: r_ros2_grant <= GRANT_IP;
-                    4'b11: r_ros2_grant <= GRANT_IP;
+        case (r_ros2_app_data_grant)
+            APP_DATA_GRANT_NONE: begin
+                case ({ros2_app_data_ip_req, ros2_app_data_cpu_req})
+                    4'b00: r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+                    4'b01: r_ros2_app_data_grant <= APP_DATA_GRANT_CPU;
+                    4'b10: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
+                    4'b11: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
                 endcase
             end
-            GRANT_IP:
-                if (ros2_ip_rel) r_ros2_grant <= GRANT_NONE;
-            GRANT_CPU:
-                if (ros2_cpu_rel) r_ros2_grant <= GRANT_NONE;
+            APP_DATA_GRANT_IP:
+                if (ros2_app_data_ip_rel) r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+            APP_DATA_GRANT_CPU:
+                if (ros2_app_data_cpu_rel) r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
             default:
-                r_ros2_grant <= GRANT_NONE;
+                r_ros2_grant <= APP_DATA_GRANT_NONE;
+        endcase
+    end
+end
+
+// arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
+localparam UDP_RXBUF_GRANT_IP   = 1'b0;
+localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
+reg r_ros2_udp_rxbuf_grant;
+wire ros2_udp_rxbuf_ip_req, ros2_udp_rxbuf_ip_rel, ros2_udp_rxbuf_ip_grant;
+assign ros2_udp_rxbuf_ip_grant = ~r_ros2_udp_rxbuf_grant;
+assign ros2_udp_rxbuf_cpu_grant = r_ros2_udp_rxbuf_grant;
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        r_ros2_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
+    end else begin
+        case (r_ros2_udp_rxbuf_grant)
+            GRANT_IP:
+                if (ros2_udp_rxbuf_ip_rel) r_ros2_udp_rxbuf_grant <= GRANT_CPU;
+            GRANT_CPU:
+                if (ros2_udp_rxbuf_cpu_rel) r_ros2_udp_rxbuf_grant <= GRANT_IP;
         endcase
     end
 end
@@ -444,9 +468,11 @@ ros2_i (
     .conf_app_data(ros2_app_data),
     .conf_app_data_len(ros2_app_data_len),
     .conf_ctrl(ros2_ctrl),
-    .app_data_req_ap_vld(ros2_ip_req),
-    .app_data_rel_ap_vld(ros2_ip_rel),
-    .app_data_grant({7'b0, ros2_ip_grant})
+    .app_data_req_ap_vld(ros2_app_data_ip_req),
+    .app_data_rel_ap_vld(ros2_app_data_ip_rel),
+    .app_data_grant({7'b0, ros2_app_data_ip_grant}),
+    .udp_rxbuf_rel_ap_vld(ros2_udp_rxbuf_ip_rel),
+    .udp_rxbuf_grant({7'b0, ros2_udp_rxbuf_ip_grant})
 );
 
 ip_tx
