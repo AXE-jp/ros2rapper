@@ -36,6 +36,6 @@ set_part xc7a100tcsg324-1
 create_clock -period 100MHz
 
 csynth_design
-export_design -format ip_catalog
+#export_design -format ip_catalog
 
 exit
