@@ -195,6 +195,8 @@ ros2_ether ros2 (
     .udp_rxbuf_ce(udp_rxbuf_ce),
     .udp_rxbuf_we(udp_rxbuf_we),
     .udp_rxbuf_wdata(udp_rxbuf_wdata)
+    .udp_txbuf_cpu_rel(1'b0),
+    .udp_txbuf_rdata(32'b0)
 );
 
 endmodule
@@ -237,10 +239,14 @@ module ros2_ether (
     output wire ros2_app_data_cpu_grant,
     input wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
-    output wire [5:0] udp_rxbuf_addr,
+    output wire [5/*FIXME: magic number*/:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
-    output wire [31:0] udp_rxbuf_wdata
+    output wire [31:0] udp_rxbuf_wdata,
+    input wire udp_txbuf_cpu_rel,
+    output wire udp_txbuf_cpu_grant,
+    output wire [5/*FIXME: magic number*/:0] udp_txbuf_addr,
+    input wire [31:0] udp_txbuf_rdata
 );
 
 wire tx_ip_hdr_valid;
@@ -438,6 +444,27 @@ always @(posedge clk_int) begin
     end
 end
 
+// arbiter for sharing UDP TX buffer between CPU and ROS2rapper IP
+localparam UDP_TXBUF_GRANT_IP   = 1'b0;
+localparam UDP_TXBUF_GRANT_CPU  = 1'b1;
+reg r_udp_txbuf_grant;
+wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
+assign udp_txbuf_ip_grant = ~r_udp_txbuf_grant;
+assign udp_txbuf_cpu_grant = r_udp_txbuf_grant;
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
+    end else begin
+        case (r_udp_txbuf_grant)
+            UDP_TXBUF_GRANT_IP:
+                if (udp_txbuf_ip_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
+            UDP_TXBUF_GRANT_CPU:
+                if (udp_txbuf_cpu_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_IP;
+        endcase
+    end
+end
+
 ros2
 ros2_i (
     .ap_clk(clk_int),
@@ -452,6 +479,8 @@ ros2_i (
     .udp_rxbuf_ce0(udp_rxbuf_ce),
     .udp_rxbuf_we0(udp_rxbuf_we),
     .udp_rxbuf_d0(udp_rxbuf_wdata),
+    .udp_txbuf_address0(udp_txbuf_addr),
+    .udp_txbuf_d0(udp_txbuf_rdata),
     .conf_ip_addr({ip_addr[7:0],ip_addr[15:8],ip_addr[23:16],ip_addr[31:24]}),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
@@ -471,6 +500,8 @@ ros2_i (
     .app_data_grant({7'b0, ros2_app_data_ip_grant}),
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
     .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant})
+    .udp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
+    .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
 );
 
 ip_tx
