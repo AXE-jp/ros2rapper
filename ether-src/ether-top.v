@@ -480,7 +480,7 @@ ros2_i (
     .udp_rxbuf_we0(udp_rxbuf_we),
     .udp_rxbuf_d0(udp_rxbuf_wdata),
     .udp_txbuf_address0(udp_txbuf_addr),
-    .udp_txbuf_d0(udp_txbuf_rdata),
+    .udp_txbuf_q0(udp_txbuf_rdata),
     .conf_ip_addr({ip_addr[7:0],ip_addr[15:8],ip_addr[23:16],ip_addr[31:24]}),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
