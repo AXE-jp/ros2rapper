@@ -194,7 +194,7 @@ ros2_ether ros2 (
     .udp_rxbuf_addr(udp_rxbuf_addr),
     .udp_rxbuf_ce(udp_rxbuf_ce),
     .udp_rxbuf_we(udp_rxbuf_we),
-    .udp_rxbuf_wdata(udp_rxbuf_wdata)
+    .udp_rxbuf_wdata(udp_rxbuf_wdata),
     .udp_txbuf_cpu_rel(1'b0),
     .udp_txbuf_rdata(32'b0)
 );
@@ -499,7 +499,7 @@ ros2_i (
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
     .app_data_grant({7'b0, ros2_app_data_ip_grant}),
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
-    .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant})
+    .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
     .udp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
 );
