@@ -73,7 +73,7 @@
 	(IP_HDR_SIZE + MAX_UDP_RAW_OUT_UDP_PKT_LEN)
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define TX_BUF_SIZE	(MAX(MAX(MAX(MAX(SPDP_WRITER_IP_PKT_LEN, SEDP_WRITER_IP_PKT_LEN), SEDP_HEARTBEAT_IP_PKT_LEN), SEDP_ACKNACK_IP_PKT_LEN), APP_WRITER_IP_PKT_LEN))
+#define TX_BUF_SIZE	(MAX(MAX(MAX(MAX(MAX(MAX_UDP_RAW_OUT_IP_PKT_LEN, SPDP_WRITER_IP_PKT_LEN), SEDP_WRITER_IP_PKT_LEN), SEDP_HEARTBEAT_IP_PKT_LEN), SEDP_ACKNACK_IP_PKT_LEN), APP_WRITER_IP_PKT_LEN))
 
 class tx_buf {
 public:
@@ -721,15 +721,15 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
-	uint8_t udp_tx_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
-	uint8_t udp_tx_dst_addr[4]/* Cyber array=REG */;
-	uint8_t udp_tx_dst_port[2]/* Cyber array=REG */;
-	uint8_t udp_tx_src_port[2]/* Cyber array=REG */;
+	static uint8_t udp_tx_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
+	static uint8_t udp_tx_dst_addr[4]/* Cyber array=REG */;
+	static uint8_t udp_tx_dst_port[2]/* Cyber array=REG */;
+	static uint8_t udp_tx_src_port[2]/* Cyber array=REG */;
 #pragma HLS array_partition variable=udp_tx_payload complete dim=0
 #pragma HLS array_partition variable=udp_tx_dst_addr complete dim=0
 #pragma HLS array_partition variable=udp_tx_dst_port complete dim=0
 #pragma HLS array_partition variable=udp_tx_src_port complete dim=0
-	uint16_t udp_tx_payload_len;
+	static uint16_t udp_tx_payload_len;
 	uint32_t ram_read_buf;
 
 #define UDP_TXBUF_COPY_INIT    0
@@ -894,15 +894,15 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
 #pragma HLS interface ap_memory port=udp_rxbuf
-#pragma HLS interface ap_memory port=udp_txbuf
+#pragma HLS interface ap_memory port=udp_txbuf storage_type=ram_1p
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
-#pragma HLS interface ap_vld port=app_data_req register
-#pragma HLS interface ap_vld port=app_data_rel register
+#pragma HLS interface ap_vld port=app_data_req
+#pragma HLS interface ap_vld port=app_data_rel
 #pragma HLS interface ap_none port=app_data_grant
-#pragma HLS interface ap_vld port=udp_rxbuf_rel register
+#pragma HLS interface ap_vld port=udp_rxbuf_rel
 #pragma HLS interface ap_none port=udp_rxbuf_grant
-#pragma HLS interface ap_vld port=udp_txbuf_rel register
+#pragma HLS interface ap_vld port=udp_txbuf_rel
 #pragma HLS interface ap_none port=udp_txbuf_grant
 #pragma HLS interface ap_ctrl_none port=return
 
