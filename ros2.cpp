@@ -65,6 +65,12 @@
 #define APP_WRITER_IP_PKT_LEN				\
 	(IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN)
 
+#define MAX_UDP_RAW_OUT_PAYLOAD_LEN \
+	((UDP_TXBUF_DEPTH - 3) * 4)
+#define MAX_UDP_RAW_OUT_UDP_PKT_LEN \
+	(UDP_HDR_SIZE + MAX_UDP_RAW_OUT_PAYLOAD_LEN)
+#define MAX_UDP_RAW_OUT_IP_PKT_LEN \
+	(IP_HDR_SIZE + MAX_UDP_RAW_OUT_UDP_PKT_LEN)
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define TX_BUF_SIZE	(MAX(MAX(MAX(MAX(SPDP_WRITER_IP_PKT_LEN, SEDP_WRITER_IP_PKT_LEN), SEDP_HEARTBEAT_IP_PKT_LEN), SEDP_ACKNACK_IP_PKT_LEN), APP_WRITER_IP_PKT_LEN))
@@ -448,6 +454,37 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 	tx_buf.len = APP_WRITER_IP_PKT_LEN;
 }
 
+/* Cyber func=process */
+static void udp_raw_out(const uint8_t dst_addr[4],
+			   const uint8_t dst_port[2],
+			   tx_buf &tx_buf,
+			   uint8_t udp_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN],
+			   const uint8_t src_addr[4],
+			   const uint8_t src_port[2],
+			   uint8_t udp_payload_len)
+{
+	uint8_t udp_pkt[MAX_UDP_RAW_OUT_UDP_PKT_LEN]/* Cyber array=REG */;
+#pragma HLS array_partition variable=udp_pkt complete dim=0
+
+	udp_out(src_addr,
+		src_port,
+		dst_addr,
+		dst_port,
+		udp_payload,
+		MAX_UDP_RAW_OUT_PAYLOAD_LEN /*use constant length for loop unroll*/,
+		udp_pkt);
+
+	ip_out(src_addr,
+	       dst_addr,
+	       IP_HDR_TTL_UNICAST,
+	       udp_pkt,
+	       MAX_UDP_RAW_OUT_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	tx_buf.head = 0;
+	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len /*shrink*/;
+}
+
 #define CLOCK_COUNT_CYCLE	(TARGET_CLOCK_FREQ / 8)
 
 #define SPDP_WRITER_CYCLE		0
@@ -607,8 +644,21 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		}							\
 	} while (0)
 
+#define UDP_RAW_OUT()					\
+	do {								\
+		udp_raw_out(				\
+			udp_tx_dst_addr,					\
+			udp_tx_dst_port,					\
+			tx_buf,					\
+			udp_tx_payload,					\
+			conf.ip_addr,		\
+			udp_tx_src_port,					\
+			udp_tx_payload_len);		\
+	} while (0)
+
 /* Cyber func=inline */
 static void ros2_out(hls_stream<uint8_t> &out,
+		     uint32_t udp_txbuf[UDP_TXBUF_DEPTH],
 		     sedp_reader_id_t &sedp_reader_cnt,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
@@ -616,7 +666,9 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     const config_t &conf,
 		     volatile uint8_t *app_data_req,
 		     volatile uint8_t *app_data_rel,
-		     volatile uint8_t *app_data_grant)
+		     volatile uint8_t *app_data_grant,
+		     volatile uint8_t *udp_txbuf_rel,
+		     volatile uint8_t *udp_txbuf_grant)
 {
 #pragma HLS inline
 	static const uint8_t pub_writer_entity_id[4]/* Cyber array=REG */ =
@@ -669,6 +721,24 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
+	uint8_t udp_tx_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
+	uint8_t udp_tx_dst_addr[4]/* Cyber array=REG */;
+	uint8_t udp_tx_dst_port[2]/* Cyber array=REG */;
+	uint8_t udp_tx_src_port[2]/* Cyber array=REG */;
+#pragma HLS array_partition variable=udp_tx_payload complete dim=0
+#pragma HLS array_partition variable=udp_tx_dst_addr complete dim=0
+#pragma HLS array_partition variable=udp_tx_dst_port complete dim=0
+#pragma HLS array_partition variable=udp_tx_src_port complete dim=0
+	uint16_t udp_tx_payload_len;
+	uint32_t ram_read_buf;
+
+#define UDP_TXBUF_COPY_INIT    0
+#define UDP_TXBUF_COPY_RUNNING 1
+#define UDP_TXBUF_COPY_DONE    2
+	static hls_uint<2> udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+	static uint16_t udp_txbuf_read_offset;
+	static uint16_t udp_txpayload_write_offset;
+
 	static uint32_t clk_cnt;
 
 	uint8_t grant;
@@ -678,11 +748,11 @@ static void ros2_out(hls_stream<uint8_t> &out,
 			SPDP_WRITER_OUT();
 		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(0)) {
 			SEDP_PUB_WRITER_OUT(0);
-		}else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(1)) {
+		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(1)) {
 			SEDP_PUB_WRITER_OUT(1);
-		}else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(2)) {
+		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(2)) {
 			SEDP_PUB_WRITER_OUT(2);
-		}else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(3)) {
+		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(3)) {
 			SEDP_PUB_WRITER_OUT(3);
 		} else if (clk_cnt == SEDP_SUB_WRITER_CYCLE(0)) {
 			SEDP_SUB_WRITER_OUT(0);
@@ -732,6 +802,65 @@ static void ros2_out(hls_stream<uint8_t> &out,
 			APP_WRITER_OUT(2);
 		} else if (clk_cnt == APP_WRITER_CYCLE(3)) {
 			APP_WRITER_OUT(3);
+		} else if (APP_WRITER_CYCLE(4) /*FIXME: for test, define cycle*/) {
+			if (udp_txbuf_copy_status == UDP_TXBUF_COPY_DONE) {
+				UDP_RAW_OUT();
+				*udp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
+				ap_wait(); \
+				udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+			}
+		}
+
+		switch (udp_txbuf_copy_status) {
+		case UDP_TXBUF_COPY_INIT:
+			if (*udp_txbuf_grant == 1) {
+				udp_txbuf_read_offset = 0;
+				udp_txpayload_write_offset = 0;
+				udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
+			}
+			break;
+		case UDP_TXBUF_COPY_RUNNING:
+			switch (udp_txbuf_read_offset) {
+			case 0:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_dst_addr[0] = ram_read_buf & 0xff;
+				udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
+				udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
+				udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
+				break;
+			case 1:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_dst_port[0] = ram_read_buf & 0xff;
+				udp_tx_dst_port[1] = (ram_read_buf >> 8) & 0xff;
+				udp_tx_src_port[0] = (ram_read_buf >> 16) & 0xff;
+				udp_tx_src_port[1] = (ram_read_buf >> 24) & 0xff;
+				break;
+			case 2:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_payload_len = ram_read_buf & 0xff;
+				udp_tx_payload_len |= (ram_read_buf >> 16) & 0xff;
+				// padding 2byte
+				break;
+			default:
+				if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
+					udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
+				} else {
+					ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+					udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+					udp_txpayload_write_offset += 4;
+				}
+				break;
+			}
+			udp_txbuf_read_offset++;
+			break;
+		case UDP_TXBUF_COPY_DONE:
+			break;
+		default:
+			udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+			break;
 		}
 	}
 
@@ -752,16 +881,20 @@ static void ros2_out(hls_stream<uint8_t> &out,
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
+	  uint32_t udp_txbuf[UDP_TXBUF_DEPTH],
 	  const config_t &conf,
 	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
 	  volatile uint8_t *app_data_grant,
 	  volatile uint8_t *udp_rxbuf_rel,
-	  volatile uint8_t *udp_rxbuf_grant)
+	  volatile uint8_t *udp_rxbuf_grant,
+	  volatile uint8_t *udp_txbuf_rel,
+	  volatile uint8_t *udp_txbuf_grant)
 {
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
 #pragma HLS interface ap_memory port=udp_rxbuf
+#pragma HLS interface ap_memory port=udp_txbuf
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
 #pragma HLS interface ap_vld port=app_data_req register
@@ -769,6 +902,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface ap_none port=app_data_grant
 #pragma HLS interface ap_vld port=udp_rxbuf_rel register
 #pragma HLS interface ap_none port=udp_rxbuf_grant
+#pragma HLS interface ap_vld port=udp_txbuf_rel register
+#pragma HLS interface ap_none port=udp_txbuf_grant
 #pragma HLS interface ap_ctrl_none port=return
 
 	static sedp_reader_id_t sedp_reader_cnt;
@@ -796,6 +931,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		udp_rxbuf_grant);
 
 	ros2_out(out,
+		 udp_txbuf,
 		 sedp_reader_cnt,
 		 sedp_reader_tbl,
 		 app_reader_cnt,
@@ -803,5 +939,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 conf,
 		 app_data_req,
 		 app_data_rel,
-		 app_data_grant);
+		 app_data_grant,
+		 udp_txbuf_rel,
+		 udp_txbuf_grant);
 }

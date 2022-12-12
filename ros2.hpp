@@ -44,6 +44,7 @@ typedef struct {
 #define CTRL_ENABLE 0x1
 
 #define UDP_RXBUF_DEPTH 64
+#define UDP_TXBUF_DEPTH 64
 
 void ros2(
 		hls_stream<uint8_t> &in,
