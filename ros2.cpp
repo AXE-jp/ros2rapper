@@ -756,6 +756,58 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	uint8_t grant;
 
 	if (conf.ctrl & CTRL_ENABLE) {
+		switch (udp_txbuf_copy_status) {
+		case UDP_TXBUF_COPY_INIT:
+			if (*udp_txbuf_grant == 1) {
+				udp_txbuf_read_offset = 0;
+				udp_txpayload_write_offset = 0;
+				udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
+			}
+			break;
+		case UDP_TXBUF_COPY_RUNNING:
+			switch (udp_txbuf_read_offset) {
+			case 0:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_dst_addr[0] = ram_read_buf & 0xff;
+				udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
+				udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
+				udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
+				break;
+			case 1:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_dst_port[0] = ram_read_buf & 0xff;
+				udp_tx_dst_port[1] = (ram_read_buf >> 8) & 0xff;
+				udp_tx_src_port[0] = (ram_read_buf >> 16) & 0xff;
+				udp_tx_src_port[1] = (ram_read_buf >> 24) & 0xff;
+				break;
+			case 2:
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_payload_len = ram_read_buf & 0xff;
+				udp_tx_payload_len |= (ram_read_buf >> 16) & 0xff;
+				// padding 2byte
+				break;
+			default:
+				if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
+					udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
+				} else {
+					ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+					udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+					udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+					udp_txpayload_write_offset += 4;
+				}
+				break;
+			}
+			udp_txbuf_read_offset++;
+			break;
+		case UDP_TXBUF_COPY_DONE:
+			break;
+		default:
+			udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+			break;
+		}
+
 		if (clk_cnt == SPDP_WRITER_CYCLE) {
 			SPDP_WRITER_OUT();
 		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(0)) {
@@ -818,61 +870,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 			if (udp_txbuf_copy_status == UDP_TXBUF_COPY_DONE) {
 				UDP_RAW_OUT();
 				*udp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
-				ap_wait(); \
 				udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
 			}
-		}
-
-		switch (udp_txbuf_copy_status) {
-		case UDP_TXBUF_COPY_INIT:
-			if (*udp_txbuf_grant == 1) {
-				udp_txbuf_read_offset = 0;
-				udp_txpayload_write_offset = 0;
-				udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
-			}
-			break;
-		case UDP_TXBUF_COPY_RUNNING:
-			switch (udp_txbuf_read_offset) {
-			case 0:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_dst_addr[0] = ram_read_buf & 0xff;
-				udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
-				udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
-				udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
-				break;
-			case 1:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_dst_port[0] = ram_read_buf & 0xff;
-				udp_tx_dst_port[1] = (ram_read_buf >> 8) & 0xff;
-				udp_tx_src_port[0] = (ram_read_buf >> 16) & 0xff;
-				udp_tx_src_port[1] = (ram_read_buf >> 24) & 0xff;
-				break;
-			case 2:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_payload_len = ram_read_buf & 0xff;
-				udp_tx_payload_len |= (ram_read_buf >> 16) & 0xff;
-				// padding 2byte
-				break;
-			default:
-				if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
-					udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
-				} else {
-					ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-					udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
-					udp_txpayload_write_offset += 4;
-				}
-				break;
-			}
-			udp_txbuf_read_offset++;
-			break;
-		case UDP_TXBUF_COPY_DONE:
-			break;
-		default:
-			udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
-			break;
 		}
 	}
 
