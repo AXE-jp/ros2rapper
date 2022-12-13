@@ -97,7 +97,8 @@ module eth_mac_mii #
 wire [3:0]  mac_mii_rxd;
 wire        mac_mii_rx_dv;
 wire        mac_mii_rx_er;
-wire [3:0]  mac_mii_txd;
+wire [7:0]  mac_mii_txd_full;
+wire [3:0]  mac_mii_txd = mac_mii_txd_full[3:0];
 wire        mac_mii_tx_en;
 wire        mac_mii_tx_er;
 
@@ -150,7 +151,7 @@ eth_mac_1g_inst (
     .gmii_rxd({mac_mii_rxd, mac_mii_rxd}),
     .gmii_rx_dv(mac_mii_rx_dv),
     .gmii_rx_er(mac_mii_rx_er),
-    .gmii_txd({4'b0, mac_mii_txd}),
+    .gmii_txd(mac_mii_txd_full),
     .gmii_tx_en(mac_mii_tx_en),
     .gmii_tx_er(mac_mii_tx_er),
     .tx_ptp_ts(96'b0),
