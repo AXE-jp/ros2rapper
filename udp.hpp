@@ -52,7 +52,8 @@ void udp_out(const uint8_t src_addr[4],
 	     const uint8_t dst_addr[4],
 	     const uint8_t dst_port[2],
 	     const uint8_t udp_data[],
-	     const uint16_t udp_data_len,
+	     const uint16_t udp_data_process_len,
+	     const uint16_t udp_data_real_len,
 	     uint8_t buf[]);
 
 #endif // !UDP_HPP

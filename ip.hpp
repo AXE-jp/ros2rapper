@@ -61,7 +61,8 @@ void ip_out(const uint8_t src_addr[4],
 	    const uint8_t dst_addr[4],
 	    const uint8_t ttl,
 	    const uint8_t ip_data[],
-	    const uint16_t ip_data_len,
+	    const uint16_t ip_data_process_len,
+	    const uint16_t ip_data_real_len,
 	    uint8_t buf[]);
 
 #endif // !IP_HPP

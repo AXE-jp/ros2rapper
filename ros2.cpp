@@ -247,12 +247,14 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 		dst_port,
 		rtps_pkt,
 		SPDP_WRITER_RTPS_PKT_LEN,
+		SPDP_WRITER_RTPS_PKT_LEN,
 		udp_pkt);
 
 	ip_out(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_MULTICAST,
 	       udp_pkt,
+	       SPDP_WRITER_UDP_PKT_LEN,
 	       SPDP_WRITER_UDP_PKT_LEN,
 	       tx_buf.buf);
 
@@ -295,12 +297,14 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 		dst_port,
 		rtps_pkt,
 		SEDP_WRITER_RTPS_PKT_LEN,
+		SEDP_WRITER_RTPS_PKT_LEN,
 		udp_pkt);
 
 	ip_out(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
+	       SEDP_WRITER_UDP_PKT_LEN,
 	       SEDP_WRITER_UDP_PKT_LEN,
 	       tx_buf.buf);
 
@@ -343,12 +347,14 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 		dst_port,
 		rtps_pkt,
 		SEDP_HEARTBEAT_RTPS_PKT_LEN,
+		SEDP_HEARTBEAT_RTPS_PKT_LEN,
 		udp_pkt);
 
 	ip_out(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
+	       SEDP_HEARTBEAT_UDP_PKT_LEN,
 	       SEDP_HEARTBEAT_UDP_PKT_LEN,
 	       tx_buf.buf);
 
@@ -393,12 +399,14 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 		dst_port,
 		rtps_pkt,
 		SEDP_ACKNACK_RTPS_PKT_LEN,
+		SEDP_ACKNACK_RTPS_PKT_LEN,
 		udp_pkt);
 
 	ip_out(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
+	       SEDP_ACKNACK_UDP_PKT_LEN,
 	       SEDP_ACKNACK_UDP_PKT_LEN,
 	       tx_buf.buf);
 
@@ -441,12 +449,14 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		dst_port,
 		rtps_pkt,
 		APP_WRITER_RTPS_PKT_LEN,
+		APP_WRITER_RTPS_PKT_LEN,
 		udp_pkt);
 
 	ip_out(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
+	       APP_WRITER_UDP_PKT_LEN,
 	       APP_WRITER_UDP_PKT_LEN,
 	       tx_buf.buf);
 
@@ -472,6 +482,7 @@ static void udp_raw_out(const uint8_t dst_addr[4],
 		dst_port,
 		udp_payload,
 		MAX_UDP_RAW_OUT_PAYLOAD_LEN /*use constant length for loop unroll*/,
+		udp_payload_len,
 		udp_pkt);
 
 	ip_out(src_addr,
@@ -479,6 +490,7 @@ static void udp_raw_out(const uint8_t dst_addr[4],
 	       IP_HDR_TTL_UNICAST,
 	       udp_pkt,
 	       MAX_UDP_RAW_OUT_UDP_PKT_LEN,
+				 udp_payload_len + UDP_HDR_SIZE,
 	       tx_buf.buf);
 
 	tx_buf.head = 0;

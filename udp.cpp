@@ -172,11 +172,13 @@ void udp_out(const uint8_t src_addr[4],
 	     const uint8_t dst_addr[4],
 	     const uint8_t dst_port[2],
 	     const uint8_t udp_data[],
-	     const uint16_t udp_data_len,
+	     const uint16_t udp_data_process_len,
+	     const uint16_t udp_data_real_len,
 	     uint8_t buf[])
 {
 #pragma HLS inline
-	uint16_t tot_len = UDP_HDR_SIZE + udp_data_len;
+	uint16_t tot_process_len = UDP_HDR_SIZE + udp_data_process_len;
+	uint16_t tot_real_len = UDP_HDR_SIZE + udp_data_real_len;
 	uint32_t sum = 0;
 	uint16_t sum_n;
 
@@ -195,15 +197,15 @@ void udp_out(const uint8_t src_addr[4],
 	pseudo_hdr[7] = dst_addr[3];
 	pseudo_hdr[8] = 0;
 	pseudo_hdr[9] = PSEUDO_HDR_PROTOCOL;
-	pseudo_hdr[10] = tot_len >> 8;
-	pseudo_hdr[11] = tot_len & 0xff;
+	pseudo_hdr[10] = tot_real_len >> 8;
+	pseudo_hdr[11] = tot_real_len & 0xff;
 
 	udp_hdr[0] = src_port[0];
 	udp_hdr[1] = src_port[1];
 	udp_hdr[2] = dst_port[0];
 	udp_hdr[3] = dst_port[1];
-	udp_hdr[4] = tot_len >> 8;
-	udp_hdr[5] = tot_len & 0xff;
+	udp_hdr[4] = tot_real_len >> 8;
+	udp_hdr[5] = tot_real_len & 0xff;
 	udp_hdr[6] = 0;
 	udp_hdr[7] = 0;
 
@@ -226,7 +228,7 @@ void udp_out(const uint8_t src_addr[4],
 	}
 
 	/* Cyber unroll_times=all */
-	for (int i = 0; i < udp_data_len; i++) {
+	for (int i = 0; i < udp_data_process_len; i++) {
 #pragma HLS unroll
 		if (i & 0x1)
 			sum += udp_data[i];
@@ -242,7 +244,7 @@ void udp_out(const uint8_t src_addr[4],
 	udp_hdr[7] = sum_n & 0xff;
 
 	/* Cyber unroll_times=all */
-	for (int i = 0; i < tot_len; i++) {
+	for (int i = 0; i < tot_process_len; i++) {
 #pragma HLS unroll
 		if (i < UDP_HDR_SIZE)
 			buf[i] = udp_hdr[i];

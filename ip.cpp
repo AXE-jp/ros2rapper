@@ -620,13 +620,15 @@ void ip_out(const uint8_t src_addr[4],
 	    const uint8_t dst_addr[4],
 	    const uint8_t ttl,
 	    const uint8_t ip_data[],
-	    const uint16_t ip_data_len,
+	    const uint16_t ip_data_process_len,
+	    const uint16_t ip_data_real_len,
 	    uint8_t buf[])
 {
 #pragma HLS inline
 	static uint16_t id;
 
-	uint16_t tot_len = IP_HDR_SIZE + ip_data_len;
+	uint16_t tot_process_len = IP_HDR_SIZE + ip_data_process_len;
+	uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
 	uint32_t sum = 0;
 	uint16_t sum_n;
 
@@ -635,8 +637,8 @@ void ip_out(const uint8_t src_addr[4],
 
 	ip_hdr[0] = IP_HDR_VERSION_IHL;
 	ip_hdr[1] = IP_HDR_TOS;
-	ip_hdr[2] = tot_len >> 8;
-	ip_hdr[3] = tot_len & 0xff;
+	ip_hdr[2] = tot_real_len >> 8;
+	ip_hdr[3] = tot_real_len & 0xff;
 	ip_hdr[4] = id >> 8;
 	ip_hdr[5] = id & 0xff;
 	ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
@@ -671,7 +673,7 @@ void ip_out(const uint8_t src_addr[4],
 	ip_hdr[11] = sum_n & 0xff;
 
 	/* Cyber unroll_times=all */
-	for (int i = 0; i < tot_len; i++) {
+	for (int i = 0; i < tot_process_len; i++) {
 #pragma HLS unroll
 		if (i < IP_HDR_SIZE)
 			buf[i] = ip_hdr[i];
