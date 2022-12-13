@@ -134,9 +134,9 @@ sync_reset_inst (
 assign phy_ref_clk = clk_25mhz_int;
 
 wire [47:0] mac_addr         = 48'h02_00_00_00_00_00;
-wire [31:0] ip_addr          = {8'd192, 8'd168, 8'd1,   8'd100};
-wire [31:0] gateway_ip_addr  = {8'd192, 8'd168, 8'd1,   8'd1};
-wire [31:0] subnet_mask      = {8'd255, 8'd255, 8'd255, 8'd0};
+wire [31:0] ip_addr          = {8'd100, 8'd1, 8'd168, 8'd192};
+wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
+wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
 wire [255:0] ros2_node_name = "reklat";
 wire [7:0] ros2_node_name_len = 8'd7;
 wire [15:0] ros2_node_udp_port = 16'd52000;
@@ -481,7 +481,7 @@ ros2_i (
     .udp_rxbuf_d0(udp_rxbuf_wdata),
     .udp_txbuf_address0(udp_txbuf_addr),
     .udp_txbuf_q0(udp_txbuf_rdata),
-    .conf_ip_addr({ip_addr[7:0],ip_addr[15:8],ip_addr[23:16],ip_addr[31:24]}),
+    .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port(ros2_node_udp_port),
