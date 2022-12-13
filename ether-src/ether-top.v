@@ -51,10 +51,10 @@ assign mmcm_locked = ~mmcm_rst;
 `elsif TARGET_XILINX
 MMCME2_BASE #(
     .BANDWIDTH("OPTIMIZED"),
-    .CLKOUT0_DIVIDE_F(10),
+    .CLKOUT0_DIVIDE_F(13),
     .CLKOUT0_DUTY_CYCLE(0.5),
     .CLKOUT0_PHASE(0),
-    .CLKOUT1_DIVIDE(40),
+    .CLKOUT1_DIVIDE(39),
     .CLKOUT1_DUTY_CYCLE(0.5),
     .CLKOUT1_PHASE(0),
     .CLKOUT2_DIVIDE(1),
@@ -72,7 +72,7 @@ MMCME2_BASE #(
     .CLKOUT6_DIVIDE(1),
     .CLKOUT6_DUTY_CYCLE(0.5),
     .CLKOUT6_PHASE(0),
-    .CLKFBOUT_MULT_F(10),
+    .CLKFBOUT_MULT_F(9.75),
     .CLKFBOUT_PHASE(0),
     .DIVCLK_DIVIDE(1),
     .REF_JITTER1(0.010),
@@ -133,7 +133,7 @@ sync_reset_inst (
 
 assign phy_ref_clk = clk_25mhz_int;
 
-wire [47:0] mac_addr         = 48'h02_00_00_00_00_00;
+wire [47:0] mac_addr         = 48'h00_00_00_00_00_02;
 wire [31:0] ip_addr          = {8'd100, 8'd1, 8'd168, 8'd192};
 wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
 wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
@@ -157,6 +157,35 @@ wire [7:0] ros2_ctrl = 8'b00000001;
 (* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_ce;
 (* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_we;
 (* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] udp_rxbuf_wdata;
+
+(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] txbuf_addr;
+(* dont_touch="true" *) (* mark_debug="true" *) reg [31:0] txbuf_rdata;
+(* dont_touch="true" *) (* mark_debug="true" *) reg txbuf_cpu_rel;
+reg [27:0] tx_cnt;
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        txbuf_rdata <= 0;
+        txbuf_cpu_rel <= 0;
+        tx_cnt <= 0;
+    end else begin
+        if (tx_cnt[27]) begin
+            txbuf_cpu_rel <= 1;
+            tx_cnt <= 0;
+        end else begin
+            txbuf_cpu_rel <= 0;
+            tx_cnt <= tx_cnt + 1;
+        end
+        case (txbuf_addr)
+        6'h00: txbuf_rdata <= 32'h0a01a8c0;
+        6'h01: txbuf_rdata <= 32'h045704d2;
+        6'h02: txbuf_rdata <= 32'h00000007;
+        6'h03: txbuf_rdata <= 32'h626f6f66;
+        6'h04: txbuf_rdata <= 32'h000a7261;
+        default: txbuf_rdata <= 32'h0;
+        endcase
+    end
+end
 
 ros2_ether ros2 (
     .clk_int(clk_int),
@@ -195,8 +224,9 @@ ros2_ether ros2 (
     .udp_rxbuf_ce(udp_rxbuf_ce),
     .udp_rxbuf_we(udp_rxbuf_we),
     .udp_rxbuf_wdata(udp_rxbuf_wdata),
-    .udp_txbuf_cpu_rel(1'b0),
-    .udp_txbuf_rdata(32'b0)
+    .udp_txbuf_cpu_rel(txbuf_cpu_rel),
+    .udp_txbuf_addr(txbuf_addr),
+    .udp_txbuf_rdata(txbuf_rdata)
 );
 
 endmodule
@@ -342,14 +372,14 @@ verilog_ethernet_inst (
     .rx_ip_payload_axis_tuser(),
 
     .local_mac(mac_addr),
-    .local_ip(ip_addr),
-    .gateway_ip(gateway_ip_addr),
-    .subnet_mask(subnet_mask)
+    .local_ip({ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
+    .gateway_ip({gateway_ip_addr[7:0], gateway_ip_addr[15:8], gateway_ip_addr[23:16], gateway_ip_addr[31:24]}),
+    .subnet_mask({subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
 );
 
-wire tx_fifo_wr_en;
-wire [7:0] tx_fifo_din;
-wire tx_fifo_full;
+(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_wr_en;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [7:0] tx_fifo_din;
+(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_full;
 wire tx_fifo_rd_en;
 wire [7:0] tx_fifo_dout;
 wire tx_fifo_empty;
