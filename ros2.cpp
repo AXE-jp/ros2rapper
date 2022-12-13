@@ -775,15 +775,15 @@ static void ros2_out(hls_stream<uint8_t> &out,
 				break;
 			case 1:
 				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_dst_port[0] = ram_read_buf & 0xff;
-				udp_tx_dst_port[1] = (ram_read_buf >> 8) & 0xff;
-				udp_tx_src_port[0] = (ram_read_buf >> 16) & 0xff;
-				udp_tx_src_port[1] = (ram_read_buf >> 24) & 0xff;
+				udp_tx_dst_port[1] = ram_read_buf & 0xff;
+				udp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
+				udp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
+				udp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
 				break;
 			case 2:
 				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
 				udp_tx_payload_len = ram_read_buf & 0xff;
-				udp_tx_payload_len |= (ram_read_buf >> 16) & 0xff;
+				udp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
 				// padding 2byte
 				break;
 			default:
