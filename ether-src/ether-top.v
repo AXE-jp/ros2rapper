@@ -18,7 +18,11 @@ module ether_top (
     output wire       phy_tx_en,
     input  wire       phy_col,
     input  wire       phy_crs,
-    output wire       phy_reset_n
+    output wire       phy_reset_n,
+
+    output wire       led_r,
+    output wire       led_g,
+    output wire       led_b
 );
 
 wire clk_ibufg;
@@ -153,14 +157,21 @@ wire [7:0] ros2_app_data_len = 8'd35;
 
 wire [7:0] ros2_ctrl = 8'b00000001;
 
-(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] udp_rxbuf_addr;
-(* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_ce;
-(* dont_touch="true" *) (* mark_debug="true" *) wire udp_rxbuf_we;
-(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] udp_rxbuf_wdata;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] rxbuf_addr;
+(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_ce;
+(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_we;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] rxbuf_wdata;
+(* dont_touch="true" *) (* mark_debug="true" *) reg rxbuf_cpu_rel;
+(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_cpu_grant;
+reg [15:0] last_rx_size;
+assign led_r = (last_rx_size >= 1 && last_rx_size <= 10);
+assign led_g = (last_rx_size >= 11 && last_rx_size <= 20);
+assign led_b = (last_rx_size > 20);
 
 (* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] txbuf_addr;
 (* dont_touch="true" *) (* mark_debug="true" *) reg [31:0] txbuf_rdata;
 (* dont_touch="true" *) (* mark_debug="true" *) reg txbuf_cpu_rel;
+(* dont_touch="true" *) (* mark_debug="true" *) wire txbuf_cpu_grant;
 reg [27:0] tx_cnt;
 
 always @(posedge clk_int) begin
@@ -184,6 +195,21 @@ always @(posedge clk_int) begin
         6'h04: txbuf_rdata <= 32'h000a7261;
         default: txbuf_rdata <= 32'h0;
         endcase
+    end
+end
+
+always @(posedge clk_int) begin
+    if (rst_int) begin
+        rxbuf_cpu_rel <= 0;
+        last_rx_size <= 0;
+    end else begin
+        if (rxbuf_cpu_grant)
+            rxbuf_cpu_rel <= 1;
+        else
+            rxbuf_cpu_rel <= 0;
+
+        if (rxbuf_addr == 1 && rxbuf_we)
+            last_rx_size <= rxbuf_wdata[31:16];
     end
 end
 
@@ -219,11 +245,13 @@ ros2_ether ros2 (
     .ros2_ctrl(ros2_ctrl),
     .ros2_app_data_cpu_req(1'b0),
     .ros2_app_data_cpu_rel(1'b0),
-    .udp_rxbuf_cpu_rel(1'b0),
-    .udp_rxbuf_addr(udp_rxbuf_addr),
-    .udp_rxbuf_ce(udp_rxbuf_ce),
-    .udp_rxbuf_we(udp_rxbuf_we),
-    .udp_rxbuf_wdata(udp_rxbuf_wdata),
+    .udp_rxbuf_cpu_rel(rxbuf_cpu_rel),
+    .udp_rxbuf_cpu_grant(rxbuf_cpu_grant),
+    .udp_rxbuf_addr(rxbuf_addr),
+    .udp_rxbuf_ce(rxbuf_ce),
+    .udp_rxbuf_we(rxbuf_we),
+    .udp_rxbuf_wdata(rxbuf_wdata),
+    .udp_txbuf_cpu_grant(txbuf_cpu_grant),
     .udp_txbuf_cpu_rel(txbuf_cpu_rel),
     .udp_txbuf_addr(txbuf_addr),
     .udp_txbuf_rdata(txbuf_rdata)
@@ -371,7 +399,7 @@ verilog_ethernet_inst (
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
 
-    .local_mac(mac_addr),
+    .local_mac({mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
     .local_ip({ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
     .gateway_ip({gateway_ip_addr[7:0], gateway_ip_addr[15:8], gateway_ip_addr[23:16], gateway_ip_addr[31:24]}),
     .subnet_mask({subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
@@ -511,7 +539,7 @@ ros2_i (
     .udp_rxbuf_d0(udp_rxbuf_wdata),
     .udp_txbuf_address0(udp_txbuf_addr),
     .udp_txbuf_q0(udp_txbuf_rdata),
-    .conf_ip_addr({ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
+    .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),

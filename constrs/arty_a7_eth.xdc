@@ -35,6 +35,10 @@ set_property -dict {LOC C16 IOSTANDARD LVCMOS33 SLEW SLOW DRIVE 12} [get_ports p
 create_clock -period 40.000 -name phy_rx_clk [get_ports phy_rx_clk]
 create_clock -period 40.000 -name phy_tx_clk [get_ports phy_tx_clk]
 
+set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { led_b }];
+set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { led_g }];
+set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { led_r }];
+
 set_false_path -to [get_ports {phy_ref_clk phy_reset_n}]
 set_output_delay 0.000 [get_ports {phy_ref_clk phy_reset_n}]
 
