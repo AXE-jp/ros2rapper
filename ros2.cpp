@@ -101,7 +101,7 @@ public:
 	void shift_out(hls_stream<uint8_t> &out)
 	{
 #pragma HLS inline
-		if (!empty())
+		if (!empty() && !out.full())
 			out.write(deque());
 	}
 #else // !USE_FIFOIF_ETHERNET
@@ -109,7 +109,7 @@ public:
 	void shift_out(hls_stream<hls_uint<9>> &out)
 	{
 #pragma HLS inline
-		if (!empty()) {
+		if (!empty() && !out.full()) {
 			uint8_t data = deque();
 			bool end = empty();
 
