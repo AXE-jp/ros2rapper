@@ -7,10 +7,10 @@ all: copy-src
 synth: synth-ip_tx synth-ip_rx synth-ros2rapper
 
 synth-ip_tx:
-	$(MAKE) -C ip_tx synth
+	$(MAKE) -C ip_tx_rx/ip_tx synth
 
 synth-ip_rx:
-	$(MAKE) -C ip_rx synth
+	$(MAKE) -C ip_tx_rx/ip_rx synth
 
 synth-ros2rapper:
 	$(MAKE) -C ros2rapper synth
@@ -34,6 +34,6 @@ clean:
 	rm -rf project.hw project.cache project.runs project.sim project.ip_user_files
 
 cleanall: clean
-	$(MAKE) -C ip_tx clean
-	$(MAKE) -C ip_rx clean
+	$(MAKE) -C ip_tx_rx/ip_tx clean
+	$(MAKE) -C ip_tx_rx/ip_rx clean
 	$(MAKE) -C ros2rapper clean
