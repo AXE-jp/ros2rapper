@@ -193,10 +193,10 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	if (!s3.read_nb(x))
 		return;
 
-	if (conf.ctrl & CTRL_ENABLE) {
+	//if (conf.ctrl & CTRL_ENABLE) {
 		s4.write(x);
 		s5.write(x);
-	}
+	//}
 
 	spdp_reader(s4,
 		    sedp_reader_cnt,
@@ -497,23 +497,38 @@ static void udp_raw_out(const uint8_t dst_addr[4],
 	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len /*shrink*/;
 }
 
-#define CLOCK_COUNT_CYCLE	(TARGET_CLOCK_FREQ / 8)
+#define TX_ONE_CYCLE_COUNT  (TARGET_CLOCK_FREQ / 16)
 
-#define SPDP_WRITER_CYCLE		0
-#define SEDP_PUB_WRITER_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (10 + (id)))
-#define SEDP_SUB_WRITER_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (20 + (id)))
-#define SEDP_PUB_HEARTBEAT_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (30 + (id)))
-#define SEDP_SUB_HEARTBEAT_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (40 + (id)))
-#define SEDP_PUB_ACKNACK_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (50 + (id)))
-#define SEDP_SUB_ACKNACK_CYCLE(id)			\
-	((CLOCK_COUNT_CYCLE / 100) * (60 + (id)))
-#define APP_WRITER_CYCLE(id)				\
-	((CLOCK_COUNT_CYCLE / 100) * (70 + (id)))
+#define ST_UDP_RAW_OUT           0
+#define ST_SPDP_WRITER           1
+#define ST_SEDP_PUB_WRITER_0     2
+#define ST_SEDP_PUB_WRITER_1     3
+#define ST_SEDP_PUB_WRITER_2     4
+#define ST_SEDP_PUB_WRITER_3     5
+#define ST_SEDP_SUB_WRITER_0     6
+#define ST_SEDP_SUB_WRITER_1     7
+#define ST_SEDP_SUB_WRITER_2     8
+#define ST_SEDP_SUB_WRITER_3     9
+#define ST_SEDP_PUB_HEARTBEAT_0  10
+#define ST_SEDP_PUB_HEARTBEAT_1  11
+#define ST_SEDP_PUB_HEARTBEAT_2  12
+#define ST_SEDP_PUB_HEARTBEAT_3  13
+#define ST_SEDP_SUB_HEARTBEAT_0  14
+#define ST_SEDP_SUB_HEARTBEAT_1  15
+#define ST_SEDP_SUB_HEARTBEAT_2  16
+#define ST_SEDP_SUB_HEARTBEAT_3  17
+#define ST_SEDP_PUB_ACKNACK_0    18
+#define ST_SEDP_PUB_ACKNACK_1    19
+#define ST_SEDP_PUB_ACKNACK_2    20
+#define ST_SEDP_PUB_ACKNACK_3    21
+#define ST_SEDP_SUB_ACKNACK_0    22
+#define ST_SEDP_SUB_ACKNACK_1    23
+#define ST_SEDP_SUB_ACKNACK_2    24
+#define ST_SEDP_SUB_ACKNACK_3    25
+#define ST_APP_WRITER_0          26
+#define ST_APP_WRITER_1          27
+#define ST_APP_WRITER_2          28
+#define ST_APP_WRITER_3          29
 
 #define SPDP_WRITER_OUT()						\
 	do {								\
@@ -752,140 +767,126 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	static uint16_t udp_txpayload_write_offset;
 
 	static uint32_t clk_cnt;
+	static hls_uint<5> state = ST_UDP_RAW_OUT;
 
 	uint8_t grant;
 
-	if (conf.ctrl & CTRL_ENABLE) {
-		switch (udp_txbuf_copy_status) {
-		case UDP_TXBUF_COPY_INIT:
-			if (*udp_txbuf_grant == 1) {
-				udp_txbuf_read_offset = 0;
-				udp_txpayload_write_offset = 0;
-				udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
-			}
+	clk_cnt++;
+
+	/*
+	if (!(conf.ctrl & CTRL_ENABLE)) {
+		return;
+	}
+	*/
+
+	switch (udp_txbuf_copy_status) {
+	case UDP_TXBUF_COPY_INIT:
+		if (*udp_txbuf_grant == 1) {
+			udp_txbuf_read_offset = 0;
+			udp_txpayload_write_offset = 0;
+			udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
+		}
+		break;
+	case UDP_TXBUF_COPY_RUNNING:
+		switch (udp_txbuf_read_offset) {
+		case 0:
+			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+			udp_tx_dst_addr[0] = ram_read_buf & 0xff;
+			udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
+			udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
+			udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
 			break;
-		case UDP_TXBUF_COPY_RUNNING:
-			switch (udp_txbuf_read_offset) {
-			case 0:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_dst_addr[0] = ram_read_buf & 0xff;
-				udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
-				udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
-				udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
-				break;
-			case 1:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_dst_port[1] = ram_read_buf & 0xff;
-				udp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
-				udp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
-				udp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
-				break;
-			case 2:
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_payload_len = ram_read_buf & 0xff;
-				udp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
-				// padding 2byte
-				break;
-			default:
-				if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
-					udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
-				} else {
-					ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-					udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
-					udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
-					udp_txpayload_write_offset += 4;
-				}
-				break;
-			}
-			udp_txbuf_read_offset++;
+		case 1:
+			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+			udp_tx_dst_port[1] = ram_read_buf & 0xff;
+			udp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
+			udp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
+			udp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
 			break;
-		case UDP_TXBUF_COPY_DONE:
+		case 2:
+			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+			udp_tx_payload_len = ram_read_buf & 0xff;
+			udp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
+			// padding 2byte
 			break;
 		default:
-			udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+			if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
+				udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
+			} else {
+				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
+				udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
+				udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+				udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+				udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+				udp_txpayload_write_offset += 4;
+			}
 			break;
 		}
+		udp_txbuf_read_offset++;
+		break;
+	case UDP_TXBUF_COPY_DONE:
+		break;
+	default:
+		udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+		break;
+	}
 
-		if (clk_cnt == SPDP_WRITER_CYCLE) {
-			SPDP_WRITER_OUT();
-		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(0)) {
-			SEDP_PUB_WRITER_OUT(0);
-		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(1)) {
-			SEDP_PUB_WRITER_OUT(1);
-		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(2)) {
-			SEDP_PUB_WRITER_OUT(2);
-		} else if (clk_cnt == SEDP_PUB_WRITER_CYCLE(3)) {
-			SEDP_PUB_WRITER_OUT(3);
-		} else if (clk_cnt == SEDP_SUB_WRITER_CYCLE(0)) {
-			SEDP_SUB_WRITER_OUT(0);
-		} else if (clk_cnt == SEDP_SUB_WRITER_CYCLE(1)) {
-			SEDP_SUB_WRITER_OUT(1);
-		} else if (clk_cnt == SEDP_SUB_WRITER_CYCLE(2)) {
-			SEDP_SUB_WRITER_OUT(2);
-		} else if (clk_cnt == SEDP_SUB_WRITER_CYCLE(3)) {
-			SEDP_SUB_WRITER_OUT(3);
-		} else if (clk_cnt == SEDP_PUB_HEARTBEAT_CYCLE(0)) {
-			SEDP_PUB_HEARTBEAT_OUT(0);
-		}else if (clk_cnt == SEDP_PUB_HEARTBEAT_CYCLE(1)) {
-			SEDP_PUB_HEARTBEAT_OUT(1);
-		}else if (clk_cnt == SEDP_PUB_HEARTBEAT_CYCLE(2)) {
-			SEDP_PUB_HEARTBEAT_OUT(2);
-		}else if (clk_cnt == SEDP_PUB_HEARTBEAT_CYCLE(3)) {
-			SEDP_PUB_HEARTBEAT_OUT(3);
-		} else if (clk_cnt == SEDP_SUB_HEARTBEAT_CYCLE(0)) {
-			SEDP_SUB_HEARTBEAT_OUT(0);
-		} else if (clk_cnt == SEDP_SUB_HEARTBEAT_CYCLE(1)) {
-			SEDP_SUB_HEARTBEAT_OUT(1);
-		} else if (clk_cnt == SEDP_SUB_HEARTBEAT_CYCLE(2)) {
-			SEDP_SUB_HEARTBEAT_OUT(2);
-		} else if (clk_cnt == SEDP_SUB_HEARTBEAT_CYCLE(3)) {
-			SEDP_SUB_HEARTBEAT_OUT(3);
-		} else if (clk_cnt == SEDP_PUB_ACKNACK_CYCLE(0)) {
-			SEDP_PUB_ACKNACK_OUT(0);
-		} else if (clk_cnt == SEDP_PUB_ACKNACK_CYCLE(1)) {
-			SEDP_PUB_ACKNACK_OUT(1);
-		} else if (clk_cnt == SEDP_PUB_ACKNACK_CYCLE(2)) {
-			SEDP_PUB_ACKNACK_OUT(2);
-		} else if (clk_cnt == SEDP_PUB_ACKNACK_CYCLE(3)) {
-			SEDP_PUB_ACKNACK_OUT(3);
-		} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(0)) {
-			SEDP_SUB_ACKNACK_OUT(0);
-		} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(1)) {
-			SEDP_SUB_ACKNACK_OUT(1);
-		} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(2)) {
-			SEDP_SUB_ACKNACK_OUT(2);
-		} else if (clk_cnt == SEDP_SUB_ACKNACK_CYCLE(3)) {
-			SEDP_SUB_ACKNACK_OUT(3);
-		} else if (clk_cnt == APP_WRITER_CYCLE(0)) {
-			APP_WRITER_OUT(0);
-		} else if (clk_cnt == APP_WRITER_CYCLE(1)) {
-			APP_WRITER_OUT(1);
-		} else if (clk_cnt == APP_WRITER_CYCLE(2)) {
-			APP_WRITER_OUT(2);
-		} else if (clk_cnt == APP_WRITER_CYCLE(3)) {
-			APP_WRITER_OUT(3);
-		} else if (APP_WRITER_CYCLE(4) /*FIXME: for test, define cycle*/) {
+	if (tx_buf.empty()) {
+		switch (state) {
+		case ST_UDP_RAW_OUT:
+			if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
+				clk_cnt = 0;
+				state++;
+			}
 			if (udp_txbuf_copy_status == UDP_TXBUF_COPY_DONE) {
+				// at least one packet will be sent per cycle
 				UDP_RAW_OUT();
 				*udp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
 				udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
 			}
+			break;
+		case ST_SPDP_WRITER: SPDP_WRITER_OUT(); state++; break;
+		case ST_SEDP_PUB_WRITER_0: SEDP_PUB_WRITER_OUT(0); state++; break;
+		case ST_SEDP_PUB_WRITER_1: SEDP_PUB_WRITER_OUT(1); state++; break;
+		case ST_SEDP_PUB_WRITER_2: SEDP_PUB_WRITER_OUT(2); state++; break;
+		case ST_SEDP_PUB_WRITER_3: SEDP_PUB_WRITER_OUT(3); state++; break;
+		case ST_SEDP_SUB_WRITER_0: SEDP_SUB_WRITER_OUT(0); state++; break;
+		case ST_SEDP_SUB_WRITER_1: SEDP_SUB_WRITER_OUT(1); state++; break;
+		case ST_SEDP_SUB_WRITER_2: SEDP_SUB_WRITER_OUT(2); state++; break;
+		case ST_SEDP_SUB_WRITER_3: SEDP_SUB_WRITER_OUT(3); state++; break;
+		case ST_SEDP_PUB_HEARTBEAT_0: SEDP_PUB_HEARTBEAT_OUT(0); state++; break;
+		case ST_SEDP_PUB_HEARTBEAT_1: SEDP_PUB_HEARTBEAT_OUT(1); state++; break;
+		case ST_SEDP_PUB_HEARTBEAT_2: SEDP_PUB_HEARTBEAT_OUT(2); state++; break;
+		case ST_SEDP_PUB_HEARTBEAT_3: SEDP_PUB_HEARTBEAT_OUT(3); state++; break;
+		case ST_SEDP_SUB_HEARTBEAT_0: SEDP_SUB_HEARTBEAT_OUT(0); state++; break;
+		case ST_SEDP_SUB_HEARTBEAT_1: SEDP_SUB_HEARTBEAT_OUT(1); state++; break;
+		case ST_SEDP_SUB_HEARTBEAT_2: SEDP_SUB_HEARTBEAT_OUT(2); state++; break;
+		case ST_SEDP_SUB_HEARTBEAT_3: SEDP_SUB_HEARTBEAT_OUT(3); state++; break;
+		case ST_SEDP_PUB_ACKNACK_0: SEDP_PUB_ACKNACK_OUT(0); state++; break;
+		case ST_SEDP_PUB_ACKNACK_1: SEDP_PUB_ACKNACK_OUT(1); state++; break;
+		case ST_SEDP_PUB_ACKNACK_2: SEDP_PUB_ACKNACK_OUT(2); state++; break;
+		case ST_SEDP_PUB_ACKNACK_3: SEDP_PUB_ACKNACK_OUT(3); state++; break;
+		case ST_SEDP_SUB_ACKNACK_0: SEDP_SUB_ACKNACK_OUT(0); state++; break;
+		case ST_SEDP_SUB_ACKNACK_1: SEDP_SUB_ACKNACK_OUT(1); state++; break;
+		case ST_SEDP_SUB_ACKNACK_2: SEDP_SUB_ACKNACK_OUT(2); state++; break;
+		case ST_SEDP_SUB_ACKNACK_3: SEDP_SUB_ACKNACK_OUT(3); state++; break;
+		case ST_APP_WRITER_0: APP_WRITER_OUT(0); state++; break;
+		case ST_APP_WRITER_1: APP_WRITER_OUT(1); state++; break;
+		case ST_APP_WRITER_2: APP_WRITER_OUT(2); state++; break;
+		case ST_APP_WRITER_3: APP_WRITER_OUT(3); state = ST_UDP_RAW_OUT; break;
+		default:
+			state = ST_UDP_RAW_OUT;
+			break;
 		}
-	}
-
+	} else {
 #ifdef USE_FIFOIF_ETHERNET
-	tx_buf.shift_out(out);
+		tx_buf.shift_out(out);
 #else // !USE_FIFOIF_ETHERNET
-	tx_buf.shift_out(s);
+		tx_buf.shift_out(s);
 
-	slip_out(s, out);
+		slip_out(s, out);
 #endif // USE_FIFOIF_ETHERNET
-
-	clk_cnt++;
-	if (clk_cnt == CLOCK_COUNT_CYCLE)
-		clk_cnt = 0;
+	}
 }
 
 /* Cyber func=process_pipeline */
@@ -925,11 +926,13 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS array_partition variable=sedp_reader_tbl complete dim=0
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
 
+	/*
 	if (!(conf.ctrl & CTRL_ENABLE)) {
 		// reset
 		sedp_reader_cnt = 0;
 		app_reader_cnt = 0;
 	}
+	*/
 
 	ros2_in(in,
 		udp_rxbuf,
