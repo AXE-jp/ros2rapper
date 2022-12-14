@@ -408,9 +408,9 @@ verilog_ethernet_inst (
 (* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_wr_en;
 (* dont_touch="true" *) (* mark_debug="true" *) wire [7:0] tx_fifo_din;
 (* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_full;
-wire tx_fifo_rd_en;
-wire [7:0] tx_fifo_dout;
-wire tx_fifo_empty;
+(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_rd_en;
+(* dont_touch="true" *) (* mark_debug="true" *) wire [7:0] tx_fifo_dout;
+(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_empty;
 
 siso #(
     .DATA_WIDTH(8),
