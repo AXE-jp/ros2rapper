@@ -49,6 +49,8 @@
 #define UDP_IN_STATE_OUT_UDP      2
 #define UDP_IN_STATE_DISCARD      3
 
+#define MAX_UDP_RXBUF_PAYLOAD_LEN (UDP_RXBUF_DEPTH * 4 - 8)
+
 #define QUAD_UINT8(a,b,c,d) ((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 
 /* Cyber func=inline */
@@ -93,18 +95,19 @@ void udp_in(hls_stream<hls_uint<9>> &in,
 		case IN_STREAM_OFFSET_SRC_ADDR_1: src_addr[1] = data; break;
 		case IN_STREAM_OFFSET_SRC_ADDR_2: src_addr[2] = data; break;
 		case IN_STREAM_OFFSET_SRC_ADDR_3: src_addr[3] = data; break;
-		case IN_STREAM_OFFSET_TOT_LEN_0:  tot_len[1] = data; break;
-		case IN_STREAM_OFFSET_TOT_LEN_1:  tot_len[0] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT):   src_port[1] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT+1): src_port[0] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):   dst_port[1] = data; break;
-		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT+1): dst_port[0] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_0:  tot_len[0] = data; break;
+		case IN_STREAM_OFFSET_TOT_LEN_1:  tot_len[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT):   src_port[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SPORT+1): src_port[1] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):   dst_port[0] = data; break;
+		case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT+1): dst_port[1] = data; break;
 		}
 
 		offset++;
 		if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
 			if (dst_port[0] == cpu_udp_port[0] && dst_port[1] == cpu_udp_port[1]) {
-				if (*udp_rxbuf_grant == 1) {
+				uint16_t payload_len = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
+				if (*udp_rxbuf_grant == 1 && payload_len <= MAX_UDP_RXBUF_PAYLOAD_LEN) {
 					state = UDP_IN_STATE_OUT_UDP;
 				} else {
 					state = UDP_IN_STATE_DISCARD;
@@ -126,7 +129,7 @@ void udp_in(hls_stream<hls_uint<9>> &in,
 			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_addr[0], src_addr[1], src_addr[2], src_addr[3]);
 			return;
 		case 1:
-			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_port[0], src_port[1], tot_len[0], tot_len[1]);
+			udp_rxbuf[ram_offset++] = QUAD_UINT8(src_port[1], src_port[0], tot_len[1], tot_len[0]);
 			return;
 		default:
 			READ_AND_CHECKSUM;
