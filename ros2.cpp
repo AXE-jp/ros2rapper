@@ -30,56 +30,11 @@
 #define USE_FIFOIF_ETHERNET
 
 
-#define SPDP_WRITER_RTPS_PKT_LEN			\
-	SPDP_WRITER_TOT_LEN
-#define SPDP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
-#define SPDP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
-
-#define SEDP_WRITER_RTPS_PKT_LEN			\
-	SEDP_WRITER_TOT_LEN
-#define SEDP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + SEDP_WRITER_RTPS_PKT_LEN)
-#define SEDP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SEDP_WRITER_UDP_PKT_LEN)
-
-#define SEDP_HEARTBEAT_RTPS_PKT_LEN			\
-	SEDP_HEARTBEAT_TOT_LEN
-#define SEDP_HEARTBEAT_UDP_PKT_LEN			\
-	(UDP_HDR_SIZE + SEDP_HEARTBEAT_RTPS_PKT_LEN)
-#define SEDP_HEARTBEAT_IP_PKT_LEN			\
-	(IP_HDR_SIZE + SEDP_HEARTBEAT_UDP_PKT_LEN)
-
-#define SEDP_ACKNACK_RTPS_PKT_LEN			\
-	SEDP_ACKNACK_TOT_LEN
-#define SEDP_ACKNACK_UDP_PKT_LEN			\
-	(UDP_HDR_SIZE + SEDP_ACKNACK_RTPS_PKT_LEN)
-#define SEDP_ACKNACK_IP_PKT_LEN				\
-	(IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
-
-#define APP_WRITER_RTPS_PKT_LEN				\
-	APP_TOT_LEN(MAX_APP_DATA_LEN)
-#define APP_WRITER_UDP_PKT_LEN				\
-	(UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN)
-#define APP_WRITER_IP_PKT_LEN				\
-	(IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN)
-
-#define MAX_UDP_RAW_OUT_PAYLOAD_LEN \
-	((UDP_TXBUF_DEPTH - 3) * 4)
-#define MAX_UDP_RAW_OUT_UDP_PKT_LEN \
-	(UDP_HDR_SIZE + MAX_UDP_RAW_OUT_PAYLOAD_LEN)
-#define MAX_UDP_RAW_OUT_IP_PKT_LEN \
-	(IP_HDR_SIZE + MAX_UDP_RAW_OUT_UDP_PKT_LEN)
-
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define TX_BUF_SIZE	(MAX(MAX(MAX(MAX(MAX(MAX_UDP_RAW_OUT_IP_PKT_LEN, SPDP_WRITER_IP_PKT_LEN), SEDP_WRITER_IP_PKT_LEN), SEDP_HEARTBEAT_IP_PKT_LEN), SEDP_ACKNACK_IP_PKT_LEN), APP_WRITER_IP_PKT_LEN))
-
 class tx_buf {
 public:
 	uint16_t head;
 	uint16_t len;
-	uint8_t buf[TX_BUF_SIZE]/* Cyber array=REG */;
+	uint8_t buf[TX_BUF_LEN]/* Cyber array=REG */;
 
 	/* Cyber func=inline */
 	uint8_t deque()
@@ -156,14 +111,14 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
 
 /* Cyber func=inline */
 static void ros2_in(hls_stream<uint8_t> &in,
-		    uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
+		    uint32_t rawudp_rxbuf[],
 		    sedp_reader_id_t &sedp_reader_cnt,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
 		    app_endpoint app_reader_tbl[APP_READER_MAX],
 		    const config_t &conf,
-		    volatile uint8_t *udp_rxbuf_rel,
-		    volatile uint8_t *udp_rxbuf_grant)
+		    volatile uint8_t *rawudp_rxbuf_rel,
+		    volatile uint8_t *rawudp_rxbuf_grant)
 {
 	static bool ip_parity_error = false;
 	static bool udp_parity_error = false;
@@ -188,7 +143,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
 	ip_in(s1, s2, ip_parity_error);
-	udp_in(s2, s3, conf.cpu_udp_port, udp_rxbuf, udp_rxbuf_rel, udp_rxbuf_grant, udp_parity_error);
+	udp_in(s2, s3, conf.cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))
 		return;
@@ -227,36 +182,25 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 #pragma HLS array_partition variable=dst_addr complete dim=0
 #pragma HLS array_partition variable=dst_port complete dim=0
 
-	uint8_t rtps_pkt[SPDP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
-	uint8_t udp_pkt[SPDP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rtps_pkt complete dim=0
-#pragma HLS array_partition variable=udp_pkt complete dim=0
+	ip_set_header(conf.ip_addr,
+	       dst_addr,
+	       IP_HDR_TTL_MULTICAST,
+	       SPDP_WRITER_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	udp_set_header(conf.node_udp_port,
+		dst_port,
+		SPDP_WRITER_RTPS_PKT_LEN,
+		tx_buf.buf + IP_HDR_SIZE);
 
 	spdp_writer(conf.guid_prefix,
 		    conf.ip_addr,
 		    metatraffic_port,
 		    conf.ip_addr,
 		    default_port,
-		    rtps_pkt,
+		    tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
 		    conf.node_name,
 		    conf.node_name_len);
-
-	udp_out(conf.ip_addr,
-		conf.node_udp_port,
-		dst_addr,
-		dst_port,
-		rtps_pkt,
-		SPDP_WRITER_RTPS_PKT_LEN,
-		SPDP_WRITER_RTPS_PKT_LEN,
-		udp_pkt);
-
-	ip_out(conf.ip_addr,
-	       dst_addr,
-	       IP_HDR_TTL_MULTICAST,
-	       udp_pkt,
-	       SPDP_WRITER_UDP_PKT_LEN,
-	       SPDP_WRITER_UDP_PKT_LEN,
-	       tx_buf.buf);
 
 	tx_buf.head = 0;
 	tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
@@ -273,10 +217,16 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
-	uint8_t rtps_pkt[SEDP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
-	uint8_t udp_pkt[SEDP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rtps_pkt complete dim=0
-#pragma HLS array_partition variable=udp_pkt complete dim=0
+	ip_set_header(conf.ip_addr,
+	       dst_addr,
+	       IP_HDR_TTL_UNICAST,
+	       SEDP_WRITER_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	udp_set_header(conf.node_udp_port,
+		dst_port,
+		SEDP_WRITER_RTPS_PKT_LEN,
+		tx_buf.buf + IP_HDR_SIZE);
 
 	sedp_writer(conf.guid_prefix,
 		    writer_entity_id,
@@ -285,28 +235,11 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 		    conf.ip_addr,
 		    usertraffic_port,
 		    app_entity_id,
-		    rtps_pkt,
+		    tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
 		    conf.topic_name,
 		    conf.topic_name_len,
 		    conf.topic_type_name,
 		    conf.topic_type_name_len);
-
-	udp_out(conf.ip_addr,
-		conf.node_udp_port,
-		dst_addr,
-		dst_port,
-		rtps_pkt,
-		SEDP_WRITER_RTPS_PKT_LEN,
-		SEDP_WRITER_RTPS_PKT_LEN,
-		udp_pkt);
-
-	ip_out(conf.ip_addr,
-	       dst_addr,
-	       IP_HDR_TTL_UNICAST,
-	       udp_pkt,
-	       SEDP_WRITER_UDP_PKT_LEN,
-	       SEDP_WRITER_UDP_PKT_LEN,
-	       tx_buf.buf);
 
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -326,12 +259,19 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 			       const uint8_t src_port[2],
 			       const uint8_t writer_guid_prefix[12])
 {
-	uint8_t rtps_pkt[SEDP_HEARTBEAT_RTPS_PKT_LEN]/* Cyber array=REG */;
-	uint8_t udp_pkt[SEDP_HEARTBEAT_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rtps_pkt complete dim=0
-#pragma HLS array_partition variable=udp_pkt complete dim=0
-
 	cnt++;
+
+	ip_set_header(src_addr,
+	       dst_addr,
+	       IP_HDR_TTL_UNICAST,
+	       SEDP_HEARTBEAT_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	udp_set_header(src_port,
+		dst_port,
+		SEDP_HEARTBEAT_RTPS_PKT_LEN,
+		tx_buf.buf + IP_HDR_SIZE);
+
 	sedp_heartbeat(writer_guid_prefix,
 		       writer_entity_id,
 		       reader_guid_prefix,
@@ -339,24 +279,7 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 		       first_seqnum,
 		       last_seqnum,
 		       cnt,
-		       rtps_pkt);
-
-	udp_out(src_addr,
-		src_port,
-		dst_addr,
-		dst_port,
-		rtps_pkt,
-		SEDP_HEARTBEAT_RTPS_PKT_LEN,
-		SEDP_HEARTBEAT_RTPS_PKT_LEN,
-		udp_pkt);
-
-	ip_out(src_addr,
-	       dst_addr,
-	       IP_HDR_TTL_UNICAST,
-	       udp_pkt,
-	       SEDP_HEARTBEAT_UDP_PKT_LEN,
-	       SEDP_HEARTBEAT_UDP_PKT_LEN,
-	       tx_buf.buf);
+		       tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_HEARTBEAT_IP_PKT_LEN;
@@ -377,12 +300,19 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 			     const uint8_t src_port[2],
 			     const uint8_t writer_guid_prefix[12])
 {
-	uint8_t rtps_pkt[SEDP_ACKNACK_RTPS_PKT_LEN]/* Cyber array=REG */;
-	uint8_t udp_pkt[SEDP_ACKNACK_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rtps_pkt complete dim=0
-#pragma HLS array_partition variable=udp_pkt complete dim=0
-
 	cnt++;
+
+	ip_set_header(src_addr,
+	       dst_addr,
+	       IP_HDR_TTL_UNICAST,
+	       SEDP_ACKNACK_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	udp_set_header(src_port,
+		dst_port,
+		SEDP_ACKNACK_RTPS_PKT_LEN,
+		tx_buf.buf + IP_HDR_SIZE);
+
 	sedp_acknack(writer_guid_prefix,
 		     writer_entity_id,
 		     reader_guid_prefix,
@@ -391,24 +321,7 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 		     num_bits,
 		     bitmap,
 		     cnt,
-		     rtps_pkt);
-
-	udp_out(src_addr,
-		src_port,
-		dst_addr,
-		dst_port,
-		rtps_pkt,
-		SEDP_ACKNACK_RTPS_PKT_LEN,
-		SEDP_ACKNACK_RTPS_PKT_LEN,
-		udp_pkt);
-
-	ip_out(src_addr,
-	       dst_addr,
-	       IP_HDR_TTL_UNICAST,
-	       udp_pkt,
-	       SEDP_ACKNACK_UDP_PKT_LEN,
-	       SEDP_ACKNACK_UDP_PKT_LEN,
-	       tx_buf.buf);
+		     tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_ACKNACK_IP_PKT_LEN;
@@ -428,12 +341,19 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t app_data[MAX_APP_DATA_LEN],
 			   uint8_t app_data_len)
 {
-	uint8_t rtps_pkt[APP_WRITER_RTPS_PKT_LEN]/* Cyber array=REG */;
-	uint8_t udp_pkt[APP_WRITER_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rtps_pkt complete dim=0
-#pragma HLS array_partition variable=udp_pkt complete dim=0
-
 	seqnum++;
+
+	ip_set_header(src_addr,
+	       dst_addr,
+	       IP_HDR_TTL_UNICAST,
+	       APP_WRITER_UDP_PKT_LEN,
+	       tx_buf.buf);
+
+	udp_set_header(src_port,
+		dst_port,
+		APP_WRITER_RTPS_PKT_LEN,
+		tx_buf.buf + IP_HDR_SIZE);
+
 	app_writer(writer_guid_prefix,
 		   writer_entity_id,
 		   reader_guid_prefix,
@@ -441,65 +361,39 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		   seqnum,
 		   app_data,
 		   app_data_len,
-		   rtps_pkt);
-
-	udp_out(src_addr,
-		src_port,
-		dst_addr,
-		dst_port,
-		rtps_pkt,
-		APP_WRITER_RTPS_PKT_LEN,
-		APP_WRITER_RTPS_PKT_LEN,
-		udp_pkt);
-
-	ip_out(src_addr,
-	       dst_addr,
-	       IP_HDR_TTL_UNICAST,
-	       udp_pkt,
-	       APP_WRITER_UDP_PKT_LEN,
-	       APP_WRITER_UDP_PKT_LEN,
-	       tx_buf.buf);
+		   tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
 	tx_buf.head = 0;
 	tx_buf.len = APP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=process */
-static void udp_raw_out(const uint8_t dst_addr[4],
+static void rawudp_out(const uint8_t dst_addr[4],
 			   const uint8_t dst_port[2],
 			   tx_buf &tx_buf,
-			   uint8_t udp_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN],
+			   uint8_t udp_payload[],
 			   const uint8_t src_addr[4],
 			   const uint8_t src_port[2],
 			   uint8_t udp_payload_len)
 {
-	uint8_t udp_pkt[MAX_UDP_RAW_OUT_UDP_PKT_LEN]/* Cyber array=REG */;
-#pragma HLS array_partition variable=udp_pkt complete dim=0
-
-	udp_out(src_addr,
-		src_port,
-		dst_addr,
-		dst_port,
-		udp_payload,
-		MAX_UDP_RAW_OUT_PAYLOAD_LEN /*use constant length for loop unroll*/,
-		udp_payload_len,
-		udp_pkt);
-
-	ip_out(src_addr,
+	ip_set_header(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
-	       udp_pkt,
-	       MAX_UDP_RAW_OUT_UDP_PKT_LEN,
 				 udp_payload_len + UDP_HDR_SIZE,
 	       tx_buf.buf);
 
+	udp_set_header(src_port,
+		dst_port,
+		udp_payload_len,
+		tx_buf.buf + IP_HDR_SIZE);
+
 	tx_buf.head = 0;
-	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len /*shrink*/;
+	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
 #define TX_ONE_CYCLE_COUNT  (TARGET_CLOCK_FREQ / 16)
 
-#define ST_UDP_RAW_OUT           0
+#define ST_RAWUDP_OUT           0
 #define ST_SPDP_WRITER           1
 #define ST_SEDP_PUB_WRITER_0     2
 #define ST_SEDP_PUB_WRITER_1     3
@@ -671,21 +565,21 @@ static void udp_raw_out(const uint8_t dst_addr[4],
 		}							\
 	} while (0)
 
-#define UDP_RAW_OUT()					\
+#define RAWUDP_OUT()					\
 	do {								\
-		udp_raw_out(				\
-			udp_tx_dst_addr,					\
-			udp_tx_dst_port,					\
+		rawudp_out(				\
+			rawudp_tx_dst_addr,					\
+			rawudp_tx_dst_port,					\
 			tx_buf,					\
-			udp_tx_payload,					\
+			rawudp_tx_payload,					\
 			conf.ip_addr,		\
-			udp_tx_src_port,					\
-			udp_tx_payload_len);		\
+			rawudp_tx_src_port,					\
+			rawudp_tx_payload_len);		\
 	} while (0)
 
 /* Cyber func=inline */
 static void ros2_out(hls_stream<uint8_t> &out,
-		     uint32_t udp_txbuf[UDP_TXBUF_DEPTH],
+		     uint32_t rawudp_txbuf[],
 		     sedp_reader_id_t &sedp_reader_cnt,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
@@ -694,8 +588,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     volatile uint8_t *app_data_req,
 		     volatile uint8_t *app_data_rel,
 		     volatile uint8_t *app_data_grant,
-		     volatile uint8_t *udp_txbuf_rel,
-		     volatile uint8_t *udp_txbuf_grant)
+		     volatile uint8_t *rawudp_txbuf_rel,
+		     volatile uint8_t *rawudp_txbuf_grant)
 {
 #pragma HLS inline
 	static const uint8_t pub_writer_entity_id[4]/* Cyber array=REG */ =
@@ -748,26 +642,26 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
-	static uint8_t udp_tx_payload[MAX_UDP_RAW_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
-	static uint8_t udp_tx_dst_addr[4]/* Cyber array=REG */;
-	static uint8_t udp_tx_dst_port[2]/* Cyber array=REG */;
-	static uint8_t udp_tx_src_port[2]/* Cyber array=REG */;
-#pragma HLS array_partition variable=udp_tx_payload complete dim=0
-#pragma HLS array_partition variable=udp_tx_dst_addr complete dim=0
-#pragma HLS array_partition variable=udp_tx_dst_port complete dim=0
-#pragma HLS array_partition variable=udp_tx_src_port complete dim=0
-	static uint16_t udp_tx_payload_len;
+	static uint8_t rawudp_tx_payload[MAX_RAWUDP_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
+	static uint8_t rawudp_tx_dst_addr[4]/* Cyber array=REG */;
+	static uint8_t rawudp_tx_dst_port[2]/* Cyber array=REG */;
+	static uint8_t rawudp_tx_src_port[2]/* Cyber array=REG */;
+#pragma HLS array_partition variable=rawudp_tx_payload complete dim=0
+#pragma HLS array_partition variable=rawudp_tx_dst_addr complete dim=0
+#pragma HLS array_partition variable=rawudp_tx_dst_port complete dim=0
+#pragma HLS array_partition variable=rawudp_tx_src_port complete dim=0
+	static uint16_t rawudp_tx_payload_len;
 	uint32_t ram_read_buf;
 
-#define UDP_TXBUF_COPY_INIT    0
-#define UDP_TXBUF_COPY_RUNNING 1
-#define UDP_TXBUF_COPY_DONE    2
-	static hls_uint<2> udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
-	static uint16_t udp_txbuf_read_offset;
-	static uint16_t udp_txpayload_write_offset;
+#define RAWUDP_TXBUF_COPY_INIT    0
+#define RAWUDP_TXBUF_COPY_RUNNING 1
+#define RAWUDP_TXBUF_COPY_DONE    2
+	static hls_uint<2> rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
+	static uint16_t rawudp_txbuf_rd_off;
+	static uint16_t rawudp_txpayload_wr_off;
 
 	static uint32_t clk_cnt;
-	static hls_uint<5> state = ST_UDP_RAW_OUT;
+	static hls_uint<5> state = ST_RAWUDP_OUT;
 
 	uint8_t grant;
 
@@ -779,70 +673,70 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	}
 	*/
 
-	switch (udp_txbuf_copy_status) {
-	case UDP_TXBUF_COPY_INIT:
-		if (*udp_txbuf_grant == 1) {
-			udp_txbuf_read_offset = 0;
-			udp_txpayload_write_offset = 0;
-			udp_txbuf_copy_status = UDP_TXBUF_COPY_RUNNING;
+	switch (rawudp_txbuf_copy_status) {
+	case RAWUDP_TXBUF_COPY_INIT:
+		if (*rawudp_txbuf_grant == 1) {
+			rawudp_txbuf_rd_off = 0;
+			rawudp_txpayload_wr_off = 0;
+			rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
 		}
 		break;
-	case UDP_TXBUF_COPY_RUNNING:
-		switch (udp_txbuf_read_offset) {
+	case RAWUDP_TXBUF_COPY_RUNNING:
+		switch (rawudp_txbuf_rd_off) {
 		case 0:
-			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-			udp_tx_dst_addr[0] = ram_read_buf & 0xff;
-			udp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
-			udp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
-			udp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
+			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+			rawudp_tx_dst_addr[0] = ram_read_buf & 0xff;
+			rawudp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
+			rawudp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
+			rawudp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
 			break;
 		case 1:
-			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-			udp_tx_dst_port[1] = ram_read_buf & 0xff;
-			udp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
-			udp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
-			udp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
+			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+			rawudp_tx_dst_port[1] = ram_read_buf & 0xff;
+			rawudp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
+			rawudp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
+			rawudp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
 			break;
 		case 2:
-			ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-			udp_tx_payload_len = ram_read_buf & 0xff;
-			udp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
+			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+			rawudp_tx_payload_len = ram_read_buf & 0xff;
+			rawudp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
 			// padding 2byte
 			break;
 		default:
-			if (udp_txpayload_write_offset == MAX_UDP_RAW_OUT_PAYLOAD_LEN) {
-				udp_txbuf_copy_status = UDP_TXBUF_COPY_DONE;
+			if (rawudp_txpayload_wr_off == MAX_RAWUDP_OUT_PAYLOAD_LEN) {
+				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_DONE;
 			} else {
-				ram_read_buf = udp_txbuf[udp_txbuf_read_offset];
-				udp_tx_payload[udp_txpayload_write_offset + 0] = (udp_tx_payload_len <= udp_txpayload_write_offset + 0) ? 0 : (ram_read_buf & 0xff);
-				udp_tx_payload[udp_txpayload_write_offset + 1] = (udp_tx_payload_len <= udp_txpayload_write_offset + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
-				udp_tx_payload[udp_txpayload_write_offset + 2] = (udp_tx_payload_len <= udp_txpayload_write_offset + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
-				udp_tx_payload[udp_txpayload_write_offset + 3] = (udp_tx_payload_len <= udp_txpayload_write_offset + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
-				udp_txpayload_write_offset += 4;
+				ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+				rawudp_tx_payload[rawudp_txpayload_wr_off + 0] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 0) ? 0 : (ram_read_buf & 0xff);
+				rawudp_tx_payload[rawudp_txpayload_wr_off + 1] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+				rawudp_tx_payload[rawudp_txpayload_wr_off + 2] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+				rawudp_tx_payload[rawudp_txpayload_wr_off + 3] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+				rawudp_txpayload_wr_off += 4;
 			}
 			break;
 		}
-		udp_txbuf_read_offset++;
+		rawudp_txbuf_rd_off++;
 		break;
-	case UDP_TXBUF_COPY_DONE:
+	case RAWUDP_TXBUF_COPY_DONE:
 		break;
 	default:
-		udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+		rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
 		break;
 	}
 
 	if (tx_buf.empty()) {
 		switch (state) {
-		case ST_UDP_RAW_OUT:
+		case ST_RAWUDP_OUT:
 			if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
 				clk_cnt = 0;
 				state++;
 			}
-			if (udp_txbuf_copy_status == UDP_TXBUF_COPY_DONE) {
+			if (rawudp_txbuf_copy_status == RAWUDP_TXBUF_COPY_DONE) {
 				// at least one packet will be sent per cycle
-				UDP_RAW_OUT();
-				*udp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
-				udp_txbuf_copy_status = UDP_TXBUF_COPY_INIT;
+				RAWUDP_OUT();
+				*rawudp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
+				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
 			}
 			break;
 		case ST_SPDP_WRITER: SPDP_WRITER_OUT(); state++; break;
@@ -873,11 +767,14 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		case ST_APP_WRITER_0: APP_WRITER_OUT(0); state++; break;
 		case ST_APP_WRITER_1: APP_WRITER_OUT(1); state++; break;
 		case ST_APP_WRITER_2: APP_WRITER_OUT(2); state++; break;
-		case ST_APP_WRITER_3: APP_WRITER_OUT(3); state = ST_UDP_RAW_OUT; break;
+		case ST_APP_WRITER_3: APP_WRITER_OUT(3); state = ST_RAWUDP_OUT; break;
 		default:
-			state = ST_UDP_RAW_OUT;
+			state = ST_RAWUDP_OUT;
 			break;
 		}
+
+		ip_set_checksum(tx_buf.buf);
+		udp_set_checksum(tx_buf.buf + IP_HDR_SIZE);
 	} else {
 #ifdef USE_FIFOIF_ETHERNET
 		tx_buf.shift_out(out);
@@ -892,8 +789,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 /* Cyber func=process_pipeline */
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
-	  uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
-	  uint32_t udp_txbuf[UDP_TXBUF_DEPTH],
+	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
+	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
 	  const config_t &conf,
 	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,

@@ -34,6 +34,12 @@
 #define SPDP_WRITER_TOT_LEN					\
 	(RTPS_HDR_SIZE + SBM_HDR_SIZE + TIMESTAMP_SIZE +	\
 	 SBM_HDR_SIZE + SPDP_WRITER_OCTETS_TO_NEXT_HEADER)
+#define SPDP_WRITER_RTPS_PKT_LEN			\
+	SPDP_WRITER_TOT_LEN
+#define SPDP_WRITER_UDP_PKT_LEN				\
+	(UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
+#define SPDP_WRITER_IP_PKT_LEN				\
+	(IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
 
 void spdp_reader(hls_stream<hls_uint<9>> &in,
 		sedp_reader_id_t &reader_cnt,
@@ -46,7 +52,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t default_addr[4],
 		 const uint8_t default_port[2],
 		 uint8_t buf[SPDP_WRITER_TOT_LEN],
-		 const uint8_t entity_name[MAX_NODE_NAME_LEN],
+		 const uint8_t entity_name[],
 		 uint8_t entity_name_len);
 
 #endif // !SPDP_HPP

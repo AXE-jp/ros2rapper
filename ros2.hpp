@@ -24,6 +24,11 @@
 #include "hls.hpp"
 #include "common.hpp"
 
+#define MAX_NODE_NAME_LEN        32
+#define MAX_TOPIC_NAME_LEN       32
+#define MAX_TOPIC_TYPE_NAME_LEN  64
+#define MAX_APP_DATA_LEN         64
+
 typedef struct {
 		uint8_t ip_addr[4];
 		uint8_t node_name[MAX_NODE_NAME_LEN];
@@ -42,9 +47,6 @@ typedef struct {
 } config_t;
 
 #define CTRL_ENABLE 0x1
-
-#define UDP_RXBUF_DEPTH 64
-#define UDP_TXBUF_DEPTH 64
 
 void ros2(
 		hls_stream<uint8_t> &in,

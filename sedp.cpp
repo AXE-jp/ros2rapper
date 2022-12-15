@@ -841,6 +841,12 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 #else
 	#error "not implemented!"
 #endif
+
+	/* Cyber unroll_times=all */
+	for (int i = SEDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+#pragma HLS unroll
+		buf[i] = 0;
+	}
 }
 
 /* Cyber func=inline */
@@ -934,6 +940,12 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 	buf[65] = L_BYTE1(cnt);
 	buf[66] = L_BYTE2(cnt);
 	buf[67] = L_BYTE3(cnt);
+
+	/* Cyber unroll_times=all */
+	for (int i = SEDP_HEARTBEAT_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+#pragma HLS unroll
+		buf[i] = 0;
+	}
 }
 
 /* Cyber func=inline */
@@ -1026,4 +1038,10 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
 	buf[65] = L_BYTE1(cnt);
 	buf[66] = L_BYTE2(cnt);
 	buf[67] = L_BYTE3(cnt);
+
+	/* Cyber unroll_times=all */
+	for (int i = SEDP_ACKNACK_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+#pragma HLS unroll
+		buf[i] = 0;
+	}
 }

@@ -683,3 +683,63 @@ void ip_out(const uint8_t src_addr[4],
 
 	id++;
 }
+
+/* Cyber func=inline */
+void ip_set_header(const uint8_t src_addr[4],
+	    const uint8_t dst_addr[4],
+	    const uint8_t ttl,
+	    const uint16_t ip_data_real_len,
+	    uint8_t ip_hdr[])
+{
+#pragma HLS inline
+	static uint16_t id;
+
+	uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
+
+	ip_hdr[0] = IP_HDR_VERSION_IHL;
+	ip_hdr[1] = IP_HDR_TOS;
+	ip_hdr[2] = tot_real_len >> 8;
+	ip_hdr[3] = tot_real_len & 0xff;
+	ip_hdr[4] = id >> 8;
+	ip_hdr[5] = id & 0xff;
+	ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
+	ip_hdr[7] = IP_HDR_FLAG_OFF & 0xff;
+	ip_hdr[8] = ttl;
+	ip_hdr[9] = IP_HDR_PROTOCOL;
+	ip_hdr[10] = 0;
+	ip_hdr[11] = 0;
+	ip_hdr[12] = src_addr[0];
+	ip_hdr[13] = src_addr[1];
+	ip_hdr[14] = src_addr[2];
+	ip_hdr[15] = src_addr[3];
+	ip_hdr[16] = dst_addr[0];
+	ip_hdr[17] = dst_addr[1];
+	ip_hdr[18] = dst_addr[2];
+	ip_hdr[19] = dst_addr[3];
+
+	id++;
+}
+
+/* Cyber func=inline */
+void ip_set_checksum(uint8_t ip_hdr[])
+{
+#pragma HLS inline
+	uint32_t sum = 0;
+	uint16_t sum_n;
+
+	/* Cyber unroll_times=all */
+	for (int i = 0; i < IP_HDR_SIZE; i++) {
+#pragma HLS unroll
+		if (i & 0x1)
+			sum += ip_hdr[i];
+		else
+			sum += ip_hdr[i] << 8;
+	}
+
+	sum = (sum & 0xffff) + (sum >> 16);
+	sum = (sum & 0xffff) + (sum >> 16);
+	sum_n = ~sum;
+
+	ip_hdr[10] = sum_n >> 8;
+	ip_hdr[11] = sum_n & 0xff;
+}

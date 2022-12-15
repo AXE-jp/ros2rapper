@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include "hls.hpp"
+#include "common.hpp"
 #include "ros2.hpp"
 
 #define UDP_HDR_SIZE	8
@@ -42,7 +43,7 @@
 
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 	    const uint8_t cpu_udp_port[2],
-	    uint32_t udp_rxbuf[UDP_RXBUF_DEPTH],
+	    uint32_t udp_rxbuf[],
 	    volatile uint8_t *udp_rxbuf_rel,
 	    volatile uint8_t *udp_rxbuf_grant,
 	    bool &parity_error);
@@ -55,5 +56,12 @@ void udp_out(const uint8_t src_addr[4],
 	     const uint16_t udp_data_process_len,
 	     const uint16_t udp_data_real_len,
 	     uint8_t buf[]);
+
+void udp_set_header(const uint8_t src_port[2],
+	     const uint8_t dst_port[2],
+	     const uint16_t udp_data_len,
+	     uint8_t udp_hdr[]);
+
+void udp_set_checksum(uint8_t buf[]);
 
 #endif // !UDP_HPP
