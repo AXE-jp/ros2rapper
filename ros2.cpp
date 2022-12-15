@@ -690,7 +690,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 			case RAWUDP_TXBUF_COPY_INIT:
 				if (*rawudp_txbuf_grant == 1) {
 					rawudp_txbuf_rd_off = 0;
-					rawudp_txpayload_wr_off = IP_HDR_SIZE + UDP_HDR_SIZE;
+					rawudp_txpayload_wr_off = 0;
 					rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
 				} else if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
 					clk_cnt = 0;
@@ -720,14 +720,14 @@ static void ros2_out(hls_stream<uint8_t> &out,
 					// padding 2byte
 					break;
 				default:
-					if (rawudp_txpayload_wr_off == MAX_RAWUDP_OUT_PAYLOAD_LEN + IP_HDR_SIZE + UDP_HDR_SIZE) {
+					if (rawudp_txpayload_wr_off == MAX_RAWUDP_OUT_PAYLOAD_LEN) {
 						rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_DONE;
 					} else {
 						ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
-						tx_buf.buf[rawudp_txpayload_wr_off + 0] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 0) ? 0 : (ram_read_buf & 0xff);
-						tx_buf.buf[rawudp_txpayload_wr_off + 1] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
-						tx_buf.buf[rawudp_txpayload_wr_off + 2] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
-						tx_buf.buf[rawudp_txpayload_wr_off + 3] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 0 + IP_HDR_SIZE + UDP_HDR_SIZE] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 0) ? 0 : (ram_read_buf & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 1 + IP_HDR_SIZE + UDP_HDR_SIZE] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 2 + IP_HDR_SIZE + UDP_HDR_SIZE] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 3 + IP_HDR_SIZE + UDP_HDR_SIZE] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
 						rawudp_txpayload_wr_off += 4;
 					}
 					break;
