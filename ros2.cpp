@@ -174,6 +174,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
+#pragma HLS inline
 	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
 		IP_MULTICAST_ADDR;
 	uint8_t dst_port[2]/* Cyber array=REG */;
@@ -217,6 +218,7 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
+#pragma HLS inline
 	ip_set_header(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
@@ -259,6 +261,7 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 			       const uint8_t src_port[2],
 			       const uint8_t writer_guid_prefix[12])
 {
+#pragma HLS inline
 	cnt++;
 
 	ip_set_header(src_addr,
@@ -300,6 +303,7 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 			     const uint8_t src_port[2],
 			     const uint8_t writer_guid_prefix[12])
 {
+#pragma HLS inline
 	cnt++;
 
 	ip_set_header(src_addr,
@@ -341,6 +345,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t app_data[MAX_APP_DATA_LEN],
 			   uint8_t app_data_len)
 {
+#pragma HLS inline
 	seqnum++;
 
 	ip_set_header(src_addr,
@@ -371,11 +376,11 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 static void rawudp_out(const uint8_t dst_addr[4],
 			   const uint8_t dst_port[2],
 			   tx_buf &tx_buf,
-			   uint8_t udp_payload[],
 			   const uint8_t src_addr[4],
 			   const uint8_t src_port[2],
 			   uint8_t udp_payload_len)
 {
+#pragma HLS inline
 	ip_set_header(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
@@ -571,7 +576,6 @@ static void rawudp_out(const uint8_t dst_addr[4],
 			rawudp_tx_dst_addr,					\
 			rawudp_tx_dst_port,					\
 			tx_buf,					\
-			rawudp_tx_payload,					\
 			conf.ip_addr,		\
 			rawudp_tx_src_port,					\
 			rawudp_tx_payload_len);		\
@@ -642,11 +646,9 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
-	static uint8_t rawudp_tx_payload[MAX_RAWUDP_OUT_PAYLOAD_LEN]/* Cyber array=REG */;
 	static uint8_t rawudp_tx_dst_addr[4]/* Cyber array=REG */;
 	static uint8_t rawudp_tx_dst_port[2]/* Cyber array=REG */;
 	static uint8_t rawudp_tx_src_port[2]/* Cyber array=REG */;
-#pragma HLS array_partition variable=rawudp_tx_payload complete dim=0
 #pragma HLS array_partition variable=rawudp_tx_dst_addr complete dim=0
 #pragma HLS array_partition variable=rawudp_tx_dst_port complete dim=0
 #pragma HLS array_partition variable=rawudp_tx_src_port complete dim=0
@@ -673,81 +675,88 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	}
 	*/
 
-	switch (rawudp_txbuf_copy_status) {
-	case RAWUDP_TXBUF_COPY_INIT:
-		if (*rawudp_txbuf_grant == 1) {
-			rawudp_txbuf_rd_off = 0;
-			rawudp_txpayload_wr_off = 0;
-			rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
-		}
-		break;
-	case RAWUDP_TXBUF_COPY_RUNNING:
-		switch (rawudp_txbuf_rd_off) {
-		case 0:
-			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
-			rawudp_tx_dst_addr[0] = ram_read_buf & 0xff;
-			rawudp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
-			rawudp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
-			rawudp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
-			break;
-		case 1:
-			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
-			rawudp_tx_dst_port[1] = ram_read_buf & 0xff;
-			rawudp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
-			rawudp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
-			rawudp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
-			break;
-		case 2:
-			ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
-			rawudp_tx_payload_len = ram_read_buf & 0xff;
-			rawudp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
-			// padding 2byte
-			break;
-		default:
-			if (rawudp_txpayload_wr_off == MAX_RAWUDP_OUT_PAYLOAD_LEN) {
-				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_DONE;
-			} else {
-				ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
-				rawudp_tx_payload[rawudp_txpayload_wr_off + 0] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 0) ? 0 : (ram_read_buf & 0xff);
-				rawudp_tx_payload[rawudp_txpayload_wr_off + 1] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
-				rawudp_tx_payload[rawudp_txpayload_wr_off + 2] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
-				rawudp_tx_payload[rawudp_txpayload_wr_off + 3] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
-				rawudp_txpayload_wr_off += 4;
-			}
-			break;
-		}
-		rawudp_txbuf_rd_off++;
-		break;
-	case RAWUDP_TXBUF_COPY_DONE:
-		break;
-	default:
-		rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
-		break;
-	}
+	if (!tx_buf.empty()) {
+#ifdef USE_FIFOIF_ETHERNET
+		tx_buf.shift_out(out);
+#else // !USE_FIFOIF_ETHERNET
+		tx_buf.shift_out(s);
 
-	if (tx_buf.empty()) {
+		slip_out(s, out);
+#endif // USE_FIFOIF_ETHERNET
+	} else {
 		switch (state) {
 		case ST_RAWUDP_OUT:
-			if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
-				clk_cnt = 0;
-				state++;
-			}
-			if (rawudp_txbuf_copy_status == RAWUDP_TXBUF_COPY_DONE) {
-				// at least one packet will be sent per cycle
+			switch (rawudp_txbuf_copy_status) {
+			case RAWUDP_TXBUF_COPY_INIT:
+				if (*rawudp_txbuf_grant == 1) {
+					rawudp_txbuf_rd_off = 0;
+					rawudp_txpayload_wr_off = IP_HDR_SIZE + UDP_HDR_SIZE;
+					rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
+				} else if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
+					clk_cnt = 0;
+					state++;
+				}
+				break;
+			case RAWUDP_TXBUF_COPY_RUNNING:
+				switch (rawudp_txbuf_rd_off) {
+				case 0:
+					ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+					rawudp_tx_dst_addr[0] = ram_read_buf & 0xff;
+					rawudp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
+					rawudp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
+					rawudp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
+					break;
+				case 1:
+					ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+					rawudp_tx_dst_port[1] = ram_read_buf & 0xff;
+					rawudp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
+					rawudp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
+					rawudp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
+					break;
+				case 2:
+					ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+					rawudp_tx_payload_len = ram_read_buf & 0xff;
+					rawudp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
+					// padding 2byte
+					break;
+				default:
+					if (rawudp_txpayload_wr_off == MAX_RAWUDP_OUT_PAYLOAD_LEN + IP_HDR_SIZE + UDP_HDR_SIZE) {
+						rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_DONE;
+					} else {
+						ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
+						tx_buf.buf[rawudp_txpayload_wr_off + 0] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 0) ? 0 : (ram_read_buf & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 1] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 1) ? 0 : ((ram_read_buf >> 8) & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 2] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 2) ? 0 : ((ram_read_buf >> 16) & 0xff);
+						tx_buf.buf[rawudp_txpayload_wr_off + 3] = (rawudp_tx_payload_len <= rawudp_txpayload_wr_off + 3) ? 0 : ((ram_read_buf >> 24) & 0xff);
+						rawudp_txpayload_wr_off += 4;
+					}
+					break;
+				}
+				rawudp_txbuf_rd_off++;
+				break;
+			case RAWUDP_TXBUF_COPY_DONE:
 				RAWUDP_OUT();
 				*rawudp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
 				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
+				if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
+					clk_cnt = 0;
+					state++;
+				}
+				break;
+			default:
+				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
+				break;
 			}
 			break;
 		case ST_SPDP_WRITER: SPDP_WRITER_OUT(); state++; break;
-		case ST_SEDP_PUB_WRITER_0: SEDP_PUB_WRITER_OUT(0); state++; break;
-		case ST_SEDP_PUB_WRITER_1: SEDP_PUB_WRITER_OUT(1); state++; break;
-		case ST_SEDP_PUB_WRITER_2: SEDP_PUB_WRITER_OUT(2); state++; break;
-		case ST_SEDP_PUB_WRITER_3: SEDP_PUB_WRITER_OUT(3); state++; break;
-		case ST_SEDP_SUB_WRITER_0: SEDP_SUB_WRITER_OUT(0); state++; break;
-		case ST_SEDP_SUB_WRITER_1: SEDP_SUB_WRITER_OUT(1); state++; break;
-		case ST_SEDP_SUB_WRITER_2: SEDP_SUB_WRITER_OUT(2); state++; break;
-		case ST_SEDP_SUB_WRITER_3: SEDP_SUB_WRITER_OUT(3); state++; break;
+		case ST_SEDP_PUB_WRITER_0:    SEDP_PUB_WRITER_OUT(0); state++; break;
+		case ST_SEDP_PUB_WRITER_1:    SEDP_PUB_WRITER_OUT(1); state++; break;
+		case ST_SEDP_PUB_WRITER_2:    SEDP_PUB_WRITER_OUT(2); state++; break;
+		case ST_SEDP_PUB_WRITER_3:    SEDP_PUB_WRITER_OUT(3); state++; break;
+		case ST_SEDP_SUB_WRITER_0:    SEDP_SUB_WRITER_OUT(0); state++; break;
+		case ST_SEDP_SUB_WRITER_1:    SEDP_SUB_WRITER_OUT(1); state++; break;
+		case ST_SEDP_SUB_WRITER_2:    SEDP_SUB_WRITER_OUT(2); state++; break;
+		case ST_SEDP_SUB_WRITER_3:    SEDP_SUB_WRITER_OUT(3); state++; break;
 		case ST_SEDP_PUB_HEARTBEAT_0: SEDP_PUB_HEARTBEAT_OUT(0); state++; break;
 		case ST_SEDP_PUB_HEARTBEAT_1: SEDP_PUB_HEARTBEAT_OUT(1); state++; break;
 		case ST_SEDP_PUB_HEARTBEAT_2: SEDP_PUB_HEARTBEAT_OUT(2); state++; break;
@@ -756,33 +765,25 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		case ST_SEDP_SUB_HEARTBEAT_1: SEDP_SUB_HEARTBEAT_OUT(1); state++; break;
 		case ST_SEDP_SUB_HEARTBEAT_2: SEDP_SUB_HEARTBEAT_OUT(2); state++; break;
 		case ST_SEDP_SUB_HEARTBEAT_3: SEDP_SUB_HEARTBEAT_OUT(3); state++; break;
-		case ST_SEDP_PUB_ACKNACK_0: SEDP_PUB_ACKNACK_OUT(0); state++; break;
-		case ST_SEDP_PUB_ACKNACK_1: SEDP_PUB_ACKNACK_OUT(1); state++; break;
-		case ST_SEDP_PUB_ACKNACK_2: SEDP_PUB_ACKNACK_OUT(2); state++; break;
-		case ST_SEDP_PUB_ACKNACK_3: SEDP_PUB_ACKNACK_OUT(3); state++; break;
-		case ST_SEDP_SUB_ACKNACK_0: SEDP_SUB_ACKNACK_OUT(0); state++; break;
-		case ST_SEDP_SUB_ACKNACK_1: SEDP_SUB_ACKNACK_OUT(1); state++; break;
-		case ST_SEDP_SUB_ACKNACK_2: SEDP_SUB_ACKNACK_OUT(2); state++; break;
-		case ST_SEDP_SUB_ACKNACK_3: SEDP_SUB_ACKNACK_OUT(3); state++; break;
-		case ST_APP_WRITER_0: APP_WRITER_OUT(0); state++; break;
-		case ST_APP_WRITER_1: APP_WRITER_OUT(1); state++; break;
-		case ST_APP_WRITER_2: APP_WRITER_OUT(2); state++; break;
-		case ST_APP_WRITER_3: APP_WRITER_OUT(3); state = ST_RAWUDP_OUT; break;
-		default:
-			state = ST_RAWUDP_OUT;
-			break;
+		case ST_SEDP_PUB_ACKNACK_0:   SEDP_PUB_ACKNACK_OUT(0); state++; break;
+		case ST_SEDP_PUB_ACKNACK_1:   SEDP_PUB_ACKNACK_OUT(1); state++; break;
+		case ST_SEDP_PUB_ACKNACK_2:   SEDP_PUB_ACKNACK_OUT(2); state++; break;
+		case ST_SEDP_PUB_ACKNACK_3:   SEDP_PUB_ACKNACK_OUT(3); state++; break;
+		case ST_SEDP_SUB_ACKNACK_0:   SEDP_SUB_ACKNACK_OUT(0); state++; break;
+		case ST_SEDP_SUB_ACKNACK_1:   SEDP_SUB_ACKNACK_OUT(1); state++; break;
+		case ST_SEDP_SUB_ACKNACK_2:   SEDP_SUB_ACKNACK_OUT(2); state++; break;
+		case ST_SEDP_SUB_ACKNACK_3:   SEDP_SUB_ACKNACK_OUT(3); state++; break;
+		case ST_APP_WRITER_0:         APP_WRITER_OUT(0); state++; break;
+		case ST_APP_WRITER_1:         APP_WRITER_OUT(1); state++; break;
+		case ST_APP_WRITER_2:         APP_WRITER_OUT(2); state++; break;
+		case ST_APP_WRITER_3:         APP_WRITER_OUT(3);
+		default:                      state = ST_RAWUDP_OUT; break;
 		}
 
-		ip_set_checksum(tx_buf.buf);
-		udp_set_checksum(tx_buf.buf + IP_HDR_SIZE);
-	} else {
-#ifdef USE_FIFOIF_ETHERNET
-		tx_buf.shift_out(out);
-#else // !USE_FIFOIF_ETHERNET
-		tx_buf.shift_out(s);
-
-		slip_out(s, out);
-#endif // USE_FIFOIF_ETHERNET
+		if (!tx_buf.empty()) {
+			ip_set_checksum(tx_buf.buf);
+			udp_set_checksum(tx_buf.buf + IP_HDR_SIZE);
+		}
 	}
 }
 
