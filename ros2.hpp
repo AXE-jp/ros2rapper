@@ -36,6 +36,7 @@ typedef struct {
 		uint8_t node_udp_port[2];
 		uint8_t cpu_udp_port[2];
 		uint16_t port_num_seed;
+		uint32_t tx_period;
 		uint8_t guid_prefix[12];
 		uint8_t topic_name[MAX_TOPIC_NAME_LEN];
 		uint8_t topic_name_len;

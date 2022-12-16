@@ -388,8 +388,6 @@ static void rawudp_out(const uint8_t dst_addr[4],
 	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
-#define TX_ONE_CYCLE_COUNT  (TARGET_CLOCK_FREQ / 8)
-
 #define ST_RAWUDP_OUT           0
 #define ST_SPDP_WRITER           1
 #define ST_SEDP_PUB_WRITER_0     2
@@ -678,7 +676,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 					rawudp_txbuf_rd_off = 0;
 					rawudp_txpayload_wr_off = 0;
 					rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
-				} else if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
+				} else if (clk_cnt >= conf.tx_period) {
 					clk_cnt = 0;
 					state++;
 				}
@@ -724,7 +722,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 				RAWUDP_OUT();
 				*rawudp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
 				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
-				if (clk_cnt >= TX_ONE_CYCLE_COUNT) {
+				if (clk_cnt >= conf.tx_period) {
 					clk_cnt = 0;
 					state++;
 				}
