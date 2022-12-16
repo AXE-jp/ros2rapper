@@ -174,7 +174,6 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
-#pragma HLS inline
 	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
 		IP_MULTICAST_ADDR;
 	uint8_t dst_port[2]/* Cyber array=REG */;
@@ -218,7 +217,6 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
-#pragma HLS inline
 	ip_set_header(conf.ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
@@ -261,7 +259,6 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 			       const uint8_t src_port[2],
 			       const uint8_t writer_guid_prefix[12])
 {
-#pragma HLS inline
 	cnt++;
 
 	ip_set_header(src_addr,
@@ -303,7 +300,6 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 			     const uint8_t src_port[2],
 			     const uint8_t writer_guid_prefix[12])
 {
-#pragma HLS inline
 	cnt++;
 
 	ip_set_header(src_addr,
@@ -345,7 +341,6 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t app_data[MAX_APP_DATA_LEN],
 			   uint8_t app_data_len)
 {
-#pragma HLS inline
 	seqnum++;
 
 	ip_set_header(src_addr,
@@ -380,7 +375,6 @@ static void rawudp_out(const uint8_t dst_addr[4],
 			   const uint8_t src_port[2],
 			   uint8_t udp_payload_len)
 {
-#pragma HLS inline
 	ip_set_header(src_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
@@ -396,7 +390,7 @@ static void rawudp_out(const uint8_t dst_addr[4],
 	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
-#define TX_ONE_CYCLE_COUNT  (TARGET_CLOCK_FREQ / 16)
+#define TX_ONE_CYCLE_COUNT  (TARGET_CLOCK_FREQ / 8)
 
 #define ST_RAWUDP_OUT           0
 #define ST_SPDP_WRITER           1
@@ -782,7 +776,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 
 		if (!tx_buf.empty()) {
 			ip_set_checksum(tx_buf.buf);
-			udp_set_checksum(tx_buf.buf + IP_HDR_SIZE);
+			udp_set_checksum(tx_buf.buf);
 		}
 	}
 }

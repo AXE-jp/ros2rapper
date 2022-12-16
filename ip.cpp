@@ -740,6 +740,6 @@ void ip_set_checksum(uint8_t ip_hdr[])
 	sum = (sum & 0xffff) + (sum >> 16);
 	sum_n = ~sum;
 
-	ip_hdr[10] = sum_n >> 8;
-	ip_hdr[11] = sum_n & 0xff;
+	ip_hdr[IP_HDR_OFFSET_CHECK + 0] = sum_n >> 8;
+	ip_hdr[IP_HDR_OFFSET_CHECK + 1] = sum_n & 0xff;
 }

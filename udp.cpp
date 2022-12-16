@@ -321,6 +321,6 @@ void udp_set_checksum(uint8_t buf[])
 	sum = (sum & 0xffff) + (sum >> 16);
 	sum_n = ~sum;
 
-	buf[IP_HDR_SIZE + 6] = sum_n >> 8;
-	buf[IP_HDR_SIZE + 7] = sum_n & 0xff;
+	buf[IP_HDR_SIZE + UDP_HDR_OFFSET_SUM + 0] = sum_n >> 8;
+	buf[IP_HDR_SIZE + UDP_HDR_OFFSET_SUM + 1] = sum_n & 0xff;
 }
