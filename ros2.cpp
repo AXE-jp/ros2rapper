@@ -148,10 +148,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	if (!s3.read_nb(x))
 		return;
 
-	//if (conf.ctrl & CTRL_ENABLE) {
-		s4.write(x);
-		s5.write(x);
-	//}
+	s4.write(x);
+	s5.write(x);
 
 	spdp_reader(s4,
 		    sedp_reader_cnt,
@@ -663,12 +661,6 @@ static void ros2_out(hls_stream<uint8_t> &out,
 
 	clk_cnt++;
 
-	/*
-	if (!(conf.ctrl & CTRL_ENABLE)) {
-		return;
-	}
-	*/
-
 	if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
 		tx_buf.shift_out(out);
@@ -817,14 +809,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable=sedp_reader_tbl complete dim=0
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
-
-	/*
-	if (!(conf.ctrl & CTRL_ENABLE)) {
-		// reset
-		sedp_reader_cnt = 0;
-		app_reader_cnt = 0;
-	}
-	*/
 
 	ros2_in(in,
 		udp_rxbuf,

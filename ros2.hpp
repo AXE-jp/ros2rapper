@@ -43,7 +43,6 @@ typedef struct {
 		uint8_t topic_type_name_len;
 		uint8_t app_data[MAX_APP_DATA_LEN];
 		uint8_t app_data_len;
-		uint8_t ctrl;
 } config_t;
 
 #define CTRL_ENABLE 0x1
