@@ -146,6 +146,7 @@ wire [7:0] ros2_node_name_len = 8'd7;
 wire [15:0] ros2_node_udp_port = 16'd52000;
 wire [15:0] ros2_cpu_udp_port = 16'd1234;
 wire [15:0] ros2_port_num_seed = 16'd7400;
+wire [31:0] ros2_tx_period = 32'd12500000;
 wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
 wire [255:0] ros2_topic_name = "rettahc/tr";
 wire [7:0] ros2_topic_name_len = 8'd11;
@@ -235,6 +236,7 @@ ros2_ether ros2 (
     .ros2_node_udp_port(ros2_node_udp_port),
     .ros2_cpu_udp_port(ros2_cpu_udp_port),
     .ros2_port_num_seed(ros2_port_num_seed),
+    .ros2_tx_period(ros2_tx_period),
     .ros2_guid_prefix(ros2_guid_prefix),
     .ros2_topic_name(ros2_topic_name),
     .ros2_topic_name_len(ros2_topic_name_len),
@@ -284,6 +286,7 @@ module ros2_ether (
     input wire [15:0] ros2_node_udp_port,
     input wire [15:0] ros2_cpu_udp_port,
     input wire [15:0] ros2_port_num_seed,
+    input wire [31:0] ros2_tx_period,
     input wire [95:0] ros2_guid_prefix,
     input wire [255:0] ros2_topic_name,
     input wire [7:0] ros2_topic_name_len,
@@ -545,6 +548,7 @@ ros2_i (
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
     .conf_cpu_udp_port({ros2_cpu_udp_port[7:0], ros2_cpu_udp_port[15:8]}),
     .conf_port_num_seed(ros2_port_num_seed),
+    .conf_tx_period(ros2_tx_period),
     .conf_guid_prefix(ros2_guid_prefix),
     .conf_topic_name(ros2_topic_name),
     .conf_topic_name_len(ros2_topic_name_len),
