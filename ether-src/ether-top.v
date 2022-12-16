@@ -156,8 +156,6 @@ wire [7:0] ros2_topic_type_name_len = 8'd29;
 wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
 wire [7:0] ros2_app_data_len = 8'd35;
 
-wire [7:0] ros2_ctrl = 8'b00000001;
-
 (* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] rxbuf_addr;
 (* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_ce;
 (* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_we;
@@ -244,7 +242,6 @@ ros2_ether ros2 (
     .ros2_topic_type_name_len(ros2_topic_type_name_len),
     .ros2_app_data(ros2_app_data),
     .ros2_app_data_len(ros2_app_data_len),
-    .ros2_ctrl(ros2_ctrl),
     .ros2_app_data_cpu_req(1'b0),
     .ros2_app_data_cpu_rel(1'b0),
     .udp_rxbuf_cpu_rel(rxbuf_cpu_rel),
@@ -294,7 +291,6 @@ module ros2_ether (
     input wire [7:0] ros2_topic_type_name_len,
     input wire [511:0] ros2_app_data,
     input wire [7:0] ros2_app_data_len,
-    input wire [7:0] ros2_ctrl,
     input wire ros2_app_data_cpu_req,
     input wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
@@ -556,7 +552,6 @@ ros2_i (
     .conf_topic_type_name_len(ros2_topic_type_name_len),
     .conf_app_data(ros2_app_data),
     .conf_app_data_len(ros2_app_data_len),
-    .conf_ctrl(ros2_ctrl),
     .app_data_req_ap_vld(ros2_app_data_ip_req),
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
     .app_data_grant({7'b0, ros2_app_data_ip_grant}),
