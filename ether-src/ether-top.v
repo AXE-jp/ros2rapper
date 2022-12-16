@@ -156,21 +156,21 @@ wire [7:0] ros2_topic_type_name_len = 8'd29;
 wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
 wire [7:0] ros2_app_data_len = 8'd35;
 
-(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] rxbuf_addr;
-(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_ce;
-(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_we;
-(* dont_touch="true" *) (* mark_debug="true" *) wire [31:0] rxbuf_wdata;
-(* dont_touch="true" *) (* mark_debug="true" *) reg rxbuf_cpu_rel;
-(* dont_touch="true" *) (* mark_debug="true" *) wire rxbuf_cpu_grant;
+wire [5:0] rxbuf_addr;
+wire rxbuf_ce;
+wire rxbuf_we;
+wire [31:0] rxbuf_wdata;
+reg rxbuf_cpu_rel;
+wire rxbuf_cpu_grant;
 reg [15:0] last_rx_size;
 assign led_r = (last_rx_size >= 1 && last_rx_size <= 10);
 assign led_g = (last_rx_size >= 11 && last_rx_size <= 20);
 assign led_b = (last_rx_size > 20);
 
-(* dont_touch="true" *) (* mark_debug="true" *) wire [5:0] txbuf_addr;
-(* dont_touch="true" *) (* mark_debug="true" *) reg [31:0] txbuf_rdata;
-(* dont_touch="true" *) (* mark_debug="true" *) reg txbuf_cpu_rel;
-(* dont_touch="true" *) (* mark_debug="true" *) wire txbuf_cpu_grant;
+wire [5:0] txbuf_addr;
+reg [31:0] txbuf_rdata;
+reg txbuf_cpu_rel;
+wire txbuf_cpu_grant;
 reg [27:0] tx_cnt;
 
 always @(posedge clk_int) begin
@@ -404,12 +404,12 @@ verilog_ethernet_inst (
     .subnet_mask({subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
 );
 
-(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_wr_en;
-(* dont_touch="true" *) (* mark_debug="true" *) wire [7:0] tx_fifo_din;
-(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_full;
-(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_rd_en;
-(* dont_touch="true" *) (* mark_debug="true" *) wire [7:0] tx_fifo_dout;
-(* dont_touch="true" *) (* mark_debug="true" *) wire tx_fifo_empty;
+wire tx_fifo_wr_en;
+wire [7:0] tx_fifo_din;
+wire tx_fifo_full;
+wire tx_fifo_rd_en;
+wire [7:0] tx_fifo_dout;
+wire tx_fifo_empty;
 
 siso #(
     .DATA_WIDTH(8),
