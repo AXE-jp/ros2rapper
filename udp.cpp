@@ -309,7 +309,7 @@ void udp_set_checksum(uint8_t buf[])
 	}
 
 	/* Cyber unroll_times=all */
-	for (int i = IP_HDR_SIZE; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+	for (int i = IP_HDR_SIZE; i < TX_BUF_LEN; i++) {
 #pragma HLS unroll
 		if (i & 0x1)
 			sum += buf[i];
