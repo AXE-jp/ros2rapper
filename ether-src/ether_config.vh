@@ -11,9 +11,4 @@
 `define ARP_REQUEST_TIMEOUT        (125000000*30)
 
 `define EXT_TX_FIFO_DEPTH  2
-
-`ifdef TARGET_XILINX
-`define EXT_RX_FIFO_DEPTH  2048
-`else
-`define EXT_RX_FIFO_DEPTH  2
-`endif
+`define EXT_RX_FIFO_DEPTH  1024
