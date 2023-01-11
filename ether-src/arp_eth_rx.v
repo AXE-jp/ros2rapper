@@ -93,12 +93,14 @@ parameter PTR_WIDTH = $clog2(CYCLE_COUNT);
 parameter OFFSET = 28 % KEEP_WIDTH;
 
 // bus width assertions
+`ifdef TARGET_SIM
 initial begin
     if (KEEP_WIDTH * 8 != DATA_WIDTH) begin
         $error("Error: AXI stream interface requires byte (8-bit) granularity (instance %m)");
         $finish;
     end
 end
+`endif
 
 /*
 
@@ -120,7 +122,7 @@ ARP Frame
 
 This module receives an Ethernet frame with header fields in parallel and
 payload on an AXI stream interface, decodes the ARP packet fields, and
-produces the frame fields in parallel.  
+produces the frame fields in parallel.
 
 */
 
@@ -319,7 +321,7 @@ always @(posedge clk) begin
         busy_reg <= 1'b0;
         error_header_early_termination_reg <= 1'b0;
         error_invalid_header_reg <= 1'b0;
-    end 
+    end
 end
 
 endmodule

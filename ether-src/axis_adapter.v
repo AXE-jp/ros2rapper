@@ -109,6 +109,7 @@ parameter SEGMENT_DATA_WIDTH = DATA_WIDTH / SEGMENT_COUNT;
 parameter SEGMENT_KEEP_WIDTH = KEEP_WIDTH / SEGMENT_COUNT;
 
 // bus width assertions
+`ifdef TARGET_SIM
 initial begin
     if (S_DATA_WORD_SIZE * S_KEEP_WIDTH_INT != S_DATA_WIDTH) begin
         $error("Error: input data width not evenly divisble (instance %m)");
@@ -125,6 +126,7 @@ initial begin
         $finish;
     end
 end
+`endif
 
 // state register
 localparam [2:0]

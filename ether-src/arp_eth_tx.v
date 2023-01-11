@@ -89,12 +89,14 @@ parameter PTR_WIDTH = $clog2(CYCLE_COUNT);
 parameter OFFSET = 28 % KEEP_WIDTH;
 
 // bus width assertions
+`ifdef TARGET_SIM
 initial begin
     if (KEEP_WIDTH * 8 != DATA_WIDTH) begin
         $error("Error: AXI stream interface requires byte (8-bit) granularity (instance %m)");
         $finish;
     end
 end
+`endif
 
 /*
 

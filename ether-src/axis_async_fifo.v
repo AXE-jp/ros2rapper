@@ -122,6 +122,7 @@ module axis_async_fifo #
 parameter ADDR_WIDTH = (KEEP_ENABLE && KEEP_WIDTH > 1) ? $clog2(DEPTH/KEEP_WIDTH) : $clog2(DEPTH);
 
 // check configuration
+`ifdef TARGET_SIM
 initial begin
     if (PIPELINE_OUTPUT < 1) begin
         $error("Error: PIPELINE_OUTPUT must be at least 1 (instance %m)");
@@ -153,6 +154,7 @@ initial begin
         $finish;
     end
 end
+`endif
 
 localparam KEEP_OFFSET = DATA_WIDTH;
 localparam LAST_OFFSET = KEEP_OFFSET + (KEEP_ENABLE ? KEEP_WIDTH : 0);

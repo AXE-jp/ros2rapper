@@ -89,12 +89,14 @@ module axis_gmii_tx #
 );
 
 // bus width assertions
+`ifdef TARGET_SIM
 initial begin
     if (DATA_WIDTH != 8) begin
         $error("Error: Interface width must be 8");
         $finish;
     end
 end
+`endif
 
 localparam [7:0]
     ETH_PRE = 8'h55,

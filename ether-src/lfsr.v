@@ -210,7 +210,7 @@ reg [DATA_WIDTH-1:0] data_val = 0;
 
 integer i, j, k;
 
-initial begin
+always @(*) begin
     // init bit masks
     for (i = 0; i < LFSR_WIDTH; i = i + 1) begin
         lfsr_mask_state[i] = {LFSR_WIDTH{1'b0}};
@@ -300,7 +300,6 @@ initial begin
         end
     end else begin
         $error("Error: unknown configuration setting!");
-        $finish;
     end
 
     // reverse bits if selected
@@ -428,10 +427,7 @@ end else if (STYLE_INT == "LOOP") begin
 
 end else begin
 
-    initial begin
-        $error("Error: unknown style setting!");
-        $finish;
-    end
+    $error("Error: unknown style setting!");
 
 end
 
