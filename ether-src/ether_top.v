@@ -256,7 +256,12 @@ ros2_ether ros2 (
     .udp_txbuf_cpu_grant(txbuf_cpu_grant),
     .udp_txbuf_cpu_rel(txbuf_cpu_rel),
     .udp_txbuf_addr(txbuf_addr),
-    .udp_txbuf_rdata(txbuf_rdata)
+    .udp_txbuf_rdata(txbuf_rdata),
+    .payloadsmem_addr(payloadsmem_addr),
+    .payloadsmem_ce(payloadsmem_ce),
+    .payloadsmem_we(payloadsmem_we),
+    .payloadsmem_wdata(payloadsmem_wdata),
+    .payloadsmem_rdata(payloadsmem_rdata)
 );
 
 endmodule
@@ -306,7 +311,12 @@ module ros2_ether (
     input wire udp_txbuf_cpu_rel,
     output wire udp_txbuf_cpu_grant,
     output wire [5/*FIXME: magic number*/:0] udp_txbuf_addr,
-    input wire [31:0] udp_txbuf_rdata
+    input wire [31:0] udp_txbuf_rdata,
+    output wire [11/*FIXME: magic number*/:0] payloadsmem_addr,
+    output wire payloadsmem_ce,
+    output wire payloadsmem_we,
+    output wire [7:0] payloadsmem_wdata,
+    input wire [7:0] payloadsmem_rdata
 );
 
 wire tx_ip_hdr_valid;
@@ -544,6 +554,11 @@ ros2_i (
     .udp_rxbuf_d0(udp_rxbuf_wdata),
     .udp_txbuf_address0(udp_txbuf_addr),
     .udp_txbuf_q0(udp_txbuf_rdata),
+    .payloads_address0(payloadsmem_addr),
+    .payloads_ce0(payloadsmem_ce),
+    .payloads_we0(payloadsmem_we),
+    .payloads_d0(payloadsmem_wdata),
+    .payloads_q0(payloadsmem_rdata)
     .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
