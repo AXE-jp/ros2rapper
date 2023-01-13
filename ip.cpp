@@ -318,6 +318,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
   static pending_info pendings[MAX_PENDINGS];
 #pragma HLS array_partition variable=pendings complete dim=0
   static uint8_t payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS];
+#pragma HLS reset variable=payloads off
   static pending_index_t pending_index = INVALID_PENDING_INDEX;
 
   hls_uint<9> x;

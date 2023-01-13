@@ -33,6 +33,7 @@ set_top ros2
 open_solution -reset solution1
 
 set_part xc7a100tcsg324-1
+config_rtl -reset all -reset_level low
 create_clock -period 100MHz
 
 csynth_design
