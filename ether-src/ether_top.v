@@ -2,6 +2,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
+`include "config.vh"
 `include "ether_config.vh"
 
 module ether_top (
@@ -141,22 +142,22 @@ wire [47:0] mac_addr         = 48'h00_00_00_00_00_02;
 wire [31:0] ip_addr          = {8'd100, 8'd1, 8'd168, 8'd192};
 wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
 wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
-wire [255:0] ros2_node_name = "reklat";
+wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "reklat";
 wire [7:0] ros2_node_name_len = 8'd7;
 wire [15:0] ros2_node_udp_port = 16'd52000;
 wire [15:0] ros2_cpu_udp_port = 16'd1234;
 wire [15:0] ros2_port_num_seed = 16'd7400;
 wire [31:0] ros2_tx_period = 32'd12500000;
 wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
-wire [255:0] ros2_topic_name = "rettahc/tr";
+wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_topic_name = "rettahc/tr";
 wire [7:0] ros2_topic_name_len = 8'd11;
-wire [511:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
+wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
 wire [7:0] ros2_topic_type_name_len = 8'd29;
 
-wire [511:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
+wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data = "!retsiger gifnoc morf dlrow ,olleh";
 wire [7:0] ros2_app_data_len = 8'd35;
 
-wire [5:0] rxbuf_addr;
+wire [`UDP_RXBUF_AWIDTH-1:0] rxbuf_addr;
 wire rxbuf_ce;
 wire rxbuf_we;
 wire [31:0] rxbuf_wdata;
@@ -171,7 +172,7 @@ assign led_b = (last_rx_size > 20);
 
 reg [31:0] txbuf_rdata;
 reg txbuf_cpu_rel;
-wire [5:0] txbuf_addr;
+wire [`UDP_TXBUF_AWIDTH-1:0] txbuf_addr;
 wire txbuf_cpu_grant;
 
 reg [27:0] tx_cnt;
@@ -214,6 +215,22 @@ always @(posedge clk_int or negedge rst_n) begin
             last_rx_size <= rxbuf_wdata[31:16];
     end
 end
+
+
+wire payloadsmem_cs;
+wire payloadsmem_we;
+wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr;
+wire [7:0] payloadsmem_wdata, payloadsmem_rdata;
+RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
+    .i_clk(clk),
+    .i_rst_n(rst_n),
+    .i_cs_n(~payloadsmem_cs),
+    .i_we_n(~payloadsmem_we),
+    .i_wmask(4'b1111),
+    .i_addr(payloadsmem_addr),
+    .i_wdata(payloadsmem_wdata),
+    .o_rdata(payloadsmem_rdata)
+);
 
 ros2_ether ros2 (
     .clk(clk),
@@ -258,7 +275,7 @@ ros2_ether ros2 (
     .udp_txbuf_addr(txbuf_addr),
     .udp_txbuf_rdata(txbuf_rdata),
     .payloadsmem_addr(payloadsmem_addr),
-    .payloadsmem_ce(payloadsmem_ce),
+    .payloadsmem_ce(payloadsmem_cs),
     .payloadsmem_we(payloadsmem_we),
     .payloadsmem_wdata(payloadsmem_wdata),
     .payloadsmem_rdata(payloadsmem_rdata)
@@ -286,33 +303,33 @@ module ros2_ether (
     input wire [31:0] gateway_ip_addr,
     input wire [31:0] subnet_mask,
 
-    input wire [255:0] ros2_node_name,
+    input wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input wire [7:0] ros2_node_name_len,
     input wire [15:0] ros2_node_udp_port,
     input wire [15:0] ros2_cpu_udp_port,
     input wire [15:0] ros2_port_num_seed,
     input wire [31:0] ros2_tx_period,
     input wire [95:0] ros2_guid_prefix,
-    input wire [255:0] ros2_topic_name,
+    input wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_topic_name,
     input wire [7:0] ros2_topic_name_len,
-    input wire [511:0] ros2_topic_type_name,
+    input wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_topic_type_name,
     input wire [7:0] ros2_topic_type_name_len,
-    input wire [511:0] ros2_app_data,
+    input wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
     input wire [7:0] ros2_app_data_len,
     input wire ros2_app_data_cpu_req,
     input wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
     input wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
-    output wire [5/*FIXME: magic number*/:0] udp_rxbuf_addr,
+    output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
     output wire [31:0] udp_rxbuf_wdata,
     input wire udp_txbuf_cpu_rel,
     output wire udp_txbuf_cpu_grant,
-    output wire [5/*FIXME: magic number*/:0] udp_txbuf_addr,
+    output wire [`ROS2_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
     input wire [31:0] udp_txbuf_rdata,
-    output wire [11/*FIXME: magic number*/:0] payloadsmem_addr,
+    output wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr,
     output wire payloadsmem_ce,
     output wire payloadsmem_we,
     output wire [7:0] payloadsmem_wdata,
