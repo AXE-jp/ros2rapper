@@ -44,7 +44,7 @@ module eth_mac_mii #
     parameter MIN_FRAME_LENGTH = 64
 )
 (
-    input  wire        rst,
+    input  wire        rst_n,
     output wire        rx_clk,
     output wire        rx_rst,
     output wire        tx_clk,
@@ -107,7 +107,7 @@ mii_phy_if #(
     .CLOCK_INPUT_STYLE(CLOCK_INPUT_STYLE)
 )
 mii_phy_if_inst (
-    .rst(rst),
+    .rst_n(rst_n),
 
     .mac_mii_rx_clk(rx_clk),
     .mac_mii_rx_rst(rx_rst),

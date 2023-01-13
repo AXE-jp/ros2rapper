@@ -6,7 +6,7 @@
 
 module ether_top (
     input  wire       clk,
-    input  wire       reset_n,
+    input  wire       rst_n,
 
     output wire       phy_ref_clk,
     input  wire       phy_rx_clk,
@@ -18,7 +18,7 @@ module ether_top (
     output wire       phy_tx_en,
     input  wire       phy_col,
     input  wire       phy_crs,
-    output wire       phy_reset_n,
+    output wire       phy_rst_n,
 
     output wire       led_r,
     output wire       led_g,
@@ -31,7 +31,7 @@ wire clk_mmcm_out;
 wire clk_int;
 wire rst_int;
 
-wire mmcm_rst = ~reset_n;
+wire mmcm_rst = ~rst_n;
 wire mmcm_locked;
 wire mmcm_clkfb;
 
@@ -131,7 +131,7 @@ sync_reset #(
 )
 sync_reset_inst (
     .clk(clk_int),
-    .rst(~mmcm_locked),
+    .rst_n(mmcm_locked),
     .out(rst_int)
 );
 
@@ -160,21 +160,24 @@ wire [5:0] rxbuf_addr;
 wire rxbuf_ce;
 wire rxbuf_we;
 wire [31:0] rxbuf_wdata;
+
 reg rxbuf_cpu_rel;
 wire rxbuf_cpu_grant;
+
 reg [15:0] last_rx_size;
 assign led_r = (last_rx_size >= 1 && last_rx_size <= 10);
 assign led_g = (last_rx_size >= 11 && last_rx_size <= 20);
 assign led_b = (last_rx_size > 20);
 
-wire [5:0] txbuf_addr;
 reg [31:0] txbuf_rdata;
 reg txbuf_cpu_rel;
+wire [5:0] txbuf_addr;
 wire txbuf_cpu_grant;
+
 reg [27:0] tx_cnt;
 
-always @(posedge clk_int) begin
-    if (rst_int) begin
+always @(posedge clk_int or negedge rst_n) begin
+    if (!rst_n) begin
         txbuf_rdata <= 0;
         txbuf_cpu_rel <= 0;
         tx_cnt <= 0;
@@ -197,8 +200,8 @@ always @(posedge clk_int) begin
     end
 end
 
-always @(posedge clk_int) begin
-    if (rst_int) begin
+always @(posedge clk_int or negedge rst_n) begin
+    if (!rst_n) begin
         rxbuf_cpu_rel <= 0;
         last_rx_size <= 0;
     end else begin
@@ -213,8 +216,8 @@ always @(posedge clk_int) begin
 end
 
 ros2_ether ros2 (
-    .clk_int(clk_int),
-    .rst_int(rst_int),
+    .clk(clk),
+    .rst_n(rst_n),
     .phy_rx_clk(phy_rx_clk),
     .phy_rxd(phy_rxd),
     .phy_rx_dv(phy_rx_dv),
@@ -224,7 +227,7 @@ ros2_ether ros2 (
     .phy_tx_en(phy_tx_en),
     .phy_col(phy_col),
     .phy_crs(phy_crs),
-    .phy_reset_n(phy_reset_n),
+    .phy_rst_n(phy_rst_n),
     .mac_addr(mac_addr),
     .ip_addr(ip_addr),
     .gateway_ip_addr(gateway_ip_addr),
@@ -259,8 +262,8 @@ ros2_ether ros2 (
 endmodule
 
 module ros2_ether (
-    input  wire       clk_int,
-    input  wire       rst_int,
+    input  wire       clk,
+    input  wire       rst_n,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -271,7 +274,7 @@ module ros2_ether (
     output wire       phy_tx_en,
     input  wire       phy_col,
     input  wire       phy_crs,
-    output wire       phy_reset_n,
+    output wire       phy_rst_n,
 
     input wire [47:0] mac_addr,
     input wire [31:0] ip_addr,
@@ -348,8 +351,8 @@ verilog_ethernet #(
 `endif
 )
 verilog_ethernet_inst (
-    .clk(clk_int),
-    .rst(rst_int),
+    .clk(clk),
+    .rst_n(rst_n),
 
     .phy_rx_clk(phy_rx_clk),
     .phy_rxd(phy_rxd),
@@ -360,7 +363,7 @@ verilog_ethernet_inst (
     .phy_tx_en(phy_tx_en),
     .phy_col(phy_col),
     .phy_crs(phy_crs),
-    .phy_reset_n(phy_reset_n),
+    .phy_rst_n(phy_rst_n),
 
     .tx_ip_hdr_valid(tx_ip_hdr_valid),
     .tx_ip_hdr_ready(tx_ip_hdr_ready),
@@ -416,8 +419,8 @@ siso #(
     .DEPTH(`EXT_TX_FIFO_DEPTH)
 )
 tx_fifo (
-    .clk(clk_int),
-    .rst(rst_int),
+    .clk(clk),
+    .rst_n(rst_n),
     .wr_en(tx_fifo_wr_en),
     .din(tx_fifo_din),
     .full(tx_fifo_full),
@@ -438,8 +441,8 @@ siso #(
     .DEPTH(`EXT_RX_FIFO_DEPTH)
 )
 rx_fifo (
-    .clk(clk_int),
-    .rst(rst_int),
+    .clk(clk),
+    .rst_n(rst_n),
     .wr_en(rx_fifo_wr_en),
     .din(rx_fifo_din),
     .full(rx_fifo_full),
@@ -452,13 +455,14 @@ rx_fifo (
 localparam APP_DATA_GRANT_NONE = 2'b00;
 localparam APP_DATA_GRANT_IP   = 2'b01;
 localparam APP_DATA_GRANT_CPU  = 2'b10;
+
 reg [1:0] r_ros2_app_data_grant;
 wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
 assign ros2_app_data_ip_grant = r_ros2_app_data_grant[0];
 assign ros2_app_data_cpu_grant = r_ros2_app_data_grant[1];
 
-always @(posedge clk_int) begin
-    if (rst_int) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
         case (r_ros2_app_data_grant)
@@ -483,13 +487,14 @@ end
 // arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
 localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
+
 reg r_udp_rxbuf_grant;
 wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
 assign udp_rxbuf_ip_grant = ~r_udp_rxbuf_grant;
 assign udp_rxbuf_cpu_grant = r_udp_rxbuf_grant;
 
-always @(posedge clk_int) begin
-    if (rst_int) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
     end else begin
         case (r_udp_rxbuf_grant)
@@ -504,13 +509,14 @@ end
 // arbiter for sharing UDP TX buffer between CPU and ROS2rapper IP
 localparam UDP_TXBUF_GRANT_IP   = 1'b0;
 localparam UDP_TXBUF_GRANT_CPU  = 1'b1;
+
 reg r_udp_txbuf_grant;
 wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
 assign udp_txbuf_ip_grant = ~r_udp_txbuf_grant;
 assign udp_txbuf_cpu_grant = r_udp_txbuf_grant;
 
-always @(posedge clk_int) begin
-    if (rst_int) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
     end else begin
         case (r_udp_txbuf_grant)
@@ -524,8 +530,8 @@ end
 
 ros2
 ros2_i (
-    .ap_clk(clk_int),
-    .ap_rst(rst_int),
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
     .in_V_dout(rx_fifo_dout),
     .in_V_empty_n(~rx_fifo_empty),
     .in_V_read(rx_fifo_rd_en),
@@ -563,8 +569,8 @@ ros2_i (
 
 ip_tx
 ip_tx_i (
-    .ap_clk(clk_int),
-    .ap_rst_n(~rst_int),
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
     .din_V_dout(tx_fifo_dout),
     .din_V_empty_n(~tx_fifo_empty),
     .din_V_read(tx_fifo_rd_en),
@@ -589,8 +595,8 @@ ip_tx_i (
 
 ip_rx
 ip_rx_i (
-    .ap_clk(clk_int),
-    .ap_rst_n(~rst_int),
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
     .dout_V_din(rx_fifo_din),
     .dout_V_full_n(~rx_fifo_full),
     .dout_V_write(rx_fifo_wr_en),

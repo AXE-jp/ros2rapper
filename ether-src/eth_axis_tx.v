@@ -43,7 +43,7 @@ module eth_axis_tx #
 )
 (
     input  wire                  clk,
-    input  wire                  rst,
+    input  wire                  rst_n,
 
     /*
      * Ethernet frame input
@@ -110,26 +110,26 @@ transmits the complete Ethernet frame on the output AXI stream interface.
 // datapath control signals
 reg store_eth_hdr;
 
-reg send_eth_header_reg = 1'b0, send_eth_header_next;
-reg send_eth_payload_reg = 1'b0, send_eth_payload_next;
-reg [PTR_WIDTH-1:0] ptr_reg = 0, ptr_next;
+reg send_eth_header_reg, send_eth_header_next;
+reg send_eth_payload_reg, send_eth_payload_next;
+reg [PTR_WIDTH-1:0] ptr_reg, ptr_next;
 
 reg flush_save;
 reg transfer_in_save;
 
-reg [47:0] eth_dest_mac_reg = 48'd0;
-reg [47:0] eth_src_mac_reg = 48'd0;
-reg [15:0] eth_type_reg = 16'd0;
+reg [47:0] eth_dest_mac_reg;
+reg [47:0] eth_src_mac_reg;
+reg [15:0] eth_type_reg;
 
-reg s_eth_hdr_ready_reg = 1'b0, s_eth_hdr_ready_next;
-reg s_eth_payload_axis_tready_reg = 1'b0, s_eth_payload_axis_tready_next;
+reg s_eth_hdr_ready_reg, s_eth_hdr_ready_next;
+reg s_eth_payload_axis_tready_reg, s_eth_payload_axis_tready_next;
 
-reg busy_reg = 1'b0;
+reg busy_reg;
 
-reg [DATA_WIDTH-1:0] save_eth_payload_axis_tdata_reg = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] save_eth_payload_axis_tkeep_reg = {KEEP_WIDTH{1'b0}};
-reg save_eth_payload_axis_tlast_reg = 1'b0;
-reg save_eth_payload_axis_tuser_reg = 1'b0;
+reg [DATA_WIDTH-1:0] save_eth_payload_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] save_eth_payload_axis_tkeep_reg;
+reg save_eth_payload_axis_tlast_reg;
+reg save_eth_payload_axis_tuser_reg;
 
 reg [DATA_WIDTH-1:0] shift_eth_payload_axis_tdata;
 reg [KEEP_WIDTH-1:0] shift_eth_payload_axis_tkeep;
@@ -137,13 +137,13 @@ reg shift_eth_payload_axis_tvalid;
 reg shift_eth_payload_axis_tlast;
 reg shift_eth_payload_axis_tuser;
 reg shift_eth_payload_axis_input_tready;
-reg shift_eth_payload_axis_extra_cycle_reg = 1'b0;
+reg shift_eth_payload_axis_extra_cycle_reg;
 
 // internal datapath
 reg [DATA_WIDTH-1:0] m_axis_tdata_int;
 reg [KEEP_WIDTH-1:0] m_axis_tkeep_int;
 reg                  m_axis_tvalid_int;
-reg                  m_axis_tready_int_reg = 1'b0;
+reg                  m_axis_tready_int_reg;
 reg                  m_axis_tlast_int;
 reg                  m_axis_tuser_int;
 wire                 m_axis_tready_int_early;
@@ -275,58 +275,66 @@ always @* begin
     s_eth_hdr_ready_next = !(send_eth_header_next || send_eth_payload_next);
 end
 
-always @(posedge clk) begin
-    send_eth_header_reg <= send_eth_header_next;
-    send_eth_payload_reg <= send_eth_payload_next;
-    ptr_reg <= ptr_next;
-
-    s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
-    s_eth_payload_axis_tready_reg <= s_eth_payload_axis_tready_next;
-
-    busy_reg <= send_eth_header_next || send_eth_payload_next;
-
-    if (store_eth_hdr) begin
-        eth_dest_mac_reg <= s_eth_dest_mac;
-        eth_src_mac_reg <= s_eth_src_mac;
-        eth_type_reg <= s_eth_type;
-    end
-
-    if (transfer_in_save) begin
-        save_eth_payload_axis_tdata_reg <= s_eth_payload_axis_tdata;
-        save_eth_payload_axis_tkeep_reg <= s_eth_payload_axis_tkeep;
-        save_eth_payload_axis_tuser_reg <= s_eth_payload_axis_tuser;
-    end
-
-    if (flush_save) begin
-        save_eth_payload_axis_tlast_reg <= 1'b0;
-        shift_eth_payload_axis_extra_cycle_reg <= 1'b0;
-    end else if (transfer_in_save) begin
-        save_eth_payload_axis_tlast_reg <= s_eth_payload_axis_tlast;
-        shift_eth_payload_axis_extra_cycle_reg <= OFFSET ? s_eth_payload_axis_tlast && ((s_eth_payload_axis_tkeep & ({KEEP_WIDTH{1'b1}} << (KEEP_WIDTH-OFFSET))) != 0) : 1'b0;
-    end
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         send_eth_header_reg <= 1'b0;
         send_eth_payload_reg <= 1'b0;
         ptr_reg <= 0;
+        eth_dest_mac_reg <= 48'd0;
+        eth_src_mac_reg <= 48'd0;
+        eth_type_reg <= 16'd0;
         s_eth_hdr_ready_reg <= 1'b0;
         s_eth_payload_axis_tready_reg <= 1'b0;
         busy_reg <= 1'b0;
+        save_eth_payload_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
+        save_eth_payload_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};
+        save_eth_payload_axis_tlast_reg <= 1'b0;
+        save_eth_payload_axis_tuser_reg <= 1'b0;
+        shift_eth_payload_axis_extra_cycle_reg <= 1'b0;
+    end else begin
+        send_eth_header_reg <= send_eth_header_next;
+        send_eth_payload_reg <= send_eth_payload_next;
+        ptr_reg <= ptr_next;
+
+        s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
+        s_eth_payload_axis_tready_reg <= s_eth_payload_axis_tready_next;
+
+        busy_reg <= send_eth_header_next || send_eth_payload_next;
+
+        if (store_eth_hdr) begin
+            eth_dest_mac_reg <= s_eth_dest_mac;
+            eth_src_mac_reg <= s_eth_src_mac;
+            eth_type_reg <= s_eth_type;
+        end
+
+        if (transfer_in_save) begin
+            save_eth_payload_axis_tdata_reg <= s_eth_payload_axis_tdata;
+            save_eth_payload_axis_tkeep_reg <= s_eth_payload_axis_tkeep;
+            save_eth_payload_axis_tuser_reg <= s_eth_payload_axis_tuser;
+        end
+
+        if (flush_save) begin
+            save_eth_payload_axis_tlast_reg <= 1'b0;
+            shift_eth_payload_axis_extra_cycle_reg <= 1'b0;
+        end else if (transfer_in_save) begin
+            save_eth_payload_axis_tlast_reg <= s_eth_payload_axis_tlast;
+            shift_eth_payload_axis_extra_cycle_reg <= OFFSET ? s_eth_payload_axis_tlast && ((s_eth_payload_axis_tkeep & ({KEEP_WIDTH{1'b1}} << (KEEP_WIDTH-OFFSET))) != 0) : 1'b0;
+        end
     end
 end
 
 // output datapath logic
-reg [DATA_WIDTH-1:0] m_axis_tdata_reg = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] m_axis_tkeep_reg = {KEEP_WIDTH{1'b0}};
-reg                  m_axis_tvalid_reg = 1'b0, m_axis_tvalid_next;
-reg                  m_axis_tlast_reg = 1'b0;
-reg                  m_axis_tuser_reg = 1'b0;
+reg [DATA_WIDTH-1:0] m_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] m_axis_tkeep_reg;
+reg                  m_axis_tvalid_reg, m_axis_tvalid_next;
+reg                  m_axis_tlast_reg;
+reg                  m_axis_tuser_reg;
 
-reg [DATA_WIDTH-1:0] temp_m_axis_tdata_reg = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg = {KEEP_WIDTH{1'b0}};
-reg                  temp_m_axis_tvalid_reg = 1'b0, temp_m_axis_tvalid_next;
-reg                  temp_m_axis_tlast_reg = 1'b0;
-reg                  temp_m_axis_tuser_reg = 1'b0;
+reg [DATA_WIDTH-1:0] temp_m_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg;
+reg                  temp_m_axis_tvalid_reg, temp_m_axis_tvalid_next;
+reg                  temp_m_axis_tlast_reg;
+reg                  temp_m_axis_tuser_reg;
 
 // datapath control
 reg store_axis_int_to_output;
@@ -370,35 +378,43 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    m_axis_tvalid_reg <= m_axis_tvalid_next;
-    m_axis_tready_int_reg <= m_axis_tready_int_early;
-    temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
-
-    // datapath
-    if (store_axis_int_to_output) begin
-        m_axis_tdata_reg <= m_axis_tdata_int;
-        m_axis_tkeep_reg <= m_axis_tkeep_int;
-        m_axis_tlast_reg <= m_axis_tlast_int;
-        m_axis_tuser_reg <= m_axis_tuser_int;
-    end else if (store_axis_temp_to_output) begin
-        m_axis_tdata_reg <= temp_m_axis_tdata_reg;
-        m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
-        m_axis_tlast_reg <= temp_m_axis_tlast_reg;
-        m_axis_tuser_reg <= temp_m_axis_tuser_reg;
-    end
-
-    if (store_axis_int_to_temp) begin
-        temp_m_axis_tdata_reg <= m_axis_tdata_int;
-        temp_m_axis_tkeep_reg <= m_axis_tkeep_int;
-        temp_m_axis_tlast_reg <= m_axis_tlast_int;
-        temp_m_axis_tuser_reg <= m_axis_tuser_int;
-    end
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        m_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
+        m_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};
         m_axis_tvalid_reg <= 1'b0;
+        m_axis_tlast_reg <= 1'b0;
+        m_axis_tuser_reg <= 1'b0;
         m_axis_tready_int_reg <= 1'b0;
+        temp_m_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
+        temp_m_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};
         temp_m_axis_tvalid_reg <= 1'b0;
+        temp_m_axis_tlast_reg <= 1'b0;
+        temp_m_axis_tuser_reg <= 1'b0;
+    end else begin
+        m_axis_tvalid_reg <= m_axis_tvalid_next;
+        m_axis_tready_int_reg <= m_axis_tready_int_early;
+        temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
+
+        // datapath
+        if (store_axis_int_to_output) begin
+            m_axis_tdata_reg <= m_axis_tdata_int;
+            m_axis_tkeep_reg <= m_axis_tkeep_int;
+            m_axis_tlast_reg <= m_axis_tlast_int;
+            m_axis_tuser_reg <= m_axis_tuser_int;
+        end else if (store_axis_temp_to_output) begin
+            m_axis_tdata_reg <= temp_m_axis_tdata_reg;
+            m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
+            m_axis_tlast_reg <= temp_m_axis_tlast_reg;
+            m_axis_tuser_reg <= temp_m_axis_tuser_reg;
+        end
+
+        if (store_axis_int_to_temp) begin
+            temp_m_axis_tdata_reg <= m_axis_tdata_int;
+            temp_m_axis_tkeep_reg <= m_axis_tkeep_int;
+            temp_m_axis_tlast_reg <= m_axis_tlast_int;
+            temp_m_axis_tuser_reg <= m_axis_tuser_int;
+        end
     end
 end
 

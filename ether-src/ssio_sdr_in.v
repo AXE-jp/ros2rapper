@@ -50,7 +50,9 @@ module ssio_sdr_in #
 
     output wire             output_clk,
 
-    output wire [WIDTH-1:0] output_q
+    output wire [WIDTH-1:0] output_q,
+
+    input  wire             rst_n
 );
 
 wire clk_int;
@@ -96,7 +98,7 @@ if (TARGET == "XILINX") begin
             .CE(1'b1),
             .CLR(1'b0)
         );
-        
+
     end else if (CLOCK_INPUT_STYLE == "BUFIO") begin
 
         assign clk_int = input_clk;
@@ -154,12 +156,15 @@ end
 endgenerate
 
 (* IOB = "TRUE" *)
-reg [WIDTH-1:0] output_q_reg = {WIDTH{1'b0}};
+reg [WIDTH-1:0] output_q_reg;
 
 assign output_q = output_q_reg;
 
-always @(posedge clk_io) begin
-    output_q_reg <= input_d;
+always @(posedge clk_io or negedge rst_n) begin
+    if (!rst_n)
+        output_q_reg <= {WIDTH{1'b0}};
+    else
+        output_q_reg <= input_d;
 end
 
 endmodule

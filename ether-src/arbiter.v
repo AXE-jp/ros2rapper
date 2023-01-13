@@ -45,7 +45,7 @@ module arbiter #
 )
 (
     input  wire                     clk,
-    input  wire                     rst,
+    input  wire                     rst_n,
 
     input  wire [PORTS-1:0]         request,
     input  wire [PORTS-1:0]         acknowledge,
@@ -55,9 +55,9 @@ module arbiter #
     output wire [$clog2(PORTS)-1:0] grant_encoded
 );
 
-reg [PORTS-1:0] grant_reg = 0, grant_next;
-reg grant_valid_reg = 0, grant_valid_next;
-reg [$clog2(PORTS)-1:0] grant_encoded_reg = 0, grant_encoded_next;
+reg [PORTS-1:0] grant_reg, grant_next;
+reg grant_valid_reg, grant_valid_next;
+reg [$clog2(PORTS)-1:0] grant_encoded_reg, grant_encoded_next;
 
 assign grant_valid = grant_valid_reg;
 assign grant = grant_reg;
@@ -78,7 +78,7 @@ priority_encoder_inst (
     .output_unencoded(request_mask)
 );
 
-reg [PORTS-1:0] mask_reg = 0, mask_next;
+reg [PORTS-1:0] mask_reg, mask_next;
 
 wire masked_request_valid;
 wire [$clog2(PORTS)-1:0] masked_request_index;
@@ -140,17 +140,17 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    grant_reg <= grant_next;
-    grant_valid_reg <= grant_valid_next;
-    grant_encoded_reg <= grant_encoded_next;
-    mask_reg <= mask_next;
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         grant_reg <= 0;
         grant_valid_reg <= 0;
         grant_encoded_reg <= 0;
         mask_reg <= 0;
+    end else begin
+        grant_reg <= grant_next;
+        grant_valid_reg <= grant_valid_next;
+        grant_encoded_reg <= grant_encoded_next;
+        mask_reg <= mask_next;
     end
 end
 

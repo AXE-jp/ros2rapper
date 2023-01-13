@@ -42,7 +42,7 @@ module mii_phy_if #
     parameter CLOCK_INPUT_STYLE = "BUFIO2"
 )
 (
-    input  wire        rst,
+    input  wire        rst_n,
 
     /*
      * MII interface to MAC
@@ -81,22 +81,29 @@ rx_ssio_sdr_inst (
     .input_clk(phy_mii_rx_clk),
     .input_d({phy_mii_rxd, phy_mii_rx_dv, phy_mii_rx_er}),
     .output_clk(mac_mii_rx_clk),
-    .output_q({mac_mii_rxd, mac_mii_rx_dv, mac_mii_rx_er})
+    .output_q({mac_mii_rxd, mac_mii_rx_dv, mac_mii_rx_er}),
+    .rst_n(rst_n)
 );
 
 (* IOB = "TRUE" *)
-reg [3:0] phy_mii_txd_reg = 4'd0;
+reg [3:0] phy_mii_txd_reg;
 (* IOB = "TRUE" *)
-reg phy_mii_tx_en_reg = 1'b0, phy_mii_tx_er_reg = 1'b0;
+reg phy_mii_tx_en_reg, phy_mii_tx_er_reg;
 
 assign phy_mii_txd = phy_mii_txd_reg;
 assign phy_mii_tx_en = phy_mii_tx_en_reg;
 assign phy_mii_tx_er = phy_mii_tx_er_reg;
 
-always @(posedge mac_mii_tx_clk) begin
-    phy_mii_txd_reg <= mac_mii_txd;
-    phy_mii_tx_en_reg <= mac_mii_tx_en;
-    phy_mii_tx_er_reg <= mac_mii_tx_er;
+always @(posedge mac_mii_tx_clk or negedge rst_n) begin
+    if (!rst_n) begin
+        phy_mii_txd_reg <= 4'd0;
+        phy_mii_tx_en_reg <= 1'b0;
+        phy_mii_tx_er_reg <= 1'b0;
+    end else begin
+        phy_mii_txd_reg <= mac_mii_txd;
+        phy_mii_tx_en_reg <= mac_mii_tx_en;
+        phy_mii_tx_er_reg <= mac_mii_tx_er;
+    end
 end
 
 generate
@@ -114,22 +121,22 @@ end
 endgenerate
 
 // reset sync
-reg [3:0] tx_rst_reg = 4'hf;
+reg [3:0] tx_rst_reg;
 assign mac_mii_tx_rst = tx_rst_reg[0];
 
-always @(posedge mac_mii_tx_clk or posedge rst) begin
-    if (rst) begin
+always @(posedge mac_mii_tx_clk or negedge rst_n) begin
+    if (!rst_n) begin
         tx_rst_reg <= 4'hf;
     end else begin
         tx_rst_reg <= {1'b0, tx_rst_reg[3:1]};
     end
 end
 
-reg [3:0] rx_rst_reg = 4'hf;
+reg [3:0] rx_rst_reg;
 assign mac_mii_rx_rst = rx_rst_reg[0];
 
-always @(posedge mac_mii_rx_clk or posedge rst) begin
-    if (rst) begin
+always @(posedge mac_mii_rx_clk or negedge rst_n) begin
+    if (!rst_n) begin
         rx_rst_reg <= 4'hf;
     end else begin
         rx_rst_reg <= {1'b0, rx_rst_reg[3:1]};

@@ -39,7 +39,7 @@ module ip_complete #(
 )
 (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
 
     /*
      * Ethernet frame input
@@ -201,12 +201,12 @@ wire s_select_ip = (s_eth_type == 16'h0800);
 wire s_select_arp = (s_eth_type == 16'h0806);
 wire s_select_none = !(s_select_ip || s_select_arp);
 
-reg s_select_ip_reg = 1'b0;
-reg s_select_arp_reg = 1'b0;
-reg s_select_none_reg = 1'b0;
+reg s_select_ip_reg;
+reg s_select_arp_reg;
+reg s_select_none_reg;
 
-always @(posedge clk) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         s_select_ip_reg <= 1'b0;
         s_select_arp_reg <= 1'b0;
         s_select_none_reg <= 1'b0;
@@ -268,7 +268,7 @@ eth_arb_mux #(
 )
 eth_arb_mux_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     // Ethernet frame inputs
     .s_eth_hdr_valid({ip_tx_eth_hdr_valid, arp_tx_eth_hdr_valid}),
     .s_eth_hdr_ready({ip_tx_eth_hdr_ready, arp_tx_eth_hdr_ready}),
@@ -305,7 +305,7 @@ eth_arb_mux_inst (
 ip
 ip_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     // Ethernet frame input
     .s_eth_hdr_valid(ip_rx_eth_hdr_valid),
     .s_eth_hdr_ready(ip_rx_eth_hdr_ready),
@@ -400,7 +400,7 @@ arp #(
 )
 arp_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     // Ethernet frame input
     .s_eth_hdr_valid(arp_rx_eth_hdr_valid),
     .s_eth_hdr_ready(arp_rx_eth_hdr_ready),

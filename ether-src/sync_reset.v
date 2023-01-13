@@ -39,17 +39,17 @@ module sync_reset #
 )
 (
     input  wire clk,
-    input  wire rst,
+    input  wire rst_n,
     output wire out
 );
 
 (* srl_style = "register" *)
-reg [N-1:0] sync_reg = {N{1'b1}};
+reg [N-1:0] sync_reg;
 
 assign out = sync_reg[N-1];
 
-always @(posedge clk or posedge rst) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         sync_reg <= {N{1'b1}};
     end else begin
         sync_reg <= {sync_reg[N-2:0], 1'b0};

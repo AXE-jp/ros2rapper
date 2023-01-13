@@ -43,7 +43,7 @@ module arp_eth_rx #
 )
 (
     input  wire                   clk,
-    input  wire                   rst,
+    input  wire                   rst_n,
 
     /*
      * Ethernet frame input
@@ -129,30 +129,30 @@ produces the frame fields in parallel.
 // datapath control signals
 reg store_eth_hdr;
 
-reg read_eth_header_reg = 1'b1, read_eth_header_next;
-reg read_arp_header_reg = 1'b0, read_arp_header_next;
-reg [PTR_WIDTH-1:0] ptr_reg = 0, ptr_next;
+reg read_eth_header_reg, read_eth_header_next;
+reg read_arp_header_reg, read_arp_header_next;
+reg [PTR_WIDTH-1:0] ptr_reg, ptr_next;
 
-reg s_eth_hdr_ready_reg = 1'b0, s_eth_hdr_ready_next;
-reg s_eth_payload_axis_tready_reg = 1'b0, s_eth_payload_axis_tready_next;
+reg s_eth_hdr_ready_reg, s_eth_hdr_ready_next;
+reg s_eth_payload_axis_tready_reg, s_eth_payload_axis_tready_next;
 
-reg m_frame_valid_reg = 1'b0, m_frame_valid_next;
-reg [47:0] m_eth_dest_mac_reg = 48'd0;
-reg [47:0] m_eth_src_mac_reg = 48'd0;
-reg [15:0] m_eth_type_reg = 16'd0;
-reg [15:0] m_arp_htype_reg = 16'd0, m_arp_htype_next;
-reg [15:0] m_arp_ptype_reg = 16'd0, m_arp_ptype_next;
-reg [7:0]  m_arp_hlen_reg = 8'd0, m_arp_hlen_next;
-reg [7:0]  m_arp_plen_reg = 8'd0, m_arp_plen_next;
-reg [15:0] m_arp_oper_reg = 16'd0, m_arp_oper_next;
-reg [47:0] m_arp_sha_reg = 48'd0, m_arp_sha_next;
-reg [31:0] m_arp_spa_reg = 32'd0, m_arp_spa_next;
-reg [47:0] m_arp_tha_reg = 48'd0, m_arp_tha_next;
-reg [31:0] m_arp_tpa_reg = 32'd0, m_arp_tpa_next;
+reg m_frame_valid_reg, m_frame_valid_next;
+reg [47:0] m_eth_dest_mac_reg;
+reg [47:0] m_eth_src_mac_reg;
+reg [15:0] m_eth_type_reg;
+reg [15:0] m_arp_htype_reg, m_arp_htype_next;
+reg [15:0] m_arp_ptype_reg, m_arp_ptype_next;
+reg [7:0]  m_arp_hlen_reg, m_arp_hlen_next;
+reg [7:0]  m_arp_plen_reg, m_arp_plen_next;
+reg [15:0] m_arp_oper_reg, m_arp_oper_next;
+reg [47:0] m_arp_sha_reg, m_arp_sha_next;
+reg [31:0] m_arp_spa_reg, m_arp_spa_next;
+reg [47:0] m_arp_tha_reg, m_arp_tha_next;
+reg [31:0] m_arp_tpa_reg, m_arp_tpa_next;
 
-reg busy_reg = 1'b0;
-reg error_header_early_termination_reg = 1'b0, error_header_early_termination_next;
-reg error_invalid_header_reg = 1'b0, error_invalid_header_next;
+reg busy_reg;
+reg error_header_early_termination_reg, error_header_early_termination_next;
+reg error_invalid_header_reg, error_invalid_header_next;
 
 assign s_eth_hdr_ready = s_eth_hdr_ready_reg;
 assign s_eth_payload_axis_tready = s_eth_payload_axis_tready_reg;
@@ -280,47 +280,60 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    read_eth_header_reg <= read_eth_header_next;
-    read_arp_header_reg <= read_arp_header_next;
-    ptr_reg <= ptr_next;
-
-    s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
-    s_eth_payload_axis_tready_reg <= s_eth_payload_axis_tready_next;
-
-    m_frame_valid_reg <= m_frame_valid_next;
-
-    m_arp_htype_reg <= m_arp_htype_next;
-    m_arp_ptype_reg <= m_arp_ptype_next;
-    m_arp_hlen_reg <= m_arp_hlen_next;
-    m_arp_plen_reg <= m_arp_plen_next;
-    m_arp_oper_reg <= m_arp_oper_next;
-    m_arp_sha_reg <= m_arp_sha_next;
-    m_arp_spa_reg <= m_arp_spa_next;
-    m_arp_tha_reg <= m_arp_tha_next;
-    m_arp_tpa_reg <= m_arp_tpa_next;
-
-    error_header_early_termination_reg <= error_header_early_termination_next;
-    error_invalid_header_reg <= error_invalid_header_next;
-
-    busy_reg <= read_arp_header_next;
-
-    // datapath
-    if (store_eth_hdr) begin
-        m_eth_dest_mac_reg <= s_eth_dest_mac;
-        m_eth_src_mac_reg <= s_eth_src_mac;
-        m_eth_type_reg <= s_eth_type;
-    end
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         read_eth_header_reg <= 1'b1;
         read_arp_header_reg <= 1'b0;
         ptr_reg <= 0;
+        s_eth_hdr_ready_reg <= 1'b0;
         s_eth_payload_axis_tready_reg <= 1'b0;
         m_frame_valid_reg <= 1'b0;
+        m_eth_dest_mac_reg <= 48'd0;
+        m_eth_src_mac_reg <= 48'd0;
+        m_eth_type_reg <= 16'd0;
+        m_arp_htype_reg <= 16'd0;
+        m_arp_ptype_reg <= 16'd0;
+        m_arp_hlen_reg <= 8'd0;
+        m_arp_plen_reg <= 8'd0;
+        m_arp_oper_reg <= 16'd0;
+        m_arp_sha_reg <= 48'd0;
+        m_arp_spa_reg <= 32'd0;
+        m_arp_tha_reg <= 48'd0;
+        m_arp_tpa_reg <= 32'd0;
         busy_reg <= 1'b0;
         error_header_early_termination_reg <= 1'b0;
         error_invalid_header_reg <= 1'b0;
+    end else begin
+        read_eth_header_reg <= read_eth_header_next;
+        read_arp_header_reg <= read_arp_header_next;
+        ptr_reg <= ptr_next;
+
+        s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
+        s_eth_payload_axis_tready_reg <= s_eth_payload_axis_tready_next;
+
+        m_frame_valid_reg <= m_frame_valid_next;
+
+        m_arp_htype_reg <= m_arp_htype_next;
+        m_arp_ptype_reg <= m_arp_ptype_next;
+        m_arp_hlen_reg <= m_arp_hlen_next;
+        m_arp_plen_reg <= m_arp_plen_next;
+        m_arp_oper_reg <= m_arp_oper_next;
+        m_arp_sha_reg <= m_arp_sha_next;
+        m_arp_spa_reg <= m_arp_spa_next;
+        m_arp_tha_reg <= m_arp_tha_next;
+        m_arp_tpa_reg <= m_arp_tpa_next;
+
+        error_header_early_termination_reg <= error_header_early_termination_next;
+        error_invalid_header_reg <= error_invalid_header_next;
+
+        busy_reg <= read_arp_header_next;
+
+        // datapath
+        if (store_eth_hdr) begin
+            m_eth_dest_mac_reg <= s_eth_dest_mac;
+            m_eth_src_mac_reg <= s_eth_src_mac;
+            m_eth_type_reg <= s_eth_type;
+        end
     end
 end
 

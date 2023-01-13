@@ -34,7 +34,7 @@ THE SOFTWARE.
 module ip
 (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
 
     /*
      * Ethernet frame input
@@ -144,11 +144,11 @@ localparam [1:0]
     STATE_ARP_QUERY = 2'd1,
     STATE_WAIT_PACKET = 2'd2;
 
-reg [1:0] state_reg = STATE_IDLE, state_next;
+reg [1:0] state_reg, state_next;
 
-reg outgoing_ip_hdr_valid_reg = 1'b0, outgoing_ip_hdr_valid_next;
+reg outgoing_ip_hdr_valid_reg, outgoing_ip_hdr_valid_next;
 wire outgoing_ip_hdr_ready;
-reg [47:0] outgoing_eth_dest_mac_reg = 48'h000000000000, outgoing_eth_dest_mac_next;
+reg [47:0] outgoing_eth_dest_mac_reg, outgoing_eth_dest_mac_next;
 wire outgoing_ip_payload_axis_tready;
 
 /*
@@ -157,7 +157,7 @@ wire outgoing_ip_payload_axis_tready;
 ip_eth_rx
 ip_eth_rx_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     // Ethernet frame input
     .s_eth_hdr_valid(s_eth_hdr_valid),
     .s_eth_hdr_ready(s_eth_hdr_ready),
@@ -204,7 +204,7 @@ ip_eth_rx_inst (
 ip_eth_tx
 ip_eth_tx_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     // IP frame input
     .s_ip_hdr_valid(outgoing_ip_hdr_valid_reg),
     .s_ip_hdr_ready(outgoing_ip_hdr_ready),
@@ -242,13 +242,13 @@ ip_eth_tx_inst (
     .error_payload_early_termination(tx_error_payload_early_termination)
 );
 
-reg s_ip_hdr_ready_reg = 1'b0, s_ip_hdr_ready_next;
+reg s_ip_hdr_ready_reg, s_ip_hdr_ready_next;
 
-reg arp_request_valid_reg = 1'b0, arp_request_valid_next;
+reg arp_request_valid_reg, arp_request_valid_next;
 
-reg arp_response_ready_reg = 1'b0, arp_response_ready_next;
+reg arp_response_ready_reg, arp_response_ready_next;
 
-reg drop_packet_reg = 1'b0, drop_packet_next;
+reg drop_packet_reg, drop_packet_next;
 
 assign s_ip_hdr_ready = s_ip_hdr_ready_reg;
 assign s_ip_payload_axis_tready = outgoing_ip_payload_axis_tready || drop_packet_reg;
@@ -327,14 +327,15 @@ always @* begin
     endcase
 end
 
-always @(posedge clk) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         state_reg <= STATE_IDLE;
         arp_request_valid_reg <= 1'b0;
         arp_response_ready_reg <= 1'b0;
         drop_packet_reg <= 1'b0;
         s_ip_hdr_ready_reg <= 1'b0;
         outgoing_ip_hdr_valid_reg <= 1'b0;
+        outgoing_eth_dest_mac_reg <= 48'h000000000000;
     end else begin
         state_reg <= state_next;
 
@@ -345,9 +346,8 @@ always @(posedge clk) begin
         s_ip_hdr_ready_reg <= s_ip_hdr_ready_next;
 
         outgoing_ip_hdr_valid_reg <= outgoing_ip_hdr_valid_next;
+        outgoing_eth_dest_mac_reg <= outgoing_eth_dest_mac_next;
     end
-
-    outgoing_eth_dest_mac_reg <= outgoing_eth_dest_mac_next;
 end
 
 endmodule

@@ -10,7 +10,7 @@ module siso #
 )
 (
     input  wire                   clk,
-    input  wire                   rst,
+    input  wire                   rst_n,
 
     input  wire                   wr_en,
     input  wire [DATA_WIDTH-1:0]  din,
@@ -31,8 +31,11 @@ wire [PTR_WIDTH-1:0] wp_next = wp + 1;
 assign full = (wp_next == rp ? 1'b1 : 1'b0);
 assign empty = (wp == rp ? 1'b1 : 1'b0);
 
-always @(posedge clk) begin
-    if (rst) begin
+integer i;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        for (i=0; i<DEPTH; i=i+1)
+            regs[i] <= 0;
         wp <= 0;
         rp <= 0;
     end else begin

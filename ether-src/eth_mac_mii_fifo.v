@@ -59,7 +59,7 @@ module eth_mac_mii_fifo #
     parameter RX_DROP_WHEN_FULL = RX_DROP_OVERSIZE_FRAME
 )
 (
-    input  wire                       rst,
+    input  wire                       rst_n,
     input  wire                       logic_clk,
     input  wire                       logic_rst,
 
@@ -198,7 +198,7 @@ eth_mac_mii #(
     .MIN_FRAME_LENGTH(MIN_FRAME_LENGTH)
 )
 eth_mac_1g_mii_inst (
-    .rst(rst),
+    .rst_n(rst_n),
     .tx_clk(tx_clk),
     .tx_rst(tx_rst),
     .rx_clk(rx_clk),

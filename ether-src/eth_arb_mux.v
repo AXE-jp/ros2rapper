@@ -50,7 +50,7 @@ module eth_arb_mux #
 )
 (
     input  wire                          clk,
-    input  wire                          rst,
+    input  wire                          rst_n,
 
     /*
      * Ethernet frame inputs
@@ -89,14 +89,14 @@ module eth_arb_mux #
 
 parameter CL_S_COUNT = $clog2(S_COUNT);
 
-reg frame_reg = 1'b0, frame_next;
+reg frame_reg, frame_next;
 
-reg [S_COUNT-1:0] s_eth_hdr_ready_reg = {S_COUNT{1'b0}}, s_eth_hdr_ready_next;
+reg [S_COUNT-1:0] s_eth_hdr_ready_reg, s_eth_hdr_ready_next;
 
-reg m_eth_hdr_valid_reg = 1'b0, m_eth_hdr_valid_next;
-reg [47:0] m_eth_dest_mac_reg = 48'd0, m_eth_dest_mac_next;
-reg [47:0] m_eth_src_mac_reg = 48'd0, m_eth_src_mac_next;
-reg [15:0] m_eth_type_reg = 16'd0, m_eth_type_next;
+reg m_eth_hdr_valid_reg, m_eth_hdr_valid_next;
+reg [47:0] m_eth_dest_mac_reg, m_eth_dest_mac_next;
+reg [47:0] m_eth_src_mac_reg, m_eth_src_mac_next;
+reg [15:0] m_eth_type_reg, m_eth_type_next;
 
 wire [S_COUNT-1:0] request;
 wire [S_COUNT-1:0] acknowledge;
@@ -108,7 +108,7 @@ wire [CL_S_COUNT-1:0] grant_encoded;
 reg  [DATA_WIDTH-1:0] m_eth_payload_axis_tdata_int;
 reg  [KEEP_WIDTH-1:0] m_eth_payload_axis_tkeep_int;
 reg                   m_eth_payload_axis_tvalid_int;
-reg                   m_eth_payload_axis_tready_int_reg = 1'b0;
+reg                   m_eth_payload_axis_tready_int_reg;
 reg                   m_eth_payload_axis_tlast_int;
 reg  [ID_WIDTH-1:0]   m_eth_payload_axis_tid_int;
 reg  [DEST_WIDTH-1:0] m_eth_payload_axis_tdest_int;
@@ -144,7 +144,7 @@ arbiter #(
 )
 arb_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
     .request(request),
     .acknowledge(acknowledge),
     .grant(grant),
@@ -194,39 +194,42 @@ always @* begin
     m_eth_payload_axis_tuser_int  = current_s_tuser;
 end
 
-always @(posedge clk) begin
-    frame_reg <= frame_next;
-
-    s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
-
-    m_eth_hdr_valid_reg <= m_eth_hdr_valid_next;
-    m_eth_dest_mac_reg <= m_eth_dest_mac_next;
-    m_eth_src_mac_reg <= m_eth_src_mac_next;
-    m_eth_type_reg <= m_eth_type_next;
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         frame_reg <= 1'b0;
         s_eth_hdr_ready_reg <= {S_COUNT{1'b0}};
         m_eth_hdr_valid_reg <= 1'b0;
+        m_eth_dest_mac_reg <= 48'd0;
+        m_eth_src_mac_reg <= 48'd0;
+        m_eth_type_reg <= 16'd0;
+    end else begin
+        frame_reg <= frame_next;
+
+        s_eth_hdr_ready_reg <= s_eth_hdr_ready_next;
+
+        m_eth_hdr_valid_reg <= m_eth_hdr_valid_next;
+        m_eth_dest_mac_reg <= m_eth_dest_mac_next;
+        m_eth_src_mac_reg <= m_eth_src_mac_next;
+        m_eth_type_reg <= m_eth_type_next;
     end
 end
 
 // output datapath logic
-reg [DATA_WIDTH-1:0] m_eth_payload_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] m_eth_payload_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg                  m_eth_payload_axis_tvalid_reg = 1'b0, m_eth_payload_axis_tvalid_next;
-reg                  m_eth_payload_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   m_eth_payload_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] m_eth_payload_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] m_eth_payload_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] m_eth_payload_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] m_eth_payload_axis_tkeep_reg;
+reg                  m_eth_payload_axis_tvalid_reg, m_eth_payload_axis_tvalid_next;
+reg                  m_eth_payload_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   m_eth_payload_axis_tid_reg;
+reg [DEST_WIDTH-1:0] m_eth_payload_axis_tdest_reg;
+reg [USER_WIDTH-1:0] m_eth_payload_axis_tuser_reg;
 
-reg [DATA_WIDTH-1:0] temp_m_eth_payload_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] temp_m_eth_payload_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg                  temp_m_eth_payload_axis_tvalid_reg = 1'b0, temp_m_eth_payload_axis_tvalid_next;
-reg                  temp_m_eth_payload_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   temp_m_eth_payload_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] temp_m_eth_payload_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] temp_m_eth_payload_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] temp_m_eth_payload_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] temp_m_eth_payload_axis_tkeep_reg;
+reg                  temp_m_eth_payload_axis_tvalid_reg, temp_m_eth_payload_axis_tvalid_next;
+reg                  temp_m_eth_payload_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   temp_m_eth_payload_axis_tid_reg;
+reg [DEST_WIDTH-1:0] temp_m_eth_payload_axis_tdest_reg;
+reg [USER_WIDTH-1:0] temp_m_eth_payload_axis_tuser_reg;
 
 // datapath control
 reg store_axis_int_to_output;
@@ -272,41 +275,55 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    m_eth_payload_axis_tvalid_reg <= m_eth_payload_axis_tvalid_next;
-    m_eth_payload_axis_tready_int_reg <= m_eth_payload_axis_tready_int_early;
-    temp_m_eth_payload_axis_tvalid_reg <= temp_m_eth_payload_axis_tvalid_next;
-
-    // datapath
-    if (store_axis_int_to_output) begin
-        m_eth_payload_axis_tdata_reg <= m_eth_payload_axis_tdata_int;
-        m_eth_payload_axis_tkeep_reg <= m_eth_payload_axis_tkeep_int;
-        m_eth_payload_axis_tlast_reg <= m_eth_payload_axis_tlast_int;
-        m_eth_payload_axis_tid_reg   <= m_eth_payload_axis_tid_int;
-        m_eth_payload_axis_tdest_reg <= m_eth_payload_axis_tdest_int;
-        m_eth_payload_axis_tuser_reg <= m_eth_payload_axis_tuser_int;
-    end else if (store_eth_payload_axis_temp_to_output) begin
-        m_eth_payload_axis_tdata_reg <= temp_m_eth_payload_axis_tdata_reg;
-        m_eth_payload_axis_tkeep_reg <= temp_m_eth_payload_axis_tkeep_reg;
-        m_eth_payload_axis_tlast_reg <= temp_m_eth_payload_axis_tlast_reg;
-        m_eth_payload_axis_tid_reg   <= temp_m_eth_payload_axis_tid_reg;
-        m_eth_payload_axis_tdest_reg <= temp_m_eth_payload_axis_tdest_reg;
-        m_eth_payload_axis_tuser_reg <= temp_m_eth_payload_axis_tuser_reg;
-    end
-
-    if (store_axis_int_to_temp) begin
-        temp_m_eth_payload_axis_tdata_reg <= m_eth_payload_axis_tdata_int;
-        temp_m_eth_payload_axis_tkeep_reg <= m_eth_payload_axis_tkeep_int;
-        temp_m_eth_payload_axis_tlast_reg <= m_eth_payload_axis_tlast_int;
-        temp_m_eth_payload_axis_tid_reg   <= m_eth_payload_axis_tid_int;
-        temp_m_eth_payload_axis_tdest_reg <= m_eth_payload_axis_tdest_int;
-        temp_m_eth_payload_axis_tuser_reg <= m_eth_payload_axis_tuser_int;
-    end
-
-    if (rst) begin
-        m_eth_payload_axis_tvalid_reg <= 1'b0;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         m_eth_payload_axis_tready_int_reg <= 1'b0;
+
+        m_eth_payload_axis_tdata_reg  <= {DATA_WIDTH{1'b0}};
+        m_eth_payload_axis_tkeep_reg  <= {KEEP_WIDTH{1'b0}};
+        m_eth_payload_axis_tvalid_reg <= 1'b0;
+        m_eth_payload_axis_tlast_reg  <= 1'b0;
+        m_eth_payload_axis_tid_reg    <= {ID_WIDTH{1'b0}};
+        m_eth_payload_axis_tdest_reg  <= {DEST_WIDTH{1'b0}};
+        m_eth_payload_axis_tuser_reg  <= {USER_WIDTH{1'b0}};
+
+        temp_m_eth_payload_axis_tdata_reg  <= {DATA_WIDTH{1'b0}};
+        temp_m_eth_payload_axis_tkeep_reg  <= {KEEP_WIDTH{1'b0}};
         temp_m_eth_payload_axis_tvalid_reg <= 1'b0;
+        temp_m_eth_payload_axis_tlast_reg  <= 1'b0;
+        temp_m_eth_payload_axis_tid_reg    <= {ID_WIDTH{1'b0}};
+        temp_m_eth_payload_axis_tdest_reg  <= {DEST_WIDTH{1'b0}};
+        temp_m_eth_payload_axis_tuser_reg  <= {USER_WIDTH{1'b0}};
+    end else begin
+        m_eth_payload_axis_tvalid_reg <= m_eth_payload_axis_tvalid_next;
+        m_eth_payload_axis_tready_int_reg <= m_eth_payload_axis_tready_int_early;
+        temp_m_eth_payload_axis_tvalid_reg <= temp_m_eth_payload_axis_tvalid_next;
+
+        // datapath
+        if (store_axis_int_to_output) begin
+            m_eth_payload_axis_tdata_reg <= m_eth_payload_axis_tdata_int;
+            m_eth_payload_axis_tkeep_reg <= m_eth_payload_axis_tkeep_int;
+            m_eth_payload_axis_tlast_reg <= m_eth_payload_axis_tlast_int;
+            m_eth_payload_axis_tid_reg   <= m_eth_payload_axis_tid_int;
+            m_eth_payload_axis_tdest_reg <= m_eth_payload_axis_tdest_int;
+            m_eth_payload_axis_tuser_reg <= m_eth_payload_axis_tuser_int;
+        end else if (store_eth_payload_axis_temp_to_output) begin
+            m_eth_payload_axis_tdata_reg <= temp_m_eth_payload_axis_tdata_reg;
+            m_eth_payload_axis_tkeep_reg <= temp_m_eth_payload_axis_tkeep_reg;
+            m_eth_payload_axis_tlast_reg <= temp_m_eth_payload_axis_tlast_reg;
+            m_eth_payload_axis_tid_reg   <= temp_m_eth_payload_axis_tid_reg;
+            m_eth_payload_axis_tdest_reg <= temp_m_eth_payload_axis_tdest_reg;
+            m_eth_payload_axis_tuser_reg <= temp_m_eth_payload_axis_tuser_reg;
+        end
+
+        if (store_axis_int_to_temp) begin
+            temp_m_eth_payload_axis_tdata_reg <= m_eth_payload_axis_tdata_int;
+            temp_m_eth_payload_axis_tkeep_reg <= m_eth_payload_axis_tkeep_int;
+            temp_m_eth_payload_axis_tlast_reg <= m_eth_payload_axis_tlast_int;
+            temp_m_eth_payload_axis_tid_reg   <= m_eth_payload_axis_tid_int;
+            temp_m_eth_payload_axis_tdest_reg <= m_eth_payload_axis_tdest_int;
+            temp_m_eth_payload_axis_tuser_reg <= m_eth_payload_axis_tuser_int;
+        end
     end
 end
 

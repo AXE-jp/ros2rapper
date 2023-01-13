@@ -89,7 +89,7 @@ module axis_async_fifo_adapter #
      * AXI input
      */
     input  wire                     s_clk,
-    input  wire                     s_rst,
+    input  wire                     s_rst_n,
     input  wire [S_DATA_WIDTH-1:0]  s_axis_tdata,
     input  wire [S_KEEP_WIDTH-1:0]  s_axis_tkeep,
     input  wire                     s_axis_tvalid,
@@ -103,7 +103,7 @@ module axis_async_fifo_adapter #
      * AXI output
      */
     input  wire                     m_clk,
-    input  wire                     m_rst,
+    input  wire                     m_rst_n,
     output wire [M_DATA_WIDTH-1:0]  m_axis_tdata,
     output wire [M_KEEP_WIDTH-1:0]  m_axis_tkeep,
     output wire                     m_axis_tvalid,
@@ -220,7 +220,7 @@ end else if (EXPAND_BUS) begin
     )
     adapter_inst (
         .clk(s_clk),
-        .rst(s_rst),
+        .rst_n(s_rst_n),
         // AXI input
         .s_axis_tdata(s_axis_tdata),
         .s_axis_tkeep(s_axis_tkeep),
@@ -279,7 +279,7 @@ end else begin
     )
     adapter_inst (
         .clk(m_clk),
-        .rst(m_rst),
+        .rst_n(m_rst_n),
         // AXI input
         .s_axis_tdata(post_fifo_axis_tdata),
         .s_axis_tkeep(post_fifo_axis_tkeep),
@@ -327,7 +327,7 @@ axis_async_fifo #(
 fifo_inst (
     // AXI input
     .s_clk(s_clk),
-    .s_rst(s_rst),
+    .s_rst_n(s_rst_n),
     .s_axis_tdata(pre_fifo_axis_tdata),
     .s_axis_tkeep(pre_fifo_axis_tkeep),
     .s_axis_tvalid(pre_fifo_axis_tvalid),
@@ -338,7 +338,7 @@ fifo_inst (
     .s_axis_tuser(pre_fifo_axis_tuser),
     // AXI output
     .m_clk(m_clk),
-    .m_rst(m_rst),
+    .m_rst_n(m_rst_n),
     .m_axis_tdata(post_fifo_axis_tdata),
     .m_axis_tkeep(post_fifo_axis_tkeep),
     .m_axis_tvalid(post_fifo_axis_tvalid),

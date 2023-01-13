@@ -10,7 +10,7 @@ module verilog_ethernet #
 )
 (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
 
     input  wire        phy_rx_clk,
     input  wire [3:0]  phy_rxd,
@@ -166,7 +166,7 @@ assign tx_udp_payload_axis_tuser = 0;
 assign rx_udp_hdr_ready = 0;
 assign rx_udp_payload_axis_tready = 0;
 
-assign phy_reset_n = !rst;
+assign phy_reset_n = rst_n;
 
 eth_mac_mii_fifo #(
     .TARGET(TARGET),
@@ -175,9 +175,9 @@ eth_mac_mii_fifo #(
     .RX_FIFO_DEPTH(`MAC_RX_FIFO_DEPTH)
 )
 eth_mac_inst (
-    .rst(rst),
+    .rst_n(rst_n),
     .logic_clk(clk),
-    .logic_rst(rst),
+    .logic_rst(~rst_n),
 
     .tx_axis_tdata(tx_axis_tdata),
     .tx_axis_tvalid(tx_axis_tvalid),
@@ -215,7 +215,7 @@ eth_mac_inst (
 eth_axis_rx
 eth_axis_rx_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
 
     .s_axis_tdata(rx_axis_tdata),
     .s_axis_tkeep(1'b1),
@@ -242,7 +242,7 @@ eth_axis_rx_inst (
 eth_axis_tx
 eth_axis_tx_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
 
     .s_eth_hdr_valid(tx_eth_hdr_valid),
     .s_eth_hdr_ready(tx_eth_hdr_ready),
@@ -273,7 +273,7 @@ ip_complete #(
 )
 ip_complete_inst (
     .clk(clk),
-    .rst(rst),
+    .rst_n(rst_n),
 
     .s_eth_hdr_valid(rx_eth_hdr_valid),
     .s_eth_hdr_ready(rx_eth_hdr_ready),

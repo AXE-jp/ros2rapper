@@ -36,7 +36,7 @@ module arp_cache #(
 )
 (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
 
     /*
      * Cache query
@@ -64,31 +64,31 @@ module arp_cache #(
     input  wire        clear_cache
 );
 
-reg mem_write = 0;
-reg store_query = 0;
-reg store_write = 0;
+reg mem_write;
+reg store_query;
+reg store_write;
 
-reg query_ip_valid_reg = 0, query_ip_valid_next;
-reg [31:0] query_ip_reg = 0;
-reg write_ip_valid_reg = 0, write_ip_valid_next;
-reg [31:0] write_ip_reg = 0;
-reg [47:0] write_mac_reg = 0;
-reg clear_cache_reg = 0, clear_cache_next;
+reg query_ip_valid_reg, query_ip_valid_next;
+reg [31:0] query_ip_reg;
+reg write_ip_valid_reg, write_ip_valid_next;
+reg [31:0] write_ip_reg;
+reg [47:0] write_mac_reg;
+reg clear_cache_reg, clear_cache_next;
 
-reg [CACHE_ADDR_WIDTH-1:0] wr_ptr_reg = {CACHE_ADDR_WIDTH{1'b0}}, wr_ptr_next;
-reg [CACHE_ADDR_WIDTH-1:0] rd_ptr_reg = {CACHE_ADDR_WIDTH{1'b0}}, rd_ptr_next;
+reg [CACHE_ADDR_WIDTH-1:0] wr_ptr_reg, wr_ptr_next;
+reg [CACHE_ADDR_WIDTH-1:0] rd_ptr_reg, rd_ptr_next;
 
 reg valid_mem[(2**CACHE_ADDR_WIDTH)-1:0];
 reg [31:0] ip_addr_mem[(2**CACHE_ADDR_WIDTH)-1:0];
 reg [47:0] mac_addr_mem[(2**CACHE_ADDR_WIDTH)-1:0];
 
-reg query_request_ready_reg = 0, query_request_ready_next;
+reg query_request_ready_reg, query_request_ready_next;
 
-reg query_response_valid_reg = 0, query_response_valid_next;
-reg query_response_error_reg = 0, query_response_error_next;
-reg [47:0] query_response_mac_reg = 0;
+reg query_response_valid_reg, query_response_valid_next;
+reg query_response_error_reg, query_response_error_next;
+reg [47:0] query_response_mac_reg;
 
-reg write_request_ready_reg = 0, write_request_ready_next;
+reg write_request_ready_reg, write_request_ready_next;
 
 wire [31:0] query_request_hash;
 wire [31:0] write_request_hash;
@@ -193,21 +193,30 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         for (i = 0; i < 2**CACHE_ADDR_WIDTH; i = i + 1) begin
             valid_mem[i] = 1'b0;
             ip_addr_mem[i] = 32'd0;
             mac_addr_mem[i] = 48'd0;
         end
 
+        mem_write <= 1'b0;
+        store_query <= 1'b0;
+        store_write <= 1'b0;
         query_ip_valid_reg <= 1'b0;
-        query_request_ready_reg <= 1'b0;
-        query_response_valid_reg <= 1'b0;
+        query_ip_reg <= 32'b0;
         write_ip_valid_reg <= 1'b0;
-        write_request_ready_reg <= 1'b0;
+        write_ip_reg <= 32'b0;
+        write_mac_reg <= 48'b0;
         clear_cache_reg <= 1'b1;
         wr_ptr_reg <= 0;
+        rd_ptr_reg <= 0;
+        query_request_ready_reg <= 1'b0;
+        query_response_valid_reg <= 1'b0;
+        query_response_error_reg <= 1'b0;
+        query_response_mac_reg <= 48'b0;
+        write_request_ready_reg <= 1'b0;
     end else begin
         query_ip_valid_reg <= query_ip_valid_next;
         query_request_ready_reg <= query_request_ready_next;
@@ -216,28 +225,29 @@ always @(posedge clk) begin
         write_request_ready_reg <= write_request_ready_next;
         clear_cache_reg <= clear_cache_next;
         wr_ptr_reg <= wr_ptr_next;
+
+        query_response_error_reg <= query_response_error_next;
+
+        if (store_query) begin
+            query_ip_reg <= query_request_ip;
+        end
+
+        if (store_write) begin
+            write_ip_reg <= write_request_ip;
+            write_mac_reg <= write_request_mac;
+        end
+
+        rd_ptr_reg <= rd_ptr_next;
+
+        query_response_mac_reg <= mac_addr_mem[rd_ptr_reg];
+
+        if (mem_write) begin
+            valid_mem[wr_ptr_reg] <= !clear_cache_reg;
+            ip_addr_mem[wr_ptr_reg] <= write_ip_reg;
+            mac_addr_mem[wr_ptr_reg] <= write_mac_reg;
+        end
     end
 
-    query_response_error_reg <= query_response_error_next;
-
-    if (store_query) begin
-        query_ip_reg <= query_request_ip;
-    end
-
-    if (store_write) begin
-        write_ip_reg <= write_request_ip;
-        write_mac_reg <= write_request_mac;
-    end
-
-    rd_ptr_reg <= rd_ptr_next;
-
-    query_response_mac_reg <= mac_addr_mem[rd_ptr_reg];
-
-    if (mem_write) begin
-        valid_mem[wr_ptr_reg] <= !clear_cache_reg;
-        ip_addr_mem[wr_ptr_reg] <= write_ip_reg;
-        mac_addr_mem[wr_ptr_reg] <= write_mac_reg;
-    end
 end
 
 endmodule

@@ -84,7 +84,7 @@ module axis_async_fifo #
      * AXI input
      */
     input  wire                   s_clk,
-    input  wire                   s_rst,
+    input  wire                   s_rst_n,
     input  wire [DATA_WIDTH-1:0]  s_axis_tdata,
     input  wire [KEEP_WIDTH-1:0]  s_axis_tkeep,
     input  wire                   s_axis_tvalid,
@@ -98,7 +98,7 @@ module axis_async_fifo #
      * AXI output
      */
     input  wire                   m_clk,
-    input  wire                   m_rst,
+    input  wire                   m_rst_n,
     output wire [DATA_WIDTH-1:0]  m_axis_tdata,
     output wire [KEEP_WIDTH-1:0]  m_axis_tkeep,
     output wire                   m_axis_tvalid,
@@ -163,61 +163,59 @@ localparam DEST_OFFSET = ID_OFFSET   + (ID_ENABLE   ? ID_WIDTH   : 0);
 localparam USER_OFFSET = DEST_OFFSET + (DEST_ENABLE ? DEST_WIDTH : 0);
 localparam WIDTH       = USER_OFFSET + (USER_ENABLE ? USER_WIDTH : 0);
 
-reg [ADDR_WIDTH:0] wr_ptr_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] wr_ptr_cur_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] wr_ptr_gray_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] wr_ptr_sync_gray_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] wr_ptr_cur_gray_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] rd_ptr_reg = {ADDR_WIDTH+1{1'b0}};
-reg [ADDR_WIDTH:0] rd_ptr_gray_reg = {ADDR_WIDTH+1{1'b0}};
+reg [ADDR_WIDTH:0] wr_ptr_reg;
+reg [ADDR_WIDTH:0] wr_ptr_cur_reg;
+reg [ADDR_WIDTH:0] wr_ptr_gray_reg;
+reg [ADDR_WIDTH:0] wr_ptr_sync_gray_reg;
+reg [ADDR_WIDTH:0] wr_ptr_cur_gray_reg;
+reg [ADDR_WIDTH:0] rd_ptr_reg;
+reg [ADDR_WIDTH:0] rd_ptr_gray_reg;
 
 reg [ADDR_WIDTH:0] wr_ptr_temp;
 reg [ADDR_WIDTH:0] rd_ptr_temp;
 
 (* SHREG_EXTRACT = "NO" *)
-reg [ADDR_WIDTH:0] wr_ptr_gray_sync1_reg = {ADDR_WIDTH+1{1'b0}};
+reg [ADDR_WIDTH:0] wr_ptr_gray_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg [ADDR_WIDTH:0] wr_ptr_gray_sync2_reg = {ADDR_WIDTH+1{1'b0}};
+reg [ADDR_WIDTH:0] wr_ptr_gray_sync2_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg [ADDR_WIDTH:0] rd_ptr_gray_sync1_reg = {ADDR_WIDTH+1{1'b0}};
+reg [ADDR_WIDTH:0] rd_ptr_gray_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg [ADDR_WIDTH:0] rd_ptr_gray_sync2_reg = {ADDR_WIDTH+1{1'b0}};
+reg [ADDR_WIDTH:0] rd_ptr_gray_sync2_reg;
 
-reg wr_ptr_update_valid_reg = 1'b0;
-reg wr_ptr_update_reg = 1'b0;
+reg wr_ptr_update_valid_reg;
+reg wr_ptr_update_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg wr_ptr_update_sync1_reg = 1'b0;
+reg wr_ptr_update_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg wr_ptr_update_sync2_reg = 1'b0;
+reg wr_ptr_update_sync2_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg wr_ptr_update_sync3_reg = 1'b0;
+reg wr_ptr_update_sync3_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg wr_ptr_update_ack_sync1_reg = 1'b0;
+reg wr_ptr_update_ack_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg wr_ptr_update_ack_sync2_reg = 1'b0;
+reg wr_ptr_update_ack_sync2_reg;
 
 (* SHREG_EXTRACT = "NO" *)
-reg s_rst_sync1_reg = 1'b1;
+reg s_rst_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg s_rst_sync2_reg = 1'b1;
+reg s_rst_sync2_reg = 1'b0;
 (* SHREG_EXTRACT = "NO" *)
-reg s_rst_sync3_reg = 1'b1;
+reg s_rst_sync3_reg = 1'b0;
 (* SHREG_EXTRACT = "NO" *)
-reg m_rst_sync1_reg = 1'b1;
+reg m_rst_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg m_rst_sync2_reg = 1'b1;
+reg m_rst_sync2_reg = 1'b0;
 (* SHREG_EXTRACT = "NO" *)
-reg m_rst_sync3_reg = 1'b1;
+reg m_rst_sync3_reg = 1'b0;
 
 (* ramstyle = "no_rw_check" *)
 reg [WIDTH-1:0] mem[(2**ADDR_WIDTH)-1:0];
-reg [WIDTH-1:0] mem_read_data_reg;
-reg mem_read_data_valid_reg = 1'b0;
 
 wire [WIDTH-1:0] s_axis;
 
 reg [WIDTH-1:0] m_axis_pipe_reg[PIPELINE_OUTPUT-1:0];
-reg [PIPELINE_OUTPUT-1:0] m_axis_tvalid_pipe_reg = 1'b0;
+reg [PIPELINE_OUTPUT-1:0] m_axis_tvalid_pipe_reg;
 
 // full when first TWO MSBs do NOT match, but rest matches
 // (gray code equivalent of first MSB different but rest same)
@@ -228,37 +226,32 @@ wire empty = rd_ptr_gray_reg == (FRAME_FIFO ? wr_ptr_gray_sync1_reg : wr_ptr_gra
 // overflow within packet
 wire full_wr = wr_ptr_reg == (wr_ptr_cur_reg ^ {1'b1, {ADDR_WIDTH{1'b0}}});
 
-// control signals
-reg write;
-reg read;
-reg store_output;
+reg s_frame_reg;
+reg m_frame_reg;
 
-reg s_frame_reg = 1'b0;
-reg m_frame_reg = 1'b0;
+reg drop_frame_reg;
+reg send_frame_reg;
+reg overflow_reg;
+reg bad_frame_reg;
+reg good_frame_reg;
 
-reg drop_frame_reg = 1'b0;
-reg send_frame_reg = 1'b0;
-reg overflow_reg = 1'b0;
-reg bad_frame_reg = 1'b0;
-reg good_frame_reg = 1'b0;
+reg m_drop_frame_reg;
+reg m_terminate_frame_reg;
 
-reg m_drop_frame_reg = 1'b0;
-reg m_terminate_frame_reg = 1'b0;
+reg overflow_sync1_reg;
+reg overflow_sync2_reg;
+reg overflow_sync3_reg;
+reg overflow_sync4_reg;
+reg bad_frame_sync1_reg;
+reg bad_frame_sync2_reg;
+reg bad_frame_sync3_reg;
+reg bad_frame_sync4_reg;
+reg good_frame_sync1_reg;
+reg good_frame_sync2_reg;
+reg good_frame_sync3_reg;
+reg good_frame_sync4_reg;
 
-reg overflow_sync1_reg = 1'b0;
-reg overflow_sync2_reg = 1'b0;
-reg overflow_sync3_reg = 1'b0;
-reg overflow_sync4_reg = 1'b0;
-reg bad_frame_sync1_reg = 1'b0;
-reg bad_frame_sync2_reg = 1'b0;
-reg bad_frame_sync3_reg = 1'b0;
-reg bad_frame_sync4_reg = 1'b0;
-reg good_frame_sync1_reg = 1'b0;
-reg good_frame_sync2_reg = 1'b0;
-reg good_frame_sync3_reg = 1'b0;
-reg good_frame_sync4_reg = 1'b0;
-
-assign s_axis_tready = (FRAME_FIFO ? (!full_cur || (full_wr && DROP_OVERSIZE_FRAME) || DROP_WHEN_FULL) : !full) && !s_rst_sync3_reg;
+assign s_axis_tready = (FRAME_FIFO ? (!full_cur || (full_wr && DROP_OVERSIZE_FRAME) || DROP_WHEN_FULL) : !full) && s_rst_sync3_reg;
 
 generate
     assign s_axis[DATA_WIDTH-1:0] = s_axis_tdata;
@@ -296,11 +289,11 @@ assign m_status_bad_frame = bad_frame_sync3_reg ^ bad_frame_sync4_reg;
 assign m_status_good_frame = good_frame_sync3_reg ^ good_frame_sync4_reg;
 
 // reset synchronization
-always @(posedge m_clk or posedge m_rst) begin
-    if (m_rst) begin
-        s_rst_sync1_reg <= 1'b1;
-    end else begin
+always @(posedge m_clk or negedge m_rst_n) begin
+    if (!m_rst_n) begin
         s_rst_sync1_reg <= 1'b0;
+    end else begin
+        s_rst_sync1_reg <= 1'b1;
     end
 end
 
@@ -309,11 +302,11 @@ always @(posedge s_clk) begin
     s_rst_sync3_reg <= s_rst_sync2_reg;
 end
 
-always @(posedge s_clk or posedge s_rst) begin
-    if (s_rst) begin
-        m_rst_sync1_reg <= 1'b1;
-    end else begin
+always @(posedge s_clk or negedge s_rst_n) begin
+    if (!s_rst_n) begin
         m_rst_sync1_reg <= 1'b0;
+    end else begin
+        m_rst_sync1_reg <= 1'b1;
     end
 end
 
@@ -323,131 +316,8 @@ always @(posedge m_clk) begin
 end
 
 // Write logic
-always @(posedge s_clk) begin
-    overflow_reg <= 1'b0;
-    bad_frame_reg <= 1'b0;
-    good_frame_reg <= 1'b0;
-
-    if (FRAME_FIFO && wr_ptr_update_valid_reg) begin
-        // have updated pointer to sync
-        if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
-            // no sync in progress; sync update
-            wr_ptr_update_valid_reg <= 1'b0;
-            wr_ptr_sync_gray_reg <= wr_ptr_gray_reg;
-            wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
-        end
-    end
-
-    if (s_axis_tready && s_axis_tvalid && LAST_ENABLE) begin
-        // track input frame status
-        s_frame_reg <= !s_axis_tlast;
-    end
-
-    if (s_rst_sync3_reg && LAST_ENABLE) begin
-        // if sink side is reset during transfer, drop partial frame
-        if (s_frame_reg && !(s_axis_tready && s_axis_tvalid && s_axis_tlast)) begin
-            drop_frame_reg <= 1'b1;
-        end
-        if (s_axis_tready && s_axis_tvalid && !s_axis_tlast) begin
-            drop_frame_reg <= 1'b1;
-        end
-    end
-
-    if (s_axis_tready && s_axis_tvalid) begin
-        // transfer in
-        if (!FRAME_FIFO) begin
-            // normal FIFO mode
-            mem[wr_ptr_reg[ADDR_WIDTH-1:0]] <= s_axis;
-            if (drop_frame_reg && LAST_ENABLE) begin
-                // currently dropping frame
-                // (only for frame transfers interrupted by sink reset)
-                if (s_axis_tlast) begin
-                    // end of frame, clear drop flag
-                    drop_frame_reg <= 1'b0;
-                end
-            end else begin
-                // update pointers
-                wr_ptr_temp = wr_ptr_reg + 1;
-                wr_ptr_reg <= wr_ptr_temp;
-                wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-            end
-        end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg) begin
-            // full, packet overflow, or currently dropping frame
-            // drop frame
-            drop_frame_reg <= 1'b1;
-            if (s_axis_tlast) begin
-                // end of frame, reset write pointer
-                wr_ptr_temp = wr_ptr_reg;
-                wr_ptr_cur_reg <= wr_ptr_temp;
-                wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-                drop_frame_reg <= 1'b0;
-                overflow_reg <= 1'b1;
-            end
-        end else begin
-            mem[wr_ptr_cur_reg[ADDR_WIDTH-1:0]] <= s_axis;
-            wr_ptr_temp = wr_ptr_cur_reg + 1;
-            wr_ptr_cur_reg <= wr_ptr_temp;
-            wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-            if (s_axis_tlast || (!DROP_OVERSIZE_FRAME && (full_wr || send_frame_reg))) begin
-                // end of frame or send frame
-                send_frame_reg <= !s_axis_tlast;
-                if (s_axis_tlast && DROP_BAD_FRAME && USER_BAD_FRAME_MASK & ~(s_axis_tuser ^ USER_BAD_FRAME_VALUE)) begin
-                    // bad packet, reset write pointer
-                    wr_ptr_temp = wr_ptr_reg;
-                    wr_ptr_cur_reg <= wr_ptr_temp;
-                    wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-                    bad_frame_reg <= 1'b1;
-                end else begin
-                    // good packet or packet overflow, update write pointer
-                    wr_ptr_temp = wr_ptr_cur_reg + 1;
-                    wr_ptr_reg <= wr_ptr_temp;
-                    wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-
-                    if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
-                        // no sync in progress; sync update
-                        wr_ptr_update_valid_reg <= 1'b0;
-                        wr_ptr_sync_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-                        wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
-                    end else begin
-                        // sync in progress; flag it for later
-                        wr_ptr_update_valid_reg <= 1'b1;
-                    end
-
-                    good_frame_reg <= s_axis_tlast;
-                end
-            end
-        end
-    end else if (s_axis_tvalid && full_wr && FRAME_FIFO && !DROP_OVERSIZE_FRAME) begin
-        // data valid with packet overflow
-        // update write pointer
-        send_frame_reg <= 1'b1;
-        wr_ptr_temp = wr_ptr_cur_reg;
-        wr_ptr_reg <= wr_ptr_temp;
-        wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-
-        if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
-            // no sync in progress; sync update
-            wr_ptr_update_valid_reg <= 1'b0;
-            wr_ptr_sync_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-            wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
-        end else begin
-            // sync in progress; flag it for later
-            wr_ptr_update_valid_reg <= 1'b1;
-        end
-    end
-
-    if (s_rst_sync3_reg) begin
-        wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
-        wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
-        wr_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
-        wr_ptr_sync_gray_reg <= {ADDR_WIDTH+1{1'b0}};
-        wr_ptr_cur_gray_reg <= {ADDR_WIDTH+1{1'b0}};
-
-        wr_ptr_update_valid_reg <= 1'b0;
-        wr_ptr_update_reg <= 1'b0;
-    end
-
-    if (s_rst) begin
+always @(posedge s_clk or negedge s_rst_n) begin
+    if (!s_rst_n) begin
         wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -464,73 +334,186 @@ always @(posedge s_clk) begin
         overflow_reg <= 1'b0;
         bad_frame_reg <= 1'b0;
         good_frame_reg <= 1'b0;
+    end else begin
+        overflow_reg <= 1'b0;
+        bad_frame_reg <= 1'b0;
+        good_frame_reg <= 1'b0;
+
+        if (FRAME_FIFO && wr_ptr_update_valid_reg) begin
+            // have updated pointer to sync
+            if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
+                // no sync in progress; sync update
+                wr_ptr_update_valid_reg <= 1'b0;
+                wr_ptr_sync_gray_reg <= wr_ptr_gray_reg;
+                wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
+            end
+        end
+
+        if (s_axis_tready && s_axis_tvalid && LAST_ENABLE) begin
+            // track input frame status
+            s_frame_reg <= !s_axis_tlast;
+        end
+
+        if (!s_rst_sync3_reg && LAST_ENABLE) begin
+            // if sink side is reset during transfer, drop partial frame
+            if (s_frame_reg && !(s_axis_tready && s_axis_tvalid && s_axis_tlast)) begin
+                drop_frame_reg <= 1'b1;
+            end
+            if (s_axis_tready && s_axis_tvalid && !s_axis_tlast) begin
+                drop_frame_reg <= 1'b1;
+            end
+        end
+
+        if (s_axis_tready && s_axis_tvalid) begin
+            // transfer in
+            if (!FRAME_FIFO) begin
+                // normal FIFO mode
+                mem[wr_ptr_reg[ADDR_WIDTH-1:0]] <= s_axis;
+                if (drop_frame_reg && LAST_ENABLE) begin
+                    // currently dropping frame
+                    // (only for frame transfers interrupted by sink reset)
+                    if (s_axis_tlast) begin
+                        // end of frame, clear drop flag
+                        drop_frame_reg <= 1'b0;
+                    end
+                end else begin
+                    // update pointers
+                    wr_ptr_temp = wr_ptr_reg + 1;
+                    wr_ptr_reg <= wr_ptr_temp;
+                    wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                end
+            end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg) begin
+                // full, packet overflow, or currently dropping frame
+                // drop frame
+                drop_frame_reg <= 1'b1;
+                if (s_axis_tlast) begin
+                    // end of frame, reset write pointer
+                    wr_ptr_temp = wr_ptr_reg;
+                    wr_ptr_cur_reg <= wr_ptr_temp;
+                    wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                    drop_frame_reg <= 1'b0;
+                    overflow_reg <= 1'b1;
+                end
+            end else begin
+                mem[wr_ptr_cur_reg[ADDR_WIDTH-1:0]] <= s_axis;
+                wr_ptr_temp = wr_ptr_cur_reg + 1;
+                wr_ptr_cur_reg <= wr_ptr_temp;
+                wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                if (s_axis_tlast || (!DROP_OVERSIZE_FRAME && (full_wr || send_frame_reg))) begin
+                    // end of frame or send frame
+                    send_frame_reg <= !s_axis_tlast;
+                    if (s_axis_tlast && DROP_BAD_FRAME && USER_BAD_FRAME_MASK & ~(s_axis_tuser ^ USER_BAD_FRAME_VALUE)) begin
+                        // bad packet, reset write pointer
+                        wr_ptr_temp = wr_ptr_reg;
+                        wr_ptr_cur_reg <= wr_ptr_temp;
+                        wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                        bad_frame_reg <= 1'b1;
+                    end else begin
+                        // good packet or packet overflow, update write pointer
+                        wr_ptr_temp = wr_ptr_cur_reg + 1;
+                        wr_ptr_reg <= wr_ptr_temp;
+                        wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+
+                        if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
+                            // no sync in progress; sync update
+                            wr_ptr_update_valid_reg <= 1'b0;
+                            wr_ptr_sync_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                            wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
+                        end else begin
+                            // sync in progress; flag it for later
+                            wr_ptr_update_valid_reg <= 1'b1;
+                        end
+
+                        good_frame_reg <= s_axis_tlast;
+                    end
+                end
+            end
+        end else if (s_axis_tvalid && full_wr && FRAME_FIFO && !DROP_OVERSIZE_FRAME) begin
+            // data valid with packet overflow
+            // update write pointer
+            send_frame_reg <= 1'b1;
+            wr_ptr_temp = wr_ptr_cur_reg;
+            wr_ptr_reg <= wr_ptr_temp;
+            wr_ptr_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+
+            if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
+                // no sync in progress; sync update
+                wr_ptr_update_valid_reg <= 1'b0;
+                wr_ptr_sync_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
+                wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
+            end else begin
+                // sync in progress; flag it for later
+                wr_ptr_update_valid_reg <= 1'b1;
+            end
+        end
+
+        if (!s_rst_sync3_reg) begin
+            wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
+            wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
+            wr_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
+            wr_ptr_sync_gray_reg <= {ADDR_WIDTH+1{1'b0}};
+            wr_ptr_cur_gray_reg <= {ADDR_WIDTH+1{1'b0}};
+
+            wr_ptr_update_valid_reg <= 1'b0;
+            wr_ptr_update_reg <= 1'b0;
+        end
     end
 end
 
 // pointer synchronization
-always @(posedge s_clk) begin
-    rd_ptr_gray_sync1_reg <= rd_ptr_gray_reg;
-    rd_ptr_gray_sync2_reg <= rd_ptr_gray_sync1_reg;
-    wr_ptr_update_ack_sync1_reg <= wr_ptr_update_sync3_reg;
-    wr_ptr_update_ack_sync2_reg <= wr_ptr_update_ack_sync1_reg;
-
-    if (s_rst) begin
+always @(posedge s_clk or negedge s_rst_n) begin
+    if (!s_rst_n) begin
         rd_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_update_ack_sync1_reg <= 1'b0;
         wr_ptr_update_ack_sync2_reg <= 1'b0;
+    end else begin
+        rd_ptr_gray_sync1_reg <= rd_ptr_gray_reg;
+        rd_ptr_gray_sync2_reg <= rd_ptr_gray_sync1_reg;
+        wr_ptr_update_ack_sync1_reg <= wr_ptr_update_sync3_reg;
+        wr_ptr_update_ack_sync2_reg <= wr_ptr_update_ack_sync1_reg;
     end
 end
 
-always @(posedge m_clk) begin
-    if (!FRAME_FIFO) begin
-        wr_ptr_gray_sync1_reg <= wr_ptr_gray_reg;
-    end else if (wr_ptr_update_sync2_reg ^ wr_ptr_update_sync3_reg) begin
-        wr_ptr_gray_sync1_reg <= wr_ptr_sync_gray_reg;
-    end
-    wr_ptr_gray_sync2_reg <= wr_ptr_gray_sync1_reg;
-    wr_ptr_update_sync1_reg <= wr_ptr_update_reg;
-    wr_ptr_update_sync2_reg <= wr_ptr_update_sync1_reg;
-    wr_ptr_update_sync3_reg <= wr_ptr_update_sync2_reg;
-
-    if (FRAME_FIFO && m_rst_sync3_reg) begin
-        wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
-    end
-
-    if (m_rst) begin
+always @(posedge m_clk or negedge m_rst_n) begin
+    if (!m_rst_n) begin
         wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_update_sync1_reg <= 1'b0;
         wr_ptr_update_sync2_reg <= 1'b0;
         wr_ptr_update_sync3_reg <= 1'b0;
+    end else begin
+        if (!FRAME_FIFO) begin
+            wr_ptr_gray_sync1_reg <= wr_ptr_gray_reg;
+        end else if (wr_ptr_update_sync2_reg ^ wr_ptr_update_sync3_reg) begin
+            wr_ptr_gray_sync1_reg <= wr_ptr_sync_gray_reg;
+        end
+        wr_ptr_gray_sync2_reg <= wr_ptr_gray_sync1_reg;
+        wr_ptr_update_sync1_reg <= wr_ptr_update_reg;
+        wr_ptr_update_sync2_reg <= wr_ptr_update_sync1_reg;
+        wr_ptr_update_sync3_reg <= wr_ptr_update_sync2_reg;
+
+        if (FRAME_FIFO && !m_rst_sync3_reg) begin
+            wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
+        end
     end
 end
 
 // status synchronization
-always @(posedge s_clk) begin
-    overflow_sync1_reg <= overflow_sync1_reg ^ overflow_reg;
-    bad_frame_sync1_reg <= bad_frame_sync1_reg ^ bad_frame_reg;
-    good_frame_sync1_reg <= good_frame_sync1_reg ^ good_frame_reg;
-
-    if (s_rst) begin
+always @(posedge s_clk or negedge s_rst_n) begin
+    if (!s_rst_n) begin
         overflow_sync1_reg <= 1'b0;
         bad_frame_sync1_reg <= 1'b0;
         good_frame_sync1_reg <= 1'b0;
+    end else begin
+        overflow_sync1_reg <= overflow_sync1_reg ^ overflow_reg;
+        bad_frame_sync1_reg <= bad_frame_sync1_reg ^ bad_frame_reg;
+        good_frame_sync1_reg <= good_frame_sync1_reg ^ good_frame_reg;
     end
 end
 
-always @(posedge m_clk) begin
-    overflow_sync2_reg <= overflow_sync1_reg;
-    overflow_sync3_reg <= overflow_sync2_reg;
-    overflow_sync4_reg <= overflow_sync3_reg;
-    bad_frame_sync2_reg <= bad_frame_sync1_reg;
-    bad_frame_sync3_reg <= bad_frame_sync2_reg;
-    bad_frame_sync4_reg <= bad_frame_sync3_reg;
-    good_frame_sync2_reg <= good_frame_sync1_reg;
-    good_frame_sync3_reg <= good_frame_sync2_reg;
-    good_frame_sync4_reg <= good_frame_sync3_reg;
-
-    if (m_rst) begin
+always @(posedge m_clk or negedge m_rst_n) begin
+    if (!m_rst_n) begin
         overflow_sync2_reg <= 1'b0;
         overflow_sync3_reg <= 1'b0;
         overflow_sync4_reg <= 1'b0;
@@ -540,85 +523,95 @@ always @(posedge m_clk) begin
         good_frame_sync2_reg <= 1'b0;
         good_frame_sync3_reg <= 1'b0;
         good_frame_sync4_reg <= 1'b0;
+    end else begin
+        overflow_sync2_reg <= overflow_sync1_reg;
+        overflow_sync3_reg <= overflow_sync2_reg;
+        overflow_sync4_reg <= overflow_sync3_reg;
+        bad_frame_sync2_reg <= bad_frame_sync1_reg;
+        bad_frame_sync3_reg <= bad_frame_sync2_reg;
+        bad_frame_sync4_reg <= bad_frame_sync3_reg;
+        good_frame_sync2_reg <= good_frame_sync1_reg;
+        good_frame_sync3_reg <= good_frame_sync2_reg;
+        good_frame_sync4_reg <= good_frame_sync3_reg;
     end
 end
 
 // Read logic
 integer j;
 
-always @(posedge m_clk) begin
-    if (m_axis_tready) begin
-        // output ready; invalidate stage
-        m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b0;
-        m_terminate_frame_reg <= 1'b0;
-    end
-
-    for (j = PIPELINE_OUTPUT-1; j > 0; j = j - 1) begin
-        if (m_axis_tready || |((~m_axis_tvalid_pipe_reg) >> j)) begin
-            // output ready or bubble in pipeline; transfer down pipeline
-            m_axis_tvalid_pipe_reg[j] <= m_axis_tvalid_pipe_reg[j-1];
-            m_axis_pipe_reg[j] <= m_axis_pipe_reg[j-1];
-            m_axis_tvalid_pipe_reg[j-1] <= 1'b0;
-        end
-    end
-
-    if (m_axis_tready || |(~m_axis_tvalid_pipe_reg)) begin
-        // output ready or bubble in pipeline; read new data from FIFO
-        m_axis_tvalid_pipe_reg[0] <= 1'b0;
-        m_axis_pipe_reg[0] <= mem[rd_ptr_reg[ADDR_WIDTH-1:0]];
-        if (!empty && !m_rst_sync3_reg && !m_drop_frame_reg) begin
-            // not empty, increment pointer
-            m_axis_tvalid_pipe_reg[0] <= 1'b1;
-            rd_ptr_temp = rd_ptr_reg + 1;
-            rd_ptr_reg <= rd_ptr_temp;
-            rd_ptr_gray_reg <= rd_ptr_temp ^ (rd_ptr_temp >> 1);
-        end
-    end
-
-    if (m_axis_tvalid && LAST_ENABLE) begin
-        // track output frame status
-        if (m_axis_tlast && m_axis_tready) begin
-            m_frame_reg <= 1'b0;
-        end else begin
-            m_frame_reg <= 1'b1;
-        end
-    end
-
-    if (m_drop_frame_reg && (m_axis_tready || !m_axis_tvalid_pipe) && LAST_ENABLE) begin
-        // terminate frame
-        // (only for frame transfers interrupted by source reset)
-        m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b1;
-        m_terminate_frame_reg <= 1'b1;
-        m_drop_frame_reg <= 1'b0;
-    end
-
-    if (m_rst_sync3_reg && LAST_ENABLE) begin
-        // if source side is reset during transfer, drop partial frame
-
-        // empty output pipeline, except for last stage
-        if (PIPELINE_OUTPUT > 1) begin
-            m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-2:0] <= 0;
-        end
-
-        if (m_frame_reg && (!m_axis_tvalid || (m_axis_tvalid && !m_axis_tlast)) &&
-                !(m_drop_frame_reg || m_terminate_frame_reg)) begin
-            // terminate frame
-            m_drop_frame_reg <= 1'b1;
-        end
-    end
-
-    if (m_rst_sync3_reg) begin
-        rd_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
-        rd_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
-    end
-
-    if (m_rst) begin
+always @(posedge m_clk or negedge m_rst_n) begin
+    if (!m_rst_n) begin
         rd_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
         m_axis_tvalid_pipe_reg <= {PIPELINE_OUTPUT{1'b0}};
         m_frame_reg <= 1'b0;
         m_drop_frame_reg <= 1'b0;
         m_terminate_frame_reg <= 1'b0;
+    end
+        if (m_axis_tready) begin
+            // output ready; invalidate stage
+            m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b0;
+            m_terminate_frame_reg <= 1'b0;
+        end
+
+        for (j = PIPELINE_OUTPUT-1; j > 0; j = j - 1) begin
+            if (m_axis_tready || |((~m_axis_tvalid_pipe_reg) >> j)) begin
+                // output ready or bubble in pipeline; transfer down pipeline
+                m_axis_tvalid_pipe_reg[j] <= m_axis_tvalid_pipe_reg[j-1];
+                m_axis_pipe_reg[j] <= m_axis_pipe_reg[j-1];
+                m_axis_tvalid_pipe_reg[j-1] <= 1'b0;
+            end
+        end
+
+        if (m_axis_tready || |(~m_axis_tvalid_pipe_reg)) begin
+            // output ready or bubble in pipeline; read new data from FIFO
+            m_axis_tvalid_pipe_reg[0] <= 1'b0;
+            m_axis_pipe_reg[0] <= mem[rd_ptr_reg[ADDR_WIDTH-1:0]];
+            if (!empty && m_rst_sync3_reg && !m_drop_frame_reg) begin
+                // not empty, increment pointer
+                m_axis_tvalid_pipe_reg[0] <= 1'b1;
+                rd_ptr_temp = rd_ptr_reg + 1;
+                rd_ptr_reg <= rd_ptr_temp;
+                rd_ptr_gray_reg <= rd_ptr_temp ^ (rd_ptr_temp >> 1);
+            end
+        end
+
+        if (m_axis_tvalid && LAST_ENABLE) begin
+            // track output frame status
+            if (m_axis_tlast && m_axis_tready) begin
+                m_frame_reg <= 1'b0;
+            end else begin
+                m_frame_reg <= 1'b1;
+            end
+        end
+
+        if (m_drop_frame_reg && (m_axis_tready || !m_axis_tvalid_pipe) && LAST_ENABLE) begin
+            // terminate frame
+            // (only for frame transfers interrupted by source reset)
+            m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b1;
+            m_terminate_frame_reg <= 1'b1;
+            m_drop_frame_reg <= 1'b0;
+        end
+
+        if (!m_rst_sync3_reg && LAST_ENABLE) begin
+            // if source side is reset during transfer, drop partial frame
+
+            // empty output pipeline, except for last stage
+            if (PIPELINE_OUTPUT > 1) begin
+                m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-2:0] <= 0;
+            end
+
+            if (m_frame_reg && (!m_axis_tvalid || (m_axis_tvalid && !m_axis_tlast)) &&
+                    !(m_drop_frame_reg || m_terminate_frame_reg)) begin
+                // terminate frame
+                m_drop_frame_reg <= 1'b1;
+            end
+        end
+
+        if (!m_rst_sync3_reg) begin
+            rd_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
+            rd_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
+        end
     end
 end
 

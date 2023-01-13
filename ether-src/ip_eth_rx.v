@@ -34,7 +34,7 @@ THE SOFTWARE.
 module ip_eth_rx
 (
     input  wire        clk,
-    input  wire        rst,
+    input  wire        rst_n,
 
     /*
      * Ethernet frame input
@@ -125,7 +125,7 @@ localparam [2:0]
     STATE_READ_PAYLOAD_LAST = 3'd3,
     STATE_WAIT_LAST = 3'd4;
 
-reg [2:0] state_reg = STATE_IDLE, state_next;
+reg [2:0] state_reg, state_next;
 
 // datapath control signals
 reg store_eth_hdr;
@@ -151,17 +151,17 @@ reg store_ip_dest_ip_2;
 reg store_ip_dest_ip_3;
 reg store_last_word;
 
-reg [5:0] hdr_ptr_reg = 6'd0, hdr_ptr_next;
-reg [15:0] word_count_reg = 16'd0, word_count_next;
+reg [5:0] hdr_ptr_reg, hdr_ptr_next;
+reg [15:0] word_count_reg, word_count_next;
 
-reg [15:0] hdr_sum_reg = 16'd0, hdr_sum_next;
+reg [15:0] hdr_sum_reg, hdr_sum_next;
 
-reg [7:0] last_word_data_reg = 8'd0;
+reg [7:0] last_word_data_reg;
 
-reg s_eth_hdr_ready_reg = 1'b0, s_eth_hdr_ready_next;
-reg s_eth_payload_axis_tready_reg = 1'b0, s_eth_payload_axis_tready_next;
+reg s_eth_hdr_ready_reg, s_eth_hdr_ready_next;
+reg s_eth_payload_axis_tready_reg, s_eth_payload_axis_tready_next;
 
-reg m_ip_hdr_valid_reg = 1'b0, m_ip_hdr_valid_next;
+reg m_ip_hdr_valid_reg, m_ip_hdr_valid_next;
 reg [47:0] m_eth_dest_mac_reg = 48'd0;
 reg [47:0] m_eth_src_mac_reg = 48'd0;
 reg [15:0] m_eth_type_reg = 16'd0;
@@ -179,16 +179,16 @@ reg [15:0] m_ip_header_checksum_reg = 16'd0;
 reg [31:0] m_ip_source_ip_reg = 32'd0;
 reg [31:0] m_ip_dest_ip_reg = 32'd0;
 
-reg busy_reg = 1'b0;
-reg error_header_early_termination_reg = 1'b0, error_header_early_termination_next;
-reg error_payload_early_termination_reg = 1'b0, error_payload_early_termination_next;
-reg error_invalid_header_reg = 1'b0, error_invalid_header_next;
-reg error_invalid_checksum_reg = 1'b0, error_invalid_checksum_next;
+reg busy_reg;
+reg error_header_early_termination_reg, error_header_early_termination_next;
+reg error_payload_early_termination_reg, error_payload_early_termination_next;
+reg error_invalid_header_reg, error_invalid_header_next;
+reg error_invalid_checksum_reg, error_invalid_checksum_next;
 
 // internal datapath
 reg [7:0] m_ip_payload_axis_tdata_int;
 reg       m_ip_payload_axis_tvalid_int;
-reg       m_ip_payload_axis_tready_int_reg = 1'b0;
+reg       m_ip_payload_axis_tready_int_reg;
 reg       m_ip_payload_axis_tlast_int;
 reg       m_ip_payload_axis_tuser_int;
 wire      m_ip_payload_axis_tready_int_early;
@@ -430,12 +430,32 @@ always @* begin
     endcase
 end
 
-always @(posedge clk) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         state_reg <= STATE_IDLE;
+        hdr_ptr_reg <= 6'd0;
+        word_count_reg <= 16'd0;
+        hdr_sum_reg <= 16'd0;
+        last_word_data_reg <= 8'd0;
         s_eth_hdr_ready_reg <= 1'b0;
         s_eth_payload_axis_tready_reg <= 1'b0;
         m_ip_hdr_valid_reg <= 1'b0;
+        m_eth_dest_mac_reg <= 48'd0;
+        m_eth_src_mac_reg <= 48'd0;
+        m_eth_type_reg <= 16'd0;
+        m_ip_version_reg <= 4'd0;
+        m_ip_ihl_reg <= 4'd0;
+        m_ip_dscp_reg <= 6'd0;
+        m_ip_ecn_reg <= 2'd0;
+        m_ip_length_reg <= 16'd0;
+        m_ip_identification_reg <= 16'd0;
+        m_ip_flags_reg <= 3'd0;
+        m_ip_fragment_offset_reg <= 13'd0;
+        m_ip_ttl_reg <= 8'd0;
+        m_ip_protocol_reg <= 8'd0;
+        m_ip_header_checksum_reg <= 16'd0;
+        m_ip_source_ip_reg <= 32'd0;
+        m_ip_dest_ip_reg <= 32'd0;
         busy_reg <= 1'b0;
         error_header_early_termination_reg <= 1'b0;
         error_payload_early_termination_reg <= 1'b0;
@@ -455,51 +475,51 @@ always @(posedge clk) begin
         error_invalid_checksum_reg <= error_invalid_checksum_next;
 
         busy_reg <= state_next != STATE_IDLE;
+
+        hdr_ptr_reg <= hdr_ptr_next;
+        word_count_reg <= word_count_next;
+
+        hdr_sum_reg <= hdr_sum_next;
+
+        // datapath
+        if (store_eth_hdr) begin
+            m_eth_dest_mac_reg <= s_eth_dest_mac;
+            m_eth_src_mac_reg <= s_eth_src_mac;
+            m_eth_type_reg <= s_eth_type;
+        end
+
+        if (store_last_word) begin
+            last_word_data_reg <= m_ip_payload_axis_tdata_int;
+        end
+
+        if (store_ip_version_ihl) {m_ip_version_reg, m_ip_ihl_reg} <= s_eth_payload_axis_tdata;
+        if (store_ip_dscp_ecn) {m_ip_dscp_reg, m_ip_ecn_reg} <= s_eth_payload_axis_tdata;
+        if (store_ip_length_0) m_ip_length_reg[ 7: 0] <= s_eth_payload_axis_tdata;
+        if (store_ip_length_1) m_ip_length_reg[15: 8] <= s_eth_payload_axis_tdata;
+        if (store_ip_identification_0) m_ip_identification_reg[ 7: 0] <= s_eth_payload_axis_tdata;
+        if (store_ip_identification_1) m_ip_identification_reg[15: 8] <= s_eth_payload_axis_tdata;
+        if (store_ip_flags_fragment_offset_0) m_ip_fragment_offset_reg[ 7:0] <= s_eth_payload_axis_tdata;
+        if (store_ip_flags_fragment_offset_1) {m_ip_flags_reg, m_ip_fragment_offset_reg[12:8]} <= s_eth_payload_axis_tdata;
+        if (store_ip_ttl) m_ip_ttl_reg <= s_eth_payload_axis_tdata;
+        if (store_ip_protocol) m_ip_protocol_reg <= s_eth_payload_axis_tdata;
+        if (store_ip_header_checksum_0) m_ip_header_checksum_reg[ 7: 0] <= s_eth_payload_axis_tdata;
+        if (store_ip_header_checksum_1) m_ip_header_checksum_reg[15: 8] <= s_eth_payload_axis_tdata;
+        if (store_ip_source_ip_0) m_ip_source_ip_reg[ 7: 0] <= s_eth_payload_axis_tdata;
+        if (store_ip_source_ip_1) m_ip_source_ip_reg[15: 8] <= s_eth_payload_axis_tdata;
+        if (store_ip_source_ip_2) m_ip_source_ip_reg[23:16] <= s_eth_payload_axis_tdata;
+        if (store_ip_source_ip_3) m_ip_source_ip_reg[31:24] <= s_eth_payload_axis_tdata;
+        if (store_ip_dest_ip_0) m_ip_dest_ip_reg[ 7: 0] <= s_eth_payload_axis_tdata;
+        if (store_ip_dest_ip_1) m_ip_dest_ip_reg[15: 8] <= s_eth_payload_axis_tdata;
+        if (store_ip_dest_ip_2) m_ip_dest_ip_reg[23:16] <= s_eth_payload_axis_tdata;
+        if (store_ip_dest_ip_3) m_ip_dest_ip_reg[31:24] <= s_eth_payload_axis_tdata;
     end
-
-    hdr_ptr_reg <= hdr_ptr_next;
-    word_count_reg <= word_count_next;
-
-    hdr_sum_reg <= hdr_sum_next;
-
-    // datapath
-    if (store_eth_hdr) begin
-        m_eth_dest_mac_reg <= s_eth_dest_mac;
-        m_eth_src_mac_reg <= s_eth_src_mac;
-        m_eth_type_reg <= s_eth_type;
-    end
-
-    if (store_last_word) begin
-        last_word_data_reg <= m_ip_payload_axis_tdata_int;
-    end
-
-    if (store_ip_version_ihl) {m_ip_version_reg, m_ip_ihl_reg} <= s_eth_payload_axis_tdata;
-    if (store_ip_dscp_ecn) {m_ip_dscp_reg, m_ip_ecn_reg} <= s_eth_payload_axis_tdata;
-    if (store_ip_length_0) m_ip_length_reg[ 7: 0] <= s_eth_payload_axis_tdata;
-    if (store_ip_length_1) m_ip_length_reg[15: 8] <= s_eth_payload_axis_tdata;
-    if (store_ip_identification_0) m_ip_identification_reg[ 7: 0] <= s_eth_payload_axis_tdata;
-    if (store_ip_identification_1) m_ip_identification_reg[15: 8] <= s_eth_payload_axis_tdata;
-    if (store_ip_flags_fragment_offset_0) m_ip_fragment_offset_reg[ 7:0] <= s_eth_payload_axis_tdata;
-    if (store_ip_flags_fragment_offset_1) {m_ip_flags_reg, m_ip_fragment_offset_reg[12:8]} <= s_eth_payload_axis_tdata;
-    if (store_ip_ttl) m_ip_ttl_reg <= s_eth_payload_axis_tdata;
-    if (store_ip_protocol) m_ip_protocol_reg <= s_eth_payload_axis_tdata;
-    if (store_ip_header_checksum_0) m_ip_header_checksum_reg[ 7: 0] <= s_eth_payload_axis_tdata;
-    if (store_ip_header_checksum_1) m_ip_header_checksum_reg[15: 8] <= s_eth_payload_axis_tdata;
-    if (store_ip_source_ip_0) m_ip_source_ip_reg[ 7: 0] <= s_eth_payload_axis_tdata;
-    if (store_ip_source_ip_1) m_ip_source_ip_reg[15: 8] <= s_eth_payload_axis_tdata;
-    if (store_ip_source_ip_2) m_ip_source_ip_reg[23:16] <= s_eth_payload_axis_tdata;
-    if (store_ip_source_ip_3) m_ip_source_ip_reg[31:24] <= s_eth_payload_axis_tdata;
-    if (store_ip_dest_ip_0) m_ip_dest_ip_reg[ 7: 0] <= s_eth_payload_axis_tdata;
-    if (store_ip_dest_ip_1) m_ip_dest_ip_reg[15: 8] <= s_eth_payload_axis_tdata;
-    if (store_ip_dest_ip_2) m_ip_dest_ip_reg[23:16] <= s_eth_payload_axis_tdata;
-    if (store_ip_dest_ip_3) m_ip_dest_ip_reg[31:24] <= s_eth_payload_axis_tdata;
 end
 
 // output datapath logic
-reg [7:0] m_ip_payload_axis_tdata_reg = 8'd0;
-reg       m_ip_payload_axis_tvalid_reg = 1'b0, m_ip_payload_axis_tvalid_next;
-reg       m_ip_payload_axis_tlast_reg = 1'b0;
-reg       m_ip_payload_axis_tuser_reg = 1'b0;
+reg [7:0] m_ip_payload_axis_tdata_reg;
+reg       m_ip_payload_axis_tvalid_reg, m_ip_payload_axis_tvalid_next;
+reg       m_ip_payload_axis_tlast_reg;
+reg       m_ip_payload_axis_tuser_reg;
 
 reg [7:0] temp_m_ip_payload_axis_tdata_reg = 8'd0;
 reg       temp_m_ip_payload_axis_tvalid_reg = 1'b0, temp_m_ip_payload_axis_tvalid_next;
@@ -527,7 +547,7 @@ always @* begin
     store_ip_payload_int_to_output = 1'b0;
     store_ip_payload_int_to_temp = 1'b0;
     store_ip_payload_axis_temp_to_output = 1'b0;
-    
+
     if (m_ip_payload_axis_tready_int_reg) begin
         // input is ready
         if (m_ip_payload_axis_tready || !m_ip_payload_axis_tvalid_reg) begin
@@ -547,32 +567,38 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    m_ip_payload_axis_tvalid_reg <= m_ip_payload_axis_tvalid_next;
-    m_ip_payload_axis_tready_int_reg <= m_ip_payload_axis_tready_int_early;
-    temp_m_ip_payload_axis_tvalid_reg <= temp_m_ip_payload_axis_tvalid_next;
-
-    // datapath
-    if (store_ip_payload_int_to_output) begin
-        m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
-        m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
-        m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
-    end else if (store_ip_payload_axis_temp_to_output) begin
-        m_ip_payload_axis_tdata_reg <= temp_m_ip_payload_axis_tdata_reg;
-        m_ip_payload_axis_tlast_reg <= temp_m_ip_payload_axis_tlast_reg;
-        m_ip_payload_axis_tuser_reg <= temp_m_ip_payload_axis_tuser_reg;
-    end
-
-    if (store_ip_payload_int_to_temp) begin
-        temp_m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
-        temp_m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
-        temp_m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
-    end
-
-    if (rst) begin
-        m_ip_payload_axis_tvalid_reg <= 1'b0;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         m_ip_payload_axis_tready_int_reg <= 1'b0;
+        m_ip_payload_axis_tdata_reg <= 8'd0;
+        m_ip_payload_axis_tvalid_reg <= 1'b0;
+        m_ip_payload_axis_tlast_reg <= 1'b0;
+        m_ip_payload_axis_tuser_reg <= 1'b0;
+        temp_m_ip_payload_axis_tdata_reg <= 8'd0;
         temp_m_ip_payload_axis_tvalid_reg <= 1'b0;
+        temp_m_ip_payload_axis_tlast_reg <= 1'b0;
+        temp_m_ip_payload_axis_tuser_reg <= 1'b0;
+    end else begin
+        m_ip_payload_axis_tvalid_reg <= m_ip_payload_axis_tvalid_next;
+        m_ip_payload_axis_tready_int_reg <= m_ip_payload_axis_tready_int_early;
+        temp_m_ip_payload_axis_tvalid_reg <= temp_m_ip_payload_axis_tvalid_next;
+
+        // datapath
+        if (store_ip_payload_int_to_output) begin
+            m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
+            m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
+            m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
+        end else if (store_ip_payload_axis_temp_to_output) begin
+            m_ip_payload_axis_tdata_reg <= temp_m_ip_payload_axis_tdata_reg;
+            m_ip_payload_axis_tlast_reg <= temp_m_ip_payload_axis_tlast_reg;
+            m_ip_payload_axis_tuser_reg <= temp_m_ip_payload_axis_tuser_reg;
+        end
+
+        if (store_ip_payload_int_to_temp) begin
+            temp_m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
+            temp_m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
+            temp_m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
+        end
     end
 end
 
