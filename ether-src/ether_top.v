@@ -1,5 +1,4 @@
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 `include "config.vh"
@@ -26,34 +25,28 @@ module ether_top (
     output wire       led_b
 );
 
-wire clk_ibufg;
-
-wire clk_mmcm_out;
 wire clk_int;
-wire rst_int;
-
-wire mmcm_rst = ~rst_n;
+wire clk_25mhz_int;
+wire rst_n_int;
 wire mmcm_locked;
-wire mmcm_clkfb;
 
 `ifdef TARGET_ASIC
-assign clk_ibufg = clk;
+// FIXME: use PLL
+assign clk_int = clk;
+assign clk_25mhz_int = clk;
+assign rst_n_int = rst_n;
+
 `elsif TARGET_XILINX
-IBUFG
-clk_ibufg_inst(
+wire clk_ibufg;
+wire clk_mmcm_out;
+wire mmcm_clkfb;
+wire clk_25mhz_mmcm_out;
+
+IBUFG clk_ibufg_inst(
     .I(clk),
     .O(clk_ibufg)
 );
-`endif
 
-wire clk_25mhz_mmcm_out;
-wire clk_25mhz_int;
-
-`ifdef TARGET_ASIC
-assign clk_mmcm_out = clk_ibufg;
-assign clk_25mhz_mmcm_out = clk_ibufg;
-assign mmcm_locked = ~mmcm_rst;
-`elsif TARGET_XILINX
 MMCME2_BASE #(
     .BANDWIDTH("OPTIMIZED"),
     .CLKOUT0_DIVIDE_F(13),
@@ -88,7 +81,7 @@ MMCME2_BASE #(
 clk_mmcm_inst (
     .CLKIN1(clk_ibufg),
     .CLKFBIN(mmcm_clkfb),
-    .RST(mmcm_rst),
+    .RST(~rst_n),
     .PWRDWN(1'b0),
     .CLKOUT0(clk_mmcm_out),
     .CLKOUT0B(),
@@ -105,36 +98,22 @@ clk_mmcm_inst (
     .CLKFBOUTB(),
     .LOCKED(mmcm_locked)
 );
-`endif
 
-`ifdef TARGET_ASIC
-assign clk_int = clk_mmcm_out;
-`elsif TARGET_XILINX
 BUFG
 clk_bufg_inst (
     .I(clk_mmcm_out),
     .O(clk_int)
 );
-`endif
 
-`ifdef TARGET_ASIC
-assign clk_25mhz_int = clk_25mhz_mmcm_out;
-`elsif TARGET_XILINX
 BUFG
 clk_25mhz_bufg_inst (
     .I(clk_25mhz_mmcm_out),
     .O(clk_25mhz_int)
 );
-`endif
 
-sync_reset #(
-    .N(4)
-)
-sync_reset_inst (
-    .clk(clk_int),
-    .rst_n(mmcm_locked),
-    .out(rst_int)
-);
+assign rst_n_int = mmcm_locked;
+
+`endif
 
 assign phy_ref_clk = clk_25mhz_int;
 
@@ -177,8 +156,8 @@ wire txbuf_cpu_grant;
 
 reg [27:0] tx_cnt;
 
-always @(posedge clk_int or negedge rst_n) begin
-    if (!rst_n) begin
+always @(posedge clk_int or negedge rst_n_int) begin
+    if (!rst_n_int) begin
         txbuf_rdata <= 0;
         txbuf_cpu_rel <= 0;
         tx_cnt <= 0;
@@ -201,8 +180,8 @@ always @(posedge clk_int or negedge rst_n) begin
     end
 end
 
-always @(posedge clk_int or negedge rst_n) begin
-    if (!rst_n) begin
+always @(posedge clk_int or negedge rst_n_int) begin
+    if (!rst_n_int) begin
         rxbuf_cpu_rel <= 0;
         last_rx_size <= 0;
     end else begin
@@ -222,8 +201,8 @@ wire payloadsmem_we;
 wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr;
 wire [7:0] payloadsmem_wdata, payloadsmem_rdata;
 RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
-    .i_clk(clk),
-    .i_rst_n(rst_n),
+    .i_clk(clk_int),
+    .i_rst_n(rst_n_int),
     .i_cs_n(~payloadsmem_cs),
     .i_we_n(~payloadsmem_we),
     .i_wmask(4'b1111),
@@ -327,7 +306,7 @@ module ros2_ether (
     output wire [31:0] udp_rxbuf_wdata,
     input wire udp_txbuf_cpu_rel,
     output wire udp_txbuf_cpu_grant,
-    output wire [`ROS2_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
+    output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
     input wire [31:0] udp_txbuf_rdata,
     output wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr,
     output wire payloadsmem_ce,
@@ -575,7 +554,7 @@ ros2_i (
     .payloads_ce0(payloadsmem_ce),
     .payloads_we0(payloadsmem_we),
     .payloads_d0(payloadsmem_wdata),
-    .payloads_q0(payloadsmem_rdata)
+    .payloads_q0(payloadsmem_rdata),
     .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
