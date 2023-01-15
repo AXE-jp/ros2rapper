@@ -177,7 +177,7 @@ eth_mac_mii_fifo #(
 eth_mac_inst (
     .rst_n(rst_n),
     .logic_clk(clk),
-    .logic_rst(~rst_n),
+    .logic_rst_n(rst_n),
 
     .tx_axis_tdata(tx_axis_tdata),
     .tx_axis_tvalid(tx_axis_tvalid),

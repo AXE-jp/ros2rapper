@@ -42,6 +42,8 @@ wire clk_mmcm_out;
 wire mmcm_clkfb;
 wire clk_25mhz_mmcm_out;
 
+wire rst_int;
+
 IBUFG clk_ibufg_inst(
     .I(clk),
     .O(clk_ibufg)
@@ -111,9 +113,10 @@ clk_25mhz_bufg_inst (
     .O(clk_25mhz_int)
 );
 
-assign rst_n_int = mmcm_locked;
+assign rst_n_int = ~rst_int;
 
 `endif
+
 
 assign phy_ref_clk = clk_25mhz_int;
 
@@ -212,8 +215,8 @@ RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
 );
 
 ros2_ether ros2 (
-    .clk(clk),
-    .rst_n(rst_n),
+    .clk(clk_int),
+    .rst_n(rst_n_int),
     .phy_rx_clk(phy_rx_clk),
     .phy_rxd(phy_rxd),
     .phy_rx_dv(phy_rx_dv),
@@ -369,7 +372,7 @@ verilog_ethernet_inst (
     .phy_tx_en(phy_tx_en),
     .phy_col(phy_col),
     .phy_crs(phy_crs),
-    .phy_rst_n(phy_rst_n),
+    .phy_reset_n(phy_rst_n),
 
     .tx_ip_hdr_valid(tx_ip_hdr_valid),
     .tx_ip_hdr_ready(tx_ip_hdr_ready),

@@ -201,9 +201,6 @@ always @(posedge clk or negedge rst_n) begin
             mac_addr_mem[i] = 48'd0;
         end
 
-        mem_write <= 1'b0;
-        store_query <= 1'b0;
-        store_write <= 1'b0;
         query_ip_valid_reg <= 1'b0;
         query_ip_reg <= 32'b0;
         write_ip_valid_reg <= 1'b0;

@@ -289,7 +289,7 @@ assign m_status_bad_frame = bad_frame_sync3_reg ^ bad_frame_sync4_reg;
 assign m_status_good_frame = good_frame_sync3_reg ^ good_frame_sync4_reg;
 
 // reset synchronization
-always @(posedge m_clk or negedge m_rst_n) begin
+always @(posedge m_clk/* or negedge m_rst_n*/) begin
     if (!m_rst_n) begin
         s_rst_sync1_reg <= 1'b0;
     end else begin
@@ -302,7 +302,7 @@ always @(posedge s_clk) begin
     s_rst_sync3_reg <= s_rst_sync2_reg;
 end
 
-always @(posedge s_clk or negedge s_rst_n) begin
+always @(posedge s_clk/* or negedge s_rst_n*/) begin
     if (!s_rst_n) begin
         m_rst_sync1_reg <= 1'b0;
     end else begin
@@ -316,7 +316,7 @@ always @(posedge m_clk) begin
 end
 
 // Write logic
-always @(posedge s_clk or negedge s_rst_n) begin
+always @(posedge s_clk/* or negedge s_rst_n*/) begin
     if (!s_rst_n) begin
         wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -461,7 +461,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
 end
 
 // pointer synchronization
-always @(posedge s_clk or negedge s_rst_n) begin
+always @(posedge s_clk/* or negedge s_rst_n*/) begin
     if (!s_rst_n) begin
         rd_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -475,7 +475,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
     end
 end
 
-always @(posedge m_clk or negedge m_rst_n) begin
+always @(posedge m_clk/* or negedge m_rst_n*/) begin
     if (!m_rst_n) begin
         wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -500,7 +500,7 @@ always @(posedge m_clk or negedge m_rst_n) begin
 end
 
 // status synchronization
-always @(posedge s_clk or negedge s_rst_n) begin
+always @(posedge s_clk/* or negedge s_rst_n*/) begin
     if (!s_rst_n) begin
         overflow_sync1_reg <= 1'b0;
         bad_frame_sync1_reg <= 1'b0;
@@ -512,7 +512,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
     end
 end
 
-always @(posedge m_clk or negedge m_rst_n) begin
+always @(posedge m_clk/* or negedge m_rst_n*/) begin
     if (!m_rst_n) begin
         overflow_sync2_reg <= 1'b0;
         overflow_sync3_reg <= 1'b0;
@@ -539,7 +539,7 @@ end
 // Read logic
 integer j;
 
-always @(posedge m_clk or negedge m_rst_n) begin
+always @(posedge m_clk/* or negedge m_rst_n*/) begin
     if (!m_rst_n) begin
         rd_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};

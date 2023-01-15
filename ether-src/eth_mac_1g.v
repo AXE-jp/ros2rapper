@@ -118,7 +118,7 @@ axis_gmii_rx #(
 )
 axis_gmii_rx_inst (
     .clk(rx_clk),
-    .rst(rx_rst),
+    .rst_n(~rx_rst),
     .gmii_rxd(gmii_rxd),
     .gmii_rx_dv(gmii_rx_dv),
     .gmii_rx_er(gmii_rx_er),
@@ -146,7 +146,7 @@ axis_gmii_tx #(
 )
 axis_gmii_tx_inst (
     .clk(tx_clk),
-    .rst(tx_rst),
+    .rst_n(~tx_rst),
     .s_axis_tdata(tx_axis_tdata),
     .s_axis_tvalid(tx_axis_tvalid),
     .s_axis_tready(tx_axis_tready),

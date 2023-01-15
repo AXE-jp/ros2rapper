@@ -61,7 +61,7 @@ module eth_mac_mii_fifo #
 (
     input  wire                       rst_n,
     input  wire                       logic_clk,
-    input  wire                       logic_rst,
+    input  wire                       logic_rst_n,
 
     /*
      * AXI input
@@ -148,8 +148,8 @@ always @(posedge tx_clk or posedge tx_rst) begin
     end
 end
 
-always @(posedge logic_clk or posedge logic_rst) begin
-    if (logic_rst) begin
+always @(posedge logic_clk or negedge logic_rst_n) begin
+    if (!logic_rst_n) begin
         tx_sync_reg_2 <= 1'b0;
         tx_sync_reg_3 <= 1'b0;
         tx_sync_reg_4 <= 1'b0;
@@ -179,8 +179,8 @@ always @(posedge rx_clk or posedge rx_rst) begin
     end
 end
 
-always @(posedge logic_clk or posedge logic_rst) begin
-    if (logic_rst) begin
+always @(posedge logic_clk or negedge logic_rst_n) begin
+    if (!logic_rst_n) begin
         rx_sync_reg_2 <= 2'd0;
         rx_sync_reg_3 <= 2'd0;
         rx_sync_reg_4 <= 2'd0;
@@ -248,7 +248,7 @@ axis_async_fifo_adapter #(
 tx_fifo (
     // AXI input
     .s_clk(logic_clk),
-    .s_rst(logic_rst),
+    .s_rst_n(logic_rst_n),
     .s_axis_tdata(tx_axis_tdata),
     .s_axis_tkeep(tx_axis_tkeep),
     .s_axis_tvalid(tx_axis_tvalid),
@@ -259,7 +259,7 @@ tx_fifo (
     .s_axis_tuser(tx_axis_tuser),
     // AXI output
     .m_clk(tx_clk),
-    .m_rst(tx_rst),
+    .m_rst_n(~tx_rst),
     .m_axis_tdata(tx_fifo_axis_tdata),
     .m_axis_tkeep(),
     .m_axis_tvalid(tx_fifo_axis_tvalid),
@@ -299,7 +299,7 @@ axis_async_fifo_adapter #(
 rx_fifo (
     // AXI input
     .s_clk(rx_clk),
-    .s_rst(rx_rst),
+    .s_rst_n(~rx_rst),
     .s_axis_tdata(rx_fifo_axis_tdata),
     .s_axis_tkeep(1'b1),
     .s_axis_tvalid(rx_fifo_axis_tvalid),
@@ -310,7 +310,7 @@ rx_fifo (
     .s_axis_tuser(rx_fifo_axis_tuser),
     // AXI output
     .m_clk(logic_clk),
-    .m_rst(logic_rst),
+    .m_rst_n(logic_rst_n),
     .m_axis_tdata(rx_axis_tdata),
     .m_axis_tkeep(rx_axis_tkeep),
     .m_axis_tvalid(rx_axis_tvalid),

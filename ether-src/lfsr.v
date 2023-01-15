@@ -424,11 +424,6 @@ end else if (STYLE_INT == "LOOP") begin
             end
         end
     end
-
-end else begin
-
-    $error("Error: unknown style setting!");
-
 end
 
 endgenerate

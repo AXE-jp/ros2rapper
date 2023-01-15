@@ -34,8 +34,6 @@ assign empty = (wp == rp ? 1'b1 : 1'b0);
 integer i;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        for (i=0; i<DEPTH; i=i+1)
-            regs[i] <= 0;
         wp <= 0;
         rp <= 0;
     end else begin
