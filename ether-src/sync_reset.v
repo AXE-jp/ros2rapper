@@ -50,9 +50,9 @@ assign out = sync_reg[N-1];
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        sync_reg <= {N{1'b1}};
+        sync_reg <= {N{1'b0}};
     end else begin
-        sync_reg <= {sync_reg[N-2:0], 1'b0};
+        sync_reg <= {sync_reg[N-2:0], 1'b1};
     end
 end
 
