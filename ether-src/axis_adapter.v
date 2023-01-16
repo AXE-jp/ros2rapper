@@ -436,7 +436,7 @@ always @* begin
     endcase
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         state_reg <= STATE_IDLE;
         segment_count_reg <= 0;
@@ -525,7 +525,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         m_axis_tdata_reg  <= {M_DATA_WIDTH{1'b0}};
         m_axis_tkeep_reg  <= {M_KEEP_WIDTH{1'b0}};

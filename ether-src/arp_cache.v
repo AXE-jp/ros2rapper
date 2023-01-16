@@ -193,7 +193,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         for (i = 0; i < 2**CACHE_ADDR_WIDTH; i = i + 1) begin
             valid_mem[i] = 1'b0;

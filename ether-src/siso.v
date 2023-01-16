@@ -32,7 +32,7 @@ assign full = (wp_next == rp ? 1'b1 : 1'b0);
 assign empty = (wp == rp ? 1'b1 : 1'b0);
 
 integer i;
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         wp <= 0;
         rp <= 0;

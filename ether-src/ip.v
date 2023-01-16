@@ -327,7 +327,7 @@ always @* begin
     endcase
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         state_reg <= STATE_IDLE;
         arp_request_valid_reg <= 1'b0;

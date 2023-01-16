@@ -430,7 +430,7 @@ always @* begin
     endcase
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         state_reg <= STATE_IDLE;
         hdr_ptr_reg <= 6'd0;
@@ -567,7 +567,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         m_ip_payload_axis_tready_int_reg <= 1'b0;
         m_ip_payload_axis_tdata_reg <= 8'd0;

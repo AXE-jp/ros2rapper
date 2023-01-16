@@ -205,7 +205,7 @@ reg s_select_ip_reg;
 reg s_select_arp_reg;
 reg s_select_none_reg;
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         s_select_ip_reg <= 1'b0;
         s_select_arp_reg <= 1'b0;

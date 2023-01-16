@@ -94,7 +94,7 @@ assign phy_mii_txd = phy_mii_txd_reg;
 assign phy_mii_tx_en = phy_mii_tx_en_reg;
 assign phy_mii_tx_er = phy_mii_tx_er_reg;
 
-always @(posedge mac_mii_tx_clk or negedge rst_n) begin
+always @(posedge mac_mii_tx_clk) begin
     if (!rst_n) begin
         phy_mii_txd_reg <= 4'd0;
         phy_mii_tx_en_reg <= 1'b0;

@@ -194,7 +194,7 @@ always @* begin
     m_eth_payload_axis_tuser_int  = current_s_tuser;
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         frame_reg <= 1'b0;
         s_eth_hdr_ready_reg <= {S_COUNT{1'b0}};
@@ -275,7 +275,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         m_eth_payload_axis_tready_int_reg <= 1'b0;
 

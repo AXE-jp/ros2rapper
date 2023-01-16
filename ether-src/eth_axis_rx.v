@@ -268,7 +268,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         read_eth_header_reg <= 1'b1;
         read_eth_payload_reg <= 1'b0;
@@ -372,7 +372,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         m_eth_payload_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
         m_eth_payload_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};

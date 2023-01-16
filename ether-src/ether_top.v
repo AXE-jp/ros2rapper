@@ -34,7 +34,7 @@ wire mmcm_locked;
 // FIXME: use PLL
 assign clk_int = clk;
 assign clk_25mhz_int = clk;
-assign rst_n_int = rst_n;
+assign mmcm_locked = 0;
 
 `elsif TARGET_XILINX
 wire clk_ibufg;
@@ -113,10 +113,16 @@ clk_25mhz_bufg_inst (
     .O(clk_25mhz_int)
 );
 
-assign rst_n_int = ~rst_int;
-
 `endif
 
+sync_reset #(
+    .N(4)
+)
+sync_reset_inst (
+    .clk(clk_int),
+    .rst_n(mmcm_locked),
+    .out(rst_n_int)
+);
 
 assign phy_ref_clk = clk_25mhz_int;
 
@@ -159,7 +165,7 @@ wire txbuf_cpu_grant;
 
 reg [27:0] tx_cnt;
 
-always @(posedge clk_int or negedge rst_n_int) begin
+always @(posedge clk_int) begin
     if (!rst_n_int) begin
         txbuf_rdata <= 0;
         txbuf_cpu_rel <= 0;
@@ -183,7 +189,7 @@ always @(posedge clk_int or negedge rst_n_int) begin
     end
 end
 
-always @(posedge clk_int or negedge rst_n_int) begin
+always @(posedge clk_int) begin
     if (!rst_n_int) begin
         rxbuf_cpu_rel <= 0;
         last_rx_size <= 0;
@@ -470,7 +476,7 @@ wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
 assign ros2_app_data_ip_grant = r_ros2_app_data_grant[0];
 assign ros2_app_data_cpu_grant = r_ros2_app_data_grant[1];
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
@@ -502,7 +508,7 @@ wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
 assign udp_rxbuf_ip_grant = ~r_udp_rxbuf_grant;
 assign udp_rxbuf_cpu_grant = r_udp_rxbuf_grant;
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
     end else begin
@@ -524,7 +530,7 @@ wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
 assign udp_txbuf_ip_grant = ~r_udp_txbuf_grant;
 assign udp_txbuf_cpu_grant = r_udp_txbuf_grant;
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
     end else begin

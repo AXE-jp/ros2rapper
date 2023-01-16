@@ -414,7 +414,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         outgoing_frame_valid_reg <= 1'b0;
         outgoing_eth_dest_mac_reg <= 48'd0;

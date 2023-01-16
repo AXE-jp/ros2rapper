@@ -280,7 +280,7 @@ always @* begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk) begin
     if (!rst_n) begin
         read_eth_header_reg <= 1'b1;
         read_arp_header_reg <= 1'b0;
