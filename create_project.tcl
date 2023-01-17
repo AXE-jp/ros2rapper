@@ -56,6 +56,9 @@ current_run -implementation [get_runs impl_1]
 add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.dat ]
+add_files -norecurse -fileset sources_1 "../include/config.vh"
+add_files -norecurse -fileset sources_1 "../rtl/priority_encoder.v"
+add_files -norecurse -fileset sources_1 "../rtl/ram.v"
 
 # Import xdc files
 if {[info exists design_xdc_file]} {
