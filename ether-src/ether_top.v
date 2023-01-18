@@ -306,17 +306,20 @@ module ros2_ether (
     input wire ros2_app_data_cpu_req,
     input wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
+
     input wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
     output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
     output wire [31:0] udp_rxbuf_wdata,
+
     input wire udp_txbuf_cpu_rel,
     output wire udp_txbuf_cpu_grant,
     output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
     output wire udp_txbuf_ce,
     input wire [31:0] udp_txbuf_rdata,
+
     output wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr,
     output wire payloadsmem_ce,
     output wire payloadsmem_we,
@@ -429,9 +432,10 @@ wire tx_fifo_rd_en;
 wire [7:0] tx_fifo_dout;
 wire tx_fifo_empty;
 
-siso #(
+queue #(
     .DATA_WIDTH(8),
-    .DEPTH(`EXT_TX_FIFO_DEPTH)
+    .DEPTH(`EXT_TX_FIFO_DEPTH),
+    .USE_ASYNC_RESET(0)
 )
 tx_fifo (
     .clk(clk),
@@ -451,9 +455,10 @@ wire rx_fifo_rd_en;
 wire [7:0] rx_fifo_dout;
 wire rx_fifo_empty;
 
-siso #(
+ram_queue #(
     .DATA_WIDTH(8),
-    .DEPTH(`EXT_RX_FIFO_DEPTH)
+    .DEPTH(`EXT_RX_FIFO_DEPTH),
+    .USE_ASYNC_RESET(0)
 )
 rx_fifo (
     .clk(clk),

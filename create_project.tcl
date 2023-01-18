@@ -58,6 +58,7 @@ add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.dat ]
 add_files -norecurse -fileset sources_1 "../include/config.vh"
 add_files -norecurse -fileset sources_1 "../rtl/priority_encoder.v"
 add_files -norecurse -fileset sources_1 "../rtl/ram.v"
+add_files -norecurse -fileset sources_1 "../rtl/queue.v"
 
 # Import xdc files
 if {[info exists design_xdc_file]} {
