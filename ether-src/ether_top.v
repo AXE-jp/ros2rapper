@@ -219,6 +219,24 @@ RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
     .o_rdata(payloadsmem_rdata)
 );
 
+wire rx_fifo_ram_cs;
+wire rx_fifo_ram_we;
+wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_waddr;
+wire [7:0] rx_fifo_ram_wdata;
+wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_raddr;
+wire [7:0] rx_fifo_ram_rdata;
+RAM_1R1W_WRAP#($clog2(`EXT_RX_FIFO_DEPTH), 8) rx_fifo_ram(
+    .i_clk(clk_int),
+    .i_rst_n(rst_n_int),
+    .i_cs_n(~rx_fifo_ram_cs),
+    .i_we_n(~rx_fifo_ram_we),
+    .i_wmask(1'b1),
+    .i_waddr(rx_fifo_ram_waddr),
+    .i_wdata(rx_fifo_ram_wdata),
+    .i_raddr(rx_fifo_ram_raddr),
+    .o_rdata(rx_fifo_ram_rdata)
+);
+
 ros2_ether ros2 (
     .clk(clk_int),
     .rst_n(rst_n_int),
@@ -265,7 +283,13 @@ ros2_ether ros2 (
     .payloadsmem_ce(payloadsmem_cs),
     .payloadsmem_we(payloadsmem_we),
     .payloadsmem_wdata(payloadsmem_wdata),
-    .payloadsmem_rdata(payloadsmem_rdata)
+    .payloadsmem_rdata(payloadsmem_rdata),
+    .rx_fifo_ram_cs(rx_fifo_ram_cs),
+    .rx_fifo_ram_we(rx_fifo_ram_we),
+    .rx_fifo_ram_waddr(rx_fifo_ram_waddr),
+    .rx_fifo_ram_wdata(rx_fifo_ram_wdata),
+    .rx_fifo_ram_raddr(rx_fifo_ram_raddr),
+    .rx_fifo_ram_rdata(rx_fifo_ram_rdata)
 );
 
 endmodule
@@ -285,46 +309,53 @@ module ros2_ether (
     input  wire       phy_crs,
     output wire       phy_rst_n,
 
-    input wire [47:0] mac_addr,
-    input wire [31:0] ip_addr,
-    input wire [31:0] gateway_ip_addr,
-    input wire [31:0] subnet_mask,
+    input  wire [47:0] mac_addr,
+    input  wire [31:0] ip_addr,
+    input  wire [31:0] gateway_ip_addr,
+    input  wire [31:0] subnet_mask,
 
-    input wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
-    input wire [7:0] ros2_node_name_len,
-    input wire [15:0] ros2_node_udp_port,
-    input wire [15:0] ros2_cpu_udp_port,
-    input wire [15:0] ros2_port_num_seed,
-    input wire [31:0] ros2_tx_period,
-    input wire [95:0] ros2_guid_prefix,
-    input wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_topic_name,
-    input wire [7:0] ros2_topic_name_len,
-    input wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_topic_type_name,
-    input wire [7:0] ros2_topic_type_name_len,
-    input wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
-    input wire [7:0] ros2_app_data_len,
-    input wire ros2_app_data_cpu_req,
-    input wire ros2_app_data_cpu_rel,
+    input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
+    input  wire [7:0] ros2_node_name_len,
+    input  wire [15:0] ros2_node_udp_port,
+    input  wire [15:0] ros2_cpu_udp_port,
+    input  wire [15:0] ros2_port_num_seed,
+    input  wire [31:0] ros2_tx_period,
+    input  wire [95:0] ros2_guid_prefix,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_topic_name,
+    input  wire [7:0] ros2_topic_name_len,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_topic_type_name,
+    input  wire [7:0] ros2_topic_type_name_len,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
+    input  wire [7:0] ros2_app_data_len,
+    input  wire ros2_app_data_cpu_req,
+    input  wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
 
-    input wire udp_rxbuf_cpu_rel,
+    input  wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
     output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
     output wire [31:0] udp_rxbuf_wdata,
 
-    input wire udp_txbuf_cpu_rel,
+    input  wire udp_txbuf_cpu_rel,
     output wire udp_txbuf_cpu_grant,
     output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
     output wire udp_txbuf_ce,
-    input wire [31:0] udp_txbuf_rdata,
+    input  wire [31:0] udp_txbuf_rdata,
 
     output wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr,
     output wire payloadsmem_ce,
     output wire payloadsmem_we,
     output wire [7:0] payloadsmem_wdata,
-    input wire [7:0] payloadsmem_rdata
+    input  wire [7:0] payloadsmem_rdata,
+
+    output wire rx_fifo_ram_cs,
+    output wire rx_fifo_ram_we,
+    output wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_waddr,
+    output wire [7:0] rx_fifo_ram_wdata,
+    output wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_raddr,
+    input  wire [7:0] rx_fifo_ram_rdata
 );
 
 wire tx_ip_hdr_valid;
@@ -468,7 +499,13 @@ rx_fifo (
     .full(rx_fifo_full),
     .rd_en(rx_fifo_rd_en),
     .dout(rx_fifo_dout),
-    .empty(rx_fifo_empty)
+    .empty(rx_fifo_empty),
+    .ram_cs(rx_fifo_ram_cs),
+    .ram_we(rx_fifo_ram_we),
+    .ram_waddr(rx_fifo_ram_waddr),
+    .ram_wdata(rx_fifo_ram_wdata),
+    .ram_raddr(rx_fifo_ram_raddr),
+    .ram_rdata(rx_fifo_ram_rdata)
 );
 
 // arbiter for sharing app_data between CPU and ROS2rapper IP
