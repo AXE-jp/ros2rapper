@@ -19,7 +19,6 @@ copy-src: synth
 	-rm -rf ${SRCDIR}
 	mkdir -p ${SRCDIR}
 	-cp ether-src/*.v ${SRCDIR}
-	-cp ether-src/*.vh ${SRCDIR}
 	-cp ip_tx_rx/ip_tx/proj_ip_tx/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ip_tx_rx/ip_rx/proj_ip_rx/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ros2rapper/proj_ros2/solution1/syn/verilog/*.v ${SRCDIR}
