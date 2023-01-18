@@ -2,7 +2,6 @@
 `default_nettype none
 
 `include "config.vh"
-`include "ether_config.vh"
 
 module ether_top (
     input  wire       clk,

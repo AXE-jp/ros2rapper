@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-`include "ether_config.vh"
+`include "config.vh"
 
 module verilog_ethernet #
 (
