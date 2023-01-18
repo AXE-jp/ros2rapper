@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -33,13 +35,6 @@ THE SOFTWARE.
  */
 module ssio_sdr_in #
 (
-    // target ("SIM", "GENERIC", "XILINX", "ALTERA")
-    parameter TARGET = "GENERIC",
-    // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")
-    // Use BUFR for Virtex-5, Virtex-6, 7-series
-    // Use BUFG for Ultrascale
-    // Use BUFIO2 for Spartan-6
-    parameter CLOCK_INPUT_STYLE = "BUFIO2",
     // Width of register in bits
     parameter WIDTH = 1
 )
@@ -58,14 +53,10 @@ module ssio_sdr_in #
 wire clk_int;
 wire clk_io;
 
-generate
-
-if (TARGET == "XILINX") begin
-
+`ifdef TARGET_XILINX
     // use Xilinx clocking primitives
 
-    if (CLOCK_INPUT_STYLE == "BUFG") begin
-
+    `ifdef XILINX_CLKIN_STYLE_BUFG
         // buffer RX clock
         BUFG
         clk_bufg (
@@ -77,8 +68,7 @@ if (TARGET == "XILINX") begin
         assign clk_io = clk_int;
         assign output_clk = clk_int;
 
-    end else if (CLOCK_INPUT_STYLE == "BUFR") begin
-
+    `elsif XILINX_CLKIN_STYLE_BUFR
         assign clk_int = input_clk;
 
         // pass through RX clock to input buffers
@@ -99,8 +89,7 @@ if (TARGET == "XILINX") begin
             .CLR(1'b0)
         );
 
-    end else if (CLOCK_INPUT_STYLE == "BUFIO") begin
-
+    `elsif XILINX_CLKIN_STYLE_BUFIO
         assign clk_int = input_clk;
 
         // pass through RX clock to input buffers
@@ -117,8 +106,7 @@ if (TARGET == "XILINX") begin
             .O(output_clk)
         );
 
-    end else if (CLOCK_INPUT_STYLE == "BUFIO2") begin
-
+    `elsif XILINX_CLKIN_STYLE_BUFIO2
         // pass through RX clock to input buffers
         BUFIO2 #(
             .DIVIDE(1),
@@ -139,21 +127,17 @@ if (TARGET == "XILINX") begin
             .I(clk_int),
             .O(output_clk)
         );
+    `endif
+`endif
 
-    end
-
-end else begin
-
+`ifndef TARGET_XILINX
     // pass through RX clock to input buffers
     assign clk_io = input_clk;
 
     // pass through RX clock to logic
     assign clk_int = input_clk;
     assign output_clk = clk_int;
-
-end
-
-endgenerate
+`endif
 
 (* IOB = "TRUE" *)
 reg [WIDTH-1:0] output_q_reg;

@@ -4,11 +4,7 @@
 
 `include "config.vh"
 
-module verilog_ethernet #
-(
-    parameter TARGET = "GENERIC"
-)
-(
+module verilog_ethernet (
     input  wire        clk,
     input  wire        rst_n,
 
@@ -169,8 +165,6 @@ assign rx_udp_payload_axis_tready = 0;
 assign phy_reset_n = rst_n;
 
 eth_mac_mii_fifo #(
-    .TARGET(TARGET),
-    .CLOCK_INPUT_STYLE("BUFR"),
     .TX_FIFO_DEPTH(`MAC_TX_FIFO_DEPTH),
     .RX_FIFO_DEPTH(`MAC_RX_FIFO_DEPTH)
 )

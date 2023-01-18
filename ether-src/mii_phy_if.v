@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -31,17 +33,7 @@ THE SOFTWARE.
 /*
  * MII PHY interface
  */
-module mii_phy_if #
-(
-    // target ("SIM", "GENERIC", "XILINX", "ALTERA")
-    parameter TARGET = "GENERIC",
-    // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")
-    // Use BUFR for Virtex-5, Virtex-6, 7-series
-    // Use BUFG for Ultrascale
-    // Use BUFIO2 for Spartan-6
-    parameter CLOCK_INPUT_STYLE = "BUFIO2"
-)
-(
+module mii_phy_if (
     input  wire        rst_n,
 
     /*
@@ -73,8 +65,6 @@ module mii_phy_if #
 
 ssio_sdr_in #
 (
-    .TARGET(TARGET),
-    .CLOCK_INPUT_STYLE(CLOCK_INPUT_STYLE),
     .WIDTH(6)
 )
 rx_ssio_sdr_inst (
@@ -106,19 +96,15 @@ always @(posedge mac_mii_tx_clk) begin
     end
 end
 
-generate
-
-if (TARGET == "XILINX") begin
+`ifdef TARGET_XILINX
     BUFG
     mii_bufg_inst (
         .I(phy_mii_tx_clk),
         .O(mac_mii_tx_clk)
     );
-end else begin
+`else
     assign mac_mii_tx_clk = phy_mii_tx_clk;
-end
-
-endgenerate
+`endif
 
 // reset sync
 reg [3:0] tx_rst_reg;

@@ -221,9 +221,9 @@ RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
 
 wire rx_fifo_ram_cs;
 wire rx_fifo_ram_we;
-wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_waddr;
+wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_waddr;
 wire [7:0] rx_fifo_ram_wdata;
-wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_raddr;
+wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_raddr;
 wire [7:0] rx_fifo_ram_rdata;
 RAM_1R1W_WRAP#($clog2(`EXT_RX_FIFO_DEPTH), 8) rx_fifo_ram(
     .i_clk(clk_int),
@@ -352,9 +352,9 @@ module ros2_ether (
 
     output wire rx_fifo_ram_cs,
     output wire rx_fifo_ram_we,
-    output wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_waddr,
+    output wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_waddr,
     output wire [7:0] rx_fifo_ram_wdata,
-    output wire [`EXT_RX_FIFO_DEPTH-1:0] rx_fifo_ram_raddr,
+    output wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_raddr,
     input  wire [7:0] rx_fifo_ram_rdata
 );
 
@@ -392,14 +392,7 @@ wire rx_ip_payload_axis_tvalid;
 wire rx_ip_payload_axis_tready;
 wire rx_ip_payload_axis_tlast;
 
-verilog_ethernet #(
-`ifdef TARGET_ASIC
-    .TARGET("GENERIC")
-`elsif TARGET_XILINX
-    .TARGET("XILINX")
-`endif
-)
-verilog_ethernet_inst (
+verilog_ethernet verilog_ethernet_inst (
     .clk(clk),
     .rst_n(rst_n),
 

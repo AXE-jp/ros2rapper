@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -33,13 +35,6 @@ THE SOFTWARE.
  */
 module eth_mac_mii_fifo #
 (
-    // target ("SIM", "GENERIC", "XILINX", "ALTERA")
-    parameter TARGET = "GENERIC",
-    // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")
-    // Use BUFR for Virtex-5, Virtex-6, 7-series
-    // Use BUFG for Ultrascale
-    // Use BUFIO2 for Spartan-6
-    parameter CLOCK_INPUT_STYLE = "BUFIO2",
     parameter AXIS_DATA_WIDTH = 8,
     parameter AXIS_KEEP_ENABLE = (AXIS_DATA_WIDTH>8),
     parameter AXIS_KEEP_WIDTH = (AXIS_DATA_WIDTH/8),
@@ -192,8 +187,6 @@ always @(posedge logic_clk or negedge logic_rst_n) begin
 end
 
 eth_mac_mii #(
-    .TARGET(TARGET),
-    .CLOCK_INPUT_STYLE(CLOCK_INPUT_STYLE),
     .ENABLE_PADDING(ENABLE_PADDING),
     .MIN_FRAME_LENGTH(MIN_FRAME_LENGTH)
 )
