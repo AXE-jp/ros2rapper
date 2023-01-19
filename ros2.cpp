@@ -776,6 +776,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
+	  hls_uint<1> &enable,
 	  const config_t &conf,
 	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
@@ -789,6 +790,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface ap_fifo port=out
 #pragma HLS interface ap_memory port=udp_rxbuf
 #pragma HLS interface ap_memory port=udp_txbuf storage_type=ram_1p
+#pragma HLS interface ap_none port=enable
 #pragma HLS interface ap_none port=conf
 #pragma HLS disaggregate variable=conf
 #pragma HLS interface ap_vld port=app_data_req
@@ -807,6 +809,10 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable=sedp_reader_tbl complete dim=0
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
+
+	if (!enable) {
+		return;
+	}
 
 	ros2_in(in,
 		udp_rxbuf,
