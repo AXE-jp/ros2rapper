@@ -23,6 +23,7 @@ copy-src: synth
 	-cp ip_tx_rx/ip_rx/proj_ip_rx/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ros2rapper/proj_ros2/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ros2rapper/proj_ros2/solution1/syn/verilog/*.dat ${SRCDIR}
+	./fix-hls-code.rb
 
 vivado-create-proj: copy-src
 	vivado -mode batch -source create_project.tcl
