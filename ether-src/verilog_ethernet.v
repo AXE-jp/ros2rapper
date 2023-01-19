@@ -7,6 +7,7 @@
 module verilog_ethernet (
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        enable,
 
     input  wire        phy_rx_clk,
     input  wire [3:0]  phy_rxd,
@@ -172,6 +173,7 @@ eth_mac_inst (
     .rst_n(rst_n),
     .logic_clk(clk),
     .logic_rst_n(rst_n),
+    .logic_enable(enable),
 
     .tx_axis_tdata(tx_axis_tdata),
     .tx_axis_tvalid(tx_axis_tvalid),

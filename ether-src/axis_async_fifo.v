@@ -85,6 +85,7 @@ module axis_async_fifo #
      */
     input  wire                   s_clk,
     input  wire                   s_rst_n,
+    input  wire                   s_drop,
     input  wire [DATA_WIDTH-1:0]  s_axis_tdata,
     input  wire [KEEP_WIDTH-1:0]  s_axis_tkeep,
     input  wire                   s_axis_tvalid,
@@ -99,6 +100,7 @@ module axis_async_fifo #
      */
     input  wire                   m_clk,
     input  wire                   m_rst_n,
+    input  wire                   m_drop,
     output wire [DATA_WIDTH-1:0]  m_axis_tdata,
     output wire [KEEP_WIDTH-1:0]  m_axis_tkeep,
     output wire                   m_axis_tvalid,
@@ -335,6 +337,9 @@ always @(posedge s_clk) begin
         bad_frame_reg <= 1'b0;
         good_frame_reg <= 1'b0;
     end else begin
+        if (s_drop) begin
+            drop_frame_reg <= 1;
+        end
         overflow_reg <= 1'b0;
         bad_frame_reg <= 1'b0;
         good_frame_reg <= 1'b0;
@@ -374,7 +379,7 @@ always @(posedge s_clk) begin
                     // (only for frame transfers interrupted by sink reset)
                     if (s_axis_tlast) begin
                         // end of frame, clear drop flag
-                        drop_frame_reg <= 1'b0;
+                        drop_frame_reg <= s_drop;
                     end
                 end else begin
                     // update pointers
@@ -391,7 +396,7 @@ always @(posedge s_clk) begin
                     wr_ptr_temp = wr_ptr_reg;
                     wr_ptr_cur_reg <= wr_ptr_temp;
                     wr_ptr_cur_gray_reg <= wr_ptr_temp ^ (wr_ptr_temp >> 1);
-                    drop_frame_reg <= 1'b0;
+                    drop_frame_reg <= s_drop;
                     overflow_reg <= 1'b1;
                 end
             end else begin
@@ -548,6 +553,10 @@ always @(posedge m_clk) begin
         m_drop_frame_reg <= 1'b0;
         m_terminate_frame_reg <= 1'b0;
     end else begin
+        if (m_drop) begin
+            m_drop_frame_reg <= 1;
+        end
+
         if (m_axis_tready) begin
             // output ready; invalidate stage
             m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b0;
@@ -590,7 +599,7 @@ always @(posedge m_clk) begin
             // (only for frame transfers interrupted by source reset)
             m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b1;
             m_terminate_frame_reg <= 1'b1;
-            m_drop_frame_reg <= 1'b0;
+            m_drop_frame_reg <= m_drop;
         end
 
         if (!m_rst_sync3_reg && LAST_ENABLE) begin
