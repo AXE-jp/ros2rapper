@@ -219,24 +219,6 @@ RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
     .o_rdata(payloadsmem_rdata)
 );
 
-wire rx_fifo_ram_cs;
-wire rx_fifo_ram_we;
-wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_waddr;
-wire [7:0] rx_fifo_ram_wdata;
-wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_raddr;
-wire [7:0] rx_fifo_ram_rdata;
-RAM_1R1W_WRAP#($clog2(`EXT_RX_FIFO_DEPTH), 8) rx_fifo_ram(
-    .i_clk(clk_int),
-    .i_rst_n(rst_n_int),
-    .i_cs_n(~rx_fifo_ram_cs),
-    .i_we_n(~rx_fifo_ram_we),
-    .i_wmask(1'b1),
-    .i_waddr(rx_fifo_ram_waddr),
-    .i_wdata(rx_fifo_ram_wdata),
-    .i_raddr(rx_fifo_ram_raddr),
-    .o_rdata(rx_fifo_ram_rdata)
-);
-
 ros2_ether ros2 (
     .clk(clk_int),
     .rst_n(rst_n_int),
@@ -283,13 +265,7 @@ ros2_ether ros2 (
     .payloadsmem_ce(payloadsmem_cs),
     .payloadsmem_we(payloadsmem_we),
     .payloadsmem_wdata(payloadsmem_wdata),
-    .payloadsmem_rdata(payloadsmem_rdata),
-    .rx_fifo_ram_cs(rx_fifo_ram_cs),
-    .rx_fifo_ram_we(rx_fifo_ram_we),
-    .rx_fifo_ram_waddr(rx_fifo_ram_waddr),
-    .rx_fifo_ram_wdata(rx_fifo_ram_wdata),
-    .rx_fifo_ram_raddr(rx_fifo_ram_raddr),
-    .rx_fifo_ram_rdata(rx_fifo_ram_rdata)
+    .payloadsmem_rdata(payloadsmem_rdata)
 );
 
 endmodule
@@ -348,14 +324,7 @@ module ros2_ether (
     output wire payloadsmem_ce,
     output wire payloadsmem_we,
     output wire [7:0] payloadsmem_wdata,
-    input  wire [7:0] payloadsmem_rdata,
-
-    output wire rx_fifo_ram_cs,
-    output wire rx_fifo_ram_we,
-    output wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_waddr,
-    output wire [7:0] rx_fifo_ram_wdata,
-    output wire [$clog2(`EXT_RX_FIFO_DEPTH)-1:0] rx_fifo_ram_raddr,
-    input  wire [7:0] rx_fifo_ram_rdata
+    input  wire [7:0] payloadsmem_rdata
 );
 
 wire tx_ip_hdr_valid;
@@ -492,13 +461,7 @@ rx_fifo (
     .full(rx_fifo_full),
     .rd_en(rx_fifo_rd_en),
     .dout(rx_fifo_dout),
-    .empty(rx_fifo_empty),
-    .ram_cs(rx_fifo_ram_cs),
-    .ram_we(rx_fifo_ram_we),
-    .ram_waddr(rx_fifo_ram_waddr),
-    .ram_wdata(rx_fifo_ram_wdata),
-    .ram_raddr(rx_fifo_ram_raddr),
-    .ram_rdata(rx_fifo_ram_rdata)
+    .empty(rx_fifo_empty)
 );
 
 // arbiter for sharing app_data between CPU and ROS2rapper IP
