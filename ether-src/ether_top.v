@@ -479,7 +479,7 @@ wire rx_fifo_rd_en;
 wire [7:0] rx_fifo_dout;
 wire rx_fifo_empty;
 
-ram_queue #(
+queue #(
     .DATA_WIDTH(8),
     .DEPTH(`EXT_RX_FIFO_DEPTH),
     .USE_ASYNC_RESET(0)
