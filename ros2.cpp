@@ -799,8 +799,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface ap_vld port=udp_txbuf_rel
 #pragma HLS interface ap_none port=udp_txbuf_grant
 #pragma HLS interface ap_ctrl_none port=return
-#pragma HLS reset variable=udp_rxbuf off
-#pragma HLS reset variable=udp_txbuf off
 
 	static sedp_reader_id_t sedp_reader_cnt;
 	static app_reader_id_t app_reader_cnt;
