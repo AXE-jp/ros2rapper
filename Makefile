@@ -7,7 +7,6 @@ synth: $(PROJNAME)
 
 $(PROJNAME): $(SRCS) $(HDRS) run_hls.tcl
 	vitis_hls run_hls.tcl
-	./fix-synthesized.rb
 
 clean:
 	rm -rf $(PROJNAME)
