@@ -208,7 +208,13 @@ wire payloadsmem_cs;
 wire payloadsmem_we;
 wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr;
 wire [7:0] payloadsmem_wdata, payloadsmem_rdata;
-RAM_1RW_WRAP#(`PAYLOADSMEM_AWIDTH, 8) payloadsmem(
+
+RAM_1RW_WRAP #(
+    .DEPTH(`PAYLOADSMEM_DEPTH),
+    .DWIDTH(8),
+    .USE_SRAM_IP(0)
+)
+payloadsmem (
     .i_clk(clk_int),
     .i_rst_n(rst_n_int),
     .i_cs_n(~payloadsmem_cs),
