@@ -57,6 +57,12 @@ Dir.glob(SRCDIR+'ros2_fifo_*.v') do |filename|
           "input ce;\ninput reset;")
     .gsub(/.clk\(clk\),\s+.data\(shiftReg_data\),/m,
           ".clk(clk),\n    .reset(reset),\n    .data(shiftReg_data),")
+    .gsub(/mOutPtr = (.*?);/,
+          "mOutPtr;")
+    .gsub(/internal_empty_n = (.*?);/,
+          "internal_empty_n;")
+    .gsub(/internal_full_n = (.*?);/,
+          "internal_full_n;")
   File.write(filename, fixed)
 end
 

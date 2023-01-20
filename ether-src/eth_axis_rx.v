@@ -120,17 +120,17 @@ reg transfer_in_save;
 reg s_axis_tready_reg, s_axis_tready_next;
 
 reg m_eth_hdr_valid_reg, m_eth_hdr_valid_next;
-reg [47:0] m_eth_dest_mac_reg = 48'd0, m_eth_dest_mac_next;
-reg [47:0] m_eth_src_mac_reg = 48'd0, m_eth_src_mac_next;
-reg [15:0] m_eth_type_reg = 16'd0, m_eth_type_next;
+reg [47:0] m_eth_dest_mac_reg, m_eth_dest_mac_next;
+reg [47:0] m_eth_src_mac_reg, m_eth_src_mac_next;
+reg [15:0] m_eth_type_reg, m_eth_type_next;
 
 reg busy_reg;
 reg error_header_early_termination_reg, error_header_early_termination_next;
 
-reg [DATA_WIDTH-1:0] save_axis_tdata_reg = 64'd0;
-reg [KEEP_WIDTH-1:0] save_axis_tkeep_reg = 8'd0;
+reg [DATA_WIDTH-1:0] save_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] save_axis_tkeep_reg;
 reg save_axis_tlast_reg;
-reg save_axis_tuser_reg = 1'b0;
+reg save_axis_tuser_reg;
 
 reg [DATA_WIDTH-1:0] shift_axis_tdata;
 reg [KEEP_WIDTH-1:0] shift_axis_tkeep;

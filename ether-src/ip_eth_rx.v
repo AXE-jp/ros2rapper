@@ -164,22 +164,22 @@ reg s_eth_hdr_ready_reg, s_eth_hdr_ready_next;
 reg s_eth_payload_axis_tready_reg, s_eth_payload_axis_tready_next;
 
 reg m_ip_hdr_valid_reg, m_ip_hdr_valid_next;
-reg [47:0] m_eth_dest_mac_reg = 48'd0;
-reg [47:0] m_eth_src_mac_reg = 48'd0;
-reg [15:0] m_eth_type_reg = 16'd0;
-reg [3:0] m_ip_version_reg = 4'd0;
-reg [3:0] m_ip_ihl_reg = 4'd0;
-reg [5:0] m_ip_dscp_reg = 6'd0;
-reg [1:0] m_ip_ecn_reg = 2'd0;
-reg [15:0] m_ip_length_reg = 16'd0;
-reg [15:0] m_ip_identification_reg = 16'd0;
-reg [2:0] m_ip_flags_reg = 3'd0;
-reg [12:0] m_ip_fragment_offset_reg = 13'd0;
-reg [7:0] m_ip_ttl_reg = 8'd0;
-reg [7:0] m_ip_protocol_reg = 8'd0;
-reg [15:0] m_ip_header_checksum_reg = 16'd0;
-reg [31:0] m_ip_source_ip_reg = 32'd0;
-reg [31:0] m_ip_dest_ip_reg = 32'd0;
+reg [47:0] m_eth_dest_mac_reg;
+reg [47:0] m_eth_src_mac_reg;
+reg [15:0] m_eth_type_reg;
+reg [3:0] m_ip_version_reg;
+reg [3:0] m_ip_ihl_reg;
+reg [5:0] m_ip_dscp_reg;
+reg [1:0] m_ip_ecn_reg;
+reg [15:0] m_ip_length_reg;
+reg [15:0] m_ip_identification_reg;
+reg [2:0] m_ip_flags_reg;
+reg [12:0] m_ip_fragment_offset_reg;
+reg [7:0] m_ip_ttl_reg;
+reg [7:0] m_ip_protocol_reg;
+reg [15:0] m_ip_header_checksum_reg;
+reg [31:0] m_ip_source_ip_reg;
+reg [31:0] m_ip_dest_ip_reg;
 
 reg busy_reg;
 reg error_header_early_termination_reg, error_header_early_termination_next;
@@ -523,10 +523,10 @@ reg       m_ip_payload_axis_tvalid_reg, m_ip_payload_axis_tvalid_next;
 reg       m_ip_payload_axis_tlast_reg;
 reg       m_ip_payload_axis_tuser_reg;
 
-reg [7:0] temp_m_ip_payload_axis_tdata_reg = 8'd0;
-reg       temp_m_ip_payload_axis_tvalid_reg = 1'b0, temp_m_ip_payload_axis_tvalid_next;
-reg       temp_m_ip_payload_axis_tlast_reg = 1'b0;
-reg       temp_m_ip_payload_axis_tuser_reg = 1'b0;
+reg [7:0] temp_m_ip_payload_axis_tdata_reg;
+reg       temp_m_ip_payload_axis_tvalid_reg, temp_m_ip_payload_axis_tvalid_next;
+reg       temp_m_ip_payload_axis_tlast_reg;
+reg       temp_m_ip_payload_axis_tuser_reg;
 
 // datapath control
 reg store_ip_payload_int_to_output;
