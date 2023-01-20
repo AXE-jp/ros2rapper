@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -367,7 +369,7 @@ always @* begin
     endcase
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state_reg <= STATE_IDLE;
         hdr_ptr_reg <= 6'd0;
@@ -484,7 +486,7 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         m_eth_payload_axis_tready_int_reg <= 1'b0;
         m_eth_payload_axis_tdata_reg <= 8'd0;

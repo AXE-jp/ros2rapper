@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -205,7 +207,7 @@ reg s_select_ip_reg;
 reg s_select_arp_reg;
 reg s_select_none_reg;
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         s_select_ip_reg <= 1'b0;
         s_select_arp_reg <= 1'b0;

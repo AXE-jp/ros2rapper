@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -201,15 +203,15 @@ reg wr_ptr_update_ack_sync2_reg;
 (* SHREG_EXTRACT = "NO" *)
 reg s_rst_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg s_rst_sync2_reg = 1'b0;
+reg s_rst_sync2_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg s_rst_sync3_reg = 1'b0;
+reg s_rst_sync3_reg;
 (* SHREG_EXTRACT = "NO" *)
 reg m_rst_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg m_rst_sync2_reg = 1'b0;
+reg m_rst_sync2_reg;
 (* SHREG_EXTRACT = "NO" *)
-reg m_rst_sync3_reg = 1'b0;
+reg m_rst_sync3_reg;
 
 (* ramstyle = "no_rw_check" *)
 reg [WIDTH-1:0] mem[(2**ADDR_WIDTH)-1:0];
@@ -299,9 +301,14 @@ always @(posedge m_clk or negedge m_rst_n) begin
     end
 end
 
-always @(posedge s_clk) begin
-    s_rst_sync2_reg <= s_rst_sync1_reg;
-    s_rst_sync3_reg <= s_rst_sync2_reg;
+always @(posedge s_clk or negedge s_rst_n) begin
+    if (!s_rst_n) begin
+        s_rst_sync2_reg <= 1'b0;
+        s_rst_sync3_reg <= 1'b0;
+    end else begin
+        s_rst_sync2_reg <= s_rst_sync1_reg;
+        s_rst_sync3_reg <= s_rst_sync2_reg;
+    end
 end
 
 always @(posedge s_clk or negedge s_rst_n) begin
@@ -312,13 +319,22 @@ always @(posedge s_clk or negedge s_rst_n) begin
     end
 end
 
-always @(posedge m_clk) begin
-    m_rst_sync2_reg <= m_rst_sync1_reg;
-    m_rst_sync3_reg <= m_rst_sync2_reg;
+always @(posedge m_clk or negedge m_rst_n) begin
+    if (!m_rst_n) begin
+        m_rst_sync2_reg <= 1'b0;
+        m_rst_sync3_reg <= 1'b0;
+    end else begin
+        m_rst_sync2_reg <= m_rst_sync1_reg;
+        m_rst_sync3_reg <= m_rst_sync2_reg;
+    end
 end
 
 // Write logic
-always @(posedge s_clk) begin
+`ifdef TARGET_XILINX
+always @(posedge s_clk) begin // Vivado could not infer BRAM if async reset is used.
+`else
+always @(posedge s_clk or negedge s_rst_n) begin
+`endif
     if (!s_rst_n) begin
         wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -466,7 +482,7 @@ always @(posedge s_clk) begin
 end
 
 // pointer synchronization
-always @(posedge s_clk) begin
+always @(posedge s_clk or negedge s_rst_n) begin
     if (!s_rst_n) begin
         rd_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -480,7 +496,7 @@ always @(posedge s_clk) begin
     end
 end
 
-always @(posedge m_clk) begin
+always @(posedge m_clk or negedge m_rst_n) begin
     if (!m_rst_n) begin
         wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_gray_sync2_reg <= {ADDR_WIDTH+1{1'b0}};
@@ -505,7 +521,7 @@ always @(posedge m_clk) begin
 end
 
 // status synchronization
-always @(posedge s_clk) begin
+always @(posedge s_clk or negedge s_rst_n) begin
     if (!s_rst_n) begin
         overflow_sync1_reg <= 1'b0;
         bad_frame_sync1_reg <= 1'b0;
@@ -517,7 +533,7 @@ always @(posedge s_clk) begin
     end
 end
 
-always @(posedge m_clk) begin
+always @(posedge m_clk or negedge m_rst_n) begin
     if (!m_rst_n) begin
         overflow_sync2_reg <= 1'b0;
         overflow_sync3_reg <= 1'b0;
@@ -544,10 +560,15 @@ end
 // Read logic
 integer j;
 
-always @(posedge m_clk) begin
+`ifdef TARGET_XILINX
+always @(posedge m_clk) begin // Vivado could not infer BRAM if async reset is used.
+`else
+always @(posedge m_clk or negedge m_rst_n) begin
+`endif
     if (!m_rst_n) begin
         rd_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         rd_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
+        for (j=0; j<PIPELINE_OUTPUT; j=j+1) m_axis_pipe_reg[j] <= 0;
         m_axis_tvalid_pipe_reg <= {PIPELINE_OUTPUT{1'b0}};
         m_frame_reg <= 1'b0;
         m_drop_frame_reg <= 1'b0;

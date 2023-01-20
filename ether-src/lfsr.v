@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -355,7 +357,7 @@ always @(*) begin
     // end
 end
 
-`ifdef TARGET_SIMULATION
+`ifdef TARGET_SIM
 // "AUTO" style is "REDUCTION" for faster simulation
 parameter STYLE_INT = (STYLE == "AUTO") ? "REDUCTION" : STYLE;
 `else

@@ -144,7 +144,7 @@ reg [WIDTH-1:0] output_q_reg;
 
 assign output_q = output_q_reg;
 
-always @(posedge clk_io) begin
+always @(posedge clk_io or negedge rst_n) begin
     if (!rst_n)
         output_q_reg <= {WIDTH{1'b0}};
     else

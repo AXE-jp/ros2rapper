@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -414,7 +416,7 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         outgoing_frame_valid_reg <= 1'b0;
         outgoing_eth_dest_mac_reg <= 48'd0;

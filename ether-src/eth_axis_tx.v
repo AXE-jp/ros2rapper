@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -275,7 +277,7 @@ always @* begin
     s_eth_hdr_ready_next = !(send_eth_header_next || send_eth_payload_next);
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         send_eth_header_reg <= 1'b0;
         send_eth_payload_reg <= 1'b0;
@@ -378,7 +380,7 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         m_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
         m_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};

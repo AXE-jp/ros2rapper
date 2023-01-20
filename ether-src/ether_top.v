@@ -41,8 +41,6 @@ wire clk_mmcm_out;
 wire mmcm_clkfb;
 wire clk_25mhz_mmcm_out;
 
-wire rst_int;
-
 IBUFG clk_ibufg_inst(
     .I(clk),
     .O(clk_ibufg)
@@ -114,6 +112,7 @@ clk_25mhz_bufg_inst (
 
 `endif
 
+/*
 sync_reset #(
     .N(4)
 )
@@ -122,6 +121,9 @@ sync_reset_inst (
     .rst_n(mmcm_locked),
     .out(rst_n_int)
 );
+*/
+
+assign rst_n_int = rst_n;
 
 assign phy_ref_clk = clk_25mhz_int;
 
@@ -164,7 +166,7 @@ wire txbuf_cpu_grant;
 
 reg [27:0] tx_cnt;
 
-always @(posedge clk_int) begin
+always @(posedge clk_int or negedge rst_n_int) begin
     if (!rst_n_int) begin
         txbuf_rdata <= 0;
         txbuf_cpu_rel <= 0;
@@ -188,7 +190,7 @@ always @(posedge clk_int) begin
     end
 end
 
-always @(posedge clk_int) begin
+always @(posedge clk_int or negedge rst_n_int) begin
     if (!rst_n_int) begin
         rxbuf_cpu_rel <= 0;
         last_rx_size <= 0;
@@ -438,7 +440,7 @@ wire tx_fifo_empty;
 queue #(
     .DATA_WIDTH(8),
     .DEPTH(`EXT_TX_FIFO_DEPTH),
-    .USE_ASYNC_RESET(0)
+    .USE_ASYNC_RESET(1)
 )
 tx_fifo (
     .clk(clk),
@@ -461,7 +463,7 @@ wire rx_fifo_empty;
 queue #(
     .DATA_WIDTH(8),
     .DEPTH(`EXT_RX_FIFO_DEPTH),
-    .USE_ASYNC_RESET(0)
+    .USE_ASYNC_RESET(1)
 )
 rx_fifo (
     .clk(clk),
@@ -484,7 +486,7 @@ wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
 assign ros2_app_data_ip_grant = enable & r_ros2_app_data_grant[0];
 assign ros2_app_data_cpu_grant = enable & r_ros2_app_data_grant[1];
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
@@ -516,7 +518,7 @@ wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
 assign udp_rxbuf_ip_grant = enable & (~r_udp_rxbuf_grant);
 assign udp_rxbuf_cpu_grant = enable & r_udp_rxbuf_grant;
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
     end else begin
@@ -538,7 +540,7 @@ wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
 assign udp_txbuf_ip_grant = enable & (~r_udp_txbuf_grant);
 assign udp_txbuf_cpu_grant = enable & r_udp_txbuf_grant;
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
     end else begin

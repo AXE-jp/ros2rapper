@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
+`include "config.vh"
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
@@ -436,7 +438,7 @@ always @* begin
     endcase
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         state_reg <= STATE_IDLE;
         segment_count_reg <= 0;
@@ -525,7 +527,7 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         m_axis_tdata_reg  <= {M_DATA_WIDTH{1'b0}};
         m_axis_tkeep_reg  <= {M_KEEP_WIDTH{1'b0}};
