@@ -15,8 +15,6 @@ module ether_top (
     input  wire       phy_tx_clk,
     output wire [3:0] phy_txd,
     output wire       phy_tx_en,
-    input  wire       phy_col,
-    input  wire       phy_crs,
     output wire       phy_rst_n,
 
     output wire       led_r,
@@ -238,8 +236,6 @@ ros2_ether ros2 (
     .phy_tx_clk(phy_tx_clk),
     .phy_txd(phy_txd),
     .phy_tx_en(phy_tx_en),
-    .phy_col(phy_col),
-    .phy_crs(phy_crs),
     .phy_rst_n(phy_rst_n),
     .mac_addr(mac_addr),
     .ip_addr(ip_addr),
@@ -292,8 +288,6 @@ module ros2_ether (
     input  wire       phy_tx_clk,
     output wire [3:0] phy_txd,
     output wire       phy_tx_en,
-    input  wire       phy_col,
-    input  wire       phy_crs,
     output wire       phy_rst_n,
 
     input  wire [47:0] mac_addr,
@@ -384,8 +378,8 @@ verilog_ethernet verilog_ethernet_inst (
     .phy_tx_clk(phy_tx_clk),
     .phy_txd(phy_txd),
     .phy_tx_en(phy_tx_en),
-    .phy_col(phy_col),
-    .phy_crs(phy_crs),
+    .phy_col(),
+    .phy_crs(),
     .phy_reset_n(phy_rst_n),
 
     .tx_ip_hdr_valid(tx_ip_hdr_valid),
