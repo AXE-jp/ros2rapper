@@ -198,9 +198,9 @@ end
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         for (i = 0; i < 2**CACHE_ADDR_WIDTH; i = i + 1) begin
-            valid_mem[i] = 1'b0;
-            ip_addr_mem[i] = 32'd0;
-            mac_addr_mem[i] = 48'd0;
+            valid_mem[i] <= 1'b0;
+            ip_addr_mem[i] <= 32'd0;
+            mac_addr_mem[i] <= 48'd0;
         end
 
         query_ip_valid_reg <= 1'b0;

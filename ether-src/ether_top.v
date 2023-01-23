@@ -649,8 +649,8 @@ ip_rx_i (
     .rx_payload_TREADY(rx_ip_payload_axis_tready),
     .rx_payload_TDATA(rx_ip_payload_axis_tdata),
     .rx_payload_TLAST(rx_ip_payload_axis_tlast),
-    .rx_payload_TKEEP(),
-    .rx_payload_TSTRB()
+    .rx_payload_TKEEP(1'b1),
+    .rx_payload_TSTRB(1'b1)
 );
 
 endmodule
