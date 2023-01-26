@@ -27,7 +27,6 @@ THE SOFTWARE.
 `include "config.vh"
 
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 /*
@@ -147,6 +146,9 @@ eth_mac_1g_inst (
     .gmii_tx_er(mac_mii_tx_er),
     .tx_ptp_ts(96'b0),
     .rx_ptp_ts(96'b0),
+    .tx_axis_ptp_ts(),
+    .tx_axis_ptp_ts_tag(),
+    .tx_axis_ptp_ts_valid(),
     .rx_clk_enable(1'b1),
     .tx_clk_enable(1'b1),
     .rx_mii_select(1'b1),

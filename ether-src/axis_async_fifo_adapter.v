@@ -27,7 +27,6 @@ THE SOFTWARE.
 `include "config.vh"
 
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 /*
@@ -344,6 +343,7 @@ fifo_inst (
     // AXI output
     .m_clk(m_clk),
     .m_rst_n(m_rst_n),
+    .m_drop(1'b0),
     .m_axis_tdata(post_fifo_axis_tdata),
     .m_axis_tkeep(post_fifo_axis_tkeep),
     .m_axis_tvalid(post_fifo_axis_tvalid),

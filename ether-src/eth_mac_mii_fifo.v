@@ -27,7 +27,6 @@ THE SOFTWARE.
 `include "config.vh"
 
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 /*
@@ -214,7 +213,9 @@ eth_mac_1g_mii_inst (
     .mii_txd(mii_txd),
     .mii_tx_en(mii_tx_en),
     .mii_tx_er(mii_tx_er),
+    .tx_start_packet(),
     .tx_error_underflow(tx_error_underflow_int),
+    .rx_start_packet(),
     .rx_error_bad_frame(rx_error_bad_frame_int),
     .rx_error_bad_fcs(rx_error_bad_fcs_int),
     .ifg_delay(ifg_delay)

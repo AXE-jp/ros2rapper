@@ -24,6 +24,7 @@ copy-src: synth
 	-cp ros2rapper/proj_ros2/solution1/syn/verilog/*.v ${SRCDIR}
 	-cp ros2rapper/proj_ros2/solution1/syn/verilog/*.dat ${SRCDIR}
 	./fix-hls-code.rb
+	find ${SRCDIR} -name "*.v" | xargs sed -i "/\`timescale .*/d"
 
 vivado-create-proj: copy-src
 	vivado -mode batch -source create_project.tcl

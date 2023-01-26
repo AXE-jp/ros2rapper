@@ -256,6 +256,7 @@ ros2_ether ros2 (
     .ros2_app_data_len(ros2_app_data_len),
     .ros2_app_data_cpu_req(1'b0),
     .ros2_app_data_cpu_rel(1'b0),
+    .ros2_app_data_cpu_grant(),
     .udp_rxbuf_cpu_rel(rxbuf_cpu_rel),
     .udp_rxbuf_cpu_grant(rxbuf_cpu_grant),
     .udp_rxbuf_addr(rxbuf_addr),
@@ -265,6 +266,7 @@ ros2_ether ros2 (
     .udp_txbuf_cpu_grant(txbuf_cpu_grant),
     .udp_txbuf_cpu_rel(txbuf_cpu_rel),
     .udp_txbuf_addr(txbuf_addr),
+    .udp_txbuf_ce(),
     .udp_txbuf_rdata(txbuf_rdata),
     .payloadsmem_addr(payloadsmem_addr),
     .payloadsmem_ce(payloadsmem_cs),
@@ -487,10 +489,10 @@ always @(posedge clk or negedge rst_n) begin
         case (r_ros2_app_data_grant)
             APP_DATA_GRANT_NONE: begin
                 case ({ros2_app_data_ip_req, ros2_app_data_cpu_req})
-                    4'b00: r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
-                    4'b01: r_ros2_app_data_grant <= APP_DATA_GRANT_CPU;
-                    4'b10: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
-                    4'b11: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
+                    2'b00: r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+                    2'b01: r_ros2_app_data_grant <= APP_DATA_GRANT_CPU;
+                    2'b10: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
+                    2'b11: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
                 endcase
             end
             APP_DATA_GRANT_IP:
@@ -585,11 +587,15 @@ ros2_i (
     .conf_app_data(ros2_app_data),
     .conf_app_data_len(ros2_app_data_len),
     .app_data_req_ap_vld(ros2_app_data_ip_req),
+    .app_data_req(),
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
+    .app_data_rel(),
     .app_data_grant({7'b0, ros2_app_data_ip_grant}),
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
+    .udp_rxbuf_rel(),
     .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
     .udp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
+    .udp_txbuf_rel(),
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
 );
 

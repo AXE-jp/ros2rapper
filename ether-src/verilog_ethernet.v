@@ -1,5 +1,4 @@
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 `include "config.vh"
@@ -187,6 +186,7 @@ eth_mac_inst (
     .rx_axis_tready(rx_axis_tready),
     .rx_axis_tlast(rx_axis_tlast),
     .rx_axis_tuser(rx_axis_tuser),
+    .rx_axis_tkeep(),
 
     .mii_rx_clk(phy_rx_clk),
     .mii_rxd(phy_rxd),
@@ -197,6 +197,7 @@ eth_mac_inst (
     .mii_tx_en(phy_tx_en),
     .mii_tx_er(),
 
+    .tx_error_underflow(),
     .tx_fifo_overflow(),
     .tx_fifo_bad_frame(),
     .tx_fifo_good_frame(),
@@ -231,6 +232,7 @@ eth_axis_rx_inst (
     .m_eth_payload_axis_tready(rx_eth_payload_axis_tready),
     .m_eth_payload_axis_tlast(rx_eth_payload_axis_tlast),
     .m_eth_payload_axis_tuser(rx_eth_payload_axis_tuser),
+    .m_eth_payload_axis_tkeep(),
 
     .busy(),
     .error_header_early_termination()
@@ -258,6 +260,7 @@ eth_axis_tx_inst (
     .m_axis_tready(tx_axis_tready),
     .m_axis_tlast(tx_axis_tlast),
     .m_axis_tuser(tx_axis_tuser),
+    .m_axis_tkeep(),
 
     .busy()
 );

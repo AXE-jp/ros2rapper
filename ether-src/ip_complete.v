@@ -27,7 +27,6 @@ THE SOFTWARE.
 `include "config.vh"
 
 `resetall
-`timescale 1ns / 1ps
 `default_nettype none
 
 /*
@@ -414,6 +413,7 @@ arp_inst (
     .s_eth_payload_axis_tready(arp_rx_eth_payload_axis_tready),
     .s_eth_payload_axis_tlast(arp_rx_eth_payload_axis_tlast),
     .s_eth_payload_axis_tuser(arp_rx_eth_payload_axis_tuser),
+    .s_eth_payload_axis_tkeep(1'b1),
     // Ethernet frame output
     .m_eth_hdr_valid(arp_tx_eth_hdr_valid),
     .m_eth_hdr_ready(arp_tx_eth_hdr_ready),
@@ -425,6 +425,7 @@ arp_inst (
     .m_eth_payload_axis_tready(arp_tx_eth_payload_axis_tready),
     .m_eth_payload_axis_tlast(arp_tx_eth_payload_axis_tlast),
     .m_eth_payload_axis_tuser(arp_tx_eth_payload_axis_tuser),
+    .m_eth_payload_axis_tkeep(),
     // ARP requests
     .arp_request_valid(arp_request_valid),
     .arp_request_ready(arp_request_ready),
