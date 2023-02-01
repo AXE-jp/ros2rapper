@@ -46,17 +46,19 @@ typedef struct {
 		uint8_t app_data_len;
 } config_t;
 
-#define CTRL_ENABLE 0x1
-
-void ros2(
-		hls_stream<uint8_t> &in,
-		hls_stream<uint8_t> &out,
-		config_t &conf,
-		volatile uint8_t *app_data_req,
+void ros2(hls_stream<uint8_t> &in,
+	  hls_stream<uint8_t> &out,
+	  uint32_t udp_rxbuf[],
+	  uint32_t udp_txbuf[],
+	  hls_uint<1> &enable,
+	  const config_t &conf,
+	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
 	  volatile uint8_t *app_data_grant,
 	  volatile uint8_t *udp_rxbuf_rel,
-	  volatile uint8_t *udp_rxbuf_grant
+	  volatile uint8_t *udp_rxbuf_grant,
+	  volatile uint8_t *udp_txbuf_rel,
+	  volatile uint8_t *udp_txbuf_grant
 );
 
 #endif // !ROS2_HPP

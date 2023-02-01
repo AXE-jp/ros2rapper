@@ -57,6 +57,7 @@
 /* Cyber func=inline */
 void udp_in(hls_stream<hls_uint<9>> &in,
 	    hls_stream<hls_uint<9>> &out,
+	    hls_uint<1> &enable,
 	    const uint8_t cpu_udp_port[2],
 	    uint32_t rawudp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	    volatile uint8_t *rawudp_rxbuf_rel,
@@ -114,7 +115,11 @@ void udp_in(hls_stream<hls_uint<9>> &in,
 					state = UDP_IN_STATE_DISCARD;
 				}
 			} else {
-				state = UDP_IN_STATE_OUT_RTPS;
+				if (enable) {
+					state = UDP_IN_STATE_OUT_RTPS;
+				} else {
+					state = UDP_IN_STATE_DISCARD;
+				}
 			}
 		}
 		break;

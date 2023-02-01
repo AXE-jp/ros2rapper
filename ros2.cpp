@@ -116,6 +116,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
 		    app_endpoint app_reader_tbl[APP_READER_MAX],
+		    hls_uint<1> &enable,
 		    const config_t &conf,
 		    volatile uint8_t *rawudp_rxbuf_rel,
 		    volatile uint8_t *rawudp_rxbuf_grant)
@@ -143,7 +144,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
 	ip_in(s1, s2, ip_parity_error);
-	udp_in(s2, s3, conf.cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
+	udp_in(s2, s3, enable, conf.cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))
 		return;
@@ -388,7 +389,7 @@ static void rawudp_out(const uint8_t dst_addr[4],
 	tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
-#define ST_RAWUDP_OUT           0
+#define ST_RAWUDP_OUT            0
 #define ST_SPDP_WRITER           1
 #define ST_SEDP_PUB_WRITER_0     2
 #define ST_SEDP_PUB_WRITER_1     3
@@ -578,6 +579,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
+		     hls_uint<1> &enable,
 		     const config_t &conf,
 		     volatile uint8_t *app_data_req,
 		     volatile uint8_t *app_data_rel,
@@ -668,8 +670,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		slip_out(s, out);
 #endif // USE_FIFOIF_ETHERNET
 	} else {
-		switch (state) {
-		case ST_RAWUDP_OUT:
+		if (state == ST_RAWUDP_OUT) {
 			switch (rawudp_txbuf_copy_status) {
 			case RAWUDP_TXBUF_COPY_INIT:
 				if (*rawudp_txbuf_grant == 1) {
@@ -731,37 +732,41 @@ static void ros2_out(hls_stream<uint8_t> &out,
 				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
 				break;
 			}
-			break;
-		case ST_SPDP_WRITER: SPDP_WRITER_OUT(); state++; break;
-		case ST_SEDP_PUB_WRITER_0:    SEDP_PUB_WRITER_OUT(0); state++; break;
-		case ST_SEDP_PUB_WRITER_1:    SEDP_PUB_WRITER_OUT(1); state++; break;
-		case ST_SEDP_PUB_WRITER_2:    SEDP_PUB_WRITER_OUT(2); state++; break;
-		case ST_SEDP_PUB_WRITER_3:    SEDP_PUB_WRITER_OUT(3); state++; break;
-		case ST_SEDP_SUB_WRITER_0:    SEDP_SUB_WRITER_OUT(0); state++; break;
-		case ST_SEDP_SUB_WRITER_1:    SEDP_SUB_WRITER_OUT(1); state++; break;
-		case ST_SEDP_SUB_WRITER_2:    SEDP_SUB_WRITER_OUT(2); state++; break;
-		case ST_SEDP_SUB_WRITER_3:    SEDP_SUB_WRITER_OUT(3); state++; break;
-		case ST_SEDP_PUB_HEARTBEAT_0: SEDP_PUB_HEARTBEAT_OUT(0); state++; break;
-		case ST_SEDP_PUB_HEARTBEAT_1: SEDP_PUB_HEARTBEAT_OUT(1); state++; break;
-		case ST_SEDP_PUB_HEARTBEAT_2: SEDP_PUB_HEARTBEAT_OUT(2); state++; break;
-		case ST_SEDP_PUB_HEARTBEAT_3: SEDP_PUB_HEARTBEAT_OUT(3); state++; break;
-		case ST_SEDP_SUB_HEARTBEAT_0: SEDP_SUB_HEARTBEAT_OUT(0); state++; break;
-		case ST_SEDP_SUB_HEARTBEAT_1: SEDP_SUB_HEARTBEAT_OUT(1); state++; break;
-		case ST_SEDP_SUB_HEARTBEAT_2: SEDP_SUB_HEARTBEAT_OUT(2); state++; break;
-		case ST_SEDP_SUB_HEARTBEAT_3: SEDP_SUB_HEARTBEAT_OUT(3); state++; break;
-		case ST_SEDP_PUB_ACKNACK_0:   SEDP_PUB_ACKNACK_OUT(0); state++; break;
-		case ST_SEDP_PUB_ACKNACK_1:   SEDP_PUB_ACKNACK_OUT(1); state++; break;
-		case ST_SEDP_PUB_ACKNACK_2:   SEDP_PUB_ACKNACK_OUT(2); state++; break;
-		case ST_SEDP_PUB_ACKNACK_3:   SEDP_PUB_ACKNACK_OUT(3); state++; break;
-		case ST_SEDP_SUB_ACKNACK_0:   SEDP_SUB_ACKNACK_OUT(0); state++; break;
-		case ST_SEDP_SUB_ACKNACK_1:   SEDP_SUB_ACKNACK_OUT(1); state++; break;
-		case ST_SEDP_SUB_ACKNACK_2:   SEDP_SUB_ACKNACK_OUT(2); state++; break;
-		case ST_SEDP_SUB_ACKNACK_3:   SEDP_SUB_ACKNACK_OUT(3); state++; break;
-		case ST_APP_WRITER_0:         APP_WRITER_OUT(0); state++; break;
-		case ST_APP_WRITER_1:         APP_WRITER_OUT(1); state++; break;
-		case ST_APP_WRITER_2:         APP_WRITER_OUT(2); state++; break;
-		case ST_APP_WRITER_3:         APP_WRITER_OUT(3);
-		default:                      state = ST_RAWUDP_OUT; break;
+		} else if (!enable) {
+			state = ST_RAWUDP_OUT;
+		} else {
+			switch (state) {
+			case ST_SPDP_WRITER:          SPDP_WRITER_OUT(); state++; break;
+			case ST_SEDP_PUB_WRITER_0:    SEDP_PUB_WRITER_OUT(0); state++; break;
+			case ST_SEDP_PUB_WRITER_1:    SEDP_PUB_WRITER_OUT(1); state++; break;
+			case ST_SEDP_PUB_WRITER_2:    SEDP_PUB_WRITER_OUT(2); state++; break;
+			case ST_SEDP_PUB_WRITER_3:    SEDP_PUB_WRITER_OUT(3); state++; break;
+			case ST_SEDP_SUB_WRITER_0:    SEDP_SUB_WRITER_OUT(0); state++; break;
+			case ST_SEDP_SUB_WRITER_1:    SEDP_SUB_WRITER_OUT(1); state++; break;
+			case ST_SEDP_SUB_WRITER_2:    SEDP_SUB_WRITER_OUT(2); state++; break;
+			case ST_SEDP_SUB_WRITER_3:    SEDP_SUB_WRITER_OUT(3); state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_0: SEDP_PUB_HEARTBEAT_OUT(0); state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_1: SEDP_PUB_HEARTBEAT_OUT(1); state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_2: SEDP_PUB_HEARTBEAT_OUT(2); state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_3: SEDP_PUB_HEARTBEAT_OUT(3); state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_0: SEDP_SUB_HEARTBEAT_OUT(0); state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_1: SEDP_SUB_HEARTBEAT_OUT(1); state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_2: SEDP_SUB_HEARTBEAT_OUT(2); state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_3: SEDP_SUB_HEARTBEAT_OUT(3); state++; break;
+			case ST_SEDP_PUB_ACKNACK_0:   SEDP_PUB_ACKNACK_OUT(0); state++; break;
+			case ST_SEDP_PUB_ACKNACK_1:   SEDP_PUB_ACKNACK_OUT(1); state++; break;
+			case ST_SEDP_PUB_ACKNACK_2:   SEDP_PUB_ACKNACK_OUT(2); state++; break;
+			case ST_SEDP_PUB_ACKNACK_3:   SEDP_PUB_ACKNACK_OUT(3); state++; break;
+			case ST_SEDP_SUB_ACKNACK_0:   SEDP_SUB_ACKNACK_OUT(0); state++; break;
+			case ST_SEDP_SUB_ACKNACK_1:   SEDP_SUB_ACKNACK_OUT(1); state++; break;
+			case ST_SEDP_SUB_ACKNACK_2:   SEDP_SUB_ACKNACK_OUT(2); state++; break;
+			case ST_SEDP_SUB_ACKNACK_3:   SEDP_SUB_ACKNACK_OUT(3); state++; break;
+			case ST_APP_WRITER_0:         APP_WRITER_OUT(0); state++; break;
+			case ST_APP_WRITER_1:         APP_WRITER_OUT(1); state++; break;
+			case ST_APP_WRITER_2:         APP_WRITER_OUT(2); state++; break;
+			case ST_APP_WRITER_3:         APP_WRITER_OUT(3);
+			default:                      state = ST_RAWUDP_OUT; break;
+			}
 		}
 
 		if (!tx_buf.empty()) {
@@ -811,7 +816,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
 
 	if (!enable) {
-		return;
+		sedp_reader_cnt = 0;
+		app_reader_cnt = 0;
 	}
 
 	ros2_in(in,
@@ -820,6 +826,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		sedp_reader_tbl,
 		app_reader_cnt,
 		app_reader_tbl,
+		enable,
 		conf,
 		udp_rxbuf_rel,
 		udp_rxbuf_grant);
@@ -830,6 +837,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 sedp_reader_tbl,
 		 app_reader_cnt,
 		 app_reader_tbl,
+		 enable,
 		 conf,
 		 app_data_req,
 		 app_data_rel,
