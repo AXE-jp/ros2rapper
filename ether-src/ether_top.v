@@ -228,7 +228,8 @@ payloadsmem (
 ros2_ether ros2 (
     .clk(clk_int),
     .rst_n(rst_n_int),
-    .enable(1'b1),
+    .ether_en(1'b1),
+    .ros2_en(1'b1),
     .phy_rx_clk(phy_rx_clk),
     .phy_rxd(phy_rxd),
     .phy_rx_dv(phy_rx_dv),
@@ -281,7 +282,8 @@ module ros2_ether (
     input  wire       clk,
     input  wire       rst_n,
 
-    input  wire       enable,
+    input  wire       ether_en,
+    input  wire       ros2_en,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -371,7 +373,7 @@ wire rx_ip_payload_axis_tlast;
 verilog_ethernet verilog_ethernet_inst (
     .clk(clk),
     .rst_n(rst_n),
-    .enable(enable),
+    .enable(ether_en),
 
     .phy_rx_clk(phy_rx_clk),
     .phy_rxd(phy_rxd),
@@ -420,10 +422,10 @@ verilog_ethernet verilog_ethernet_inst (
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
 
-    .local_mac({48{enable}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
-    .local_ip({32{enable}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
-    .gateway_ip({32{enable}} & {gateway_ip_addr[7:0], gateway_ip_addr[15:8], gateway_ip_addr[23:16], gateway_ip_addr[31:24]}),
-    .subnet_mask({32{enable}} & {subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
+    .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
+    .local_ip({32{ether_en}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
+    .gateway_ip({32{ether_en}} & {gateway_ip_addr[7:0], gateway_ip_addr[15:8], gateway_ip_addr[23:16], gateway_ip_addr[31:24]}),
+    .subnet_mask({32{ether_en}} & {subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
 );
 
 wire tx_fifo_wr_en;
@@ -479,8 +481,8 @@ localparam APP_DATA_GRANT_CPU  = 2'b10;
 
 reg [1:0] r_ros2_app_data_grant;
 wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
-assign ros2_app_data_ip_grant = enable & r_ros2_app_data_grant[0];
-assign ros2_app_data_cpu_grant = enable & r_ros2_app_data_grant[1];
+assign ros2_app_data_ip_grant = ether_en & r_ros2_app_data_grant[0];
+assign ros2_app_data_cpu_grant = ether_en & r_ros2_app_data_grant[1];
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -511,8 +513,8 @@ localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
 
 reg r_udp_rxbuf_grant;
 wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
-assign udp_rxbuf_ip_grant = enable & (~r_udp_rxbuf_grant);
-assign udp_rxbuf_cpu_grant = enable & r_udp_rxbuf_grant;
+assign udp_rxbuf_ip_grant = ether_en & (~r_udp_rxbuf_grant);
+assign udp_rxbuf_cpu_grant = ether_en & r_udp_rxbuf_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -533,8 +535,8 @@ localparam UDP_TXBUF_GRANT_CPU  = 1'b1;
 
 reg r_udp_txbuf_grant;
 wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
-assign udp_txbuf_ip_grant = enable & (~r_udp_txbuf_grant);
-assign udp_txbuf_cpu_grant = enable & r_udp_txbuf_grant;
+assign udp_txbuf_ip_grant = ether_en & (~r_udp_txbuf_grant);
+assign udp_txbuf_cpu_grant = ether_en & r_udp_txbuf_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -553,7 +555,7 @@ ros2
 ros2_i (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
-    .enable(enable),
+    .enable(ros2_en),
     .in_V_dout(rx_fifo_dout),
     .in_V_empty_n(~rx_fifo_empty),
     .in_V_read(rx_fifo_rd_en),
@@ -603,7 +605,7 @@ ip_tx
 ip_tx_i (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
-    .enable(enable),
+    .enable(ether_en),
     .din_V_dout(tx_fifo_dout),
     .din_V_empty_n(~tx_fifo_empty),
     .din_V_read(tx_fifo_rd_en),
@@ -630,7 +632,7 @@ ip_rx
 ip_rx_i (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
-    .enable(enable),
+    .enable(ether_en),
     .dout_V_din(rx_fifo_din),
     .dout_V_full_n(~rx_fifo_full),
     .dout_V_write(rx_fifo_wr_en),
