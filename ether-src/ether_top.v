@@ -605,6 +605,7 @@ ip_tx
 ip_tx_i (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
+    .enable(ether_en),
     .din_V_dout(tx_fifo_dout),
     .din_V_empty_n(~tx_fifo_empty),
     .din_V_read(tx_fifo_rd_en),
@@ -631,6 +632,7 @@ ip_rx
 ip_rx_i (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
+    .enable(ether_en),
     .dout_V_din(rx_fifo_din),
     .dout_V_full_n(~rx_fifo_full),
     .dout_V_write(rx_fifo_wr_en),
