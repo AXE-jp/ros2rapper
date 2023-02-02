@@ -352,9 +352,6 @@ always @(posedge s_clk or negedge s_rst_n) begin
         bad_frame_reg <= 1'b0;
         good_frame_reg <= 1'b0;
     end else begin
-        if (s_drop) begin
-            drop_frame_reg <= 1;
-        end
         overflow_reg <= 1'b0;
         bad_frame_reg <= 1'b0;
         good_frame_reg <= 1'b0;
@@ -386,6 +383,9 @@ always @(posedge s_clk or negedge s_rst_n) begin
 
         if (s_axis_tready && s_axis_tvalid) begin
             // transfer in
+            if (s_drop) begin
+                drop_frame_reg <= 1;
+            end
             if (!FRAME_FIFO) begin
                 // normal FIFO mode
                 mem[wr_ptr_reg[ADDR_WIDTH-1:0]] <= s_axis;
@@ -573,14 +573,13 @@ always @(posedge m_clk or negedge m_rst_n) begin
         m_drop_frame_reg <= 1'b0;
         m_terminate_frame_reg <= 1'b0;
     end else begin
-        if (m_drop) begin
-            m_drop_frame_reg <= 1;
-        end
-
         if (m_axis_tready) begin
             // output ready; invalidate stage
             m_axis_tvalid_pipe_reg[PIPELINE_OUTPUT-1] <= 1'b0;
             m_terminate_frame_reg <= 1'b0;
+            if (m_drop) begin
+                m_drop_frame_reg <= 1;
+            end
         end
 
         for (j = PIPELINE_OUTPUT-1; j > 0; j = j - 1) begin
