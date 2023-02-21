@@ -179,9 +179,6 @@ reg [ADDR_WIDTH:0] wr_ptr_cur_gray_reg;
 reg [ADDR_WIDTH:0] rd_ptr_reg;
 reg [ADDR_WIDTH:0] rd_ptr_gray_reg;
 
-reg [ADDR_WIDTH:0] wr_ptr_temp;
-reg [ADDR_WIDTH:0] rd_ptr_temp;
-
 (* SHREG_EXTRACT = "NO" *)
 reg [ADDR_WIDTH:0] wr_ptr_gray_sync1_reg;
 (* SHREG_EXTRACT = "NO" *)
