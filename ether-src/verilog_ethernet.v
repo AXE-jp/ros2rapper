@@ -99,69 +99,6 @@ wire [47:0] rx_ip_eth_dest_mac;
 wire [47:0] rx_ip_eth_src_mac;
 wire [15:0] rx_ip_eth_type;
 
-wire rx_udp_hdr_valid;
-wire rx_udp_hdr_ready;
-wire [47:0] rx_udp_eth_dest_mac;
-wire [47:0] rx_udp_eth_src_mac;
-wire [15:0] rx_udp_eth_type;
-wire [3:0] rx_udp_ip_version;
-wire [3:0] rx_udp_ip_ihl;
-wire [5:0] rx_udp_ip_dscp;
-wire [1:0] rx_udp_ip_ecn;
-wire [15:0] rx_udp_ip_length;
-wire [15:0] rx_udp_ip_identification;
-wire [2:0] rx_udp_ip_flags;
-wire [12:0] rx_udp_ip_fragment_offset;
-wire [7:0] rx_udp_ip_ttl;
-wire [7:0] rx_udp_ip_protocol;
-wire [15:0] rx_udp_ip_header_checksum;
-wire [31:0] rx_udp_ip_source_ip;
-wire [31:0] rx_udp_ip_dest_ip;
-wire [15:0] rx_udp_source_port;
-wire [15:0] rx_udp_dest_port;
-wire [15:0] rx_udp_length;
-wire [15:0] rx_udp_checksum;
-wire [7:0] rx_udp_payload_axis_tdata;
-wire rx_udp_payload_axis_tvalid;
-wire rx_udp_payload_axis_tready;
-wire rx_udp_payload_axis_tlast;
-wire rx_udp_payload_axis_tuser;
-
-wire tx_udp_hdr_valid;
-wire tx_udp_hdr_ready;
-wire [5:0] tx_udp_ip_dscp;
-wire [1:0] tx_udp_ip_ecn;
-wire [7:0] tx_udp_ip_ttl;
-wire [31:0] tx_udp_ip_source_ip;
-wire [31:0] tx_udp_ip_dest_ip;
-wire [15:0] tx_udp_source_port;
-wire [15:0] tx_udp_dest_port;
-wire [15:0] tx_udp_length;
-wire [15:0] tx_udp_checksum;
-wire [7:0] tx_udp_payload_axis_tdata;
-wire tx_udp_payload_axis_tvalid;
-wire tx_udp_payload_axis_tready;
-wire tx_udp_payload_axis_tlast;
-wire tx_udp_payload_axis_tuser;
-
-assign tx_udp_hdr_valid = 0;
-assign tx_udp_ip_dscp = 0;
-assign tx_udp_ip_ecn = 0;
-assign tx_udp_ip_ttl = 0;
-assign tx_udp_ip_source_ip = 0;
-assign tx_udp_ip_dest_ip = 0;
-assign tx_udp_source_port = 0;
-assign tx_udp_dest_port = 0;
-assign tx_udp_length = 0;
-assign tx_udp_checksum = 0;
-assign tx_udp_payload_axis_tdata = 0;
-assign tx_udp_payload_axis_tvalid = 0;
-assign tx_udp_payload_axis_tlast = 0;
-assign tx_udp_payload_axis_tuser = 0;
-
-assign rx_udp_hdr_ready = 0;
-assign rx_udp_payload_axis_tready = 0;
-
 assign phy_reset_n = rst_n;
 
 eth_mac_mii_fifo #(
