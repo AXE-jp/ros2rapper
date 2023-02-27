@@ -15,8 +15,6 @@ module verilog_ethernet (
     input  wire        phy_tx_clk,
     output wire [3:0]  phy_txd,
     output wire        phy_tx_en,
-    input  wire        phy_col,
-    input  wire        phy_crs,
     output wire        phy_reset_n,
 
     input  wire        tx_ip_hdr_valid,

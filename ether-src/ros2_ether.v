@@ -107,8 +107,6 @@ verilog_ethernet verilog_ethernet_inst (
     .phy_tx_clk(phy_tx_clk),
     .phy_txd(phy_txd),
     .phy_tx_en(phy_tx_en),
-    .phy_col(),
-    .phy_crs(),
     .phy_reset_n(phy_rst_n),
 
     .tx_ip_hdr_valid(tx_ip_hdr_valid),

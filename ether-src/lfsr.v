@@ -296,7 +296,7 @@ always @(*) begin
 
             // add XOR inputs at correct indicies
             for (j = 1; j < LFSR_WIDTH; j = j + 1) begin
-                if (LFSR_POLY & (1 << j)) begin
+                if ((LFSR_POLY & (1 << j)) != 0) begin
                     lfsr_mask_state[j] = lfsr_mask_state[j] ^ state_val;
                     lfsr_mask_data[j] = lfsr_mask_data[j] ^ data_val;
                 end
