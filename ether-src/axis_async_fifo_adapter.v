@@ -106,7 +106,6 @@ module axis_async_fifo_adapter #
      */
     input  wire                     m_clk,
     input  wire                     m_rst_n,
-    input  wire                     m_drop,
     output wire [M_DATA_WIDTH-1:0]  m_axis_tdata,
     output wire [M_KEEP_WIDTH-1:0]  m_axis_tkeep,
     output wire                     m_axis_tvalid,
@@ -343,7 +342,6 @@ fifo_inst (
     // AXI output
     .m_clk(m_clk),
     .m_rst_n(m_rst_n),
-    .m_drop(1'b0),
     .m_axis_tdata(post_fifo_axis_tdata),
     .m_axis_tkeep(post_fifo_axis_tkeep),
     .m_axis_tvalid(post_fifo_axis_tvalid),

@@ -101,7 +101,6 @@ module axis_async_fifo #
      */
     input  wire                   m_clk,
     input  wire                   m_rst_n,
-    input  wire                   m_drop,
     output wire [DATA_WIDTH-1:0]  m_axis_tdata,
     output wire [KEEP_WIDTH-1:0]  m_axis_tkeep,
     output wire                   m_axis_tvalid,
@@ -647,9 +646,7 @@ always @(posedge m_clk or negedge m_rst_n) begin
             // terminate frame
             m_drop_frame_reg <= 1'b1;
         end else if (rl_is_terminate_by_src_reset) begin
-            m_drop_frame_reg <= m_drop;
-        end else if (rl_is_output_ready_invalidate && m_drop) begin
-            m_drop_frame_reg <= 1'b1;
+            m_drop_frame_reg <= 1'b0;
         end
 
         // m_terminate_frame_reg

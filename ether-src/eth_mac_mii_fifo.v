@@ -256,7 +256,6 @@ tx_fifo (
     // AXI output
     .m_clk(tx_clk),
     .m_rst_n(~tx_rst),
-    .m_drop(1'b0),
     .m_axis_tdata(tx_fifo_axis_tdata),
     .m_axis_tkeep(),
     .m_axis_tvalid(tx_fifo_axis_tvalid),
@@ -297,7 +296,7 @@ rx_fifo (
     // AXI input
     .s_clk(rx_clk),
     .s_rst_n(~rx_rst),
-    .s_drop(1'b0),
+    .s_drop(~logic_enable),
     .s_axis_tdata(rx_fifo_axis_tdata),
     .s_axis_tkeep(1'b1),
     .s_axis_tvalid(rx_fifo_axis_tvalid),
@@ -309,7 +308,6 @@ rx_fifo (
     // AXI output
     .m_clk(logic_clk),
     .m_rst_n(logic_rst_n),
-    .m_drop(~logic_enable),
     .m_axis_tdata(rx_axis_tdata),
     .m_axis_tkeep(rx_axis_tkeep),
     .m_axis_tvalid(rx_axis_tvalid),
