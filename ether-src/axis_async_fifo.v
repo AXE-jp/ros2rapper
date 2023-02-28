@@ -511,9 +511,7 @@ always @(posedge m_clk or negedge m_rst_n) begin
         wr_ptr_update_sync2_reg <= 1'b0;
         wr_ptr_update_sync3_reg <= 1'b0;
     end else begin
-        if (FRAME_FIFO && !m_rst_sync3_reg) begin
-            wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
-        end else if (!FRAME_FIFO) begin
+        if (!FRAME_FIFO) begin
             wr_ptr_gray_sync1_reg <= wr_ptr_gray_reg;
         end else if (wr_ptr_update_sync2_reg ^ wr_ptr_update_sync3_reg) begin
             wr_ptr_gray_sync1_reg <= wr_ptr_sync_gray_reg;
@@ -522,6 +520,10 @@ always @(posedge m_clk or negedge m_rst_n) begin
         wr_ptr_update_sync1_reg <= wr_ptr_update_reg;
         wr_ptr_update_sync2_reg <= wr_ptr_update_sync1_reg;
         wr_ptr_update_sync3_reg <= wr_ptr_update_sync2_reg;
+
+        if (FRAME_FIFO && !m_rst_sync3_reg) begin
+            wr_ptr_gray_sync1_reg <= {ADDR_WIDTH+1{1'b0}};
+        end
     end
 end
 

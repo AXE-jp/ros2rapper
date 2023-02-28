@@ -420,6 +420,9 @@ always @(posedge clk or negedge rst_n) begin
         m_axis_ptp_ts_tag_reg <= 0;
         m_axis_ptp_ts_valid_reg <= 1'b0;
 
+        gmii_tx_en_reg <= 1'b0;
+        gmii_tx_er_reg <= 1'b0;
+
         start_packet_reg <= 1'b0;
         error_underflow_reg <= 1'b0;
 
