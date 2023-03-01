@@ -338,10 +338,10 @@ always @* begin
                 frame_ptr_next = frame_ptr_reg + 16'd1;
 
                 case (frame_ptr_reg)
-                    2'd0: gmii_txd_next = ~crc_state[7:0];
-                    2'd1: gmii_txd_next = ~crc_state[15:8];
-                    2'd2: gmii_txd_next = ~crc_state[23:16];
-                    2'd3: gmii_txd_next = ~crc_state[31:24];
+                    0: gmii_txd_next = ~crc_state[7:0];
+                    1: gmii_txd_next = ~crc_state[15:8];
+                    2: gmii_txd_next = ~crc_state[23:16];
+                    3: gmii_txd_next = ~crc_state[31:24];
                 endcase
                 gmii_tx_en_next = 1'b1;
 

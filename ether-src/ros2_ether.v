@@ -198,9 +198,10 @@ rx_fifo (
 );
 
 // arbiter for sharing app_data between CPU and ROS2rapper IP
-localparam APP_DATA_GRANT_NONE = 2'b00;
-localparam APP_DATA_GRANT_IP   = 2'b01;
-localparam APP_DATA_GRANT_CPU  = 2'b10;
+localparam [1:0]
+    APP_DATA_GRANT_NONE = 2'b00,
+    APP_DATA_GRANT_IP   = 2'b01,
+    APP_DATA_GRANT_CPU  = 2'b10;
 
 reg [1:0] r_ros2_app_data_grant;
 wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
