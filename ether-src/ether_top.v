@@ -211,8 +211,7 @@ wire [7:0] payloadsmem_wdata, payloadsmem_rdata;
 
 ram_1rw #(
     .DEPTH(`PAYLOADSMEM_DEPTH),
-    .DWIDTH(8),
-    .USE_SRAM_IP(0)
+    .DWIDTH(8)
 )
 payloadsmem (
     .i_clk(clk_int),
