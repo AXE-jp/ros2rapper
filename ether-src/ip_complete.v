@@ -33,10 +33,7 @@ THE SOFTWARE.
  * IPv4 and ARP block, ethernet frame interface
  */
 module ip_complete #(
-    parameter ARP_CACHE_ADDR_WIDTH = 9,
-    parameter ARP_REQUEST_RETRY_COUNT = 4,
-    parameter ARP_REQUEST_RETRY_INTERVAL = 125000000*2,
-    parameter ARP_REQUEST_TIMEOUT = 125000000*30
+    parameter ARP_CACHE_ADDR_WIDTH = 9
 )
 (
     input  wire        clk,
@@ -134,7 +131,14 @@ module ip_complete #(
     input  wire [31:0] local_ip,
     input  wire [31:0] gateway_ip,
     input  wire [31:0] subnet_mask,
-    input  wire        clear_arp_cache
+    input  wire        clear_arp_cache,
+
+    /*
+     * ARP Configuration
+     */
+    input  wire [5:0] arp_req_retry_count,
+    input  wire [35:0] arp_req_retry_interval,
+    input  wire [35:0] arp_req_timeout
 );
 
 /*
@@ -394,10 +398,7 @@ ip_inst (
  * ARP module
  */
 arp #(
-    .CACHE_ADDR_WIDTH(ARP_CACHE_ADDR_WIDTH),
-    .REQUEST_RETRY_COUNT(ARP_REQUEST_RETRY_COUNT),
-    .REQUEST_RETRY_INTERVAL(ARP_REQUEST_RETRY_INTERVAL),
-    .REQUEST_TIMEOUT(ARP_REQUEST_TIMEOUT)
+    .CACHE_ADDR_WIDTH(ARP_CACHE_ADDR_WIDTH)
 )
 arp_inst (
     .clk(clk),
@@ -439,7 +440,10 @@ arp_inst (
     .local_ip(local_ip),
     .gateway_ip(gateway_ip),
     .subnet_mask(subnet_mask),
-    .clear_cache(clear_arp_cache)
+    .clear_cache(clear_arp_cache),
+    .arp_req_retry_count(arp_req_retry_count),
+    .arp_req_retry_interval(arp_req_retry_interval),
+    .arp_req_timeout(arp_req_timeout)
 );
 
 endmodule

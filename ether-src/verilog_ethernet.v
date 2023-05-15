@@ -56,7 +56,11 @@ module verilog_ethernet (
     input  wire [47:0] local_mac,
     input  wire [31:0] local_ip,
     input  wire [31:0] gateway_ip,
-    input  wire [31:0] subnet_mask
+    input  wire [31:0] subnet_mask,
+
+    input  wire [5:0] arp_req_retry_count,
+    input  wire [35:0] arp_req_retry_interval,
+    input  wire [35:0] arp_req_timeout
 );
 
 wire [7:0] rx_axis_tdata;
@@ -201,10 +205,7 @@ eth_axis_tx_inst (
 );
 
 ip_complete #(
-    .ARP_CACHE_ADDR_WIDTH(`ARP_CACHE_ADDR_WIDTH),
-    .ARP_REQUEST_RETRY_COUNT(`ARP_REQUEST_RETRY_COUNT),
-    .ARP_REQUEST_RETRY_INTERVAL(`ARP_REQUEST_RETRY_INTERVAL),
-    .ARP_REQUEST_TIMEOUT(`ARP_REQUEST_TIMEOUT)
+    .ARP_CACHE_ADDR_WIDTH(`ARP_CACHE_ADDR_WIDTH)
 )
 ip_complete_inst (
     .clk(clk),
@@ -284,7 +285,11 @@ ip_complete_inst (
     .local_ip(local_ip),
     .gateway_ip(gateway_ip),
     .subnet_mask(subnet_mask),
-    .clear_arp_cache(1'b0)
+    .clear_arp_cache(1'b0),
+
+    .arp_req_retry_count(arp_req_retry_count),
+    .arp_req_retry_interval(arp_req_retry_interval),
+    .arp_req_timeout(arp_req_timeout)
 );
 
 endmodule

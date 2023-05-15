@@ -42,13 +42,7 @@ module arp #
     // tkeep signal width (words per cycle)
     parameter KEEP_WIDTH = (DATA_WIDTH/8),
     // Log2 of ARP cache size
-    parameter CACHE_ADDR_WIDTH = 9,
-    // ARP request retry count
-    parameter REQUEST_RETRY_COUNT = 4,
-    // ARP request retry interval (in cycles)
-    parameter REQUEST_RETRY_INTERVAL = 125000000*2,
-    // ARP request timeout (in cycles)
-    parameter REQUEST_TIMEOUT = 125000000*30
+    parameter CACHE_ADDR_WIDTH = 9
 )
 (
     input  wire                   clk,
@@ -102,7 +96,10 @@ module arp #
     input  wire [31:0]            local_ip,
     input  wire [31:0]            gateway_ip,
     input  wire [31:0]            subnet_mask,
-    input  wire                   clear_cache
+    input  wire                   clear_cache,
+    input  wire [5:0]             arp_req_retry_count,
+    input  wire [35:0]            arp_req_retry_interval,
+    input  wire [35:0]            arp_req_timeout
 );
 
 localparam [15:0]
@@ -350,9 +347,9 @@ always @* begin
                 outgoing_arp_tpa_next = arp_request_ip_reg;
                 arp_request_retry_cnt_next = arp_request_retry_cnt_reg - 1;
                 if (arp_request_retry_cnt_reg > 1) begin
-                    arp_request_timer_next = REQUEST_RETRY_INTERVAL;
+                    arp_request_timer_next = arp_req_retry_interval;
                 end else begin
-                    arp_request_timer_next = REQUEST_TIMEOUT;
+                    arp_request_timer_next = arp_req_timeout;
                 end
             end else begin
                 // out of retries
@@ -375,8 +372,8 @@ always @* begin
                     outgoing_arp_oper_next = ARP_OPER_ARP_REQUEST;
                     outgoing_arp_tha_next = 48'h000000000000;
                     outgoing_arp_tpa_next = arp_request_ip_reg;
-                    arp_request_retry_cnt_next = REQUEST_RETRY_COUNT-1;
-                    arp_request_timer_next = REQUEST_RETRY_INTERVAL;
+                    arp_request_retry_cnt_next = arp_req_retry_count-1;
+                    arp_request_timer_next = arp_req_retry_interval;
                 end else begin
                     cache_query_request_valid_next = 1'b0;
                     arp_response_valid_next = 1'b1;

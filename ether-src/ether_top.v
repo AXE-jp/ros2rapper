@@ -22,6 +22,10 @@ module ether_top (
     output wire       led_b
 );
 
+localparam ARP_REQUEST_RETRY_COUNT = 4;
+localparam ARP_REQUEST_RETRY_INTERVAL = (125000000*2);
+localparam ARP_REQUEST_TIMEOUT = (125000000*30);
+
 wire clk_int;
 wire clk_25mhz_int;
 wire rst_n_int;
@@ -272,7 +276,10 @@ ros2_ether ros2 (
     .payloadsmem_ce(payloadsmem_cs),
     .payloadsmem_we(payloadsmem_we),
     .payloadsmem_wdata(payloadsmem_wdata),
-    .payloadsmem_rdata(payloadsmem_rdata)
+    .payloadsmem_rdata(payloadsmem_rdata),
+    .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
+    .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
+    .arp_req_timeout(ARP_REQUEST_TIMEOUT)
 );
 
 endmodule

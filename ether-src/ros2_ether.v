@@ -58,7 +58,11 @@ module ros2_ether (
     output wire payloadsmem_ce,
     output wire payloadsmem_we,
     output wire [7:0] payloadsmem_wdata,
-    input  wire [7:0] payloadsmem_rdata
+    input  wire [7:0] payloadsmem_rdata,
+
+    input  wire [5:0] arp_req_retry_count,
+    input  wire [35:0] arp_req_retry_interval,
+    input  wire [35:0] arp_req_timeout
 );
 
 wire tx_ip_hdr_valid;
@@ -148,7 +152,11 @@ verilog_ethernet verilog_ethernet_inst (
     .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
     .local_ip({32{ether_en}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
     .gateway_ip({32{ether_en}} & {gateway_ip_addr[7:0], gateway_ip_addr[15:8], gateway_ip_addr[23:16], gateway_ip_addr[31:24]}),
-    .subnet_mask({32{ether_en}} & {subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]})
+    .subnet_mask({32{ether_en}} & {subnet_mask[7:0], subnet_mask[15:8], subnet_mask[23:16], subnet_mask[31:24]}),
+
+    .arp_req_retry_count(arp_req_retry_count),
+    .arp_req_retry_interval(arp_req_retry_interval),
+    .arp_req_timeout(arp_req_timeout)
 );
 
 wire tx_fifo_wr_en;
