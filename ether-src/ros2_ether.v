@@ -177,6 +177,7 @@ tx_fifo (
     .wr_en(tx_fifo_wr_en),
     .din(tx_fifo_din),
     .full(tx_fifo_full),
+    .almost_full(),
     .rd_en(tx_fifo_rd_en),
     .dout(tx_fifo_dout),
     .empty(tx_fifo_empty)
@@ -200,6 +201,7 @@ rx_fifo (
     .wr_en(rx_fifo_wr_en),
     .din(rx_fifo_din),
     .full(rx_fifo_full),
+    .almost_full(),
     .rd_en(rx_fifo_rd_en),
     .dout(rx_fifo_dout),
     .empty(rx_fifo_empty)
