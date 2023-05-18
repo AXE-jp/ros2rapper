@@ -141,12 +141,12 @@ reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_reg, segment_count_next;
 
 reg last_segment;
 
-reg [DATA_WIDTH-1:0] temp_tdata_reg = {DATA_WIDTH{1'b0}}, temp_tdata_next;
-reg [KEEP_WIDTH-1:0] temp_tkeep_reg = {KEEP_WIDTH{1'b0}}, temp_tkeep_next;
-reg                  temp_tlast_reg = 1'b0, temp_tlast_next;
-reg [ID_WIDTH-1:0]   temp_tid_reg   = {ID_WIDTH{1'b0}}, temp_tid_next;
-reg [DEST_WIDTH-1:0] temp_tdest_reg = {DEST_WIDTH{1'b0}}, temp_tdest_next;
-reg [USER_WIDTH-1:0] temp_tuser_reg = {USER_WIDTH{1'b0}}, temp_tuser_next;
+reg [DATA_WIDTH-1:0] temp_tdata_reg, temp_tdata_next;
+reg [KEEP_WIDTH-1:0] temp_tkeep_reg, temp_tkeep_next;
+reg                  temp_tlast_reg, temp_tlast_next;
+reg [ID_WIDTH-1:0]   temp_tid_reg, temp_tid_next;
+reg [DEST_WIDTH-1:0] temp_tdest_reg, temp_tdest_next;
+reg [USER_WIDTH-1:0] temp_tuser_reg, temp_tuser_next;
 
 // internal datapath
 reg  [M_DATA_WIDTH-1:0] m_axis_tdata_int;

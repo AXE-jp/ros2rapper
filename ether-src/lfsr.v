@@ -302,8 +302,6 @@ always @(*) begin
                 end
             end
         end
-    end else begin
-        $error("Error: unknown configuration setting!");
     end
 
     // reverse bits if selected
