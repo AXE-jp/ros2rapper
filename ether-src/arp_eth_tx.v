@@ -83,11 +83,11 @@ module arp_eth_tx #
     output wire                   busy
 );
 
-parameter CYCLE_COUNT = (28+KEEP_WIDTH-1)/KEEP_WIDTH;
+localparam CYCLE_COUNT = (28+KEEP_WIDTH-1)/KEEP_WIDTH;
 
-parameter PTR_WIDTH = $clog2(CYCLE_COUNT);
+localparam PTR_WIDTH = $clog2(CYCLE_COUNT);
 
-parameter OFFSET = 28 % KEEP_WIDTH;
+localparam OFFSET = 28 % KEEP_WIDTH;
 
 // bus width assertions
 `ifdef TARGET_SIM
