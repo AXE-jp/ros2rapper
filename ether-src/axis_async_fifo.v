@@ -324,6 +324,8 @@ always @(posedge m_clk or negedge m_rst_n) begin
     end
 end
 
+integer i;
+
 // Write logic
 `ifdef TARGET_XILINX
 always @(posedge s_clk) begin // Vivado could not infer BRAM if async reset is used.
@@ -331,6 +333,9 @@ always @(posedge s_clk) begin // Vivado could not infer BRAM if async reset is u
 always @(posedge s_clk or negedge s_rst_n) begin
 `endif
     if (!s_rst_n) begin
+        for (i=0; i<(2**ADDR_WIDTH); i=i+1)
+            mem[i] <= 0;
+
         wr_ptr_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_cur_reg <= {ADDR_WIDTH+1{1'b0}};
         wr_ptr_gray_reg <= {ADDR_WIDTH+1{1'b0}};
