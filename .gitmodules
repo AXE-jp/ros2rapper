@@ -1,6 +1,6 @@
 [submodule "ros2rapper"]
 	path = ros2rapper
-	url = git@10.1.131.66:laxer/ros2rapper.git
+	url = ../laxer/ros2rapper.git
 [submodule "ip_tx_rx"]
 	path = ip_tx_rx
-	url = git@10.1.131.66:laxer/ip_tx_rx.git
+	url = ../laxer/ip_tx_rx.git
