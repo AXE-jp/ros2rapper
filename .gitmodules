@@ -1,6 +1,6 @@
 [submodule "ros2rapper"]
 	path = ros2rapper
-	url = ../ros2rapper
+	url = ../laxer/ros2rapper
 [submodule "ip_tx_rx"]
 	path = ip_tx_rx
-	url = ../ip_tx_rx
+	url = ../laxer/ip_tx_rx
