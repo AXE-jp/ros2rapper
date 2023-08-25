@@ -1,6 +1,6 @@
 SRCDIR = gensrc
 
-.PHONY: clean cleanall cwb vitis vivado-create-proj
+.PHONY: clean cleanall cwb vitis
 
 cwb:
 	$(MAKE) -C ros2rapper -f Makefile.cwb synth
@@ -19,13 +19,9 @@ vitis:
 	./fix-hls-code.rb
 	find ${SRCDIR} -name "*.v" | xargs sed -i "/\`timescale .*/d"
 
-vivado-create-proj: vitis
-	vivado -mode batch -source create_project.tcl
-
 clean:
 	rm -rf ${SRCDIR}
-	rm -f *.jou *.log *.xpr
-	rm -rf project.hw project.cache project.runs project.sim project.ip_user_files
+	rm -f *.jou *.log
 
 cleanall: clean
 	$(MAKE) -C ros2rapper -f Makefile.vitis clean
