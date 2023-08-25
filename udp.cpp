@@ -191,8 +191,8 @@ void udp_out(const uint8_t src_addr[4],
 	uint32_t sum = 0;
 	uint16_t sum_n;
 
-	uint8_t pseudo_hdr[PSEUDO_HDR_SIZE]/* Cyber array=REG */;
-	uint8_t udp_hdr[UDP_HDR_SIZE]/* Cyber array=REG */;
+	uint8_t pseudo_hdr[PSEUDO_HDR_SIZE]/* Cyber array=EXPAND */;
+	uint8_t udp_hdr[UDP_HDR_SIZE]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=pseudo_hdr complete dim=0
 #pragma HLS array_partition variable=udp_hdr complete dim=0
 
@@ -288,7 +288,7 @@ void udp_set_checksum(uint8_t buf[])
 	uint32_t sum = 0;
 	uint16_t sum_n;
 
-	uint8_t pseudo_hdr[PSEUDO_HDR_SIZE]/* Cyber array=REG */;
+	uint8_t pseudo_hdr[PSEUDO_HDR_SIZE]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=pseudo_hdr complete dim=0
 
 	pseudo_hdr[0] = buf[IP_HDR_OFFSET_SADDR + 0];

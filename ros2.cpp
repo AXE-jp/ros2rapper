@@ -34,7 +34,7 @@ class tx_buf {
 public:
 	uint16_t head;
 	uint16_t len;
-	uint8_t buf[TX_BUF_LEN]/* Cyber array=REG */;
+	uint8_t buf[TX_BUF_LEN]/* Cyber array=EXPAND,array_index=const */;
 
 	/* Cyber func=inline */
 	uint8_t deque()
@@ -167,15 +167,15 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    conf.topic_type_name_len);
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    const uint8_t default_port[2],
 			    tx_buf &tx_buf,
 			    const config_t &conf)
 {
-	static const uint8_t dst_addr[4]/* Cyber array=REG */ =
+	static const uint8_t dst_addr[4]/* Cyber array=EXPAND */ =
 		IP_MULTICAST_ADDR;
-	uint8_t dst_port[2]/* Cyber array=REG */;
+	uint8_t dst_port[2]/* Cyber array=EXPAND */;
 	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(conf.port_num_seed);
 	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(conf.port_num_seed);
 #pragma HLS array_partition variable=dst_addr complete dim=0
@@ -205,7 +205,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 	tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    const uint8_t dst_addr[4],
 			    const uint8_t dst_port[2],
@@ -244,7 +244,7 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 	tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 			       const uint8_t dst_addr[4],
 			       const uint8_t dst_port[2],
@@ -284,7 +284,7 @@ static void sedp_heartbeat_out(const uint8_t writer_entity_id[4],
 	tx_buf.len = SEDP_HEARTBEAT_IP_PKT_LEN;
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 			     const uint8_t dst_addr[4],
 			     const uint8_t dst_port[2],
@@ -326,7 +326,7 @@ static void sedp_acknack_out(const uint8_t writer_entity_id[4],
 	tx_buf.len = SEDP_ACKNACK_IP_PKT_LEN;
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t dst_addr[4],
 			   const uint8_t dst_port[2],
@@ -366,7 +366,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 	tx_buf.len = APP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=process */
+/* Cyber func=inline */
 static void rawudp_out(const uint8_t dst_addr[4],
 			   const uint8_t dst_port[2],
 			   tx_buf &tx_buf,
@@ -525,17 +525,19 @@ static void rawudp_out(const uint8_t dst_addr[4],
 	} while (0)
 
 #define REQ_APP_DATA \
+	/* Cyber scheduling_block = non-transparent */ \
 	do { \
-		*app_data_req = 0/*write dummy value to assert ap_vld*/; \
-		ap_wait(); \
-		ap_wait(); \
+		*app_data_req = 0 /* write dummy value to assert valid signal */; \
+		WAIT_CLOCK; \
+		WAIT_CLOCK; \
 		grant = *app_data_grant; \
 	} while (0)
 
 #define REL_APP_DATA \
+	/* Cyber scheduling_block = non-transparent */ \
 	do { \
-		*app_data_rel = 0/*write dummy value to assert ap_vld*/; \
-		ap_wait(); \
+		*app_data_rel = 0 /* write dummy value to assert valid signal */; \
+		WAIT_CLOCK; \
 	} while (0)
 
 #define APP_WRITER_OUT(id)						\
@@ -588,44 +590,44 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     volatile uint8_t *rawudp_txbuf_grant)
 {
 #pragma HLS inline
-	static const uint8_t pub_writer_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t pub_writer_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
-	static const uint8_t sub_writer_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t sub_writer_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_SUBSCRIPTIONS_WRITER;
-	static const uint8_t app_writer_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t app_writer_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_APP_WRITER;
 #pragma HLS array_partition variable=pub_writer_entity_id complete dim=0
 #pragma HLS array_partition variable=sub_writer_entity_id complete dim=0
 #pragma HLS array_partition variable=app_writer_entity_id complete dim=0
 
-	static const uint8_t pub_reader_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t pub_reader_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_PUBLICATIONS_READER;
-	static const uint8_t sub_reader_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t sub_reader_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable=pub_reader_entity_id complete dim=0
 #pragma HLS array_partition variable=sub_reader_entity_id complete dim=0
 
-	uint8_t metatraffic_port[2]/* Cyber array=REG */;
+	uint8_t metatraffic_port[2]/* Cyber array=EXPAND */;
 	metatraffic_port[0] = DISCOVERY_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 	metatraffic_port[1] = DISCOVERY_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 
-	uint8_t default_port[2]/* Cyber array=REG */;
+	uint8_t default_port[2]/* Cyber array=EXPAND */;
 	default_port[0] = USER_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 	default_port[1] = USER_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
 
 #pragma HLS array_partition variable=metatraffic_port complete dim=0
 #pragma HLS array_partition variable=default_port complete dim=0
 
-	static const uint8_t bitmap[4]/* Cyber array=REG */ =
+	static const uint8_t bitmap[4]/* Cyber array=EXPAND */ =
 		{0xff, 0xff, 0xff, 0xff};
 #pragma HLS array_partition variable=bitmap complete dim=0
 
 	static tx_buf tx_buf;
 
-	static uint32_t sedp_pub_heartbeat_cnt[SEDP_READER_MAX];
-	static uint32_t sedp_sub_heartbeat_cnt[SEDP_READER_MAX];
-	static uint32_t sedp_pub_acknack_cnt[SEDP_READER_MAX];
-	static uint32_t sedp_sub_acknack_cnt[SEDP_READER_MAX];
+	static uint32_t sedp_pub_heartbeat_cnt[SEDP_READER_MAX]/* Cyber array=EXPAND */;
+	static uint32_t sedp_sub_heartbeat_cnt[SEDP_READER_MAX]/* Cyber array=EXPAND */;
+	static uint32_t sedp_pub_acknack_cnt[SEDP_READER_MAX]/* Cyber array=EXPAND */;
+	static uint32_t sedp_sub_acknack_cnt[SEDP_READER_MAX]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=sedp_pub_heartbeat_cnt complete dim=0
 #pragma HLS array_partition variable=sedp_sub_heartbeat_cnt complete dim=0
 #pragma HLS array_partition variable=sedp_pub_acknack_cnt complete dim=0
@@ -638,9 +640,9 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS stream variable=s depth=2
 #endif // !USE_FIFOIF_ETHERNET
 
-	static uint8_t rawudp_tx_dst_addr[4]/* Cyber array=REG */;
-	static uint8_t rawudp_tx_dst_port[2]/* Cyber array=REG */;
-	static uint8_t rawudp_tx_src_port[2]/* Cyber array=REG */;
+	static uint8_t rawudp_tx_dst_addr[4]/* Cyber array=EXPAND */;
+	static uint8_t rawudp_tx_dst_port[2]/* Cyber array=EXPAND */;
+	static uint8_t rawudp_tx_src_port[2]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=rawudp_tx_dst_addr complete dim=0
 #pragma HLS array_partition variable=rawudp_tx_dst_port complete dim=0
 #pragma HLS array_partition variable=rawudp_tx_src_port complete dim=0
@@ -776,20 +778,20 @@ static void ros2_out(hls_stream<uint8_t> &out,
 	}
 }
 
-/* Cyber func=process_pipeline */
+/* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
-	  hls_uint<1> &enable,
-	  const config_t &conf,
-	  volatile uint8_t *app_data_req,
-	  volatile uint8_t *app_data_rel,
-	  volatile uint8_t *app_data_grant,
-	  volatile uint8_t *udp_rxbuf_rel,
-	  volatile uint8_t *udp_rxbuf_grant,
-	  volatile uint8_t *udp_txbuf_rel,
-	  volatile uint8_t *udp_txbuf_grant)
+	  hls_uint<1> &enable/* Cyber port_mode=shared */,
+	  const config_t &conf/* Cyber port_mode=shared */,
+	  volatile uint8_t *app_data_req/* Cyber port_mode=shared */,
+	  volatile uint8_t *app_data_rel/* Cyber port_mode=shared */,
+	  volatile uint8_t *app_data_grant/* Cyber port_mode=shared */,
+	  volatile uint8_t *udp_rxbuf_rel/* Cyber port_mode=shared */,
+	  volatile uint8_t *udp_rxbuf_grant/* Cyber port_mode=shared */,
+	  volatile uint8_t *udp_txbuf_rel/* Cyber port_mode=shared */,
+	  volatile uint8_t *udp_txbuf_grant/* Cyber port_mode=shared */)
 {
 #pragma HLS interface ap_fifo port=in
 #pragma HLS interface ap_fifo port=out
@@ -844,4 +846,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 app_data_grant,
 		 udp_txbuf_rel,
 		 udp_txbuf_grant);
+
 }
+

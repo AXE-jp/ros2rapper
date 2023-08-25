@@ -30,19 +30,19 @@
 #define MAX_APP_DATA_LEN         64
 
 typedef struct {
-		uint8_t ip_addr[4];
-		uint8_t node_name[MAX_NODE_NAME_LEN];
+		uint8_t ip_addr[4]/* Cyber array=EXPAND */;
+		uint8_t node_name[MAX_NODE_NAME_LEN]/* Cyber array=EXPAND */;
 		uint8_t node_name_len;
-		uint8_t node_udp_port[2];
-		uint8_t cpu_udp_port[2];
+		uint8_t node_udp_port[2]/* Cyber array=EXPAND */;
+		uint8_t cpu_udp_port[2]/* Cyber array=EXPAND */;
 		uint16_t port_num_seed;
 		uint32_t tx_period;
-		uint8_t guid_prefix[12];
-		uint8_t topic_name[MAX_TOPIC_NAME_LEN];
+		uint8_t guid_prefix[12]/* Cyber array=EXPAND, array_index=const */;
+		uint8_t topic_name[MAX_TOPIC_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
 		uint8_t topic_name_len;
-		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN];
+		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
 		uint8_t topic_type_name_len;
-		uint8_t app_data[MAX_APP_DATA_LEN];
+		uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, array_index=const */;
 		uint8_t app_data_len;
 } config_t;
 

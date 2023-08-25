@@ -70,7 +70,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 uint8_t type_name_len)
 {
 #pragma HLS inline
-	static const uint8_t sub_reader_id[4]/* Cyber array=REG */ =
+	static const uint8_t sub_reader_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable=sub_reader_id complete dim=0
 
@@ -244,8 +244,14 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 				}
 			} else if (offset < 20) {
 				; // do nothing
-			} else if (offset < 24) {
-				reader.ip_addr[offset-20] = data;
+			} else if (offset == 20) {
+				reader.ip_addr[0] = data;
+			} else if (offset == 21) {
+				reader.ip_addr[1] = data;
+			} else if (offset == 22) {
+				reader.ip_addr[2] = data;
+			} else if (offset == 23) {
+				reader.ip_addr[3] = data;
 			}
 			break;
 		case PID_TOPIC_NAME:
@@ -398,7 +404,7 @@ void sedp_writer(const uint8_t writer_guid_prefix[12],
 	static const uint16_t octets_to_next_header =
 		SEDP_WRITER_OCTETS_TO_NEXT_HEADER;
 
-	static const uint8_t participant_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t participant_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_PARTICIPANT;
 #pragma HLS array_partition variable=participant_entity_id complete dim=0
 

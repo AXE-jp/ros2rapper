@@ -159,7 +159,8 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
   }
   printf("%s: ===============\n", __func__);
 #endif
-
+	
+	/* Cyber unroll_times=all */
   for (int i=0; i<MAX_PENDINGS; i++) {
 #pragma HLS unroll
     if (pendings[i].is_used && pendings[i].id == id) {
@@ -168,7 +169,8 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
       printf("%s: pending %d matched\n", __func__, found);
 #endif
       break;
-    } else if (!pendings[i].is_used) {
+    }
+		if (!pendings[i].is_used) {
       unused = i;
     }
   }
@@ -185,6 +187,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
 void tick_pendings(pending_info *pendings)
 {
 #pragma HLS inline
+	/* Cyber unroll_times=all */
   for (int i=0; i<MAX_PENDINGS; i++) {
 #pragma HLS unroll
     if (pendings[i].is_used) {
@@ -297,12 +300,12 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
    * PAYLOAD_TO_MEMORY / len: payload length, offset: from a fragment offset
    * PAYLOAD_FROM_MEMORY / len: not used, offset: from the beginning of a payload buffer
    */
-	static uint16_t sum;
+  static uint16_t sum;
   static uint16_t id;
   static uint16_t flags_and_offset;
   static bool has_more_fragments;
   static uint16_t fragment_offset;
-  static uint8_t src_addr[4];
+  static uint8_t src_addr[4]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=src_addr complete dim=0
 
 #define reset_state() do{ \
@@ -315,9 +318,9 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     pending_index = INVALID_PENDING_INDEX; \
   }while(0)
 
-  static pending_info pendings[MAX_PENDINGS];
+  static pending_info pendings[MAX_PENDINGS]/* Cyber array=REG */;
 #pragma HLS array_partition variable=pendings complete dim=0
-  static uint8_t payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS];
+  static uint8_t payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS]/* Cyber array=RAM, port_mode=shared */;
 #pragma HLS reset variable=payloads off
   static pending_index_t pending_index = INVALID_PENDING_INDEX;
 
@@ -633,7 +636,7 @@ void ip_out(const uint8_t src_addr[4],
 	uint32_t sum = 0;
 	uint16_t sum_n;
 
-	uint8_t ip_hdr[IP_HDR_SIZE]/* Cyber array=REG */;
+	uint8_t ip_hdr[IP_HDR_SIZE]/* Cyber array=EXPAND */;
 #pragma HLS array_partition variable=ip_hdr complete dim=0
 
 	ip_hdr[0] = IP_HDR_VERSION_IHL;

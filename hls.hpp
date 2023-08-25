@@ -20,8 +20,8 @@
 #ifndef HLS_HPP
 #define HLS_HPP
 
-#define VITIS_HLS
-// #define CWB_HLS
+// #define VITIS_HLS
+#define CWB_HLS
 
 #ifdef VITIS_HLS
 #include <gmp.h>
@@ -34,6 +34,7 @@ template <int W>
 using hls_int = ap_int<W>;
 template <int W>
 using hls_uint = ap_uint<W>;
+#define WAIT_CLOCK ap_wait()
 #endif // VITIS_HLS
 
 #ifdef CWB_HLS
@@ -48,6 +49,8 @@ template <int W>
 using hls_int = sc_int<W>;
 template <int W>
 using hls_uint = sc_uint<W>;
+#define __SYNTHESIS__
+#define WAIT_CLOCK cwb::cwb_clk()
 #endif // CWB_HLS
 
 #endif // !HLS_HPP

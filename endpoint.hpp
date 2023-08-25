@@ -28,9 +28,9 @@
 typedef hls_uint<3> sedp_reader_id_t;
 
 struct sedp_endpoint {
-	uint8_t ip_addr[4]/* Cyber array=REG */;
-	uint8_t udp_port[2]/* Cyber array=REG */;
-	uint8_t guid_prefix[12]/* Cyber array=REG */;
+	uint8_t ip_addr[4]/* Cyber array=EXPAND, array_index=const */;
+	uint8_t udp_port[2]/* Cyber array=EXPAND, array_index=const */;
+	uint8_t guid_prefix[12]/* Cyber array=EXPAND, array_index=const */;
 };
 
 #define APP_READER_MAX	4
@@ -38,10 +38,10 @@ struct sedp_endpoint {
 typedef hls_uint<3> app_reader_id_t;
 
 struct app_endpoint {
-	uint8_t ip_addr[4]/* Cyber array=REG */;
-	uint8_t udp_port[2]/* Cyber array=REG */;
-	uint8_t guid_prefix[12]/* Cyber array=REG */;
-	uint8_t entity_id[4]/* Cyber array=REG */;
+	uint8_t ip_addr[4]/* Cyber array=EXPAND, array_index=const */;
+	uint8_t udp_port[2]/* Cyber array=EXPAND, array_index=const */;
+	uint8_t guid_prefix[12]/* Cyber array=EXPAND, array_index=const */;
+	uint8_t entity_id[4]/* Cyber array=EXPAND, array_index=const */;
 };
 
 #endif // !ENDPOINT_HPP

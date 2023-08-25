@@ -48,7 +48,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in,
 		 uint16_t port_num_seed)
 {
 #pragma HLS inline
-	static const uint8_t par_reader_id[4]/* Cyber array=REG */ =
+	static const uint8_t par_reader_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_PARTICIPANT_READER;
 #pragma HLS array_partition variable=par_reader_id complete dim=0
 
@@ -217,8 +217,14 @@ void spdp_reader(hls_stream<hls_uint<9>> &in,
 				}
 			} else if (offset < 20) {
 				; // do nothing
-			} else if (offset < 24) {
-				reader.ip_addr[offset-20] = data;
+			} else if (offset == 20) {
+				reader.ip_addr[0] = data;
+			} else if (offset == 21) {
+				reader.ip_addr[1] = data;
+			} else if (offset == 22) {
+				reader.ip_addr[2] = data;
+			} else if (offset == 23) {
+				reader.ip_addr[3] = data;
 			}
 		}
 		offset++;
@@ -283,11 +289,11 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 	static const uint16_t octets_to_next_header =
 		SPDP_WRITER_OCTETS_TO_NEXT_HEADER;
 
-	static const uint8_t writer_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t writer_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_PARTICIPANT_WRITER;
-	static const uint8_t reader_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t reader_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_PARTICIPANT_READER;
-	static const uint8_t participant_entity_id[4]/* Cyber array=REG */ =
+	static const uint8_t participant_entity_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_PARTICIPANT;
 #pragma HLS array_partition variable=writer_entity_id complete dim=0
 #pragma HLS array_partition variable=reader_entity_id complete dim=0

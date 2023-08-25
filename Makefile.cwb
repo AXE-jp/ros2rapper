@@ -1,0 +1,22 @@
+SRCS = app.cpp checksum.cpp ip.cpp ros2.cpp rtps.cpp sedp.cpp slip.cpp spdp.cpp udp.cpp
+HDRS = app.hpp checksum.hpp common.hpp duration.hpp endpoint.hpp hls.hpp ip.hpp ros2.hpp rtps.hpp sedp.hpp slip.hpp spdp.hpp timestamp.hpp udp.hpp
+
+.PHONY: synth clean
+
+CPARS_FLAGS =
+BDLTRAN_FLAGS = -c1000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zdup_reset=YES -Zfolding_sharing=inter_stage -OW-B -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -o-P
+VGEN_FLAGS =
+
+synth: ros2.v
+
+ros2.IFF: $(SRCS) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS)
+
+ros2_E.IFF: ros2.IFF
+	bdltran $(BDLTRAN_FLAGS) $<
+
+ros2.v: ros2_E.IFF
+	veriloggen $(VGEN_FLAGS) -o $@ $<
+
+clean:
+	rm -f *.CPINFO *.cperr *.xml *.FCNT *.FLIB *.MCNT *.MLIB *.CSV *.LMSPEC *.LOG.gz *.QOR *.QOR.HTML *.SR *.SUMM *.VSG *.err *.tips *.v *.LSInfo *.scuba *.vgerr *.warn *.IFF
