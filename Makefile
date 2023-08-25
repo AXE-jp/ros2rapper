@@ -1,15 +1,18 @@
 SRCDIR = gensrc
 
-.PHONY: all clean cleanall synth-ros2rapper synth copy-src vivado-create-proj
+.PHONY: all clean cleanall cwb vitis vivado-create-proj
 
-all: copy-src
+all: vitis
 
-synth: synth-ros2rapper
+cwb: synth
+	$(MAKE) -C ros2rapper -f Makefile.cwb synth
+	-rm -rf ${SRCDIR}
+	mkdir -p ${SRCDIR}
+	-cp ether-src/*.v ${SRCDIR}
+	-cp ros2rapper/ros2.v ${SRCDIR}
 
-synth-ros2rapper:
-	$(MAKE) -C ros2rapper synth
-
-copy-src: synth
+vitis: synth
+	$(MAKE) -C ros2rapper -f Makefile.vitis synth
 	-rm -rf ${SRCDIR}
 	mkdir -p ${SRCDIR}
 	-cp ether-src/*.v ${SRCDIR}
@@ -27,4 +30,5 @@ clean:
 	rm -rf project.hw project.cache project.runs project.sim project.ip_user_files
 
 cleanall: clean
-	$(MAKE) -C ros2rapper clean
+	$(MAKE) -C ros2rapper -f Makefile.vitis clean
+	$(MAKE) -C ros2rapper -f Makefile.cwb clean
