@@ -1,17 +1,15 @@
 SRCDIR = gensrc
 
-.PHONY: all clean cleanall cwb vitis vivado-create-proj
+.PHONY: clean cleanall cwb vitis vivado-create-proj
 
-all: vitis
-
-cwb: synth
+cwb:
 	$(MAKE) -C ros2rapper -f Makefile.cwb synth
 	-rm -rf ${SRCDIR}
 	mkdir -p ${SRCDIR}
 	-cp ether-src/*.v ${SRCDIR}
 	-cp ros2rapper/ros2.v ${SRCDIR}
 
-vitis: synth
+vitis:
 	$(MAKE) -C ros2rapper -f Makefile.vitis synth
 	-rm -rf ${SRCDIR}
 	mkdir -p ${SRCDIR}
@@ -21,7 +19,7 @@ vitis: synth
 	./fix-hls-code.rb
 	find ${SRCDIR} -name "*.v" | xargs sed -i "/\`timescale .*/d"
 
-vivado-create-proj: copy-src
+vivado-create-proj: vitis
 	vivado -mode batch -source create_project.tcl
 
 clean:
