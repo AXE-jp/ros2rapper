@@ -2,24 +2,6 @@
 
 SRCDIR = './gensrc/'
 
-[SRCDIR+'ip_rx.v', SRCDIR+'ip_tx.v'].each do |filename|
-  fixed = File.read(filename)
-    .gsub(/always @ \(posedge ap_clk\) begin\s+if \(ap_rst_n_inv == 1'b1\) begin/m,
-          "always @ (posedge ap_clk or negedge ap_rst_n) begin\n    if (!ap_rst_n) begin")
-    .gsub(/always @ \(posedge ap_clk\) begin(.*?)end/m,
-          "always @ (posedge ap_clk or negedge ap_rst_n) begin\nif (!ap_rst_n) begin\\1end else begin\\1end\nend")
-  File.write(filename, fixed)
-end
-
-[SRCDIR+'ip_rx_regslice_both.v', SRCDIR+'ip_tx_regslice_both.v'].each do |filename|
-  fixed = File.read(filename)
-    .gsub(/always @ \(posedge ap_clk\) begin\s+if \(ap_rst == 1'b1\) begin/m,
-          "always @ (posedge ap_clk or posedge ap_rst) begin\n    if (ap_rst) begin")
-    .gsub(/always @ \(posedge ap_clk\) begin\s+if \(\(1'b1 == (.*?)\)\) begin\s+(.*?) <= (.*?);/m,
-          "always @ (posedge ap_clk or posedge ap_rst) begin\nif (ap_rst) begin\n\\2 <= 0;\nend else if (\\1 == 1'b1) begin\n\\2 <= \\3;")
-  File.write(filename, fixed)
-end
-
 [SRCDIR+'ros2_app_writer_out.v'].each do |filename|
   fixed = File.read(filename)
     .gsub(/always @ \(posedge ap_clk\) begin(.*?)if \(ap_rst == 1'b1\) begin/m,
