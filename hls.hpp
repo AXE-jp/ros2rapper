@@ -20,8 +20,11 @@
 #ifndef HLS_HPP
 #define HLS_HPP
 
-// #define VITIS_HLS
-#define CWB_HLS
+#if defined(__VITIS_HLS__)
+	#define VITIS_HLS
+#else
+	#define CWB_HLS
+#endif
 
 #ifdef VITIS_HLS
 #include <gmp.h>
