@@ -1,4 +1,3 @@
-`include "ip.vh"
 `default_nettype none
 
 module ros2_eth_tx_adapter (
