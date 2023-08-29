@@ -336,9 +336,6 @@ ros2 (
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
 );
 `elsif ROS2RAPPER_HLS_CWB
-assign udp_rxbuf_ce = udp_rxbuf_we;
-assign udp_txbuf_ce = 1;
-assign payloadsmem_ce = 1;
 ros2
 ros2 (
   .clk(clk),
@@ -350,17 +347,20 @@ ros2 (
   .out_din(tx_fifo_din),
   .out_full(tx_fifo_full),
   .out_wreq(tx_fifo_wr_en),
+  .udp_rxbuf_CE1(udp_rxbuf_ce),
   .udp_rxbuf_AD1(udp_rxbuf_addr),
   .udp_rxbuf_WE1(udp_rxbuf_we),
   .udp_rxbuf_WD1(udp_rxbuf_wdata),
+  .udp_txbuf_CE1(udp_txbuf_ce),
   .udp_txbuf_AD1(udp_txbuf_addr),
   .udp_txbuf_RD1(udp_txbuf_rdata),
+  .payloads_CE1(payloadsmem_ce),
   .payloads_AD1(payloadsmem_addr),
   .payloads_WE1(payloadsmem_we),
   .payloads_WD1(payloadsmem_wdata),
   .payloads_RD1(payloadsmem_rdata),
-  .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
-  .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
+  .conf_ip_addr_3(ip_addr[7:0]), .conf_ip_addr_2(ip_addr[15:8]),
+  .conf_ip_addr_1(ip_addr[23:16]), .conf_ip_addr_0(ip_addr[31:24]),
   .conf_node_name_00(ros2_node_name[7:0]), .conf_node_name_01(ros2_node_name[15:8]),
   .conf_node_name_02(ros2_node_name[23:16]), .conf_node_name_03(ros2_node_name[31:24]),
   .conf_node_name_04(ros2_node_name[39:32]), .conf_node_name_05(ros2_node_name[47:40]),
@@ -378,8 +378,8 @@ ros2 (
   .conf_node_name_28(ros2_node_name[231:224]), .conf_node_name_29(ros2_node_name[239:232]),
   .conf_node_name_30(ros2_node_name[247:240]), .conf_node_name_31(ros2_node_name[255:248]),
   .conf_node_name_len(ros2_node_name_len),
-  .conf_node_udp_port_0(ros2_node_udp_port[7:0]), .conf_node_udp_port_1(ros2_node_udp_port[15:8]),
-  .conf_cpu_udp_port_0(ros2_cpu_udp_port[7:0]), .conf_cpu_udp_port_1(ros2_cpu_udp_port[15:8]),
+  .conf_node_udp_port_1(ros2_node_udp_port[7:0]), .conf_node_udp_port_0(ros2_node_udp_port[15:8]),
+  .conf_cpu_udp_port_1(ros2_cpu_udp_port[7:0]), .conf_cpu_udp_port_0(ros2_cpu_udp_port[15:8]),
   .conf_port_num_seed(ros2_port_num_seed),
   .conf_tx_period(ros2_tx_period),
   .conf_guid_prefix_00(ros2_guid_prefix[7:0]), .conf_guid_prefix_01(ros2_guid_prefix[15:8]),
