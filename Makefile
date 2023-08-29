@@ -1,6 +1,13 @@
 SRCDIR = gensrc
 
-.PHONY: clean cleanall cwb vitis
+.PHONY: clean cleanall fake-cwb cwb vitis
+
+fake-cwb:
+	-rm -rf ${SRCDIR}
+	mkdir -p ${SRCDIR}
+	-cp ether-src/*.v ${SRCDIR}
+	-cp ros2rapper/ros2.v ${SRCDIR}
+	sed -i '1s/^/`define ROS2RAPPER_HLS_CWB\n/' ${SRCDIR}/ros2_ether.v
 
 cwb:
 	$(MAKE) -C ros2rapper -f Makefile.cwb synth
