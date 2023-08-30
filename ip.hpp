@@ -56,7 +56,7 @@
 #define MAX_PENDINGS      1
 
 void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-	   bool &parity_error);
+	   uint32_t fragment_expiration, bool &parity_error);
 
 void ip_out(const uint8_t src_addr[4],
 	    const uint8_t dst_addr[4],
