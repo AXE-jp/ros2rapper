@@ -143,7 +143,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 #else // !USE_FIFOIF_ETHERNET
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
-	ip_in(s1, s2, ip_parity_error);
+	ip_in(s1, s2, conf.fragment_expiration, ip_parity_error);
 	udp_in(s2, s3, enable, conf.cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))

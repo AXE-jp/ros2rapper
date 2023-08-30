@@ -119,10 +119,9 @@ struct pending_info
 };
 
 #define TOTAL_FRAGMENTS_UNKNOWN 0xff
-#define PENDING_EXPIRATION (100000000 / 30 * 1)  // clock=100MHz, interval=30cycle, expiration=1sec
 
 /* Cyber func=inline */
-void init_pending_info(pending_info *pending, uint16_t id)
+void init_pending_info(pending_info *pending, uint16_t id, uint32_t fragment_expiration)
 {
 #pragma HLS inline
   pending->is_used = true;
@@ -130,7 +129,7 @@ void init_pending_info(pending_info *pending, uint16_t id)
   pending->n_arrived = 0;
   pending->n_total = TOTAL_FRAGMENTS_UNKNOWN;
   pending->len = 0;
-  pending->expiration = PENDING_EXPIRATION;
+  pending->expiration = fragment_expiration;
 #ifndef __SYNTHESIS__
   printf("%s: pending entry activated (id=%d)\n", __func__, id);
 #endif
@@ -139,7 +138,7 @@ void init_pending_info(pending_info *pending, uint16_t id)
 #define purge_pending_info(p) ((p)->is_used = false)
 
 /* Cyber func=inline */
-pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
+pending_index_t find_pending_info(pending_info *pendings, uint16_t id, uint32_t fragment_expiration)
 {
 #pragma HLS inline
   pending_index_t found = INVALID_PENDING_INDEX;
@@ -159,7 +158,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
   }
   printf("%s: ===============\n", __func__);
 #endif
-	
+
 	/* Cyber unroll_times=all */
   for (int i=0; i<MAX_PENDINGS; i++) {
 #pragma HLS unroll
@@ -178,7 +177,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id)
     return found;
   } else {
     if (unused != INVALID_PENDING_INDEX)
-      init_pending_info(&pendings[unused], id);
+      init_pending_info(&pendings[unused], id, fragment_expiration);
     return unused;
   }
 }
@@ -266,7 +265,7 @@ int8_t get_payload_offset(pending_index_t pindex)
 
 /* Cyber func=inline */
 void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-	   bool &parity_error)
+	   uint32_t fragment_expiration, bool &parity_error)
 {
 #pragma HLS inline
 	static hls_uint<5> state;
@@ -400,7 +399,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
           } else {
             if (has_more_fragments || findex != 0) {
               // fragmented
-              pending_index = find_pending_info(pendings, id);
+              pending_index = find_pending_info(pendings, id, fragment_expiration);
               if (pending_index == INVALID_PENDING_INDEX) {
                 // no room for new datagram
                 state = IPIN_STATE_FRAGMENT_ERROR_0;
