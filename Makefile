@@ -1,6 +1,10 @@
 SRCDIR = gensrc
 
-.PHONY: clean cleanall fake-cwb cwb vitis
+.PHONY: all clean cleanall fake-cwb cwb vitis
+
+all:
+	echo "Target is not specified."
+	exit 1
 
 fake-cwb:
 	-rm -rf ${SRCDIR}
