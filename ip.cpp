@@ -247,7 +247,20 @@ int8_t get_fragment_index(uint16_t fragment_offset)
 int8_t get_payload_offset(pending_index_t pindex)
 {
 #pragma HLS inline
-#if MAX_PENDINGS == 2
+#if MAX_PENDINGS == 4
+  switch (pindex) {
+  case 0:
+    return 0;
+  case 1:
+    return (IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS);
+  case 2:
+    return (IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS * 2);
+  case 3:
+    return (IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS * 3);
+  default:
+    return 0;
+  }
+#elif MAX_PENDINGS == 2
   switch (pindex) {
   case 0:
     return 0;
