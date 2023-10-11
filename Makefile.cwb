@@ -5,7 +5,7 @@ HDRS = app.hpp checksum.hpp common.hpp duration.hpp endpoint.hpp hls.hpp ip.hpp 
 
 CPARS_FLAGS =
 BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -o-P
-VGEN_FLAGS = -mem_black_box=YES
+VGEN_FLAGS = -mem_black_box=YES -case_default_x=NO
 
 synth: ros2.v
 
