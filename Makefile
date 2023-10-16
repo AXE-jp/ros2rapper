@@ -1,6 +1,6 @@
 SRCDIR = gensrc
 
-.PHONY: all clean cleanall fake-cwb cwb vitis
+.PHONY: all clean cleanall fake-cwb cwb vitis vivado-create-proj
 
 all:
 	echo "Target is not specified."
@@ -32,9 +32,13 @@ vitis:
 	find ${SRCDIR} -name "*.v" | xargs sed -i "/\`timescale .*/d"
 	sed -i '1s/^/`define ROS2RAPPER_HLS_VITIS\n/' ${SRCDIR}/ros2_ether.v
 
+vivado-create-proj: vitis
+	vivado -mode batch -source create_project.tcl
+
 clean:
 	rm -rf ${SRCDIR}
-	rm -f *.jou *.log
+	rm -f *.jou *.log *.xpr
+	rm -rf project.hw project.cache project.runs project.sim project.ip_user_files
 
 cleanall: clean
 	$(MAKE) -C ros2rapper -f Makefile.vitis clean
