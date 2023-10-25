@@ -169,8 +169,7 @@ wire tx_fifo_empty;
 
 queue #(
     .DATA_WIDTH(8),
-    .DEPTH(`EXT_TX_FIFO_DEPTH),
-    .USE_ASYNC_RESET(1)
+    .DEPTH(`EXT_TX_FIFO_DEPTH)
 )
 tx_fifo (
     .clk(clk),
@@ -193,8 +192,7 @@ wire rx_fifo_empty;
 
 queue #(
     .DATA_WIDTH(8),
-    .DEPTH(`EXT_RX_FIFO_DEPTH),
-    .USE_ASYNC_RESET(1)
+    .DEPTH(`EXT_RX_FIFO_DEPTH)
 )
 rx_fifo (
     .clk(clk),
