@@ -35,9 +35,20 @@ set_property -dict {LOC C16 IOSTANDARD LVCMOS33 SLEW SLOW DRIVE 12} [get_ports p
 create_clock -period 40.000 -name phy_rx_clk [get_ports phy_rx_clk]
 create_clock -period 40.000 -name phy_tx_clk [get_ports phy_tx_clk]
 
-set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { led_b }];
-set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { led_g }];
-set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { led_r }];
+set_property -dict {PACKAGE_PIN E1 IOSTANDARD LVCMOS33} [get_ports led_b]
+set_property -dict {PACKAGE_PIN F6 IOSTANDARD LVCMOS33} [get_ports led_g]
+set_property -dict {PACKAGE_PIN G6 IOSTANDARD LVCMOS33} [get_ports led_r]
+
+set_property -dict {PACKAGE_PIN H5 IOSTANDARD LVCMOS33} [get_ports led4]
+set_property -dict {PACKAGE_PIN J5 IOSTANDARD LVCMOS33} [get_ports led5]
+set_property -dict {PACKAGE_PIN T9 IOSTANDARD LVCMOS33} [get_ports led6]
+set_property -dict {PACKAGE_PIN T10 IOSTANDARD LVCMOS33} [get_ports led7]
+
+## Switches
+set_property -dict {PACKAGE_PIN A8 IOSTANDARD LVCMOS33} [get_ports sw0]
+set_property -dict {PACKAGE_PIN C11 IOSTANDARD LVCMOS33} [get_ports sw1]
+set_property -dict {PACKAGE_PIN C10 IOSTANDARD LVCMOS33} [get_ports sw2]
+set_property -dict {PACKAGE_PIN A10 IOSTANDARD LVCMOS33} [get_ports sw3]
 
 set_false_path -to [get_ports {phy_ref_clk phy_rst_n}]
 set_output_delay 0.000 [get_ports {phy_ref_clk phy_rst_n}]
@@ -46,3 +57,8 @@ set_output_delay 0.000 [get_ports {phy_ref_clk phy_rst_n}]
 #set_output_delay 0 [get_ports {phy_mdio phy_mdc}]
 #set_false_path -from [get_ports {phy_mdio}]
 #set_input_delay 0 [get_ports {phy_mdio}]
+
+
+
+
+
