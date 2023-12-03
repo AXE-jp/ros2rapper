@@ -37,9 +37,9 @@ module ros2_eth_tx_adapter (
   localparam IP_HDR_OFFSET_SADDR       = 12; // Source Address
   localparam IP_HDR_OFFSET_DADDR       = 16; // Destination Address
 
-  localparam STATE_TX_READ_HDR = 0;
-  localparam STATE_TX_HDR      = 1;
-  localparam STATE_TX_PAYLOAD  = 2;
+  localparam [1:0] STATE_TX_READ_HDR = 2'd0,
+                   STATE_TX_HDR      = 2'd1,
+                   STATE_TX_PAYLOAD  = 2'd2;
 
   reg [1:0] state;
   reg [15:0] offset;
