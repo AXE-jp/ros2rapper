@@ -116,8 +116,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
 		    app_endpoint app_reader_tbl[APP_READER_MAX],
-		    hls_uint<1> &enable,
-		    const config_t &conf,
+		    hls_uint<1> enable,
+		    const config_t *conf,
 		    volatile uint8_t *rawudp_rxbuf_rel,
 		    volatile uint8_t *rawudp_rxbuf_grant)
 {
@@ -143,8 +143,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 #else // !USE_FIFOIF_ETHERNET
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
-	ip_in(s1, s2, conf.fragment_expiration, ip_parity_error);
-	udp_in(s2, s3, enable, conf.cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
+	ip_in(s1, s2, conf->fragment_expiration, ip_parity_error);
+	udp_in(s2, s3, enable, conf->cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))
 		return;
@@ -155,51 +155,53 @@ static void ros2_in(hls_stream<uint8_t> &in,
 	spdp_reader(s4,
 		    sedp_reader_cnt,
 		    sedp_reader_tbl,
-		    conf.port_num_seed);
+		    enable,
+		    conf->port_num_seed);
 	sedp_reader(s5,
 		    app_reader_cnt,
 		    app_reader_tbl,
-		    conf.port_num_seed,
-		    conf.guid_prefix,
-		    conf.topic_name,
-		    conf.topic_name_len,
-		    conf.topic_type_name,
-		    conf.topic_type_name_len);
+		    enable,
+		    conf->port_num_seed,
+		    conf->guid_prefix,
+		    conf->topic_name,
+		    conf->topic_name_len,
+		    conf->topic_type_name,
+		    conf->topic_type_name_len);
 }
 
 /* Cyber func=inline */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
 			    const uint8_t default_port[2],
 			    tx_buf &tx_buf,
-			    const config_t &conf)
+			    const config_t *conf)
 {
 	static const uint8_t dst_addr[4]/* Cyber array=EXPAND */ =
 		IP_MULTICAST_ADDR;
 	uint8_t dst_port[2]/* Cyber array=EXPAND */;
-	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(conf.port_num_seed);
-	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(conf.port_num_seed);
+	dst_port[0] = DISCOVERY_TRAFFIC_MULTICAST_PORT_0(conf->port_num_seed);
+	dst_port[1] = DISCOVERY_TRAFFIC_MULTICAST_PORT_1(conf->port_num_seed);
 #pragma HLS array_partition variable=dst_addr complete dim=0
 #pragma HLS array_partition variable=dst_port complete dim=0
 
-	ip_set_header(conf.ip_addr,
+	ip_set_header(conf->ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_MULTICAST,
 	       SPDP_WRITER_UDP_PKT_LEN,
 	       tx_buf.buf);
 
-	udp_set_header(conf.node_udp_port,
+	udp_set_header(conf->node_udp_port,
 		dst_port,
 		SPDP_WRITER_RTPS_PKT_LEN,
 		tx_buf.buf + IP_HDR_SIZE);
 
-	spdp_writer(conf.guid_prefix,
-		    conf.ip_addr,
+	spdp_writer(conf->guid_prefix,
+		    conf->ip_addr,
 		    metatraffic_port,
-		    conf.ip_addr,
+		    conf->ip_addr,
 		    default_port,
 		    tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
-		    conf.node_name,
-		    conf.node_name_len);
+		    conf->node_name,
+		    conf->node_name_len);
 
 	tx_buf.head = 0;
 	tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
@@ -214,31 +216,31 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
 			    const uint8_t usertraffic_port[2],
 			    const uint8_t app_entity_id[4],
 			    tx_buf &tx_buf,
-			    const config_t &conf)
+			    const config_t *conf)
 {
-	ip_set_header(conf.ip_addr,
+	ip_set_header(conf->ip_addr,
 	       dst_addr,
 	       IP_HDR_TTL_UNICAST,
 	       SEDP_WRITER_UDP_PKT_LEN,
 	       tx_buf.buf);
 
-	udp_set_header(conf.node_udp_port,
+	udp_set_header(conf->node_udp_port,
 		dst_port,
 		SEDP_WRITER_RTPS_PKT_LEN,
 		tx_buf.buf + IP_HDR_SIZE);
 
-	sedp_writer(conf.guid_prefix,
+	sedp_writer(conf->guid_prefix,
 		    writer_entity_id,
 		    reader_guid_prefix,
 		    reader_entity_id,
-		    conf.ip_addr,
+		    conf->ip_addr,
 		    usertraffic_port,
 		    app_entity_id,
 		    tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
-		    conf.topic_name,
-		    conf.topic_name_len,
-		    conf.topic_type_name,
-		    conf.topic_type_name_len);
+		    conf->topic_name,
+		    conf->topic_name_len,
+		    conf->topic_type_name,
+		    conf->topic_type_name_len);
 
 	tx_buf.head = 0;
 	tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -337,8 +339,8 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 			   const uint8_t src_addr[4],
 			   const uint8_t src_port[2],
 			   const uint8_t writer_guid_prefix[12],
-			   const uint8_t app_data[MAX_APP_DATA_LEN],
-			   uint8_t app_data_len)
+			   volatile const uint8_t app_data[MAX_APP_DATA_LEN],
+			   volatile const uint8_t *app_data_len)
 {
 	seqnum++;
 
@@ -359,7 +361,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
 		   reader_entity_id,
 		   seqnum,
 		   app_data,
-		   app_data_len,
+		   *app_data_len,
 		   tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
 	tx_buf.head = 0;
@@ -459,9 +461,9 @@ static void rawudp_out(const uint8_t dst_addr[4],
 				1,					\
 				tx_buf,					\
 				sedp_pub_heartbeat_cnt[(id)],		\
-				conf.ip_addr,		\
-				conf.node_udp_port,		\
-				conf.guid_prefix);		\
+				conf->ip_addr,		\
+				conf->node_udp_port,		\
+				conf->guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -478,9 +480,9 @@ static void rawudp_out(const uint8_t dst_addr[4],
 				0,					\
 				tx_buf,					\
 				sedp_sub_heartbeat_cnt[(id)],		\
-				conf.ip_addr,		\
-				conf.node_udp_port,		\
-				conf.guid_prefix);		\
+				conf->ip_addr,		\
+				conf->node_udp_port,		\
+				conf->guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -498,9 +500,9 @@ static void rawudp_out(const uint8_t dst_addr[4],
 				bitmap,					\
 				tx_buf,					\
 				sedp_pub_acknack_cnt[(id)],		\
-				conf.ip_addr,		\
-				conf.node_udp_port,		\
-				conf.guid_prefix);		\
+				conf->ip_addr,		\
+				conf->node_udp_port,		\
+				conf->guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -518,9 +520,9 @@ static void rawudp_out(const uint8_t dst_addr[4],
 				bitmap,					\
 				tx_buf,					\
 				sedp_sub_acknack_cnt[(id)],		\
-				conf.ip_addr,		\
-				conf.node_udp_port,		\
-				conf.guid_prefix);		\
+				conf->ip_addr,		\
+				conf->node_udp_port,		\
+				conf->guid_prefix);		\
 		}							\
 	} while (0)
 
@@ -553,11 +555,11 @@ static void rawudp_out(const uint8_t dst_addr[4],
 					app_reader_tbl[(id)].entity_id,		\
 					tx_buf,					\
 					app_seqnum,				\
-					conf.ip_addr,				\
-					conf.node_udp_port,				\
-					conf.guid_prefix,				\
-					conf.app_data,				\
-					conf.app_data_len);				\
+					conf->ip_addr,				\
+					conf->node_udp_port,				\
+					conf->guid_prefix,				\
+					app_data,				\
+					app_data_len);				\
 			} \
 			REL_APP_DATA; \
 		}							\
@@ -569,7 +571,7 @@ static void rawudp_out(const uint8_t dst_addr[4],
 			rawudp_tx_dst_addr,					\
 			rawudp_tx_dst_port,					\
 			tx_buf,					\
-			conf.ip_addr,		\
+			conf->ip_addr,		\
 			rawudp_tx_src_port,					\
 			rawudp_tx_payload_len);		\
 	} while (0)
@@ -581,8 +583,10 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
-		     hls_uint<1> &enable,
-		     const config_t &conf,
+		     hls_uint<1> enable,
+		     const config_t *conf,
+		     volatile const uint8_t app_data[MAX_APP_DATA_LEN],
+		     volatile const uint8_t *app_data_len,
 		     volatile uint8_t *app_data_req,
 		     volatile uint8_t *app_data_rel,
 		     volatile uint8_t *app_data_grant,
@@ -608,12 +612,12 @@ static void ros2_out(hls_stream<uint8_t> &out,
 #pragma HLS array_partition variable=sub_reader_entity_id complete dim=0
 
 	uint8_t metatraffic_port[2]/* Cyber array=EXPAND */;
-	metatraffic_port[0] = DISCOVERY_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
-	metatraffic_port[1] = DISCOVERY_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+	metatraffic_port[0] = DISCOVERY_TRAFFIC_UNICAST_PORT_0(conf->port_num_seed, TARGET_PARTICIPANT_ID);
+	metatraffic_port[1] = DISCOVERY_TRAFFIC_UNICAST_PORT_1(conf->port_num_seed, TARGET_PARTICIPANT_ID);
 
 	uint8_t default_port[2]/* Cyber array=EXPAND */;
-	default_port[0] = USER_TRAFFIC_UNICAST_PORT_0(conf.port_num_seed, TARGET_PARTICIPANT_ID);
-	default_port[1] = USER_TRAFFIC_UNICAST_PORT_1(conf.port_num_seed, TARGET_PARTICIPANT_ID);
+	default_port[0] = USER_TRAFFIC_UNICAST_PORT_0(conf->port_num_seed, TARGET_PARTICIPANT_ID);
+	default_port[1] = USER_TRAFFIC_UNICAST_PORT_1(conf->port_num_seed, TARGET_PARTICIPANT_ID);
 
 #pragma HLS array_partition variable=metatraffic_port complete dim=0
 #pragma HLS array_partition variable=default_port complete dim=0
@@ -679,7 +683,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 					rawudp_txbuf_rd_off = 0;
 					rawudp_txpayload_wr_off = 0;
 					rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
-				} else if (clk_cnt >= conf.tx_period) {
+				} else if (clk_cnt >= conf->tx_period) {
 					clk_cnt = 0;
 					state++;
 				}
@@ -725,7 +729,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 				RAWUDP_OUT();
 				*rawudp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/; \
 				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
-				if (clk_cnt >= conf.tx_period) {
+				if (clk_cnt >= conf->tx_period) {
 					clk_cnt = 0;
 					state++;
 				}
@@ -784,7 +788,9 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
 	  hls_uint<1> enable/* Cyber port_mode=in */,
-	  const config_t &conf/* Cyber port_mode=in, stable_input */,
+	  const config_t *conf/* Cyber port_mode=in, stable_input */,
+	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber port_mode=cw_fifo */,
+	  volatile const uint8_t *app_data_len/* Cyber port_mode=cw_fifo */,
 	  volatile uint8_t *app_data_req/* Cyber port_mode=shared */,
 	  volatile uint8_t *app_data_rel/* Cyber port_mode=shared */,
 	  volatile uint8_t *app_data_grant/* Cyber port_mode=shared */,
@@ -793,21 +799,24 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  volatile uint8_t *udp_txbuf_rel/* Cyber port_mode=shared */,
 	  volatile uint8_t *udp_txbuf_grant/* Cyber port_mode=shared */)
 {
-#pragma HLS interface ap_fifo port=in
-#pragma HLS interface ap_fifo port=out
-#pragma HLS interface ap_memory port=udp_rxbuf
-#pragma HLS interface ap_memory port=udp_txbuf storage_type=ram_1p
-#pragma HLS interface ap_none port=enable
-#pragma HLS interface ap_none port=conf
+#pragma HLS interface mode=ap_fifo port=in
+#pragma HLS interface mode=ap_fifo port=out
+#pragma HLS interface mode=ap_memory port=udp_rxbuf
+#pragma HLS interface mode=ap_memory port=udp_txbuf storage_type=ram_1p
+#pragma HLS interface mode=ap_none port=enable
+#pragma HLS interface mode=ap_none port=conf
 #pragma HLS disaggregate variable=conf
-#pragma HLS interface ap_vld port=app_data_req
-#pragma HLS interface ap_vld port=app_data_rel
-#pragma HLS interface ap_none port=app_data_grant
-#pragma HLS interface ap_vld port=udp_rxbuf_rel
-#pragma HLS interface ap_none port=udp_rxbuf_grant
-#pragma HLS interface ap_vld port=udp_txbuf_rel
-#pragma HLS interface ap_none port=udp_txbuf_grant
-#pragma HLS interface ap_ctrl_none port=return
+#pragma HLS interface mode=ap_fifo port=app_data
+#pragma HLS array_reshape variable=app_data type=complete dim=0
+#pragma HLS interface mode=ap_fifo port=app_data_len
+#pragma HLS interface mode=ap_vld port=app_data_req
+#pragma HLS interface mode=ap_vld port=app_data_rel
+#pragma HLS interface mode=ap_none port=app_data_grant
+#pragma HLS interface mode=ap_vld port=udp_rxbuf_rel
+#pragma HLS interface mode=ap_none port=udp_rxbuf_grant
+#pragma HLS interface mode=ap_vld port=udp_txbuf_rel
+#pragma HLS interface mode=ap_none port=udp_txbuf_grant
+#pragma HLS interface mode=ap_ctrl_none port=return
 
 	static sedp_reader_id_t sedp_reader_cnt;
 	static app_reader_id_t app_reader_cnt;
@@ -816,11 +825,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable=sedp_reader_tbl complete dim=0
 #pragma HLS array_partition variable=app_reader_tbl complete dim=0
-
-	if (!enable) {
-		sedp_reader_cnt = 0;
-		app_reader_cnt = 0;
-	}
 
 	ros2_in(in,
 		udp_rxbuf,
@@ -841,6 +845,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 app_reader_tbl,
 		 enable,
 		 conf,
+		 app_data,
+		 app_data_len,
 		 app_data_req,
 		 app_data_rel,
 		 app_data_grant,

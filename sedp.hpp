@@ -66,6 +66,7 @@
 void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 app_reader_id_t &reader_cnt,
 		 app_endpoint reader_tbl[APP_READER_MAX],
+		 hls_uint<1> enable,
 		 uint16_t port_num_seed,
 		 const uint8_t guid_prefix[12],
 		 const uint8_t topic_name[],

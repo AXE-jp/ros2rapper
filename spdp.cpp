@@ -45,6 +45,7 @@ static void compare_guid_prefix(const uint8_t x,
 void spdp_reader(hls_stream<hls_uint<9>> &in,
 		 sedp_reader_id_t &reader_cnt,
 		 sedp_endpoint reader_tbl[SEDP_READER_MAX],
+		 hls_uint<1> enable,
 		 uint16_t port_num_seed)
 {
 #pragma HLS inline
@@ -70,7 +71,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in,
 	if (!in.read_nb(x))
 		return;
 
-	if (reader_cnt == SEDP_READER_MAX)
+	if (!enable || reader_cnt == SEDP_READER_MAX)
 		return;
 
 	sedp_endpoint &reader = reader_tbl[reader_cnt];

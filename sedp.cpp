@@ -62,6 +62,7 @@ static void compare_entity_id(const uint8_t x,
 void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 app_reader_id_t &reader_cnt,
 		 app_endpoint reader_tbl[APP_READER_MAX],
+		 hls_uint<1> enable,
 		 uint16_t port_num_seed,
 		 const uint8_t guid_prefix[12],
 		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
@@ -93,7 +94,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 	if (!in.read_nb(x))
 		return;
 
-	if (reader_cnt == APP_READER_MAX)
+	if (!enable || reader_cnt == APP_READER_MAX)
 		return;
 
 	app_endpoint &reader = reader_tbl[reader_cnt];

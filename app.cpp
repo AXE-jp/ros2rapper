@@ -29,8 +29,8 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 		const uint8_t reader_guid_prefix[12],
 		const uint8_t reader_entity_id[4],
 		const int64_t seqnum,
-		const uint8_t app_data[],
-		const uint32_t app_data_len,
+		volatile const uint8_t app_data[],
+		uint32_t app_data_len,
 		uint8_t buf[])
 {
 #pragma HLS inline
