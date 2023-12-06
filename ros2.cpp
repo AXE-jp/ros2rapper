@@ -545,8 +545,12 @@ static void rawudp_out(const uint8_t dst_addr[4],
 #define APP_WRITER_OUT(id)						\
 	do {								\
 		if (app_reader_cnt > (id)) {				\
-			REQ_APP_DATA; \
-			if (grant == 1) { \
+			/* Cyber scheduling_block = non-transparent */ \
+      { \
+      *app_data_req = 0 /* write dummy value to assert valid signal */; \
+      WAIT_CLOCK; \
+      WAIT_CLOCK; \
+			if (*app_data_grant == 1) { \
 				app_writer_out(					\
 					app_writer_entity_id,			\
 					app_reader_tbl[(id)].ip_addr,		\
@@ -560,8 +564,12 @@ static void rawudp_out(const uint8_t dst_addr[4],
 					conf->guid_prefix,				\
 					app_data,				\
 					app_data_len);				\
+				WAIT_CLOCK; \
+				*app_data_rel = 0 /* write dummy value to assert valid signal */; \
+				WAIT_CLOCK; \
+				WAIT_CLOCK; \
 			} \
-			REL_APP_DATA; \
+			} \
 		}							\
 	} while (0)
 
@@ -662,8 +670,6 @@ static void ros2_out(hls_stream<uint8_t> &out,
 
 	static uint32_t clk_cnt;
 	static hls_uint<5> state = ST_RAWUDP_OUT;
-
-	uint8_t grant;
 
 	clk_cnt++;
 
@@ -789,7 +795,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
 	  hls_uint<1> enable/* Cyber port_mode=in */,
 	  const config_t *conf/* Cyber port_mode=in, stable_input */,
-	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=cw_fifo */,
+	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=shared */,
 	  volatile const uint8_t *app_data_len/* Cyber port_mode=cw_fifo */,
 	  volatile uint8_t *app_data_req/* Cyber port_mode=shared */,
 	  volatile uint8_t *app_data_rel/* Cyber port_mode=shared */,
