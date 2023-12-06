@@ -43,13 +43,18 @@ module ros2_ether (
     input  wire [7:0] ros2_sub_topic_type_name_len,
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
     input  wire [7:0] ros2_app_data_len,
-    output wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_rx_data,
     output wire [7:0] ros2_app_rx_data_len,
-    input  wire [7:0] ros2_app_rx_max_data_len,
 
     input  wire ros2_app_data_cpu_req,
     input  wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
+
+    input  wire app_rx_data_cpu_rel,
+    output wire app_rx_data_cpu_grant,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] app_rx_data_addr,
+    output wire app_rx_data_ce,
+    output wire app_rx_data_we,
+    output wire [7:0] app_rx_data_wdata,
 
     input  wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
@@ -249,6 +254,28 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+// arbiter for sharing app_rx_data buffer between CPU and ROS2rapper IP
+localparam APP_RX_DATA_GRANT_IP   = 1'b0;
+localparam APP_RX_DATA_GRANT_CPU  = 1'b1;
+
+reg r_app_rx_data_grant;
+wire app_rx_data_ip_rel, app_rx_data_ip_grant;
+assign app_rx_data_ip_grant = ros2_en & (~r_app_rx_data_grant);
+assign app_rx_data_cpu_grant = ros2_en & r_app_rx_data_grant;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        r_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+    end else begin
+        case (r_app_rx_data_grant)
+            APP_RX_DATA_GRANT_IP:
+                if (app_rx_data_ip_rel) r_app_rx_data_grant <= AP__RX_DATA_GRANT_CPU;
+            APP_RX_DATA_GRANT_CPU:
+                if (app_rx_data_cpu_rel) r_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+        endcase
+    end
+end
+
 // arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
 localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
@@ -294,27 +321,20 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 
-(*mark_debug="true"*) wire [7:0] app_rx_data_d0;
-(*mark_debug="true"*) wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] app_rx_data_addr;
-(*mark_debug="true"*) wire app_rx_data_ce;
-(*mark_debug="true"*) wire app_rx_data_we;
-(*mark_debug="true"*) wire [7:0] app_rx_data_len_int;
+wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] r_app_rx_data_len;
+wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] app_rx_data_len_data;
+wire app_rx_data_len_wr;
 
-ap_mem_flat # (
-	.DATA_BYTES(`ROS2_MAX_APP_DATA_LEN)
-	)
-	ap_mem_flat_rx_data_inst (
-	.clk(clk),
-	.rst_n(rst_n),
-	.mem_data(app_rx_data_d0),
-	.mem_addr(app_rx_data_addr),
-	.mem_ce(app_rx_data_ce),
-	.mem_we(app_rx_data_we),
-	.mem_len(app_rx_data_len_int),
-	.o_data(ros2_app_rx_data),
-	.o_data_len(ros2_app_rx_data_len)
-	);
+assign ros2_app_rx_data_len = r_app_rx_data_len;
 
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        r_app_rx_data_len <= 0;
+    end else begin
+        if (app_rx_data_len_wr)
+            r_app_rx_data_len <= app_rx_data_len_data;
+    end
+end
 
 `ifdef ROS2RAPPER_HLS_VITIS
 ros2
@@ -363,11 +383,16 @@ ros2 (
     .app_data_len_dout(ros2_app_data_len),
     .app_data_len_empty_n(1'b1),
     .app_data_len_read(),
+    .app_rx_data_rel_ap_vld(app_rx_data_ip_rel),
+    .app_rx_data_rel(),
+    .app_rx_data_grant({7'b0, app_rx_data_ip_grant}),
     .app_rx_data_address0(app_rx_data_addr),
     .app_rx_data_ce0(app_rx_data_ce),
     .app_rx_data_we0(app_rx_data_we),
-    .app_rx_data_d0(app_rx_data_d0),
-    .app_rx_data_len(app_rx_data_len_int),
+    .app_rx_data_d0(app_rx_data_wdata),
+    .app_rx_data_len_din(app_rx_data_len_data),
+    .app_rx_data_len_full_n(1'b1),
+    .app_rx_data_len_write(app_rx_data_len_wr),
     .app_data_req_ap_vld(ros2_app_data_ip_req),
     .app_data_req(),
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
