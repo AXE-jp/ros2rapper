@@ -146,9 +146,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 	}
 }
 
-
-
-
+/* Cyber func=inline */
 void  app_reader(
 	hls_stream<hls_uint<9>> &in,
 	const uint8_t	reader_guid_prefix[12],
