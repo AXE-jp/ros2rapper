@@ -82,6 +82,7 @@
 #define SP_ID_CDR_LE	0x0001
 #define SP_ID_PL_CDR_BE	0x0002
 #define SP_ID_PL_CDR_LE	0x0003
+#define	SP_ID_PL_CDR	0x0002
 
 #define SP_DATA_LEN_SIZE	4
 

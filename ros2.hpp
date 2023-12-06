@@ -39,10 +39,14 @@ typedef struct {
 		uint32_t tx_period;
 		uint32_t fragment_expiration;
 		uint8_t guid_prefix[12]/* Cyber array=EXPAND, array_index=const */;
-		uint8_t topic_name[MAX_TOPIC_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
-		uint8_t topic_name_len;
-		uint8_t topic_type_name[MAX_TOPIC_TYPE_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
-		uint8_t topic_type_name_len;
+		uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
+		uint8_t pub_topic_name_len;
+		uint8_t pub_topic_type_name[MAX_TOPIC_TYPE_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
+		uint8_t pub_topic_type_name_len;
+		uint8_t sub_topic_name[MAX_TOPIC_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
+		uint8_t sub_topic_name_len;
+		uint8_t sub_topic_type_name[MAX_TOPIC_TYPE_NAME_LEN]/* Cyber array=EXPAND, array_index=const */;
+		uint8_t sub_topic_type_name_len;
 } config_t;
 
 void ros2(hls_stream<uint8_t> &in,
@@ -51,8 +55,10 @@ void ros2(hls_stream<uint8_t> &in,
 	  uint32_t udp_txbuf[],
 	  hls_uint<1> enable,
 	  const config_t *conf,
-	  volatile const uint8_t app_data[],
+	  volatile const uint8_t app_data[MAX_APP_DATA_LEN],
 	  volatile const uint8_t app_data_len,
+	  volatile const uint8_t app_rx_data[MAX_APP_DATA_LEN],
+	  volatile const uint8_t app_rx_data_len,
 	  volatile uint8_t *app_data_req,
 	  volatile uint8_t *app_data_rel,
 	  volatile uint8_t *app_data_grant,

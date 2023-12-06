@@ -29,7 +29,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 		const uint8_t reader_guid_prefix[12],
 		const uint8_t reader_entity_id[4],
 		const int64_t seqnum,
-		volatile const uint8_t app_data[],
+		volatile const uint8_t app_data[MAX_APP_DATA_LEN],
 		uint32_t app_data_len,
 		uint8_t buf[])
 {
@@ -145,3 +145,165 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 			buf[i] = 0;
 	}
 }
+
+
+
+
+void  app_reader(
+	hls_stream<hls_uint<9>> &in,
+	const uint8_t	reader_guid_prefix[12],
+	const uint8_t	reader_entity_id[4],
+	uint8_t	app_rx_data[MAX_APP_DATA_LEN],
+	volatile uint8_t *app_rx_data_len
+)
+{
+#pragma HLS inline
+
+	static hls_uint<4>	state;
+	static uint16_t	offset;
+	static uint8_t	sbm_id;
+	static bool	sbm_le;
+	static uint16_t	sbm_len;
+	static uint16_t	rep_id;
+	static uint32_t	sp_data_len;
+
+	hls_uint<9>	x;
+	uint8_t	data;
+	bool	end;
+
+	if (!in.read_nb(x))
+		return;
+	data = x & 0x0FF;
+	end = x & 0x100;
+
+	switch (state) {
+	case 0:		// parse/check RTPS header
+		if (!rtps_compare_protocol(offset, data)) {
+			state = 9;
+			break;
+		}
+		offset++;
+		if (offset == RTPS_HDR_SIZE) {
+			offset = 0;
+			state = 1;
+		}
+		break;
+	case 1:		// parse/check sub-message header
+		switch (offset) {
+		case SBM_HDR_OFFSET_SUBMESSAGE_ID:
+			sbm_id = data;
+			break;
+		case SBM_HDR_OFFSET_FLAGS:
+			sbm_le = data & SBM_FLAGS_ENDIANNESS ? true : false;
+			break;
+		case SBM_HDR_OFFSET_OCTETS_TO_NEXT_HEADER:
+			sbm_len = sbm_le ? data : data << 8;
+			break;
+		case SBM_HDR_OFFSET_OCTETS_TO_NEXT_HEADER + 1:
+			sbm_len |= sbm_le ? data << 8 : data;
+		}
+		offset++;
+		if (offset == SBM_HDR_SIZE) {
+			offset = 0;
+			if (sbm_id == SBM_ID_INFO_DST)
+				state = 2;
+			else if (sbm_id == SBM_ID_DATA)
+				state = 3;
+			else
+				state = 8;
+		}
+		break;
+	case 2:		// parse/check sub-message : INFO_DST
+		if (offset < 12) {
+			if (reader_guid_prefix[offset] != data) {
+				state = 9;
+				break;
+			}
+		}
+		offset++;
+		if (offset == sbm_len) {
+			offset = 0;
+			state = 1;
+		}
+		break;
+	case 3:		// parse/check sub-message : DATA
+		if (!rtps_compare_reader_id(offset, data, reader_entity_id)) {
+			state = 9;
+			break;
+		}
+		offset++;
+		if (offset == SBM_DATA_HDR_SIZE) {
+			sbm_len -= SBM_DATA_HDR_SIZE;
+			offset = 0;
+			state = 4;
+		}
+		break;
+	case 4:		// parse/check serialized_payload
+		switch (offset) {
+		case SP_HDR_OFFSET_REPRESENTATION_ID:
+			rep_id = data << 8;
+			break;
+		case SP_HDR_OFFSET_REPRESENTATION_ID + 1:
+			rep_id |= data;
+		}
+		offset++;
+		if (offset == SP_HDR_SIZE) {
+			sbm_len -= SP_HDR_SIZE;
+			if ((rep_id & SP_ID_PL_CDR) == 0) {
+				offset = 0;
+				sp_data_len = 0;
+				state = 5;
+			} else {
+				state = 9;
+			}
+		}
+		break;
+	case 5:		// fetch serial_payload data length
+		if (rep_id & SP_ID_CDR_LE) {
+			switch (offset) {
+			case 0:	sp_data_len |= data;		break;
+			case 1:	sp_data_len |= data << 8;	break;
+			case 2:	sp_data_len |= data << 16;	break;
+			case 3:	sp_data_len |= data << 24;	break;
+			}
+		} else{
+			sp_data_len <<= 8;
+			sp_data_len |= data;
+		}
+		offset++;
+		if (offset == sizeof(sp_data_len)) {
+			if (sp_data_len <= MAX_APP_DATA_LEN) {
+				offset = 0;
+				*app_rx_data_len = sp_data_len;
+				state = 6;
+			} else{
+				state = 9;
+			}
+		}
+		break;
+	case 6:
+		if (offset < sp_data_len) {
+			app_rx_data[offset] = data;
+		}
+		offset++;
+		if (offset == sp_data_len) {
+			state = 9;
+		}
+		break;
+	case 8:
+		offset++;
+		if (offset == sbm_len) {
+			offset = 0;
+			state = 1;
+		}
+		break;
+	case 9:
+		; // do nothing
+	}
+
+	if (end) {
+		offset = 0;
+		state = 0;
+	}
+}
+

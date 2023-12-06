@@ -69,10 +69,14 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 hls_uint<1> enable,
 		 uint16_t port_num_seed,
 		 const uint8_t guid_prefix[12],
-		 const uint8_t topic_name[],
-		 uint8_t topic_name_len,
-		 const uint8_t type_name[],
-		 uint8_t type_name_len);
+		 const uint8_t pub_topic_name[],
+		 uint8_t pub_topic_name_len,
+		 const uint8_t pub_type_name[],
+		 uint8_t pub_type_name_len,
+		 const uint8_t sub_topic_name[],
+		 uint8_t sub_topic_name_len,
+		 const uint8_t sub_type_name[],
+		 uint8_t sub_type_name_len);
 
 void sedp_writer(const uint8_t writer_guid_prefix[12],
 		 const uint8_t writer_entity_id[4],
