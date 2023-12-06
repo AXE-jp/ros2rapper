@@ -173,6 +173,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    app_reader_cnt,
 		    app_reader_tbl,
 		    enable,
+		    pub_enable,
+		    sub_enable,
 		    conf->port_num_seed,
 		    conf->guid_prefix,
 		    conf->pub_topic_name,
@@ -184,14 +186,16 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    conf->sub_topic_type_name,
 		    conf->sub_topic_type_name_len);
 
-	app_reader(
-		    s6,
-		    conf->guid_prefix,
-		    app_reader_entity_id,
-		    app_rx_data_rel,
-		    app_rx_data_grant,
-		    app_rx_data,
-		    app_rx_data_len);
+	if (sub_enable) {
+		app_reader(
+			s6,
+			conf->guid_prefix,
+			app_reader_entity_id,
+			app_rx_data_rel,
+			app_rx_data_grant,
+			app_rx_data,
+			app_rx_data_len);
+	}
 }
 
 /* Cyber func=inline */
@@ -612,6 +616,8 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
 		     hls_uint<1> enable,
+		     hls_uint<1> pub_enable,
+		     hls_uint<1> sub_enable,
 		     const config_t *conf,
 		     volatile const uint8_t app_data[MAX_APP_DATA_LEN],
 		     volatile const uint8_t *app_data_len,
@@ -774,34 +780,34 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		} else {
 			switch (state) {
 			case ST_SPDP_WRITER:          SPDP_WRITER_OUT(); state++; break;
-			case ST_SEDP_PUB_WRITER_0:    SEDP_PUB_WRITER_OUT(0); state++; break;
-			case ST_SEDP_PUB_WRITER_1:    SEDP_PUB_WRITER_OUT(1); state++; break;
-			case ST_SEDP_PUB_WRITER_2:    SEDP_PUB_WRITER_OUT(2); state++; break;
-			case ST_SEDP_PUB_WRITER_3:    SEDP_PUB_WRITER_OUT(3); state++; break;
-			case ST_SEDP_SUB_WRITER_0:    SEDP_SUB_WRITER_OUT(0); state++; break;
-			case ST_SEDP_SUB_WRITER_1:    SEDP_SUB_WRITER_OUT(1); state++; break;
-			case ST_SEDP_SUB_WRITER_2:    SEDP_SUB_WRITER_OUT(2); state++; break;
-			case ST_SEDP_SUB_WRITER_3:    SEDP_SUB_WRITER_OUT(3); state++; break;
-			case ST_SEDP_PUB_HEARTBEAT_0: SEDP_PUB_HEARTBEAT_OUT(0); state++; break;
-			case ST_SEDP_PUB_HEARTBEAT_1: SEDP_PUB_HEARTBEAT_OUT(1); state++; break;
-			case ST_SEDP_PUB_HEARTBEAT_2: SEDP_PUB_HEARTBEAT_OUT(2); state++; break;
-			case ST_SEDP_PUB_HEARTBEAT_3: SEDP_PUB_HEARTBEAT_OUT(3); state++; break;
-			case ST_SEDP_SUB_HEARTBEAT_0: SEDP_SUB_HEARTBEAT_OUT(0); state++; break;
-			case ST_SEDP_SUB_HEARTBEAT_1: SEDP_SUB_HEARTBEAT_OUT(1); state++; break;
-			case ST_SEDP_SUB_HEARTBEAT_2: SEDP_SUB_HEARTBEAT_OUT(2); state++; break;
-			case ST_SEDP_SUB_HEARTBEAT_3: SEDP_SUB_HEARTBEAT_OUT(3); state++; break;
-			case ST_SEDP_PUB_ACKNACK_0:   SEDP_PUB_ACKNACK_OUT(0); state++; break;
-			case ST_SEDP_PUB_ACKNACK_1:   SEDP_PUB_ACKNACK_OUT(1); state++; break;
-			case ST_SEDP_PUB_ACKNACK_2:   SEDP_PUB_ACKNACK_OUT(2); state++; break;
-			case ST_SEDP_PUB_ACKNACK_3:   SEDP_PUB_ACKNACK_OUT(3); state++; break;
-			case ST_SEDP_SUB_ACKNACK_0:   SEDP_SUB_ACKNACK_OUT(0); state++; break;
-			case ST_SEDP_SUB_ACKNACK_1:   SEDP_SUB_ACKNACK_OUT(1); state++; break;
-			case ST_SEDP_SUB_ACKNACK_2:   SEDP_SUB_ACKNACK_OUT(2); state++; break;
-			case ST_SEDP_SUB_ACKNACK_3:   SEDP_SUB_ACKNACK_OUT(3); state++; break;
-			case ST_APP_WRITER_0:         APP_WRITER_OUT(0); state++; break;
-			case ST_APP_WRITER_1:         APP_WRITER_OUT(1); state++; break;
-			case ST_APP_WRITER_2:         APP_WRITER_OUT(2); state++; break;
-			case ST_APP_WRITER_3:         APP_WRITER_OUT(3);
+			case ST_SEDP_PUB_WRITER_0:    if (pub_enable) {SEDP_PUB_WRITER_OUT(0);} state++; break;
+			case ST_SEDP_PUB_WRITER_1:    if (pub_enable) {SEDP_PUB_WRITER_OUT(1);} state++; break;
+			case ST_SEDP_PUB_WRITER_2:    if (pub_enable) {SEDP_PUB_WRITER_OUT(2);} state++; break;
+			case ST_SEDP_PUB_WRITER_3:    if (pub_enable) {SEDP_PUB_WRITER_OUT(3);} state++; break;
+			case ST_SEDP_SUB_WRITER_0:    if (sub_enable) {SEDP_SUB_WRITER_OUT(0);} state++; break;
+			case ST_SEDP_SUB_WRITER_1:    if (sub_enable) {SEDP_SUB_WRITER_OUT(1);} state++; break;
+			case ST_SEDP_SUB_WRITER_2:    if (sub_enable) {SEDP_SUB_WRITER_OUT(2);} state++; break;
+			case ST_SEDP_SUB_WRITER_3:    if (sub_enable) {SEDP_SUB_WRITER_OUT(3);} state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_0: if (pub_enable) {SEDP_PUB_HEARTBEAT_OUT(0);} state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_1: if (pub_enable) {SEDP_PUB_HEARTBEAT_OUT(1);} state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_2: if (pub_enable) {SEDP_PUB_HEARTBEAT_OUT(2);} state++; break;
+			case ST_SEDP_PUB_HEARTBEAT_3: if (pub_enable) {SEDP_PUB_HEARTBEAT_OUT(3);} state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_0: if (sub_enable) {SEDP_SUB_HEARTBEAT_OUT(0);} state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_1: if (sub_enable) {SEDP_SUB_HEARTBEAT_OUT(1);} state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_2: if (sub_enable) {SEDP_SUB_HEARTBEAT_OUT(2);} state++; break;
+			case ST_SEDP_SUB_HEARTBEAT_3: if (sub_enable) {SEDP_SUB_HEARTBEAT_OUT(3);} state++; break;
+			case ST_SEDP_PUB_ACKNACK_0:   if (pub_enable) {SEDP_PUB_ACKNACK_OUT(0);} state++; break;
+			case ST_SEDP_PUB_ACKNACK_1:   if (pub_enable) {SEDP_PUB_ACKNACK_OUT(1);} state++; break;
+			case ST_SEDP_PUB_ACKNACK_2:   if (pub_enable) {SEDP_PUB_ACKNACK_OUT(2);} state++; break;
+			case ST_SEDP_PUB_ACKNACK_3:   if (pub_enable) {SEDP_PUB_ACKNACK_OUT(3);} state++; break;
+			case ST_SEDP_SUB_ACKNACK_0:   if (sub_enable) {SEDP_SUB_ACKNACK_OUT(0);} state++; break;
+			case ST_SEDP_SUB_ACKNACK_1:   if (sub_enable) {SEDP_SUB_ACKNACK_OUT(1);} state++; break;
+			case ST_SEDP_SUB_ACKNACK_2:   if (sub_enable) {SEDP_SUB_ACKNACK_OUT(2);} state++; break;
+			case ST_SEDP_SUB_ACKNACK_3:   if (sub_enable) {SEDP_SUB_ACKNACK_OUT(3);} state++; break;
+			case ST_APP_WRITER_0:         if (pub_enable) {APP_WRITER_OUT(0);} state++; break;
+			case ST_APP_WRITER_1:         if (pub_enable) {APP_WRITER_OUT(1);} state++; break;
+			case ST_APP_WRITER_2:         if (pub_enable) {APP_WRITER_OUT(2);} state++; break;
+			case ST_APP_WRITER_3:         if (pub_enable) {APP_WRITER_OUT(3);}
 			default:                      state = ST_RAWUDP_OUT; break;
 			}
 		}
@@ -819,6 +825,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
 	  hls_uint<1> enable/* Cyber port_mode=in */,
+	  hls_uint<1> pub_enable/* Cyber port_mode=in */,
+	  hls_uint<1> sub_enable/* Cyber port_mode=in */,
 	  const config_t *conf/* Cyber port_mode=in, stable_input */,
 	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=cw_fifo */,
 	  volatile const uint8_t *app_data_len/* Cyber port_mode=cw_fifo */,
@@ -885,6 +893,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 app_reader_cnt,
 		 app_reader_tbl,
 		 enable,
+		 pub_enable,
+		 sub_enable,
 		 conf,
 		 app_data,
 		 app_data_len,
