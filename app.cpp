@@ -153,6 +153,8 @@ void  app_reader(
 	hls_stream<hls_uint<9>> &in,
 	const uint8_t	reader_guid_prefix[12],
 	const uint8_t	reader_entity_id[4],
+	volatile uint8_t *app_rx_data_rel,
+	volatile uint8_t *app_rx_data_grant,
 	uint8_t	app_rx_data[MAX_APP_DATA_LEN],
 	volatile uint8_t *app_rx_data_len
 )
@@ -166,6 +168,8 @@ void  app_reader(
 	static uint16_t	sbm_len;
 	static uint16_t	rep_id;
 	static uint32_t	sp_data_len;
+
+	static int saved_grant;
 
 	hls_uint<9>	x;
 	uint8_t	data;
@@ -273,8 +277,8 @@ void  app_reader(
 		offset++;
 		if (offset == sizeof(sp_data_len)) {
 			if (sp_data_len <= MAX_APP_DATA_LEN) {
+				saved_grant = *app_rx_data_grant;
 				offset = 0;
-				*app_rx_data_len = sp_data_len;
 				state = 6;
 			} else{
 				state = 9;
@@ -283,10 +287,14 @@ void  app_reader(
 		break;
 	case 6:
 		if (offset < sp_data_len) {
-			app_rx_data[offset] = data;
+			if (saved_grant) app_rx_data[offset] = data;
 		}
 		offset++;
 		if (offset == sp_data_len) {
+			if (saved_grant) {
+				*app_rx_data_len = sp_data_len;
+				*app_rx_data_rel = 0;
+			}
 			state = 9;
 		}
 		break;
