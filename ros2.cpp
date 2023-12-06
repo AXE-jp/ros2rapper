@@ -116,7 +116,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
 		    app_endpoint app_reader_tbl[APP_READER_MAX],
-		    hls_uint<1> enable,
+		    hls_uint<1> pub_enable,
+		    hls_uint<1> sub_enable,
 		    const config_t *conf,
 		    volatile uint8_t *app_rx_data_rel,
 		    volatile uint8_t *app_rx_data_grant,
@@ -146,6 +147,8 @@ static void ros2_in(hls_stream<uint8_t> &in,
 #pragma HLS stream variable=s5 depth=2
 #pragma HLS stream variable=s6 depth=2
 
+	hls_uint<9> enable = pub_enable | sub_enable;
+
 	hls_uint<9> x;
 
 #ifdef USE_FIFOIF_ETHERNET
@@ -173,8 +176,6 @@ static void ros2_in(hls_stream<uint8_t> &in,
 		    app_reader_cnt,
 		    app_reader_tbl,
 		    enable,
-		    pub_enable,
-		    sub_enable,
 		    conf->port_num_seed,
 		    conf->guid_prefix,
 		    conf->pub_topic_name,
@@ -615,7 +616,6 @@ static void ros2_out(hls_stream<uint8_t> &out,
 		     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		     app_reader_id_t &app_reader_cnt,
 		     app_endpoint app_reader_tbl[APP_READER_MAX],
-		     hls_uint<1> enable,
 		     hls_uint<1> pub_enable,
 		     hls_uint<1> sub_enable,
 		     const config_t *conf,
@@ -775,7 +775,7 @@ static void ros2_out(hls_stream<uint8_t> &out,
 				rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
 				break;
 			}
-		} else if (!enable) {
+		} else if (!(pub_enable | sub_enable)) {
 			state = ST_RAWUDP_OUT;
 		} else {
 			switch (state) {
@@ -824,7 +824,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
-	  hls_uint<1> enable/* Cyber port_mode=in */,
 	  hls_uint<1> pub_enable/* Cyber port_mode=in */,
 	  hls_uint<1> sub_enable/* Cyber port_mode=in */,
 	  const config_t *conf/* Cyber port_mode=in, stable_input */,
@@ -846,7 +845,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface mode=ap_fifo port=out
 #pragma HLS interface mode=ap_memory port=udp_rxbuf
 #pragma HLS interface mode=ap_memory port=udp_txbuf storage_type=ram_1p
-#pragma HLS interface mode=ap_none port=enable
+#pragma HLS interface mode=ap_none port=pub_enable
+#pragma HLS interface mode=ap_none port=sub_enable
 #pragma HLS interface mode=ap_none port=conf
 #pragma HLS disaggregate variable=conf
 #pragma HLS interface mode=ap_fifo port=app_data
@@ -892,7 +892,6 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		 sedp_reader_tbl,
 		 app_reader_cnt,
 		 app_reader_tbl,
-		 enable,
 		 pub_enable,
 		 sub_enable,
 		 conf,
