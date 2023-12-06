@@ -147,7 +147,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 #pragma HLS stream variable=s5 depth=2
 #pragma HLS stream variable=s6 depth=2
 
-	hls_uint<9> enable = pub_enable | sub_enable;
+	hls_uint<1> enable = pub_enable | sub_enable;
 
 	hls_uint<9> x;
 
@@ -877,7 +877,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 		sedp_reader_tbl,
 		app_reader_cnt,
 		app_reader_tbl,
-		enable,
+		pub_enable,
+		sub_enable,
 		conf,
 		app_rx_data_rel,
 		app_rx_data_grant,
