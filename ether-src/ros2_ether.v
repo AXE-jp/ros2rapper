@@ -9,7 +9,8 @@ module ros2_ether (
     input  wire       rst_n,
 
     input  wire       ether_en,
-    input  wire       ros2_en,
+    input  wire       ros2pub_en,
+    input  wire       ros2sub_en,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -341,7 +342,8 @@ ros2
 ros2 (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
-    .enable(ros2_en),
+    .pub_enable(ros2pub_en),
+    .sub_enable(ros2sub_en),
     .in_V_dout(rx_fifo_dout),
     .in_V_empty_n(~rx_fifo_empty),
     .in_V_read(rx_fifo_rd_en),
@@ -410,7 +412,8 @@ ros2
 ros2 (
   .clk(clk),
   .rst_n(rst_n),
-  .enable(ros2_en),
+  .pub_enable(ros2pub_en),
+  .sub_enable(ros2sub_en),
   .in_dout(rx_fifo_dout),
   .in_empty(rx_fifo_empty),
   .in_rreq(rx_fifo_rd_en),
