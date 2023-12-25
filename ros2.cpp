@@ -810,8 +810,27 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface mode=ap_memory port=udp_rxbuf
 #pragma HLS interface mode=ap_memory port=udp_txbuf storage_type=ram_1p
 #pragma HLS interface mode=ap_none port=enable
-#pragma HLS interface mode=ap_none port=conf
 #pragma HLS disaggregate variable=conf
+#pragma HLS array_reshape variable=conf->ip_addr type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->ip_addr
+#pragma HLS array_reshape variable=conf->node_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->node_name
+#pragma HLS interface mode=ap_none port=conf->node_name_len
+#pragma HLS array_reshape variable=conf->node_udp_port type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->node_udp_port
+#pragma HLS array_reshape variable=conf->cpu_udp_port type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->cpu_udp_port
+#pragma HLS interface mode=ap_none port=conf->port_num_seed
+#pragma HLS interface mode=ap_none port=conf->tx_period
+#pragma HLS interface mode=ap_none port=conf->fragment_expiration
+#pragma HLS array_reshape variable=conf->guid_prefix type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->guid_prefix
+#pragma HLS array_reshape variable=conf->topic_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->topic_name
+#pragma HLS interface mode=ap_none port=conf->topic_name_len
+#pragma HLS array_reshape variable=conf->topic_type_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->topic_type_name
+#pragma HLS interface mode=ap_none port=conf->topic_type_name_len
 #pragma HLS interface mode=ap_fifo port=app_data
 #pragma HLS array_reshape variable=app_data type=complete dim=0
 #pragma HLS interface mode=ap_fifo port=app_data_len
