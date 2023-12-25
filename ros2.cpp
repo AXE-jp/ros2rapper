@@ -112,6 +112,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out)
 /* Cyber func=inline */
 static void ros2_in(hls_stream<uint8_t> &in,
 		    uint32_t rawudp_rxbuf[],
+		    uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
 		    sedp_reader_id_t &sedp_reader_cnt,
 		    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 		    app_reader_id_t &app_reader_cnt,
@@ -143,7 +144,7 @@ static void ros2_in(hls_stream<uint8_t> &in,
 #else // !USE_FIFOIF_ETHERNET
 	slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
-	ip_in(s1, s2, conf->fragment_expiration, ip_parity_error);
+	ip_in(s1, s2, ip_payloads, conf->fragment_expiration, ip_parity_error);
 	udp_in(s2, s3, enable, conf->cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel, rawudp_rxbuf_grant, udp_parity_error);
 
 	if (!s3.read_nb(x))
@@ -793,6 +794,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  hls_stream<uint8_t> &out/* Cyber port_mode=cw_fifo */,
 	  uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN/4],
 	  uint32_t udp_txbuf[RAWUDP_TXBUF_LEN/4],
+	  uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
 	  hls_uint<1> enable/* Cyber port_mode=in */,
 	  const config_t *conf/* Cyber port_mode=in, stable_input */,
 	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=shared */,
@@ -809,6 +811,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface mode=ap_fifo port=out
 #pragma HLS interface mode=ap_memory port=udp_rxbuf
 #pragma HLS interface mode=ap_memory port=udp_txbuf storage_type=ram_1p
+#pragma HLS interface mode=ap_memory port=ip_payloads storage_type=ram_1p
 #pragma HLS interface mode=ap_none port=enable
 #pragma HLS disaggregate variable=conf
 #pragma HLS array_reshape variable=conf->ip_addr type=complete dim=0
@@ -853,6 +856,7 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 
 	ros2_in(in,
 		udp_rxbuf,
+		ip_payloads,
 		sedp_reader_cnt,
 		sedp_reader_tbl,
 		app_reader_cnt,
