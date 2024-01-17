@@ -54,10 +54,8 @@ current_run -implementation [get_runs impl_1]
 
 # Import sources
 add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.v ]
-add_files -norecurse -fileset sources_1 "../include/config.vh"
-add_files -norecurse -fileset sources_1 "../rtl-a/priority_encoder.v"
-add_files -norecurse -fileset sources_1 "../rtl-common/ram_1rw.v"
-add_files -norecurse -fileset sources_1 "../rtl-common/queue.v"
+add_files -norecurse -fileset sources_1 [ glob ./aux-src/*.v ]
+add_files -norecurse -fileset sources_1 "./aux-src/config.vh"
 
 # Import xdc files
 if {[info exists design_xdc_file]} {
