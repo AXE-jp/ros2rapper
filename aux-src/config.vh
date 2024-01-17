@@ -20,6 +20,9 @@
 `define ROS2_MAX_TOPIC_TYPE_NAME_LEN  64
 `define ROS2_MAX_APP_DATA_LEN         64
 
+`define PAYLOADSMEM_DEPTH   2960
+`define PAYLOADSMEM_AWIDTH  ($clog2(`PAYLOADSMEM_DEPTH))
+
 // raw UDP datagram
 `define UDP_RXBUF_AWIDTH 6
 `define UDP_TXBUF_AWIDTH 6
