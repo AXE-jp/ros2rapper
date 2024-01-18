@@ -38,15 +38,7 @@ assign clk_25mhz_int = clk;
 assign mmcm_locked = 0;
 
 `elsif TARGET_XILINX
-wire clk_ibufg;
-wire clk_mmcm_out;
 wire mmcm_clkfb;
-wire clk_25mhz_mmcm_out;
-
-IBUFG clk_ibufg_inst(
-    .I(clk),
-    .O(clk_ibufg)
-);
 
 MMCME2_BASE #(
     .BANDWIDTH("OPTIMIZED"),
@@ -80,13 +72,13 @@ MMCME2_BASE #(
     .CLKOUT4_CASCADE("FALSE")
 )
 clk_mmcm_inst (
-    .CLKIN1(clk_ibufg),
+    .CLKIN1(clk),
     .CLKFBIN(mmcm_clkfb),
     .RST(~rst_n),
     .PWRDWN(1'b0),
-    .CLKOUT0(clk_mmcm_out),
+    .CLKOUT0(clk_int),
     .CLKOUT0B(),
-    .CLKOUT1(clk_25mhz_mmcm_out),
+    .CLKOUT1(clk_25mhz_int),
     .CLKOUT1B(),
     .CLKOUT2(),
     .CLKOUT2B(),
@@ -100,32 +92,18 @@ clk_mmcm_inst (
     .LOCKED(mmcm_locked)
 );
 
-BUFG
-clk_bufg_inst (
-    .I(clk_mmcm_out),
-    .O(clk_int)
-);
-
-BUFG
-clk_25mhz_bufg_inst (
-    .I(clk_25mhz_mmcm_out),
-    .O(clk_25mhz_int)
-);
-
 `endif
 
-/*
-sync_reset #(
-    .N(4)
-)
-sync_reset_inst (
-    .clk(clk_int),
-    .rst_n(mmcm_locked),
-    .out(rst_n_int)
-);
-*/
+reg [3:0] sync_rst_reg;
+assign rst_n_int = sync_rst_reg[3];
 
-assign rst_n_int = rst_n;
+always @(posedge clk_int or negedge rst_n) begin
+    if (!rst_n) begin
+        sync_rst_reg <= 0;
+    end else begin
+        sync_rst_reg <= {sync_rst_reg[2:0], mmcm_locked};
+    end
+end
 
 assign phy_ref_clk = clk_25mhz_int;
 
