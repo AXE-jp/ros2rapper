@@ -1,11 +1,1 @@
-gensrc/
-*.jou
-*.log
-*.xpr
-project.cache/
-project.hw/
-project.runs/
-project.sim/
-project.ip_user_files/
-project.gen/
-project.srcs/
+_gensrc/

@@ -1,6 +1,6 @@
 .PHONY: create-proj clean
 
-create-proj: vitis
+create-proj:
 	vivado -mode batch -source create_project.tcl
 
 clean:
