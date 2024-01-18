@@ -3,7 +3,7 @@
 set     project_directory   [file dirname [info script]]
 set     project_name        "ros2rapper-project"
 set     device_part         "xc7a100tcsg324-1"
-set     design_xdc_file     [ glob ./constrs/* ]
+set     design_xdc_file     [ glob ../constrs/* ]
 
 # Create project
 create_project -force $project_name $project_directory/$project_name
@@ -57,9 +57,10 @@ if {[string equal [get_runs -quiet impl_1] ""]} {
 current_run -implementation [get_runs impl_1]
 
 # Import sources
-add_files -norecurse -fileset sources_1 [ glob ./gensrc/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ./aux-src/*.v ]
-add_files -norecurse -fileset sources_1 "./aux-src/config.vh"
+add_files -norecurse -fileset sources_1 [ glob ./*.v ]
+add_files -norecurse -fileset sources_1 [ glob ./*.vh ]
+add_files -norecurse -fileset sources_1 [ glob ../gensrc/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../lib/*.v ]
 
 # Import xdc files
 if {[info exists design_xdc_file]} {

@@ -3,7 +3,7 @@
 
 `include "config.vh"
 
-module ether_top (
+module top (
     input  wire       clk,
     input  wire       rst_n,
 
@@ -31,13 +31,6 @@ wire clk_25mhz_int;
 wire rst_n_int;
 wire mmcm_locked;
 
-`ifdef TARGET_ASIC
-// FIXME: use PLL
-assign clk_int = clk;
-assign clk_25mhz_int = clk;
-assign mmcm_locked = 0;
-
-`elsif TARGET_XILINX
 wire mmcm_clkfb;
 
 MMCME2_BASE #(
@@ -91,8 +84,6 @@ clk_mmcm_inst (
     .CLKFBOUTB(),
     .LOCKED(mmcm_locked)
 );
-
-`endif
 
 reg [3:0] sync_rst_reg;
 assign rst_n_int = sync_rst_reg[3];
