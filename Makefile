@@ -1,4 +1,4 @@
-SRCDIR = gensrc
+SRCDIR = _gensrc
 
 .PHONY: all clean cleanall fake-cwb cwb vitis
 

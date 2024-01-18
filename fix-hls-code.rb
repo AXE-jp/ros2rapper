@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-SRCDIR = './gensrc/'
+SRCDIR = './_gensrc/'
 
 Dir.glob(SRCDIR+'*.v') do |filename|
   fixed = File.read(filename)
