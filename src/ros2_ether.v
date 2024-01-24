@@ -1,3 +1,4 @@
+`define ROS2RAPPER_HLS_VITIS
 `resetall
 `default_nettype none
 
@@ -8,7 +9,8 @@ module ros2_ether (
     input  wire       rst_n,
 
     input  wire       ether_en,
-    input  wire       ros2_en,
+    input  wire       ros2pub_en,
+    input  wire       ros2sub_en,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -32,15 +34,28 @@ module ros2_ether (
     input  wire [31:0] ros2_tx_period,
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
-    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_topic_name,
-    input  wire [7:0] ros2_topic_name_len,
-    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_topic_type_name,
-    input  wire [7:0] ros2_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
+    input  wire [7:0] ros2_pub_topic_name_len,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name,
+    input  wire [7:0] ros2_pub_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name,
+    input  wire [7:0] ros2_sub_topic_name_len,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name,
+    input  wire [7:0] ros2_sub_topic_type_name_len,
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
     input  wire [7:0] ros2_app_data_len,
+
     input  wire ros2_app_data_cpu_req,
     input  wire ros2_app_data_cpu_rel,
     output wire ros2_app_data_cpu_grant,
+
+    input  wire ros2_app_rx_data_cpu_rel,
+    output wire ros2_app_rx_data_cpu_grant,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_app_rx_data_addr,
+    output wire ros2_app_rx_data_ce,
+    output wire ros2_app_rx_data_we,
+    output wire [7:0] ros2_app_rx_data_wdata,
+    output wire [7:0] ros2_app_rx_data_len,
 
     input  wire udp_rxbuf_cpu_rel,
     output wire udp_rxbuf_cpu_grant,
@@ -240,6 +255,28 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+// arbiter for sharing app_rx_data buffer between CPU and ROS2rapper IP
+localparam APP_RX_DATA_GRANT_IP   = 1'b0;
+localparam APP_RX_DATA_GRANT_CPU  = 1'b1;
+
+reg r_ros2_app_rx_data_grant;
+wire ros2_app_rx_data_ip_rel, ros2_app_rx_data_ip_grant;
+assign ros2_app_rx_data_ip_grant = ros2_en & (~r_ros2_app_rx_data_grant);
+assign ros2_app_rx_data_cpu_grant = ros2_en & r_ros2_app_rx_data_grant;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+    end else begin
+        case (r_app_rx_data_grant)
+            APP_RX_DATA_GRANT_IP:
+                if (ros2_app_rx_data_ip_rel) r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_CPU;
+            APP_RX_DATA_GRANT_CPU:
+                if (ros2_app_rx_data_cpu_rel) r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+        endcase
+    end
+end
+
 // arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
 localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
@@ -284,12 +321,29 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+
+wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] r_ros2_app_rx_data_len;
+wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_app_rx_data_len_data;
+wire ros2_app_rx_data_len_wr;
+
+assign ros2_app_rx_data_len = r_ros2_app_rx_data_len;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        r_ros2_app_rx_data_len <= 0;
+    end else begin
+        if (ros2_app_rx_data_len_wr)
+            r_ros2_app_rx_data_len <= ros2_app_rx_data_len_data;
+    end
+end
+
 `ifdef ROS2RAPPER_HLS_VITIS
 ros2
 ros2 (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
-    .enable(ros2_en),
+    .pub_enable(ros2pub_en),
+    .sub_enable(ros2sub_en),
     .in_r_dout(rx_fifo_dout),
     .in_r_empty_n(~rx_fifo_empty),
     .in_r_read(rx_fifo_rd_en),
@@ -317,16 +371,30 @@ ros2 (
     .conf_tx_period(ros2_tx_period),
     .conf_fragment_expiration(ros2_fragment_expiration),
     .conf_guid_prefix(ros2_guid_prefix),
-    .conf_topic_name(ros2_topic_name),
-    .conf_topic_name_len(ros2_topic_name_len),
-    .conf_topic_type_name(ros2_topic_type_name),
-    .conf_topic_type_name_len(ros2_topic_type_name_len),
+    .conf_pub_topic_name(ros2_pub_topic_name),
+    .conf_pub_topic_name_len(ros2_pub_topic_name_len),
+    .conf_pub_topic_type_name(ros2_pub_topic_type_name),
+    .conf_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
+    .conf_sub_topic_name(ros2_sub_topic_name),
+    .conf_sub_topic_name_len(ros2_sub_topic_name_len),
+    .conf_sub_topic_type_name(ros2_sub_topic_type_name),
+    .conf_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
     .app_data_dout(ros2_app_data),
     .app_data_empty_n(1'b1),
     .app_data_read(),
     .app_data_len_dout(ros2_app_data_len),
     .app_data_len_empty_n(1'b1),
     .app_data_len_read(),
+    .app_rx_data_rel_ap_vld(ros2_app_rx_data_ip_rel),
+    .app_rx_data_rel(),
+    .app_rx_data_grant({7'b0, ros2_app_rx_data_ip_grant}),
+    .app_rx_data_address0(ros2_app_rx_data_addr),
+    .app_rx_data_ce0(ros2_app_rx_data_ce),
+    .app_rx_data_we0(ros2_app_rx_data_we),
+    .app_rx_data_d0(ros2_app_rx_data_wdata),
+    .app_rx_data_len_din(ros2_app_rx_data_len_data),
+    .app_rx_data_len_full_n(1'b1),
+    .app_rx_data_len_write(ros2_app_rx_data_len_wr),
     .app_data_req_ap_vld(ros2_app_data_ip_req),
     .app_data_req(),
     .app_data_rel_ap_vld(ros2_app_data_ip_rel),
@@ -344,7 +412,8 @@ ros2
 ros2 (
   .clk(clk),
   .rst_n(rst_n),
-  .enable(ros2_en),
+  .pub_enable(ros2pub_en),
+  .sub_enable(ros2sub_en),
   .in_dout(rx_fifo_dout),
   .in_empty(rx_fifo_empty),
   .in_rreq(rx_fifo_rd_en),
