@@ -574,7 +574,6 @@ static void rawudp_out(const uint8_t dst_addr[4],
 #define APP_WRITER_OUT(id)						\
 	/* Cyber scheduling_block = non-transparent */ \
 	do {								\
-<<<<<<< HEAD
 		if ((app_reader_cnt > (id)) && (app_reader_tbl[(id)].ep_type & APP_EP_PUB)) {				\
 			/* Cyber scheduling_block = non-transparent */ \
       { \
@@ -834,8 +833,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 	  const config_t *conf/* Cyber port_mode=in, stable_input */,
 	  volatile const uint8_t app_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=shared */,
 	  volatile const uint8_t *app_data_len/* Cyber port_mode=cw_fifo */,
-	  uint8_t app_rx_data[MAX_APP_DATA_LEN],
-	  volatile uint8_t *app_rx_data_len/* Cyber port_mode=cw_fifo */,
+	  uint8_t app_rx_data[MAX_APP_DATA_LEN]/* Cyber array=EXPAND, port_mode=shared */,
+	  volatile uint8_t *app_rx_data_len,
 	  volatile uint8_t *app_data_req/* Cyber port_mode=shared */,
 	  volatile uint8_t *app_data_rel/* Cyber port_mode=shared */,
 	  volatile uint8_t *app_data_grant/* Cyber port_mode=shared */,
@@ -868,17 +867,23 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface mode=ap_none port=conf->fragment_expiration
 #pragma HLS array_reshape variable=conf->guid_prefix type=complete dim=0
 #pragma HLS interface mode=ap_none port=conf->guid_prefix
-#pragma HLS array_reshape variable=conf->topic_name type=complete dim=0
-#pragma HLS interface mode=ap_none port=conf->topic_name
-#pragma HLS interface mode=ap_none port=conf->topic_name_len
-#pragma HLS array_reshape variable=conf->topic_type_name type=complete dim=0
-#pragma HLS interface mode=ap_none port=conf->topic_type_name
-#pragma HLS interface mode=ap_none port=conf->topic_type_name_len
+#pragma HLS array_reshape variable=conf->pub_topic_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->pub_topic_name
+#pragma HLS interface mode=ap_none port=conf->pub_topic_name_len
+#pragma HLS array_reshape variable=conf->pub_topic_type_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->pub_topic_type_name
+#pragma HLS interface mode=ap_none port=conf->pub_topic_type_name_len
+#pragma HLS array_reshape variable=conf->sub_topic_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->sub_topic_name
+#pragma HLS interface mode=ap_none port=conf->sub_topic_name_len
+#pragma HLS array_reshape variable=conf->sub_topic_type_name type=complete dim=0
+#pragma HLS interface mode=ap_none port=conf->sub_topic_type_name
+#pragma HLS interface mode=ap_none port=conf->sub_topic_type_name_len
 #pragma HLS interface mode=ap_fifo port=app_data
 #pragma HLS array_reshape variable=app_data type=complete dim=0
 #pragma HLS interface mode=ap_fifo port=app_data_len
 #pragma HLS interface mode=ap_memory port=app_rx_data
-#pragma HLS interface mode=ap_fifo port=app_rx_data_len
+#pragma HLS interface mode=ap_none port=app_rx_data_len
 #pragma HLS interface mode=ap_vld port=app_data_req
 #pragma HLS interface mode=ap_vld port=app_data_rel
 #pragma HLS interface mode=ap_none port=app_data_grant
