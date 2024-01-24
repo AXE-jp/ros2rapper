@@ -1,5 +1,5 @@
-cd "ros2rapper-project"
-open_project "ros2rapper-project.xpr"
+cd "ros2rapper-pub"
+open_project "ros2rapper-pub.xpr"
 
 set_property part xc7a100tcsg324-1 [current_project]
 

@@ -1,5 +1,6 @@
 // Target
-`define TARGET_XILINX
+//`define TARGET_XILINX
+//`define TARGET_ASIC
 
 `ifdef TARGET_XILINX
   // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")

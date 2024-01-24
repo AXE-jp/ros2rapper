@@ -1,7 +1,7 @@
 # create_project.tcl  Tcl script for creating project
 
 set     project_directory   [file dirname [info script]]
-set     project_name        "ros2rapper-project"
+set     project_name        "ros2rapper-pub"
 set     device_part         "xc7a100tcsg324-1"
 set     design_xdc_file     [ glob ./constrs/* ]
 
@@ -20,7 +20,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 }
 set obj [get_filesets sources_1]
 set_property -name "loop_count" -value "1000" -objects $obj
-set_property -name "verilog_define" -value "TARGET_XILINX=1" -objects $obj
+set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1" -objects $obj
 set_property -name "verilog_version" -value "verilog_2001" -objects $obj
 
 # Create fileset "constrs_1"
@@ -42,7 +42,6 @@ if {[string equal [get_runs -quiet synth_1] ""]} {
     set_property flow     $synth_1_flow     [get_runs synth_1]
     set_property strategy $synth_1_strategy [get_runs synth_1]
 }
-set_property -name "steps.synth_design.args.more options" -value "-verilog_define TARGET_XILINX=1" -objects [get_runs synth_1]
 current_run -synthesis [get_runs synth_1]
 
 # Create run "impl_1" and set property
@@ -59,9 +58,9 @@ current_run -implementation [get_runs impl_1]
 # Import sources
 add_files -norecurse -fileset sources_1 [ glob ./*.v ]
 add_files -norecurse -fileset sources_1 [ glob ./*.vh ]
-add_files -norecurse -fileset sources_1 [ glob ../src/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../lib/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../../src/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../../lib/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../../ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
 
 # Import xdc files
 if {[info exists design_xdc_file]} {
