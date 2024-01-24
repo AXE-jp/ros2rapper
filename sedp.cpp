@@ -65,12 +65,19 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 		 hls_uint<1> enable,
 		 uint16_t port_num_seed,
 		 const uint8_t guid_prefix[12],
-		 const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
-		 uint8_t topic_name_len,
-		 const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
-		 uint8_t type_name_len)
+		 const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
+		 uint8_t pub_topic_name_len,
+		 const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t pub_type_name_len,
+		 const uint8_t sub_topic_name[MAX_TOPIC_NAME_LEN],
+		 uint8_t sub_topic_name_len,
+		 const uint8_t sub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
+		 uint8_t sub_type_name_len)
 {
 #pragma HLS inline
+	static const uint8_t pub_reader_id[4]/* Cyber array=EXPAND */ =
+		ENTITYID_BUILTIN_PUBLICATIONS_READER;
+#pragma HLS array_partition variable=pub_reader_id complete dim=0
 	static const uint8_t sub_reader_id[4]/* Cyber array=EXPAND */ =
 		ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable=sub_reader_id complete dim=0
@@ -79,6 +86,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 	static uint16_t offset;
 	static hls_uint<5> flags;
 	static hls_uint<APP_READER_MAX> unmatched;
+	static hls_uint<2> ep_type;
 
 	static uint8_t sbm_id;
 	static bool sbm_le;
@@ -132,9 +140,10 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 			offset = 0;
 			if (sbm_id == SBM_ID_INFO_DST)
 				state = 2;
-			else if (sbm_id == SBM_ID_DATA)
+			else if (sbm_id == SBM_ID_DATA) {
+				ep_type = APP_EP_PUB | APP_EP_SUB;
 				state = 3;
-			else
+			} else
 				state = 8;
 		}
 		break;
@@ -151,8 +160,14 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 			state = 1;
 		}
 		break;
-	case 3:
+	case 3:		// parse sub-message header
 		if (!rtps_compare_reader_id(offset, data, sub_reader_id)) {
+			ep_type &= ~(APP_EP_PUB);
+		}
+		if (!rtps_compare_reader_id(offset, data, pub_reader_id)) {
+			ep_type &= ~(APP_EP_SUB);
+		}
+		if (ep_type == 0) {
 			state = 9;
 			break;
 		}
@@ -203,8 +218,10 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 				if (flags == found) {
 					hls_uint<APP_READER_MAX> valid =
 						(0x1 << reader_cnt) - 1;
-					if ((unmatched & valid) == valid)
+					if ((unmatched & valid) == valid) {
+						reader.ep_type = ep_type;
 						reader_cnt++;
+					}
 				}
 				unmatched = 0;
 				flags = 0;
@@ -277,15 +294,28 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 						sp_len |= data;
 				}
 			} else {
-				if (sp_len != topic_name_len) {
-					flags |= (hls_uint<5>)
-						FLAGS_UNMATCH_TOPIC;
-					break;
+				if (offset == 4) {
+					uint8_t topic_name_len =
+						(ep_type & APP_EP_PUB) ? pub_topic_name_len : sub_topic_name_len;
+
+					if (sp_len != topic_name_len) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TOPIC;
+						break;
+					}
 				}
-				if (offset < sp_len + 4 &&
-				    topic_name[offset-4] != data) {
-					flags |= (hls_uint<5>)
-						FLAGS_UNMATCH_TOPIC;
+				if (ep_type & APP_EP_PUB) {
+					if (offset < sp_len + 4 &&
+					    pub_topic_name[offset-4] != data) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TOPIC;
+					}
+				} else{
+					if (offset < sp_len + 4 &&
+					    sub_topic_name[offset-4] != data) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TOPIC;
+					}
 				}
 			}
 			break;
@@ -311,15 +341,27 @@ void sedp_reader(hls_stream<hls_uint<9>> &in,
 						sp_len |= data;
 				}
 			} else {
-				if (sp_len != type_name_len) {
-					flags |= (hls_uint<5>)
-						FLAGS_UNMATCH_TYPE;
-					break;
+				if (offset == 4) {
+					uint8_t type_name_len = 
+						(ep_type & APP_EP_PUB) ? pub_type_name_len : sub_type_name_len;
+					if (sp_len != type_name_len) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TYPE;
+						break;
+					}
 				}
-				if (offset < sp_len + 4 &&
-				    type_name[offset-4] != data) {
-					flags |= (hls_uint<5>)
-						FLAGS_UNMATCH_TYPE;
+				if (ep_type & APP_EP_PUB) {
+					if (offset < sp_len + 4 &&
+					    pub_type_name[offset-4] != data) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TYPE;
+					}
+				} else{
+					if (offset < sp_len + 4 &&
+					    sub_type_name[offset-4] != data) {
+						flags |= (hls_uint<5>)
+							FLAGS_UNMATCH_TYPE;
+					}
 				}
 			}
 			break;
