@@ -112,7 +112,7 @@ wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
 wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
 
 
-`define	USE_CTRL_DEMO
+//`define	USE_CTRL_DEMO
 
 `ifdef USE_CTRL_DEMO
 

@@ -59,8 +59,9 @@ current_run -implementation [get_runs impl_1]
 # Import sources
 add_files -norecurse -fileset sources_1 [ glob ./*.v ]
 add_files -norecurse -fileset sources_1 [ glob ./*.vh ]
-add_files -norecurse -fileset sources_1 [ glob ../_gensrc/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../src/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../lib/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
 
 # Import xdc files
 if {[info exists design_xdc_file]} {

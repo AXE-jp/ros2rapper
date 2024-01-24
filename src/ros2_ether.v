@@ -1,4 +1,3 @@
-`define ROS2RAPPER_HLS_VITIS
 `resetall
 `default_nettype none
 
@@ -261,14 +260,14 @@ localparam APP_RX_DATA_GRANT_CPU  = 1'b1;
 
 reg r_ros2_app_rx_data_grant;
 wire ros2_app_rx_data_ip_rel, ros2_app_rx_data_ip_grant;
-assign ros2_app_rx_data_ip_grant = ros2_en & (~r_ros2_app_rx_data_grant);
-assign ros2_app_rx_data_cpu_grant = ros2_en & r_ros2_app_rx_data_grant;
+assign ros2_app_rx_data_ip_grant = ros2sub_en & (~r_ros2_app_rx_data_grant);
+assign ros2_app_rx_data_cpu_grant = ros2sub_en & r_ros2_app_rx_data_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
     end else begin
-        case (r_app_rx_data_grant)
+        case (r_ros2_app_rx_data_grant)
             APP_RX_DATA_GRANT_IP:
                 if (ros2_app_rx_data_ip_rel) r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_CPU;
             APP_RX_DATA_GRANT_CPU:
@@ -322,7 +321,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 
-wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] r_ros2_app_rx_data_len;
+reg [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] r_ros2_app_rx_data_len;
 wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_app_rx_data_len_data;
 wire ros2_app_rx_data_len_wr;
 
