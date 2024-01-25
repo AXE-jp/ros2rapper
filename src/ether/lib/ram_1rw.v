@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2024 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 `default_nettype none
 
 module ram_1rw #(parameter DEPTH=64, DWIDTH=32) (
