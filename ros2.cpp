@@ -884,6 +884,8 @@ void ros2(hls_stream<uint8_t> &in/* Cyber port_mode=cw_fifo */,
 #pragma HLS interface mode=ap_fifo port=app_data_len
 #pragma HLS interface mode=ap_memory port=app_rx_data
 #pragma HLS interface mode=ap_none port=app_rx_data_len
+#pragma HLS interface mode=ap_vld port=app_rx_data_rel
+#pragma HLS interface mode=ap_none port=app_rx_data_grant
 #pragma HLS interface mode=ap_vld port=app_data_req
 #pragma HLS interface mode=ap_vld port=app_data_rel
 #pragma HLS interface mode=ap_none port=app_data_grant
