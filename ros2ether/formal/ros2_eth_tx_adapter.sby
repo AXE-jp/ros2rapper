@@ -1,0 +1,18 @@
+[tasks]
+prf
+cvr
+
+[options]
+prf: mode bmc
+cvr: mode cover
+depth 32
+
+[engines]
+smtbmc
+
+[script]
+read -formal ros2_eth_tx_adapter.v
+prep -top ros2_eth_tx_adapter
+
+[files]
+../ether-src/ros2_eth_tx_adapter.v
