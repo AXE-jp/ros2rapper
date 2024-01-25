@@ -4,7 +4,8 @@
 `resetall
 `default_nettype none
 
-`include "config.vh"
+`include "ros2_config.vh"
+`include "ros2_ether_config.vh"
 
 module top (
     input  wire       clk,

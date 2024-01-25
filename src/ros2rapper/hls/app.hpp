@@ -4,6 +4,7 @@
 #ifndef APP_HPP
 #define APP_HPP
 
+#include "ros2.hpp"
 #include "rtps.hpp"
 #include "timestamp.hpp"
 #include <cstdint>

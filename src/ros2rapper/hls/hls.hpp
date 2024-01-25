@@ -11,8 +11,6 @@
 #endif
 
 #ifdef VITIS_HLS
-#include <gmp.h>
-#define __gmp_const const
 #include <hls_stream.h>
 template <typename T> using hls_stream = hls::stream<T>;
 #include <ap_int.h>

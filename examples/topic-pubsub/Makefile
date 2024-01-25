@@ -4,7 +4,7 @@
 .PHONY: create-proj synth clean
 
 create-proj:
-	$(MAKE) -C ../src/ros2rapper vitis
+	$(MAKE) -C ../../src/ros2rapper -f Makefile.vitis
 	vivado -mode batch -source create_project.tcl
 
 synth:

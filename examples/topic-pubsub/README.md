@@ -6,16 +6,16 @@
 ## Requirements
 * Arty A7-100T
 * Vivado 2023.2
-* Requirements for ROS2rapper (See README in ros2rapper repository)
+* Vitis HLS 2023.2
 
 ## Build
 To synthesize ROS2rapper and create Vivado project, run following commands.
 ```
-$ make -C .. vitis
 $ make create-proj
+$ make synth
 ```
 
-Then open ros2rapper-project/ros2rapper-project.xpr in Vivado and run "Generate bitstream".
+Then write generated bitstream (ros2rapper-pubsub/ros2rapper-pubsub.runs/impl\_1/top.bit) to FPGA.
 
 ## Run
 * Configure IP address to be the same network address. IP address of this example is `192.168.1.100`.
