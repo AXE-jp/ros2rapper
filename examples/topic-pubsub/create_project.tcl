@@ -1,3 +1,6 @@
+# Copyright (c) 2021-2024 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # create_project.tcl  Tcl script for creating project
 
 set     project_directory   [file dirname [info script]]

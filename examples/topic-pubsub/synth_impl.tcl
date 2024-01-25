@@ -1,3 +1,6 @@
+# Copyright (c) 2021-2024 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 cd "ros2rapper-pubsub"
 open_project "ros2rapper-pubsub.xpr"
 

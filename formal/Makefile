@@ -1,3 +1,6 @@
+# Copyright (c) 2021-2024 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 SHELL := /bin/bash
 
 FV_CASES = $(shell find *.sby -maxdepth 0)

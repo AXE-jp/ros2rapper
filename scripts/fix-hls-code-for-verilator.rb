@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+# Copyright (c) 2021-2024 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 SRCDIR = './_gensrc/'
 
 # remove zero delay (#0) timing control for Verilator (causes SEGV)
