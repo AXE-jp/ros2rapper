@@ -6,9 +6,6 @@ ROS2rapper is mainly written in C++ and supports following high-level synthesis 
 * AMD Vitis HLS 2023.2
 * NEC CyberWorkBench 10.1
 
-## Build
-TODO
-
 ## Try
 There are example projects under `examples` directory.
 
