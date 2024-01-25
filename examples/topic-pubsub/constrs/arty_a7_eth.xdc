@@ -1,12 +1,6 @@
 # Copyright (c) 2021-2024 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-set_property CFGBVS VCCO [current_design]
-set_property CONFIG_VOLTAGE 3.3 [current_design]
-set_property BITSTREAM.GENERAL.COMPRESS true [current_design]
-set_property BITSTREAM.CONFIG.CONFIGRATE 50 [current_design]
-set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
-
 set_property -dict {LOC E3 IOSTANDARD LVCMOS33} [get_ports clk]
 create_clock -period 10.000 -name clk [get_ports clk]
 
