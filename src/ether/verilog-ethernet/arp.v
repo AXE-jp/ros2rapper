@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 // Language: Verilog 2001
 
-`include "config.vh"
+`include "ros2_ether_config.vh"
 
 `resetall
 `default_nettype none

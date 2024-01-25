@@ -26,7 +26,6 @@ THE SOFTWARE.
 
 `resetall
 `default_nettype none
-`include "config.vh"
 
 /*
  * Priority encoder module

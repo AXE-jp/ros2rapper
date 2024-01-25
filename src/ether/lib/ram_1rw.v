@@ -1,4 +1,3 @@
-`include "config.vh"
 `default_nettype none
 
 module ram_1rw #(parameter DEPTH=64, DWIDTH=32) (

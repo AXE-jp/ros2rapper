@@ -1,6 +1,5 @@
 `resetall
 `default_nettype none
-`include "config.vh"
 
 module queue #(
     parameter DATA_WIDTH = 8,
