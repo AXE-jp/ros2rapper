@@ -17,16 +17,15 @@
 
 open_project -reset proj_ros2
 
-add_files app.cpp
-add_files checksum.cpp
-add_files ip.cpp
-add_files ros2.cpp
-add_files rtps.cpp
-add_files sedp.cpp
-add_files slip.cpp
-add_files spdp.cpp
-add_files udp.cpp
-# add_files -tb ros2_test.cpp
+add_files hls/app.cpp
+add_files hls/checksum.cpp
+add_files hls/ip.cpp
+add_files hls/ros2.cpp
+add_files hls/rtps.cpp
+add_files hls/sedp.cpp
+add_files hls/slip.cpp
+add_files hls/spdp.cpp
+add_files hls/udp.cpp
 
 set_top ros2
 
