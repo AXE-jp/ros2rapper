@@ -1,7 +1,8 @@
-SRCS = app.cpp checksum.cpp ip.cpp ros2.cpp rtps.cpp sedp.cpp slip.cpp spdp.cpp udp.cpp
-HDRS = app.hpp checksum.hpp common.hpp duration.hpp endpoint.hpp hls.hpp ip.hpp ros2.hpp rtps.hpp sedp.hpp slip.hpp spdp.hpp timestamp.hpp udp.hpp
+HLSDIR = hls
+SRCS = $(wildcard $(HLSDIR)/*.cpp)
+HDRS = $(wildcard $(HLSDIR)/*.hpp)
 
-.PHONY: synth clean
+.PHONY: synth clean format
 
 CPARS_FLAGS =
 BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -o-P
@@ -20,3 +21,7 @@ ros2.v: ros2_E.IFF
 
 clean:
 	rm -f *.CPINFO *.cperr *.xml *.FCNT *.FLIB *.MCNT *.MLIB *.CSV *.LMSPEC *.LOG.gz *.QOR *.QOR.HTML *.SR *.SUMM *.VSG *.err *.tips *.v *.LSInfo *.scuba *.vgerr *.warn *.IFF
+
+format:
+	find hls/*.cpp | xargs clang-format -i
+	find hls/*.hpp | xargs clang-format -i

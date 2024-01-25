@@ -15,4 +15,4 @@ read -formal ros2_eth_tx_adapter.v
 prep -top ros2_eth_tx_adapter
 
 [files]
-../ether-src/ros2_eth_tx_adapter.v
+../src/ether/adapter/ros2_eth_tx_adapter.v

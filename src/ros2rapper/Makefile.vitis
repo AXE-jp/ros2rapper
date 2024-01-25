@@ -1,8 +1,9 @@
-SRCS = app.cpp checksum.cpp ip.cpp ros2.cpp rtps.cpp sedp.cpp slip.cpp spdp.cpp udp.cpp
-HDRS = app.hpp checksum.hpp common.hpp duration.hpp endpoint.hpp hls.hpp ip.hpp ros2.hpp rtps.hpp sedp.hpp slip.hpp spdp.hpp timestamp.hpp udp.hpp
+HLSDIR = hls
+SRCS = $(wildcard $(HLSDIR)/*.cpp)
+HDRS = $(wildcard $(HLSDIR)/*.hpp)
 VERILOGTOP = proj_ros2/solution1/syn/verilog/ros2.v
 
-.PHONY: synth clean
+.PHONY: synth clean format
 synth: $(VERILOGTOP)
 
 $(VERILOGTOP): $(SRCS) $(HDRS) run_hls.tcl
@@ -11,3 +12,7 @@ $(VERILOGTOP): $(SRCS) $(HDRS) run_hls.tcl
 clean:
 	rm -rf proj_ros2
 	rm -rf *.log
+
+format:
+	find hls/*.cpp | xargs clang-format -i
+	find hls/*.hpp | xargs clang-format -i

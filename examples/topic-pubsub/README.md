@@ -1,7 +1,7 @@
 # Example Project of ROS2rapper with Ethernet
 
-* Publish ROS2 topic.
-* Send string messages.
+* Publish ROS2 topic and send string messages.
+* Subscribe ROS2 topic and reveice string messages.
 
 ## Requirements
 * Arty A7-100T
@@ -20,3 +20,4 @@ Then open ros2rapper-project/ros2rapper-project.xpr in Vivado and run "Generate 
 ## Run
 * Configure IP address to be the same network address. IP address of this example is `192.168.1.100`.
 * Subscribe "talker" topic by another node.
+* Publish "talker" topic by another node.

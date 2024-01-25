@@ -1,7 +1,7 @@
 .PHONY: create-proj synth clean
 
 create-proj:
-	$(MAKE) -C ../.. vitis
+	$(MAKE) -C ../src/ros2rapper vitis
 	vivado -mode batch -source create_project.tcl
 
 synth:
@@ -9,4 +9,4 @@ synth:
 
 clean:
 	rm -f *.jou *.log *.xpr
-	rm -rf ros2rapper-pub
+	rm -rf ros2rapper-pubsub
