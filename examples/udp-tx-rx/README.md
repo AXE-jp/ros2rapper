@@ -1,7 +1,7 @@
-# Example Project of ROS2rapper with Ethernet
+# UDP Send/Receive Example of ROS2rapper with Ethernet
 
-* Publish ROS2 topic and send string messages.
-* Subscribe ROS2 topic and reveice string messages.
+* Send UDP datagrams.
+* Receive UDP datagrams to the specified port number.
 
 ## Requirements
 * Arty A7-100T
@@ -19,5 +19,3 @@ Then write generated bitstream (ros2rapper-udp/ros2rapper-udp.runs/impl\_1/top.b
 
 ## Run
 * Configure IP address to be the same network address. IP address of this example is `192.168.1.100`.
-* Subscribe "talker" topic by another node.
-* Publish "talker" topic by another node.

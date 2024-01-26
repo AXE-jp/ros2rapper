@@ -1,4 +1,4 @@
-# Example Project of ROS2rapper with Ethernet
+# Topic Publish/Subscribe Example of ROS2rapper with Ethernet
 
 * Publish ROS2 topic and send string messages.
 * Subscribe ROS2 topic and reveice string messages.
