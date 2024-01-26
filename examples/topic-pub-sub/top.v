@@ -27,10 +27,6 @@ module top (
     output wire       led7
 );
 
-    localparam ARP_REQUEST_RETRY_COUNT = 4;
-    localparam ARP_REQUEST_RETRY_INTERVAL = (125000000*2);
-    localparam ARP_REQUEST_TIMEOUT = (125000000*30);
-
     // --- Clock & Reset
     wire clk_int;
     wire clk_25mhz_int;
@@ -109,11 +105,15 @@ module top (
     wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
     wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
 
+    // --- ARP Configuration
+    localparam ARP_REQUEST_RETRY_COUNT = 4;
+    localparam ARP_REQUEST_RETRY_INTERVAL = (125000000*2);
+    localparam ARP_REQUEST_TIMEOUT = (125000000*30);
+
     // --- ROS2 Node Configuration
-    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "reklat";
-    wire [7:0] ros2_node_name_len = 8'd7;
+    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe-reppar2sor";
+    wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
-    wire [15:0] ros2_cpu_udp_port = 16'd1234;
     wire [15:0] ros2_port_num_seed = 16'd7400;
     wire [31:0] ros2_tx_period = 32'd12500000;
     wire [31:0] ros2_fragment_expiration = 32'd3333333333;
@@ -195,7 +195,7 @@ module top (
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),
-        .ros2_cpu_udp_port(ros2_cpu_udp_port),
+        .ros2_cpu_udp_port(0),
         .ros2_port_num_seed(ros2_port_num_seed),
         .ros2_tx_period(ros2_tx_period),
         .ros2_fragment_expiration(ros2_fragment_expiration),
@@ -226,7 +226,7 @@ module top (
         .ros2_app_rx_data_cpu_rel(1'b0),
         .ros2_app_rx_data_cpu_grant(),
 
-        .udp_rxbuf_cpu_rel(1'b0),
+        .udp_rxbuf_cpu_rel(1'b1),
         .udp_rxbuf_cpu_grant(),
         .udp_rxbuf_addr(),
         .udp_rxbuf_ce(),
