@@ -40,7 +40,7 @@
 
 /* Cyber func=inline */
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-            hls_uint<1> &enable, const uint8_t cpu_udp_port[2],
+            hls_uint<1> &enable, const uint8_t rx_udp_port[2],
             uint32_t rawudp_rxbuf[RAWUDP_RXBUF_LEN / 4],
             volatile uint8_t *rawudp_rxbuf_rel,
             volatile uint8_t *rawudp_rxbuf_grant, bool &parity_error) {
@@ -108,7 +108,7 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
     offset++;
     if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
-      if (dst_port[0] == cpu_udp_port[0] && dst_port[1] == cpu_udp_port[1]) {
+      if (dst_port[0] == rx_udp_port[0] && dst_port[1] == rx_udp_port[1]) {
         uint16_t payload_len = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
         if (*rawudp_rxbuf_grant == 1 &&
             payload_len <= MAX_RAWUDP_RXBUF_PAYLOAD_LEN) {

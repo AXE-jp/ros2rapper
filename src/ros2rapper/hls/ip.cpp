@@ -7,9 +7,9 @@
 #include "ip.hpp"
 
 #ifdef __SYNTHESIS__
-  #define TRACE(fmt, ...)
+#define TRACE(fmt, ...)
 #else
-  #define TRACE(fmt, ...) printf(fmt, __VA_ARGS__)
+#define TRACE(fmt, ...) printf(fmt, __VA_ARGS__)
 #endif
 
 #define USE_IP_FRAGMENTATION
@@ -135,8 +135,8 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
   for (int i = 0; i < MAX_PENDINGS; i++) {
     if (pendings[i].is_used)
       TRACE("%s: [%d] id=%d arrived=%d total=%d len=%d exp=%d\n", __func__, i,
-             pendings[i].id, pendings[i].n_arrived, pendings[i].n_total,
-             pendings[i].len, pendings[i].expiration);
+            pendings[i].id, pendings[i].n_arrived, pendings[i].n_total,
+            pendings[i].len, pendings[i].expiration);
     else
       TRACE("%s: [%d] not used\n", __func__, i);
   }
@@ -411,7 +411,7 @@ void ip_in(
             offset = fragment_offset << 3;
             pendings[pending_index].len += len;
             TRACE("%s: memory write begin buf#%d offset=%d\n", __func__,
-                   pending_index, offset);
+                  pending_index, offset);
           }
         }
       }
@@ -479,12 +479,11 @@ void ip_in(
 
     if (end) {
       TRACE("%s: n_arrived=%d, n_total=%d\n", __func__,
-             pendings[pending_index].n_arrived,
-             pendings[pending_index].n_total);
+            pendings[pending_index].n_arrived, pendings[pending_index].n_total);
       if (offset != (fragment_offset << 3) + len) {
         // length check (for SLIP)
         TRACE("%s: length error %d != %d\n", __func__, offset,
-               pendings[pending_index].len);
+              pendings[pending_index].len);
         parity_error = true; // TODO: error reporting
         purge_pending_info(&pendings[pending_index]);
         reset_state();

@@ -124,8 +124,8 @@ module top (
     wire [7:0] ros2_pub_topic_name_len = 8'd11;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data = "!dlrow reppar2SOR ,olleh"; // Published message
-    wire [7:0] ros2_app_data_len = 8'd25;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = "!dlrow reppar2SOR ,olleh"; // Published message
+    wire [7:0] ros2_pub_app_data_len = 8'd25;
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "rettahc/tr";
@@ -134,16 +134,16 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
 
     // --- ROS2 Subscriber Received Message
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_app_rx_data_addr;
-    wire ros2_app_rx_data_ce;
-    wire ros2_app_rx_data_we;
-    wire [7:0] ros2_app_rx_data_wdata;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
+    wire ros2_sub_app_data_ce;
+    wire ros2_sub_app_data_we;
+    wire [7:0] ros2_sub_app_data_wdata;
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
     always @(posedge clk_int) begin
-        if (ros2_app_rx_data_ce & ros2_app_rx_data_we)
-            rx_msg_reg[ros2_app_rx_data_addr][7:0] <= ros2_app_rx_data_wdata;
+        if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
+            rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
     end
-    wire [7:0] ros2_app_rx_data_len;
+    wire [7:0] ros2_sub_app_data_len;
     assign led4 = rx_msg_reg[0][0];
     assign led5 = rx_msg_reg[0][1];
     assign led6 = rx_msg_reg[0][2];
@@ -195,7 +195,7 @@ module top (
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),
-        .ros2_cpu_udp_port(0),
+        .ros2_rx_udp_port(0),
         .ros2_port_num_seed(ros2_port_num_seed),
         .ros2_tx_period(ros2_tx_period),
         .ros2_fragment_expiration(ros2_fragment_expiration),
@@ -211,30 +211,30 @@ module top (
         .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
         .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
 
-        .ros2_app_data(ros2_app_data),
-        .ros2_app_data_len(ros2_app_data_len),
-        .ros2_app_data_cpu_req(1'b0),
-        .ros2_app_data_cpu_rel(1'b0),
-        .ros2_app_data_cpu_grant(),
+        .ros2_pub_app_data(ros2_pub_app_data),
+        .ros2_pub_app_data_len(ros2_pub_app_data_len),
+        .ros2_pub_app_data_req(1'b0),
+        .ros2_pub_app_data_rel(1'b0),
+        .ros2_pub_app_data_grant(),
 
-        .ros2_app_rx_data_addr(ros2_app_rx_data_addr),
-        .ros2_app_rx_data_ce(ros2_app_rx_data_ce),
-        .ros2_app_rx_data_we(ros2_app_rx_data_we),
-        .ros2_app_rx_data_wdata(ros2_app_rx_data_wdata),
-        .ros2_app_rx_data_len(ros2_app_rx_data_len),
-        .ros2_app_rx_data_cpu_req(1'b0),
-        .ros2_app_rx_data_cpu_rel(1'b0),
-        .ros2_app_rx_data_cpu_grant(),
+        .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
+        .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
+        .ros2_sub_app_data_we(ros2_sub_app_data_we),
+        .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
+        .ros2_sub_app_data_len(ros2_sub_app_data_len),
+        .ros2_sub_app_data_req(1'b0),
+        .ros2_sub_app_data_rel(1'b0),
+        .ros2_sub_app_data_grant(),
 
-        .udp_rxbuf_cpu_rel(1'b1),
-        .udp_rxbuf_cpu_grant(),
+        .udp_rxbuf_rel(1'b1),
+        .udp_rxbuf_grant(),
         .udp_rxbuf_addr(),
         .udp_rxbuf_ce(),
         .udp_rxbuf_we(),
         .udp_rxbuf_wdata(),
 
-        .udp_txbuf_cpu_rel(1'b0),
-        .udp_txbuf_cpu_grant(),
+        .udp_txbuf_rel(1'b0),
+        .udp_txbuf_grant(),
         .udp_txbuf_addr(),
         .udp_txbuf_ce(),
         .udp_txbuf_rdata(32'b0),

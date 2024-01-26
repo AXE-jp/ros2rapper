@@ -111,20 +111,20 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- UDP Configuration
-    wire [15:0] ros2_cpu_udp_port = 16'd1234;
+    wire [15:0] ros2_rx_udp_port = 16'd1234;
 
     // --- UDP RX Control
-    reg rxbuf_cpu_rel;
-    wire rxbuf_cpu_grant;
+    reg rxbuf_rel;
+    wire rxbuf_grant;
 
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
-            rxbuf_cpu_rel <= 0;
+            rxbuf_rel <= 0;
         end else begin
-            if (rxbuf_cpu_grant)
-                rxbuf_cpu_rel <= 1;
+            if (rxbuf_grant)
+                rxbuf_rel <= 1;
             else
-                rxbuf_cpu_rel <= 0;
+                rxbuf_rel <= 0;
         end
     end
 
@@ -151,21 +151,20 @@ module top (
     assign led7 = (rx_payload_len > 16);
 
     // --- UDP TX Control
-    reg txbuf_cpu_rel;
-    wire txbuf_cpu_grant;
+    reg txbuf_rel;
+    wire txbuf_grant;
     reg [27:0] tx_counter;
 
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
-            txbuf_rdata <= 0;
-            txbuf_cpu_rel <= 0;
+            txbuf_rel <= 0;
             tx_counter <= 0;
         end else begin
             if (tx_counter[27]) begin
-                txbuf_cpu_rel <= 1;
+                txbuf_rel <= 1;
                 tx_counter <= 0;
             end else begin
-                txbuf_cpu_rel <= 0;
+                txbuf_rel <= 0;
                 tx_counter <= tx_counter + 1;
             end
         end
@@ -211,7 +210,7 @@ module top (
         .ros2_node_name(0),
         .ros2_node_name_len(0),
         .ros2_node_udp_port(0),
-        .ros2_cpu_udp_port(ros2_cpu_udp_port),
+        .ros2_rx_udp_port(ros2_rx_udp_port),
         .ros2_port_num_seed(0),
         .ros2_tx_period(0),
         .ros2_fragment_expiration(0),
@@ -227,30 +226,30 @@ module top (
         .ros2_sub_topic_type_name(0),
         .ros2_sub_topic_type_name_len(0),
 
-        .ros2_app_data(),
-        .ros2_app_data_len(),
-        .ros2_app_data_cpu_req(1'b0),
-        .ros2_app_data_cpu_rel(1'b0),
-        .ros2_app_data_cpu_grant(),
+        .ros2_pub_app_data(),
+        .ros2_pub_app_data_len(),
+        .ros2_pub_app_data_req(1'b0),
+        .ros2_pub_app_data_rel(1'b0),
+        .ros2_pub_app_data_grant(),
 
-        .ros2_app_rx_data_addr(),
-        .ros2_app_rx_data_ce(),
-        .ros2_app_rx_data_we(),
-        .ros2_app_rx_data_wdata(),
-        .ros2_app_rx_data_len(),
-        .ros2_app_rx_data_cpu_req(1'b0),
-        .ros2_app_rx_data_cpu_rel(1'b0),
-        .ros2_app_rx_data_cpu_grant(),
+        .ros2_sub_app_data_addr(),
+        .ros2_sub_app_data_ce(),
+        .ros2_sub_app_data_we(),
+        .ros2_sub_app_data_wdata(),
+        .ros2_sub_app_data_len(),
+        .ros2_sub_app_data_req(1'b0),
+        .ros2_sub_app_data_rel(1'b0),
+        .ros2_sub_app_data_grant(),
 
-        .udp_rxbuf_cpu_rel(rxbuf_cpu_rel),
-        .udp_rxbuf_cpu_grant(rxbuf_cpu_grant),
+        .udp_rxbuf_rel(rxbuf_rel),
+        .udp_rxbuf_grant(rxbuf_grant),
         .udp_rxbuf_addr(rxbuf_addr),
         .udp_rxbuf_ce(rxbuf_ce),
         .udp_rxbuf_we(rxbuf_we),
         .udp_rxbuf_wdata(rxbuf_wdata),
 
-        .udp_txbuf_cpu_grant(txbuf_cpu_grant),
-        .udp_txbuf_cpu_rel(txbuf_cpu_rel),
+        .udp_txbuf_grant(txbuf_grant),
+        .udp_txbuf_rel(txbuf_rel),
         .udp_txbuf_addr(txbuf_addr),
         .udp_txbuf_ce(),
         .udp_txbuf_rdata(txbuf_rdata),

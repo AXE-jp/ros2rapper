@@ -32,7 +32,7 @@ module ros2_ether (
     input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input  wire [7:0] ros2_node_name_len,
     input  wire [15:0] ros2_node_udp_port,
-    input  wire [15:0] ros2_cpu_udp_port,
+    input  wire [15:0] ros2_rx_udp_port,
     input  wire [15:0] ros2_port_num_seed,
     input  wire [31:0] ros2_tx_period,
     input  wire [31:0] ros2_fragment_expiration,
@@ -48,30 +48,30 @@ module ros2_ether (
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name,
     input  wire [7:0] ros2_sub_topic_type_name_len,
 
-    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_app_data,
-    input  wire [7:0] ros2_app_data_len,
-    input  wire ros2_app_data_cpu_req,
-    input  wire ros2_app_data_cpu_rel,
-    output wire ros2_app_data_cpu_grant,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
+    input  wire [7:0] ros2_pub_app_data_len,
+    input  wire ros2_pub_app_data_req,
+    input  wire ros2_pub_app_data_rel,
+    output wire ros2_pub_app_data_grant,
 
-    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_app_rx_data_addr,
-    output wire ros2_app_rx_data_ce,
-    output wire ros2_app_rx_data_we,
-    output wire [7:0] ros2_app_rx_data_wdata,
-    output wire [7:0] ros2_app_rx_data_len,
-    input  wire ros2_app_rx_data_cpu_req,
-    input  wire ros2_app_rx_data_cpu_rel,
-    output wire ros2_app_rx_data_cpu_grant,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
+    output wire ros2_sub_app_data_ce,
+    output wire ros2_sub_app_data_we,
+    output wire [7:0] ros2_sub_app_data_wdata,
+    output wire [7:0] ros2_sub_app_data_len,
+    input  wire ros2_sub_app_data_req,
+    input  wire ros2_sub_app_data_rel,
+    output wire ros2_sub_app_data_grant,
 
-    input  wire udp_rxbuf_cpu_rel,
-    output wire udp_rxbuf_cpu_grant,
+    input  wire udp_rxbuf_rel,
+    output wire udp_rxbuf_grant,
     output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
     output wire udp_rxbuf_ce,
     output wire udp_rxbuf_we,
     output wire [31:0] udp_rxbuf_wdata,
 
-    input  wire udp_txbuf_cpu_rel,
-    output wire udp_txbuf_cpu_grant,
+    input  wire udp_txbuf_rel,
+    output wire udp_txbuf_grant,
     output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
     output wire udp_txbuf_ce,
     input  wire [31:0] udp_txbuf_rdata,
@@ -227,70 +227,70 @@ rx_fifo (
     .empty(rx_fifo_empty)
 );
 
-// arbiter for sharing app_data between CPU and ROS2rapper IP
+// arbiter for sharing publisher app_data between user and IP
 localparam [1:0]
-    APP_DATA_GRANT_NONE = 2'b00,
-    APP_DATA_GRANT_IP   = 2'b01,
-    APP_DATA_GRANT_CPU  = 2'b10;
+    PUB_APP_DATA_GRANT_NONE = 2'b00,
+    PUB_APP_DATA_GRANT_IP   = 2'b01,
+    PUB_APP_DATA_GRANT_USER = 2'b10;
 
-reg [1:0] r_ros2_app_data_grant;
-wire ros2_app_data_ip_req, ros2_app_data_ip_rel, ros2_app_data_ip_grant;
-assign ros2_app_data_ip_grant = ether_en & r_ros2_app_data_grant[0];
-assign ros2_app_data_cpu_grant = ether_en & r_ros2_app_data_grant[1];
+reg [1:0] r_ros2_pub_app_data_grant;
+wire ros2_pub_app_data_ip_req, ros2_pub_app_data_ip_rel, ros2_pub_app_data_ip_grant;
+assign ros2_pub_app_data_ip_grant = ether_en & r_ros2_pub_app_data_grant[0];
+assign ros2_pub_app_data_grant = ether_en & r_ros2_pub_app_data_grant[1];
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+        r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
     end else begin
-        case (r_ros2_app_data_grant)
-            APP_DATA_GRANT_NONE: begin
-                case ({ros2_app_data_ip_req, ros2_app_data_cpu_req})
-                    2'b00: r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
-                    2'b01: r_ros2_app_data_grant <= APP_DATA_GRANT_CPU;
-                    2'b10: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
-                    2'b11: r_ros2_app_data_grant <= APP_DATA_GRANT_IP;
+        case (r_ros2_pub_app_data_grant)
+            PUB_APP_DATA_GRANT_NONE: begin
+                case ({ros2_pub_app_data_ip_req, ros2_pub_app_data_req})
+                    2'b00: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
+                    2'b01: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_USER;
+                    2'b10: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_IP;
+                    2'b11: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_IP;
                 endcase
             end
-            APP_DATA_GRANT_IP:
-                if (ros2_app_data_ip_rel) r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
-            APP_DATA_GRANT_CPU:
-                if (ros2_app_data_cpu_rel) r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+            PUB_APP_DATA_GRANT_IP:
+                if (ros2_pub_app_data_ip_rel) r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
+            PUB_APP_DATA_GRANT_USER:
+                if (ros2_pub_app_data_rel) r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
             default:
-                r_ros2_app_data_grant <= APP_DATA_GRANT_NONE;
+                r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
         endcase
     end
 end
 
-// arbiter for sharing app_rx_data buffer between CPU and ROS2rapper IP
-localparam APP_RX_DATA_GRANT_IP   = 1'b0;
-localparam APP_RX_DATA_GRANT_CPU  = 1'b1;
+// arbiter for sharing subscriber app_data buffer between user and IP
+localparam SUB_APP_DATA_GRANT_IP   = 1'b0;
+localparam SUB_APP_DATA_GRANT_USER = 1'b1;
 
-reg r_ros2_app_rx_data_grant;
-wire ros2_app_rx_data_ip_grant;
-assign ros2_app_rx_data_ip_grant = ros2sub_en & (~r_ros2_app_rx_data_grant);
-assign ros2_app_rx_data_cpu_grant = ros2sub_en & r_ros2_app_rx_data_grant;
+reg r_ros2_sub_app_data_grant;
+wire ros2_sub_app_data_ip_grant;
+assign ros2_sub_app_data_ip_grant = ros2sub_en & (~r_ros2_sub_app_data_grant);
+assign ros2_sub_app_data_grant = ros2sub_en & r_ros2_sub_app_data_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+        r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_IP;
     end else begin
-        case (r_ros2_app_rx_data_grant)
-            APP_RX_DATA_GRANT_IP:
-                if (ros2_app_rx_data_cpu_req) r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_CPU;
-            APP_RX_DATA_GRANT_CPU:
-                if (ros2_app_rx_data_cpu_rel) r_ros2_app_rx_data_grant <= APP_RX_DATA_GRANT_IP;
+        case (r_ros2_sub_app_data_grant)
+            SUB_APP_DATA_GRANT_IP:
+                if (ros2_sub_app_data_req) r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_USER;
+            SUB_APP_DATA_GRANT_USER:
+                if (ros2_sub_app_data_rel) r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_IP;
         endcase
     end
 end
 
-// arbiter for sharing UDP RX buffer between CPU and ROS2rapper IP
+// arbiter for sharing UDP RX buffer between user and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
-localparam UDP_RXBUF_GRANT_CPU  = 1'b1;
+localparam UDP_RXBUF_GRANT_USER = 1'b1;
 
 reg r_udp_rxbuf_grant;
 wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
 assign udp_rxbuf_ip_grant = ether_en & (~r_udp_rxbuf_grant);
-assign udp_rxbuf_cpu_grant = ether_en & r_udp_rxbuf_grant;
+assign udp_rxbuf_grant = ether_en & r_udp_rxbuf_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -298,31 +298,31 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         case (r_udp_rxbuf_grant)
             UDP_RXBUF_GRANT_IP:
-                if (udp_rxbuf_ip_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_CPU;
-            UDP_RXBUF_GRANT_CPU:
-                if (udp_rxbuf_cpu_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
+                if (udp_rxbuf_ip_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_USER;
+            UDP_RXBUF_GRANT_USER:
+                if (udp_rxbuf_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
         endcase
     end
 end
 
-// arbiter for sharing UDP TX buffer between CPU and ROS2rapper IP
+// arbiter for sharing UDP TX buffer between user and ROS2rapper IP
 localparam UDP_TXBUF_GRANT_IP   = 1'b0;
-localparam UDP_TXBUF_GRANT_CPU  = 1'b1;
+localparam UDP_TXBUF_GRANT_USER = 1'b1;
 
 reg r_udp_txbuf_grant;
 wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
 assign udp_txbuf_ip_grant = ether_en & (~r_udp_txbuf_grant);
-assign udp_txbuf_cpu_grant = ether_en & r_udp_txbuf_grant;
+assign udp_txbuf_grant = ether_en & r_udp_txbuf_grant;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
+        r_udp_txbuf_grant <= UDP_TXBUF_GRANT_USER;
     end else begin
         case (r_udp_txbuf_grant)
             UDP_TXBUF_GRANT_IP:
-                if (udp_txbuf_ip_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_CPU;
-            UDP_TXBUF_GRANT_CPU:
-                if (udp_txbuf_cpu_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_IP;
+                if (udp_txbuf_ip_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_USER;
+            UDP_TXBUF_GRANT_USER:
+                if (udp_txbuf_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_IP;
         endcase
     end
 end
@@ -332,31 +332,38 @@ ros2
 ros2 (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
+
     .pub_enable(ros2pub_en),
     .sub_enable(ros2sub_en),
+
     .in_r_dout(rx_fifo_dout),
     .in_r_empty_n(~rx_fifo_empty),
     .in_r_read(rx_fifo_rd_en),
+
     .out_r_din(tx_fifo_din),
     .out_r_full_n(~tx_fifo_full),
     .out_r_write(tx_fifo_wr_en),
+
     .udp_rxbuf_address0(udp_rxbuf_addr),
     .udp_rxbuf_ce0(udp_rxbuf_ce),
     .udp_rxbuf_we0(udp_rxbuf_we),
     .udp_rxbuf_d0(udp_rxbuf_wdata),
+
     .udp_txbuf_ce0(udp_txbuf_ce),
     .udp_txbuf_address0(udp_txbuf_addr),
     .udp_txbuf_q0(udp_txbuf_rdata),
+
     .ip_payloads_address0(payloadsmem_addr),
     .ip_payloads_ce0(payloadsmem_ce),
     .ip_payloads_we0(payloadsmem_we),
     .ip_payloads_d0(payloadsmem_wdata),
     .ip_payloads_q0(payloadsmem_rdata),
+
     .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
-    .conf_cpu_udp_port({ros2_cpu_udp_port[7:0], ros2_cpu_udp_port[15:8]}),
+    .conf_rx_udp_port({ros2_rx_udp_port[7:0], ros2_rx_udp_port[15:8]}),
     .conf_port_num_seed(ros2_port_num_seed),
     .conf_tx_period(ros2_tx_period),
     .conf_fragment_expiration(ros2_fragment_expiration),
@@ -369,25 +376,28 @@ ros2 (
     .conf_sub_topic_name_len(ros2_sub_topic_name_len),
     .conf_sub_topic_type_name(ros2_sub_topic_type_name),
     .conf_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
-    .app_data_dout(ros2_app_data),
-    .app_data_empty_n(1'b1),
-    .app_data_read(),
-    .app_data_len_dout(ros2_app_data_len),
-    .app_data_len_empty_n(1'b1),
-    .app_data_len_read(),
-    .app_rx_data_rel_ap_vld(),
-    .app_rx_data_rel(),
-    .app_rx_data_grant({7'b0, ros2_app_rx_data_ip_grant}),
-    .app_rx_data_address0(ros2_app_rx_data_addr),
-    .app_rx_data_ce0(ros2_app_rx_data_ce),
-    .app_rx_data_we0(ros2_app_rx_data_we),
-    .app_rx_data_d0(ros2_app_rx_data_wdata),
-    .app_rx_data_len(ros2_app_rx_data_len),
-    .app_data_req_ap_vld(ros2_app_data_ip_req),
-    .app_data_req(),
-    .app_data_rel_ap_vld(ros2_app_data_ip_rel),
-    .app_data_rel(),
-    .app_data_grant({7'b0, ros2_app_data_ip_grant}),
+
+    .pub_app_data_dout(ros2_pub_app_data),
+    .pub_app_data_empty_n(1'b1),
+    .pub_app_data_read(),
+    .pub_app_data_len_dout(ros2_pub_app_data_len),
+    .pub_app_data_len_empty_n(1'b1),
+    .pub_app_data_len_read(),
+    .pub_app_data_req_ap_vld(ros2_pub_app_data_ip_req),
+    .pub_app_data_req(),
+    .pub_app_data_rel_ap_vld(ros2_pub_app_data_ip_rel),
+    .pub_app_data_rel(),
+    .pub_app_data_grant({7'b0, ros2_pub_app_data_ip_grant}),
+
+    .sub_app_data_rel_ap_vld(),
+    .sub_app_data_rel(),
+    .sub_app_data_grant({7'b0, ros2_sub_app_data_ip_grant}),
+    .sub_app_data_address0(ros2_sub_app_data_addr),
+    .sub_app_data_ce0(ros2_sub_app_data_ce),
+    .sub_app_data_we0(ros2_sub_app_data_we),
+    .sub_app_data_d0(ros2_sub_app_data_wdata),
+    .sub_app_data_len(ros2_sub_app_data_len),
+
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
     .udp_rxbuf_rel(),
     .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
@@ -400,26 +410,33 @@ ros2
 ros2 (
   .clk(clk),
   .rst_n(rst_n),
+
   .pub_enable(ros2pub_en),
   .sub_enable(ros2sub_en),
+
   .in_dout(rx_fifo_dout),
   .in_empty(rx_fifo_empty),
   .in_rreq(rx_fifo_rd_en),
+
   .out_din(tx_fifo_din),
   .out_full(tx_fifo_full),
   .out_wreq(tx_fifo_wr_en),
+
   .udp_rxbuf_CS1(udp_rxbuf_ce),
   .udp_rxbuf_AD1(udp_rxbuf_addr),
   .udp_rxbuf_WE1(udp_rxbuf_we),
   .udp_rxbuf_WD1(udp_rxbuf_wdata),
+
   .udp_txbuf_CS1(udp_txbuf_ce),
   .udp_txbuf_AD1(udp_txbuf_addr),
   .udp_txbuf_RD1(udp_txbuf_rdata),
+
   .ip_payloads_CS1(payloadsmem_ce),
   .ip_payloads_AD1(payloadsmem_addr),
   .ip_payloads_WE1(payloadsmem_we),
   .ip_payloads_WD1(payloadsmem_wdata),
   .ip_payloads_RD1(payloadsmem_rdata),
+
   .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
   .conf_node_name_00(ros2_node_name[7:0]), .conf_node_name_01(ros2_node_name[15:8]),
@@ -440,7 +457,7 @@ ros2 (
   .conf_node_name_30(ros2_node_name[247:240]), .conf_node_name_31(ros2_node_name[255:248]),
   .conf_node_name_len(ros2_node_name_len),
   .conf_node_udp_port_1(ros2_node_udp_port[7:0]), .conf_node_udp_port_0(ros2_node_udp_port[15:8]),
-  .conf_cpu_udp_port_1(ros2_cpu_udp_port[7:0]), .conf_cpu_udp_port_0(ros2_cpu_udp_port[15:8]),
+  .conf_rx_udp_port_1(ros2_rx_udp_port[7:0]), .conf_rx_udp_port_0(ros2_rx_udp_port[15:8]),
   .conf_port_num_seed(ros2_port_num_seed),
   .conf_tx_period(ros2_tx_period),
   .conf_fragment_expiration(ros2_fragment_expiration),
@@ -500,49 +517,65 @@ ros2 (
   .conf_topic_type_name_60(ros2_topic_type_name[487:480]), .conf_topic_type_name_61(ros2_topic_type_name[495:488]),
   .conf_topic_type_name_62(ros2_topic_type_name[503:496]), .conf_topic_type_name_63(ros2_topic_type_name[511:504]),
   .conf_topic_type_name_len(ros2_topic_type_name_len),
-  .app_data_00_rd(ros2_app_data[7:0]),     .app_data_01_rd(ros2_app_data[15:8]),
-  .app_data_02_rd(ros2_app_data[23:16]),   .app_data_03_rd(ros2_app_data[31:24]),
-  .app_data_04_rd(ros2_app_data[39:32]),   .app_data_05_rd(ros2_app_data[47:40]),
-  .app_data_06_rd(ros2_app_data[55:48]),   .app_data_07_rd(ros2_app_data[63:56]),
-  .app_data_08_rd(ros2_app_data[71:64]),   .app_data_09_rd(ros2_app_data[79:72]),
-  .app_data_10_rd(ros2_app_data[87:80]),   .app_data_11_rd(ros2_app_data[95:88]),
-  .app_data_12_rd(ros2_app_data[103:96]),  .app_data_13_rd(ros2_app_data[111:104]),
-  .app_data_14_rd(ros2_app_data[119:112]), .app_data_15_rd(ros2_app_data[127:120]),
-  .app_data_16_rd(ros2_app_data[135:128]), .app_data_17_rd(ros2_app_data[143:136]),
-  .app_data_18_rd(ros2_app_data[151:144]), .app_data_19_rd(ros2_app_data[159:152]),
-  .app_data_20_rd(ros2_app_data[167:160]), .app_data_21_rd(ros2_app_data[175:168]),
-  .app_data_22_rd(ros2_app_data[183:176]), .app_data_23_rd(ros2_app_data[191:184]),
-  .app_data_24_rd(ros2_app_data[199:192]), .app_data_25_rd(ros2_app_data[207:200]),
-  .app_data_26_rd(ros2_app_data[215:208]), .app_data_27_rd(ros2_app_data[223:216]),
-  .app_data_28_rd(ros2_app_data[231:224]), .app_data_29_rd(ros2_app_data[239:232]),
-  .app_data_30_rd(ros2_app_data[247:240]), .app_data_31_rd(ros2_app_data[255:248]),
-  .app_data_32_rd(ros2_app_data[263:256]), .app_data_33_rd(ros2_app_data[271:264]),
-  .app_data_34_rd(ros2_app_data[279:272]), .app_data_35_rd(ros2_app_data[287:280]),
-  .app_data_36_rd(ros2_app_data[295:288]), .app_data_37_rd(ros2_app_data[303:296]),
-  .app_data_38_rd(ros2_app_data[311:304]), .app_data_39_rd(ros2_app_data[319:312]),
-  .app_data_40_rd(ros2_app_data[327:320]), .app_data_41_rd(ros2_app_data[335:328]),
-  .app_data_42_rd(ros2_app_data[343:336]), .app_data_43_rd(ros2_app_data[351:344]),
-  .app_data_44_rd(ros2_app_data[359:352]), .app_data_45_rd(ros2_app_data[367:360]),
-  .app_data_46_rd(ros2_app_data[375:368]), .app_data_47_rd(ros2_app_data[383:376]),
-  .app_data_48_rd(ros2_app_data[391:384]), .app_data_49_rd(ros2_app_data[399:392]),
-  .app_data_50_rd(ros2_app_data[407:400]), .app_data_51_rd(ros2_app_data[415:408]),
-  .app_data_52_rd(ros2_app_data[423:416]), .app_data_53_rd(ros2_app_data[431:424]),
-  .app_data_54_rd(ros2_app_data[439:432]), .app_data_55_rd(ros2_app_data[447:440]),
-  .app_data_56_rd(ros2_app_data[455:448]), .app_data_57_rd(ros2_app_data[463:456]),
-  .app_data_58_rd(ros2_app_data[471:464]), .app_data_59_rd(ros2_app_data[479:472]),
-  .app_data_60_rd(ros2_app_data[487:480]), .app_data_61_rd(ros2_app_data[495:488]),
-  .app_data_62_rd(ros2_app_data[503:496]), .app_data_63_rd(ros2_app_data[511:504]),
-  .app_data_len_rreq(),
-  .app_data_len_empty(1'b0),
-  .app_data_len_dout(ros2_app_data_len),
-  .app_data_req_we(ros2_app_data_ip_req),
-  .app_data_req_wd(),
-  .app_data_rel_we(ros2_app_data_ip_rel),
-  .app_data_rel_wd(),
-  .app_data_grant_rd({7'b0, ros2_app_data_ip_grant}),
+
+  .pub_app_data_00_rd(ros2_pub_app_data[7:0]),     .pub_app_data_01_rd(ros2_pub_app_data[15:8]),
+  .pub_app_data_02_rd(ros2_pub_app_data[23:16]),   .pub_app_data_03_rd(ros2_pub_app_data[31:24]),
+  .pub_app_data_04_rd(ros2_pub_app_data[39:32]),   .pub_app_data_05_rd(ros2_pub_app_data[47:40]),
+  .pub_app_data_06_rd(ros2_pub_app_data[55:48]),   .pub_app_data_07_rd(ros2_pub_app_data[63:56]),
+  .pub_app_data_08_rd(ros2_pub_app_data[71:64]),   .pub_app_data_09_rd(ros2_pub_app_data[79:72]),
+  .pub_app_data_10_rd(ros2_pub_app_data[87:80]),   .pub_app_data_11_rd(ros2_pub_app_data[95:88]),
+  .pub_app_data_12_rd(ros2_pub_app_data[103:96]),  .pub_app_data_13_rd(ros2_pub_app_data[111:104]),
+  .pub_app_data_14_rd(ros2_pub_app_data[119:112]), .pub_app_data_15_rd(ros2_pub_app_data[127:120]),
+  .pub_app_data_16_rd(ros2_pub_app_data[135:128]), .pub_app_data_17_rd(ros2_pub_app_data[143:136]),
+  .pub_app_data_18_rd(ros2_pub_app_data[151:144]), .pub_app_data_19_rd(ros2_pub_app_data[159:152]),
+  .pub_app_data_20_rd(ros2_pub_app_data[167:160]), .pub_app_data_21_rd(ros2_pub_app_data[175:168]),
+  .pub_app_data_22_rd(ros2_pub_app_data[183:176]), .pub_app_data_23_rd(ros2_pub_app_data[191:184]),
+  .pub_app_data_24_rd(ros2_pub_app_data[199:192]), .pub_app_data_25_rd(ros2_pub_app_data[207:200]),
+  .pub_app_data_26_rd(ros2_pub_app_data[215:208]), .pub_app_data_27_rd(ros2_pub_app_data[223:216]),
+  .pub_app_data_28_rd(ros2_pub_app_data[231:224]), .pub_app_data_29_rd(ros2_pub_app_data[239:232]),
+  .pub_app_data_30_rd(ros2_pub_app_data[247:240]), .pub_app_data_31_rd(ros2_pub_app_data[255:248]),
+  .pub_app_data_32_rd(ros2_pub_app_data[263:256]), .pub_app_data_33_rd(ros2_pub_app_data[271:264]),
+  .pub_app_data_34_rd(ros2_pub_app_data[279:272]), .pub_app_data_35_rd(ros2_pub_app_data[287:280]),
+  .pub_app_data_36_rd(ros2_pub_app_data[295:288]), .pub_app_data_37_rd(ros2_pub_app_data[303:296]),
+  .pub_app_data_38_rd(ros2_pub_app_data[311:304]), .pub_app_data_39_rd(ros2_pub_app_data[319:312]),
+  .pub_app_data_40_rd(ros2_pub_app_data[327:320]), .pub_app_data_41_rd(ros2_pub_app_data[335:328]),
+  .pub_app_data_42_rd(ros2_pub_app_data[343:336]), .pub_app_data_43_rd(ros2_pub_app_data[351:344]),
+  .pub_app_data_44_rd(ros2_pub_app_data[359:352]), .pub_app_data_45_rd(ros2_pub_app_data[367:360]),
+  .pub_app_data_46_rd(ros2_pub_app_data[375:368]), .pub_app_data_47_rd(ros2_pub_app_data[383:376]),
+  .pub_app_data_48_rd(ros2_pub_app_data[391:384]), .pub_app_data_49_rd(ros2_pub_app_data[399:392]),
+  .pub_app_data_50_rd(ros2_pub_app_data[407:400]), .pub_app_data_51_rd(ros2_pub_app_data[415:408]),
+  .pub_app_data_52_rd(ros2_pub_app_data[423:416]), .pub_app_data_53_rd(ros2_pub_app_data[431:424]),
+  .pub_app_data_54_rd(ros2_pub_app_data[439:432]), .pub_app_data_55_rd(ros2_pub_app_data[447:440]),
+  .pub_app_data_56_rd(ros2_pub_app_data[455:448]), .pub_app_data_57_rd(ros2_pub_app_data[463:456]),
+  .pub_app_data_58_rd(ros2_pub_app_data[471:464]), .pub_app_data_59_rd(ros2_pub_app_data[479:472]),
+  .pub_app_data_60_rd(ros2_pub_app_data[487:480]), .pub_app_data_61_rd(ros2_pub_app_data[495:488]),
+  .pub_app_data_62_rd(ros2_pub_app_data[503:496]), .pub_app_data_63_rd(ros2_pub_app_data[511:504]),
+  .pub_app_data_len_rreq(),
+  .pub_app_data_len_empty(1'b0),
+  .pub_app_data_len_dout(ros2_pub_app_data_len),
+  .pub_app_data_req_we(ros2_pub_app_data_ip_req),
+  .pub_app_data_req_wd(),
+  .pub_app_data_rel_we(ros2_pub_app_data_ip_rel),
+  .pub_app_data_rel_wd(),
+  .pub_app_data_grant_rd({7'b0, ros2_pub_app_data_ip_grant}),
+
+  .sub_app_data_CS1(ros2_sub_app_data_ce),
+  .sub_app_data_AD1(ros2_sub_app_data_addr),
+  .sub_app_data_WE1(ros2_sub_app_data_we),
+  .sub_app_data_WD1(ros2_sub_app_data_wdata),
+  .sub_app_data_len_rreq(),
+  .sub_app_data_len_empty(1'b0),
+  .sub_app_data_len_dout(ros2_sub_app_data_len),
+  .sub_app_data_req_we(ros2_sub_app_data_ip_req),
+  .sub_app_data_req_wd(),
+  .sub_app_data_rel_we(ros2_sub_app_data_ip_rel),
+  .sub_app_data_rel_wd(),
+  .sub_app_data_grant_rd({7'b0, ros2_sub_app_data_ip_grant}),
+
   .udp_rxbuf_rel_we(udp_rxbuf_ip_rel),
   .udp_rxbuf_rel_wd(),
   .udp_rxbuf_grant_rd({7'b0, udp_rxbuf_ip_grant}),
+
   .udp_txbuf_rel_we(udp_txbuf_ip_rel),
   .udp_txbuf_rel_wd(),
   .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant})

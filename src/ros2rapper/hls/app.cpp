@@ -130,10 +130,10 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 void app_reader(hls_stream<hls_uint<9>> &in,
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4],
-                volatile uint8_t *app_rx_data_rel,
-                volatile uint8_t *app_rx_data_grant,
-                uint8_t app_rx_data[MAX_APP_DATA_LEN],
-                volatile uint8_t *app_rx_data_len) {
+                volatile uint8_t *sub_app_data_rel,
+                volatile uint8_t *sub_app_data_grant,
+                uint8_t sub_app_data[MAX_APP_DATA_LEN],
+                volatile uint8_t *sub_app_data_len) {
 #pragma HLS inline
 
   static hls_uint<4> state;
@@ -260,7 +260,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
     offset++;
     if (offset == sizeof(sp_data_len)) {
       if (sp_data_len <= MAX_APP_DATA_LEN) {
-        saved_grant = *app_rx_data_grant;
+        saved_grant = *sub_app_data_grant;
         offset = 0;
         state = 6;
       } else {
@@ -271,13 +271,13 @@ void app_reader(hls_stream<hls_uint<9>> &in,
   case 6:
     if (offset < sp_data_len) {
       if (saved_grant)
-        app_rx_data[offset] = data;
+        sub_app_data[offset] = data;
     }
     offset++;
     if (offset == sp_data_len) {
       if (saved_grant) {
-        *app_rx_data_len = sp_data_len;
-        *app_rx_data_rel = 0;
+        *sub_app_data_len = sp_data_len;
+        *sub_app_data_rel = 0;
       }
       state = 9;
     }

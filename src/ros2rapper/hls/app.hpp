@@ -29,9 +29,9 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 void app_reader(hls_stream<hls_uint<9>> &in,
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4],
-                volatile uint8_t *app_rx_data_rel,
-                volatile uint8_t *app_rx_data_grant,
-                uint8_t app_rx_data[MAX_APP_DATA_LEN],
-                volatile uint8_t *app_rx_data_len);
+                volatile uint8_t *sub_app_data_rel,
+                volatile uint8_t *sub_app_data_grant,
+                uint8_t sub_app_data[MAX_APP_DATA_LEN],
+                volatile uint8_t *sub_app_data_len);
 
 #endif // !APP_HPP

@@ -96,8 +96,8 @@ static void ros2_in(
     app_reader_id_t &app_reader_cnt,
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
     hls_uint<1> sub_enable, const config_t *conf,
-    volatile uint8_t *app_rx_data_rel, volatile uint8_t *app_rx_data_grant,
-    uint8_t app_rx_data[MAX_APP_DATA_LEN], volatile uint8_t *app_rx_data_len,
+    volatile uint8_t *sub_app_data_rel, volatile uint8_t *sub_app_data_grant,
+    uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint8_t *rawudp_rxbuf_rel, volatile uint8_t *rawudp_rxbuf_grant) {
   static bool ip_parity_error = false;
   static bool udp_parity_error = false;
@@ -130,7 +130,7 @@ static void ros2_in(
   slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
   ip_in(s1, s2, ip_payloads, conf->fragment_expiration, ip_parity_error);
-  udp_in(s2, s3, enable, conf->cpu_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
+  udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
          rawudp_rxbuf_grant, udp_parity_error);
 
   if (!s3.read_nb(x))
@@ -150,8 +150,8 @@ static void ros2_in(
               conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
   if (sub_enable) {
-    app_reader(s6, conf->guid_prefix, app_reader_entity_id, app_rx_data_rel,
-               app_rx_data_grant, app_rx_data, app_rx_data_len);
+    app_reader(s6, conf->guid_prefix, app_reader_entity_id, sub_app_data_rel,
+               sub_app_data_grant, sub_app_data, sub_app_data_len);
   }
 }
 
@@ -258,8 +258,8 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
                            int64_t &seqnum, const uint8_t src_addr[4],
                            const uint8_t src_port[2],
                            const uint8_t writer_guid_prefix[12],
-                           volatile const uint8_t app_data[MAX_APP_DATA_LEN],
-                           volatile const uint8_t *app_data_len) {
+                           volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+                           volatile const uint8_t *pub_app_data_len) {
   seqnum++;
 
   ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST, APP_WRITER_UDP_PKT_LEN,
@@ -269,7 +269,7 @@ static void app_writer_out(const uint8_t writer_entity_id[4],
                  tx_buf.buf + IP_HDR_SIZE);
 
   app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
-             reader_entity_id, seqnum, app_data, *app_data_len,
+             reader_entity_id, seqnum, pub_app_data, *pub_app_data_len,
              tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
   tx_buf.head = 0;
@@ -398,18 +398,18 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         (app_reader_tbl[(id)].ep_type & APP_EP_PUB)) {                         \
       /* Cyber scheduling_block = non-transparent */                           \
       {                                                                        \
-        *app_data_req = 0 /* write dummy value to assert valid signal */;      \
+        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;      \
         WAIT_CLOCK;                                                            \
         WAIT_CLOCK;                                                            \
-        if (*app_data_grant == 1) {                                            \
+        if (*pub_app_data_grant == 1) {                                            \
           app_writer_out(app_writer_entity_id, app_reader_tbl[(id)].ip_addr,   \
                          app_reader_tbl[(id)].udp_port,                        \
                          app_reader_tbl[(id)].guid_prefix,                     \
                          app_reader_tbl[(id)].entity_id, tx_buf, app_seqnum,   \
                          conf->ip_addr, conf->node_udp_port,                   \
-                         conf->guid_prefix, app_data, app_data_len);           \
+                         conf->guid_prefix, pub_app_data, pub_app_data_len);           \
           WAIT_CLOCK;                                                          \
-          *app_data_rel = 0 /* write dummy value to assert valid signal */;    \
+          *pub_app_data_rel = 0 /* write dummy value to assert valid signal */;    \
           WAIT_CLOCK;                                                          \
           WAIT_CLOCK;                                                          \
         }                                                                      \
@@ -431,9 +431,9 @@ ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
          app_reader_id_t &app_reader_cnt,
          app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
          hls_uint<1> sub_enable, const config_t *conf,
-         volatile const uint8_t app_data[MAX_APP_DATA_LEN],
-         volatile const uint8_t *app_data_len, volatile uint8_t *app_data_req,
-         volatile uint8_t *app_data_rel, volatile uint8_t *app_data_grant,
+         volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+         volatile const uint8_t *pub_app_data_len, volatile uint8_t *pub_app_data_req,
+         volatile uint8_t *pub_app_data_rel, volatile uint8_t *pub_app_data_grant,
          volatile uint8_t *rawudp_txbuf_rel,
          volatile uint8_t *rawudp_txbuf_grant) {
 #pragma HLS inline
@@ -804,16 +804,16 @@ void ros2(
     hls_uint<1> sub_enable /* Cyber port_mode=in */,
     const config_t *conf /* Cyber port_mode=in, stable_input */,
     volatile const uint8_t
-        app_data[MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
-    volatile const uint8_t *app_data_len /* Cyber port_mode=cw_fifo */,
-    uint8_t app_rx_data
+        pub_app_data[MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+    volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
+    uint8_t sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
-    volatile uint8_t *app_rx_data_len,
-    volatile uint8_t *app_data_req /* Cyber port_mode=shared */,
-    volatile uint8_t *app_data_rel /* Cyber port_mode=shared */,
-    volatile uint8_t *app_data_grant /* Cyber port_mode=shared */,
-    volatile uint8_t *app_rx_data_rel /* Cyber port_mode=shared */,
-    volatile uint8_t *app_rx_data_grant /* Cyber port_mode=shared */,
+    volatile uint8_t *sub_app_data_len,
+    volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_grant /* Cyber port_mode=shared */,
+    volatile uint8_t *sub_app_data_rel /* Cyber port_mode=shared */,
+    volatile uint8_t *sub_app_data_grant /* Cyber port_mode=shared */,
     volatile uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared */,
     volatile uint8_t *udp_rxbuf_grant /* Cyber port_mode=shared */,
     volatile uint8_t *udp_txbuf_rel /* Cyber port_mode=shared */,
@@ -833,8 +833,8 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->node_name_len
 #pragma HLS array_reshape variable = conf->node_udp_port type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->node_udp_port
-#pragma HLS array_reshape variable = conf->cpu_udp_port type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->cpu_udp_port
+#pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
+#pragma HLS interface mode = ap_none port = conf->rx_udp_port
 #pragma HLS interface mode = ap_none port = conf->port_num_seed
 #pragma HLS interface mode = ap_none port = conf->tx_period
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
@@ -856,16 +856,16 @@ void ros2(
     complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
-#pragma HLS interface mode = ap_fifo port = app_data
-#pragma HLS array_reshape variable = app_data type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = app_data_len
-#pragma HLS interface mode = ap_memory port = app_rx_data
-#pragma HLS interface mode = ap_none port = app_rx_data_len
-#pragma HLS interface mode = ap_vld port = app_rx_data_rel
-#pragma HLS interface mode = ap_none port = app_rx_data_grant
-#pragma HLS interface mode = ap_vld port = app_data_req
-#pragma HLS interface mode = ap_vld port = app_data_rel
-#pragma HLS interface mode = ap_none port = app_data_grant
+#pragma HLS interface mode = ap_fifo port = pub_app_data
+#pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len
+#pragma HLS interface mode = ap_memory port = sub_app_data
+#pragma HLS interface mode = ap_none port = sub_app_data_len
+#pragma HLS interface mode = ap_vld port = pub_app_data_req
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel
+#pragma HLS interface mode = ap_none port = pub_app_data_grant
+#pragma HLS interface mode = ap_vld port = sub_app_data_rel
+#pragma HLS interface mode = ap_none port = sub_app_data_grant
 #pragma HLS interface mode = ap_vld port = udp_rxbuf_rel
 #pragma HLS interface mode = ap_none port = udp_rxbuf_grant
 #pragma HLS interface mode = ap_vld port = udp_txbuf_rel
@@ -882,11 +882,11 @@ void ros2(
 
   ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_cnt, sedp_reader_tbl,
           app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
-          app_rx_data_rel, app_rx_data_grant, app_rx_data, app_rx_data_len,
+          sub_app_data_rel, sub_app_data_grant, sub_app_data, sub_app_data_len,
           udp_rxbuf_rel, udp_rxbuf_grant);
 
   ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
-           app_reader_tbl, pub_enable, sub_enable, conf, app_data, app_data_len,
-           app_data_req, app_data_rel, app_data_grant, udp_txbuf_rel,
+           app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data, pub_app_data_len,
+           pub_app_data_req, pub_app_data_rel, pub_app_data_grant, udp_txbuf_rel,
            udp_txbuf_grant);
 }
