@@ -6,6 +6,12 @@
 #include "checksum.hpp"
 #include "ip.hpp"
 
+#ifdef __SYNTHESIS__
+  #define TRACE(fmt, ...)
+#else
+  #define TRACE(fmt, ...) printf(fmt, __VA_ARGS__)
+#endif
+
 #define USE_IP_FRAGMENTATION
 
 #ifndef USE_IP_FRAGMENTATION
@@ -111,9 +117,7 @@ void init_pending_info(pending_info *pending, uint16_t id,
   pending->n_total = TOTAL_FRAGMENTS_UNKNOWN;
   pending->len = 0;
   pending->expiration = fragment_expiration;
-#ifndef __SYNTHESIS__
-  printf("%s: pending entry activated (id=%d)\n", __func__, id);
-#endif
+  TRACE("%s: pending entry activated (id=%d)\n", __func__, id);
 }
 
 #define purge_pending_info(p) ((p)->is_used = false)
@@ -126,17 +130,17 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
   pending_index_t unused = INVALID_PENDING_INDEX;
 
 #ifndef __SYNTHESIS__
-  printf("%s: finding id=%d\n", __func__, id);
-  printf("%s: ===============\n", __func__);
+  TRACE("%s: finding id=%d\n", __func__, id);
+  TRACE("%s: ===============\n", __func__);
   for (int i = 0; i < MAX_PENDINGS; i++) {
     if (pendings[i].is_used)
-      printf("%s: [%d] id=%d arrived=%d total=%d len=%d exp=%d\n", __func__, i,
+      TRACE("%s: [%d] id=%d arrived=%d total=%d len=%d exp=%d\n", __func__, i,
              pendings[i].id, pendings[i].n_arrived, pendings[i].n_total,
              pendings[i].len, pendings[i].expiration);
     else
-      printf("%s: [%d] not used\n", __func__, i);
+      TRACE("%s: [%d] not used\n", __func__, i);
   }
-  printf("%s: ===============\n", __func__);
+  TRACE("%s: ===============\n", __func__);
 #endif
 
   /* Cyber unroll_times=all */
@@ -144,9 +148,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
 #pragma HLS unroll
     if (pendings[i].is_used && pendings[i].id == id) {
       found = i;
-#ifndef __SYNTHESIS__
-      printf("%s: pending %d matched\n", __func__, found);
-#endif
+      TRACE("%s: pending %d matched\n", __func__, found);
       break;
     }
     if (!pendings[i].is_used) {
@@ -173,9 +175,7 @@ void tick_pendings(pending_info *pendings) {
       if (pendings[i].n_arrived != pendings[i].n_total) {
         if (pendings[i].expiration == 0) {
           purge_pending_info(&pendings[i]);
-#ifndef __SYNTHESIS__
-          printf("%s: pending %d expired\n", __func__, i);
-#endif
+          TRACE("%s: pending %d expired\n", __func__, i);
         } else {
           pendings[i].expiration -= 1;
         }
@@ -374,18 +374,14 @@ void ip_in(
     if (offset == IP_HDR_SIZE) {
       if (sum != 0xffff) {
         state = IPIN_STATE_PARITY_ERROR_0;
-#ifndef __SYNTHESIS__
-        printf("%s: state changed to PARITY_ERROR\n", __func__);
-#endif
+        TRACE("%s: state changed to PARITY_ERROR\n", __func__);
       } else {
         int8_t findex = get_fragment_index(fragment_offset);
 
         if (findex == -1) {
           // can't process
           state = IPIN_STATE_FRAGMENT_ERROR_0;
-#ifndef __SYNTHESIS__
-          printf("%s: state changed to FRAGMENT_ERROR\n", __func__);
-#endif
+          TRACE("%s: state changed to FRAGMENT_ERROR\n", __func__);
         } else {
           if (has_more_fragments || findex != 0) {
             // fragmented
@@ -394,9 +390,7 @@ void ip_in(
             if (pending_index == INVALID_PENDING_INDEX) {
               // no room for new datagram
               state = IPIN_STATE_FRAGMENT_ERROR_0;
-#ifndef __SYNTHESIS__
-              printf("%s: state changed to FRAGMENT_ERROR\n", __func__);
-#endif
+              TRACE("%s: state changed to FRAGMENT_ERROR\n", __func__);
             } else {
               pendings[pending_index].n_arrived += 1;
               if (!has_more_fragments) {
@@ -404,26 +398,20 @@ void ip_in(
                 pendings[pending_index].n_total = findex + 1;
               }
               state = IPIN_STATE_PAYLOAD_TO_MEMORY;
-#ifndef __SYNTHESIS__
-              printf("%s: state changed to PAYLOAD_TO_MEMORY\n", __func__);
-#endif
+              TRACE("%s: state changed to PAYLOAD_TO_MEMORY\n", __func__);
             }
           } else {
             // not fragmented
             state = IPIN_STATE_PAYLOAD_PRE_0;
-#ifndef __SYNTHESIS__
-            printf("%s: state changed to PAYLOAD\n", __func__);
-#endif
+            TRACE("%s: state changed to PAYLOAD\n", __func__);
           }
 
           switch (state) {
           case IPIN_STATE_PAYLOAD_TO_MEMORY:
             offset = fragment_offset << 3;
             pendings[pending_index].len += len;
-#ifndef __SYNTHESIS__
-            printf("%s: memory write begin buf#%d offset=%d\n", __func__,
+            TRACE("%s: memory write begin buf#%d offset=%d\n", __func__,
                    pending_index, offset);
-#endif
           }
         }
       }
@@ -433,9 +421,7 @@ void ip_in(
       if (pending_index != INVALID_PENDING_INDEX)
         purge_pending_info(&pendings[pending_index]);
       reset_state();
-#ifndef __SYNTHESIS__
-      printf("%s: state changed to HEADER\n", __func__);
-#endif
+      TRACE("%s: state changed to HEADER\n", __func__);
     }
   } break;
   case IPIN_STATE_PAYLOAD_PRE_0:
@@ -478,9 +464,7 @@ void ip_in(
         parity_error = true; // TODO: error reporting
       }
       reset_state();
-#ifndef __SYNTHESIS__
-      printf("%s: state changed to HEADER\n", __func__);
-#endif
+      TRACE("%s: state changed to HEADER\n", __func__);
     }
   } break;
   case IPIN_STATE_PAYLOAD_TO_MEMORY: {
@@ -494,36 +478,26 @@ void ip_in(
     offset++;
 
     if (end) {
-#ifndef __SYNTHESIS__
-      printf("%s: n_arrived=%d, n_total=%d\n", __func__,
+      TRACE("%s: n_arrived=%d, n_total=%d\n", __func__,
              pendings[pending_index].n_arrived,
              pendings[pending_index].n_total);
-#endif
       if (offset != (fragment_offset << 3) + len) {
         // length check (for SLIP)
-#ifndef __SYNTHESIS__
-        printf("%s: length error %d != %d\n", __func__, offset,
+        TRACE("%s: length error %d != %d\n", __func__, offset,
                pendings[pending_index].len);
-#endif
         parity_error = true; // TODO: error reporting
         purge_pending_info(&pendings[pending_index]);
         reset_state();
-#ifndef __SYNTHESIS__
-        printf("%s: state changed to HEADER\n", __func__);
-#endif
+        TRACE("%s: state changed to HEADER\n", __func__);
       } else if (pendings[pending_index].n_arrived ==
                  pendings[pending_index].n_total) {
         // all fragments arrived
         state = IPIN_STATE_PAYLOAD_FROM_MEMORY_PRE_0;
-#ifndef __SYNTHESIS__
-        printf("%s: state changed to PAYLOAD_FROM_MEMORY\n", __func__);
-#endif
+        TRACE("%s: state changed to PAYLOAD_FROM_MEMORY\n", __func__);
         offset = 0;
       } else {
         reset_state();
-#ifndef __SYNTHESIS__
-        printf("%s: state changed to HEADER\n", __func__);
-#endif
+        TRACE("%s: state changed to HEADER\n", __func__);
       }
     }
   } break;
@@ -558,9 +532,7 @@ void ip_in(
                 ip_payloads[get_payload_offset(pending_index) + offset]);
       purge_pending_info(&pendings[pending_index]);
       reset_state();
-#ifndef __SYNTHESIS__
-      printf("%s: state changed to HEADER\n", __func__);
-#endif
+      TRACE("%s: state changed to HEADER\n", __func__);
     } else {
       out.write(ip_payloads[get_payload_offset(pending_index) + offset]);
       offset++;
@@ -574,9 +546,7 @@ void ip_in(
     out.write(0x100 | (len & 0xff));
     parity_error = true;
     state = IPIN_STATE_WAIT_DATAGRAM_END;
-#ifndef __SYNTHESIS__
-    printf("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
-#endif
+    TRACE("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
     break;
   case IPIN_STATE_FRAGMENT_ERROR_0:
     out.write(len >> 8);
@@ -586,9 +556,7 @@ void ip_in(
     out.write(0x100 | (len & 0xff));
     parity_error = true; // TODO: error reporting
     state = IPIN_STATE_WAIT_DATAGRAM_END;
-#ifndef __SYNTHESIS__
-    printf("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
-#endif
+    TRACE("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
     break;
   case IPIN_STATE_WAIT_DATAGRAM_END: {
     if (!in.read_nb(x))
@@ -599,9 +567,7 @@ void ip_in(
 
     if (end) {
       reset_state();
-#ifndef __SYNTHESIS__
-      printf("%s: state changed to HEADER\n", __func__);
-#endif
+      TRACE("%s: state changed to HEADER\n", __func__);
     }
   } break;
   }
