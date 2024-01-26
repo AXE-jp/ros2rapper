@@ -96,7 +96,7 @@ static void ros2_in(
     app_reader_id_t &app_reader_cnt,
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
     hls_uint<1> sub_enable, const config_t *conf,
-    volatile uint8_t *sub_app_data_rel, volatile uint8_t *sub_app_data_grant,
+    volatile uint8_t *sub_app_data_recv, volatile uint8_t *sub_app_data_grant,
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint8_t *rawudp_rxbuf_rel, volatile uint8_t *rawudp_rxbuf_grant) {
   static bool ip_parity_error = false;
@@ -150,7 +150,7 @@ static void ros2_in(
               conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
   if (sub_enable) {
-    app_reader(s6, conf->guid_prefix, app_reader_entity_id, sub_app_data_rel,
+    app_reader(s6, conf->guid_prefix, app_reader_entity_id, sub_app_data_recv,
                sub_app_data_grant, sub_app_data, sub_app_data_len);
   }
 }
@@ -251,15 +251,14 @@ static void sedp_acknack_out(
 }
 
 /* Cyber func=inline */
-static void app_writer_out(const uint8_t writer_entity_id[4],
-                           const uint8_t dst_addr[4], const uint8_t dst_port[2],
-                           const uint8_t reader_guid_prefix[12],
-                           const uint8_t reader_entity_id[4], tx_buf &tx_buf,
-                           int64_t &seqnum, const uint8_t src_addr[4],
-                           const uint8_t src_port[2],
-                           const uint8_t writer_guid_prefix[12],
-                           volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
-                           volatile const uint8_t *pub_app_data_len) {
+static void
+app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
+               const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
+               const uint8_t reader_entity_id[4], tx_buf &tx_buf,
+               int64_t &seqnum, const uint8_t src_addr[4],
+               const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
+               volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+               volatile const uint8_t *pub_app_data_len) {
   seqnum++;
 
   ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST, APP_WRITER_UDP_PKT_LEN,
@@ -398,18 +397,19 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         (app_reader_tbl[(id)].ep_type & APP_EP_PUB)) {                         \
       /* Cyber scheduling_block = non-transparent */                           \
       {                                                                        \
-        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;      \
+        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;  \
         WAIT_CLOCK;                                                            \
         WAIT_CLOCK;                                                            \
-        if (*pub_app_data_grant == 1) {                                            \
+        if (*pub_app_data_grant == 1) {                                        \
           app_writer_out(app_writer_entity_id, app_reader_tbl[(id)].ip_addr,   \
                          app_reader_tbl[(id)].udp_port,                        \
                          app_reader_tbl[(id)].guid_prefix,                     \
                          app_reader_tbl[(id)].entity_id, tx_buf, app_seqnum,   \
                          conf->ip_addr, conf->node_udp_port,                   \
-                         conf->guid_prefix, pub_app_data, pub_app_data_len);           \
+                         conf->guid_prefix, pub_app_data, pub_app_data_len);   \
           WAIT_CLOCK;                                                          \
-          *pub_app_data_rel = 0 /* write dummy value to assert valid signal */;    \
+          *pub_app_data_rel =                                                  \
+              0 /* write dummy value to assert valid signal */;                \
           WAIT_CLOCK;                                                          \
           WAIT_CLOCK;                                                          \
         }                                                                      \
@@ -424,18 +424,20 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
   } while (0)
 
 /* Cyber func=inline */
-static void
-ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
-         sedp_reader_id_t &sedp_reader_cnt,
-         sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-         app_reader_id_t &app_reader_cnt,
-         app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
-         hls_uint<1> sub_enable, const config_t *conf,
-         volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
-         volatile const uint8_t *pub_app_data_len, volatile uint8_t *pub_app_data_req,
-         volatile uint8_t *pub_app_data_rel, volatile uint8_t *pub_app_data_grant,
-         volatile uint8_t *rawudp_txbuf_rel,
-         volatile uint8_t *rawudp_txbuf_grant) {
+static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
+                     sedp_reader_id_t &sedp_reader_cnt,
+                     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+                     app_reader_id_t &app_reader_cnt,
+                     app_endpoint app_reader_tbl[APP_READER_MAX],
+                     hls_uint<1> pub_enable, hls_uint<1> sub_enable,
+                     const config_t *conf,
+                     volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+                     volatile const uint8_t *pub_app_data_len,
+                     volatile uint8_t *pub_app_data_req,
+                     volatile uint8_t *pub_app_data_rel,
+                     volatile uint8_t *pub_app_data_grant,
+                     volatile uint8_t *rawudp_txbuf_rel,
+                     volatile uint8_t *rawudp_txbuf_grant) {
 #pragma HLS inline
   static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */ =
       ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
@@ -803,8 +805,8 @@ void ros2(
     hls_uint<1> pub_enable /* Cyber port_mode=in */,
     hls_uint<1> sub_enable /* Cyber port_mode=in */,
     const config_t *conf /* Cyber port_mode=in, stable_input */,
-    volatile const uint8_t
-        pub_app_data[MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+    volatile const uint8_t pub_app_data
+        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
     volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
     uint8_t sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
@@ -812,7 +814,7 @@ void ros2(
     volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_grant /* Cyber port_mode=shared */,
-    volatile uint8_t *sub_app_data_rel /* Cyber port_mode=shared */,
+    volatile uint8_t *sub_app_data_recv /* Cyber port_mode=shared */,
     volatile uint8_t *sub_app_data_grant /* Cyber port_mode=shared */,
     volatile uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared */,
     volatile uint8_t *udp_rxbuf_grant /* Cyber port_mode=shared */,
@@ -864,7 +866,7 @@ void ros2(
 #pragma HLS interface mode = ap_vld port = pub_app_data_req
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
 #pragma HLS interface mode = ap_none port = pub_app_data_grant
-#pragma HLS interface mode = ap_vld port = sub_app_data_rel
+#pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_none port = sub_app_data_grant
 #pragma HLS interface mode = ap_vld port = udp_rxbuf_rel
 #pragma HLS interface mode = ap_none port = udp_rxbuf_grant
@@ -882,11 +884,11 @@ void ros2(
 
   ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_cnt, sedp_reader_tbl,
           app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
-          sub_app_data_rel, sub_app_data_grant, sub_app_data, sub_app_data_len,
+          sub_app_data_recv, sub_app_data_grant, sub_app_data, sub_app_data_len,
           udp_rxbuf_rel, udp_rxbuf_grant);
 
   ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
-           app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data, pub_app_data_len,
-           pub_app_data_req, pub_app_data_rel, pub_app_data_grant, udp_txbuf_rel,
-           udp_txbuf_grant);
+           app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
+           pub_app_data_len, pub_app_data_req, pub_app_data_rel,
+           pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant);
 }

@@ -62,6 +62,7 @@ module ros2_ether (
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
+    output wire ros2_sub_app_data_recv,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
@@ -389,8 +390,8 @@ ros2 (
     .pub_app_data_rel(),
     .pub_app_data_grant({7'b0, ros2_pub_app_data_ip_grant}),
 
-    .sub_app_data_rel_ap_vld(),
-    .sub_app_data_rel(),
+    .sub_app_data_recv_ap_vld(ros2_sub_app_data_recv),
+    .sub_app_data_recv(),
     .sub_app_data_grant({7'b0, ros2_sub_app_data_ip_grant}),
     .sub_app_data_address0(ros2_sub_app_data_addr),
     .sub_app_data_ce0(ros2_sub_app_data_ce),
@@ -401,6 +402,7 @@ ros2 (
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
     .udp_rxbuf_rel(),
     .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
+
     .udp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
     .udp_txbuf_rel(),
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
@@ -566,10 +568,8 @@ ros2 (
   .sub_app_data_len_rreq(),
   .sub_app_data_len_empty(1'b0),
   .sub_app_data_len_dout(ros2_sub_app_data_len),
-  .sub_app_data_req_we(ros2_sub_app_data_ip_req),
-  .sub_app_data_req_wd(),
-  .sub_app_data_rel_we(ros2_sub_app_data_ip_rel),
-  .sub_app_data_rel_wd(),
+  .sub_app_data_recv_we(ros2_sub_app_data_recv),
+  .sub_app_data_recv_wd(),
   .sub_app_data_grant_rd({7'b0, ros2_sub_app_data_ip_grant}),
 
   .udp_rxbuf_rel_we(udp_rxbuf_ip_rel),

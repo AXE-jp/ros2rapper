@@ -225,6 +225,7 @@ module top (
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),
         .ros2_sub_app_data_grant(),
+        .ros2_sub_app_data_recv(),
 
         .udp_rxbuf_rel(1'b1),
         .udp_rxbuf_grant(),
