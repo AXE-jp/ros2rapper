@@ -144,11 +144,11 @@ module top (
     end
 
     // Indicate received UDP payload size by LED
-    wire [15:0] rx_payload_len = rx_buf[1][31:16];
-    assign led4 = (rx_payload_len >= 1 && rx_payload_len <= 5);
-    assign led5 = (rx_payload_len >= 6 && rx_payload_len <= 10);
-    assign led6 = (rx_payload_len >= 11 && rx_payload_len <= 15);
-    assign led7 = (rx_payload_len > 16);
+    wire [15:0] rx_payload_len = rx_buf[1][31:16] - 8;
+    assign led4 = (rx_payload_len >= 1);
+    assign led5 = (rx_payload_len >= 5);
+    assign led6 = (rx_payload_len >= 10);
+    assign led7 = (rx_payload_len >= 15);
 
     // --- UDP TX Control
     reg txbuf_rel;
@@ -178,8 +178,10 @@ module top (
         6'h00: txbuf_rdata <= 32'h0a01a8c0;  // Destinaton IP address: 192.168.1.10
         6'h01: txbuf_rdata <= 32'h0457_04d2; // Source Port: 1111, Destination Port: 1234
         6'h02: txbuf_rdata <= 32'h00000007;  // Payload length: 7
-        6'h03: txbuf_rdata <= 32'h626f6f66;  // Payload: "foobar\n"
-        6'h04: txbuf_rdata <= 32'h000a7261;
+        6'h03: txbuf_rdata <= 32'h20504455;  // Payload: "UDP Send Test\n"
+        6'h04: txbuf_rdata <= 32'h646e6553;
+        6'h05: txbuf_rdata <= 32'h73655420;
+        6'h06: txbuf_rdata <= 32'h00000074;
         default: txbuf_rdata <= 32'h0;
         endcase
     end
