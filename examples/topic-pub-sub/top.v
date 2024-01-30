@@ -38,10 +38,10 @@ module top (
 
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(13),
+        .CLKOUT0_DIVIDE_F(10),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
-        .CLKOUT1_DIVIDE(39),
+        .CLKOUT1_DIVIDE(40),
         .CLKOUT1_DUTY_CYCLE(0.5),
         .CLKOUT1_PHASE(0),
         .CLKOUT2_DIVIDE(1),
@@ -59,7 +59,7 @@ module top (
         .CLKOUT6_DIVIDE(1),
         .CLKOUT6_DUTY_CYCLE(0.5),
         .CLKOUT6_PHASE(0),
-        .CLKFBOUT_MULT_F(9.75),
+        .CLKFBOUT_MULT_F(10),
         .CLKFBOUT_PHASE(0),
         .DIVCLK_DIVIDE(1),
         .REF_JITTER1(0.010),
