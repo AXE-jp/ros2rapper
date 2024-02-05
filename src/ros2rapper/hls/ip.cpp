@@ -7,9 +7,9 @@
 #include "ip.hpp"
 
 #ifdef __SYNTHESIS__
-#define TRACE(fmt, ...)
+#define TRACE(...)
 #else
-#define TRACE(fmt, ...) printf(fmt, __VA_ARGS__)
+#define TRACE(...) printf(__VA_ARGS__)
 #endif
 
 #define USE_IP_FRAGMENTATION
