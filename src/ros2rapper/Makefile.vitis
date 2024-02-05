@@ -2,20 +2,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 HLSDIR = hls
-SRCS = $(wildcard $(HLSDIR)/*.cpp)
-HDRS = $(wildcard $(HLSDIR)/*.hpp)
+TBDIR = test
+
+SRCS   = $(wildcard $(HLSDIR)/*.cpp)
+HDRS   = $(wildcard $(HLSDIR)/*.hpp)
+TBSRCS = $(wildcard $(TBDIR)/*.cpp)
+
 VERILOGTOP = proj_ros2/solution1/syn/verilog/ros2.v
 
-.PHONY: synth clean format
+.PHONY: synth clean csim format
 synth: $(VERILOGTOP)
 
 $(VERILOGTOP): $(SRCS) $(HDRS) run_hls.tcl
 	vitis_hls run_hls.tcl
+
+csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
+	vitis_hls run_csim.tcl
 
 clean:
 	rm -rf proj_ros2
 	rm -rf *.log
 
 format:
-	find hls/*.cpp | xargs clang-format -i
-	find hls/*.hpp | xargs clang-format -i
+	-clang-format -i hls/*.cpp
+	-clang-format -i hls/*.hpp
+	-clang-format -i test/*.cpp
+	-clang-format -i test/*.hpp

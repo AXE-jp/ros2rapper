@@ -1,4 +1,5 @@
 proj_ros2/
+proj_ros2test/
 *.log
 *.jou
 *.CPINFO
