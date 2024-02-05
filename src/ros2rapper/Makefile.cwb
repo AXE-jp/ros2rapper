@@ -26,5 +26,7 @@ clean:
 	rm -f *.CPINFO *.cperr *.xml *.FCNT *.FLIB *.MCNT *.MLIB *.CSV *.LMSPEC *.LOG.gz *.QOR *.QOR.HTML *.SR *.SUMM *.VSG *.err *.tips *.v *.LSInfo *.scuba *.vgerr *.warn *.IFF
 
 format:
-	find hls/*.cpp | xargs clang-format -i
-	find hls/*.hpp | xargs clang-format -i
+	-clang-format -i hls/*.cpp
+	-clang-format -i hls/*.hpp
+	-clang-format -i test/*.cpp
+	-clang-format -i test/*.hpp
