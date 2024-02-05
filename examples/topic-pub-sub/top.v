@@ -120,16 +120,16 @@ module top (
     wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
 
     // --- ROS2 Pubisher Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "rettahc/tr";
-    wire [7:0] ros2_pub_topic_name_len = 8'd11;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "bbb/tr";
+    wire [7:0] ros2_pub_topic_name_len = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = "!dlrow reppar2SOR ,olleh"; // Published message
     wire [7:0] ros2_pub_app_data_len = 8'd25;
 
     // --- ROS2 Subscriber Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "rettahc/tr";
-    wire [7:0] ros2_sub_topic_name_len = 8'd11;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
+    wire [7:0] ros2_sub_topic_name_len = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
 
