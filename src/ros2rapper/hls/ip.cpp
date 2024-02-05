@@ -381,6 +381,7 @@ void ip_in(
         if (findex == -1) {
           // can't process
           state = IPIN_STATE_FRAGMENT_ERROR_0;
+          TRACE("%s: Can't process this fragment!\n", __func__);
           TRACE("%s: state changed to FRAGMENT_ERROR\n", __func__);
         } else {
           if (has_more_fragments || findex != 0) {
@@ -390,6 +391,7 @@ void ip_in(
             if (pending_index == INVALID_PENDING_INDEX) {
               // no room for new datagram
               state = IPIN_STATE_FRAGMENT_ERROR_0;
+              TRACE("%s: No room for new datagram!\n", __func__);
               TRACE("%s: state changed to FRAGMENT_ERROR\n", __func__);
             } else {
               pendings[pending_index].n_arrived += 1;
@@ -459,9 +461,11 @@ void ip_in(
     offset++;
 
     if (end) {
-      if (offset + IP_HDR_SIZE != len) {
-        // length check (for SLIP)
+      if (offset - IP_HDR_SIZE != len) {
+        // length check
         parity_error = true; // TODO: error reporting
+        TRACE("%s: length error %d != %d\n", __func__, offset + IP_HDR_SIZE,
+              len);
       }
       reset_state();
       TRACE("%s: state changed to HEADER\n", __func__);
@@ -481,7 +485,7 @@ void ip_in(
       TRACE("%s: n_arrived=%d, n_total=%d\n", __func__,
             pendings[pending_index].n_arrived, pendings[pending_index].n_total);
       if (offset != (fragment_offset << 3) + len) {
-        // length check (for SLIP)
+        // length check
         TRACE("%s: length error %d != %d\n", __func__, offset,
               pendings[pending_index].len);
         parity_error = true; // TODO: error reporting
