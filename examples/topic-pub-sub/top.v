@@ -111,7 +111,7 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- ROS2 Node Configuration
-    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe-reppar2sor";
+    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
     wire [15:0] ros2_port_num_seed = 16'd7400;
