@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "duration.hpp"
+#include "ip.hpp"
 #include "sedp.hpp"
 
 /* Cyber func=inline */
@@ -32,18 +33,6 @@ static void compare_entity_id(const uint8_t x,
     if (tbl[i].entity_id[idx] != x)
       unmatched |= (hls_uint<APP_READER_MAX>)(0x1 << i);
   }
-}
-
-/* Cyber func=inline */
-static bool is_same_subnet(const uint8_t locator_ip_addr[4],
-                           const uint8_t ip_addr[4],
-                           const uint8_t subnet_mask[4]) {
-
-#pragma HLS inline
-  return (((locator_ip_addr[0] ^ ip_addr[0]) & subnet_mask[0]) |
-          ((locator_ip_addr[1] ^ ip_addr[1]) & subnet_mask[1]) |
-          ((locator_ip_addr[2] ^ ip_addr[2]) & subnet_mask[2]) |
-          ((locator_ip_addr[3] ^ ip_addr[3]) & subnet_mask[3])) == 0;
 }
 
 #define FLAGS_FOUND_GUID 0x01

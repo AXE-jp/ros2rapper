@@ -12,6 +12,16 @@
 #define TRACE(...) printf(__VA_ARGS__)
 #endif
 
+/* Cyber func=inline */
+bool is_same_subnet(const uint8_t locator_ip_addr[4], const uint8_t ip_addr[4],
+                    const uint8_t subnet_mask[4]) {
+#pragma HLS inline
+  return (((locator_ip_addr[0] ^ ip_addr[0]) & subnet_mask[0]) |
+          ((locator_ip_addr[1] ^ ip_addr[1]) & subnet_mask[1]) |
+          ((locator_ip_addr[2] ^ ip_addr[2]) & subnet_mask[2]) |
+          ((locator_ip_addr[3] ^ ip_addr[3]) & subnet_mask[3])) == 0;
+}
+
 #define USE_IP_FRAGMENTATION
 
 #ifndef USE_IP_FRAGMENTATION

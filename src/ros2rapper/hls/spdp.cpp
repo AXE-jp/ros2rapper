@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "duration.hpp"
+#include "ip.hpp"
 #include "spdp.hpp"
 
 /* Cyber func=inline */
@@ -27,6 +28,7 @@ static void compare_guid_prefix(const uint8_t x,
 /* Cyber func=inline */
 void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
                  sedp_endpoint reader_tbl[SEDP_READER_MAX], hls_uint<1> enable,
+                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
                  uint16_t port_num_seed) {
 #pragma HLS inline
   static const uint8_t par_reader_id[4] /* Cyber array=EXPAND */ =
@@ -212,7 +214,9 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
             port_num_seed /*DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID*/) {
           flags |= (hls_uint<3>)FLAGS_UNMATCH_DOMAIN;
         }
-        flags |= (hls_uint<3>)FLAGS_FOUND_LOCATOR;
+        if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
+          flags |= (hls_uint<3>)FLAGS_FOUND_LOCATOR;
+        }
       }
       offset = 0;
       state = 4;

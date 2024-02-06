@@ -40,6 +40,8 @@
 #define MAX_IP_FRAGMENTS 2
 #define MAX_PENDINGS 1
 
+bool is_same_subnet(const uint8_t locator_ip_addr[4], const uint8_t ip_addr[4],
+                    const uint8_t subnet_mask[4]);
 void ip_in(
     hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],

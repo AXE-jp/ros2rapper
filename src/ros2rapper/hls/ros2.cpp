@@ -140,8 +140,8 @@ static void ros2_in(
   s5.write(x);
   s6.write(x);
 
-  spdp_reader(s4, sedp_reader_cnt, sedp_reader_tbl, enable,
-              conf->port_num_seed);
+  spdp_reader(s4, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
+              conf->subnet_mask, conf->port_num_seed);
 
   sedp_reader(s5, app_reader_cnt, app_reader_tbl, enable, conf->ip_addr,
               conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
