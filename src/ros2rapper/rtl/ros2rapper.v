@@ -213,6 +213,7 @@ ros2 (
     .ip_payloads_q0(ip_payloadsmem_rdata),
 
     .conf_ip_addr(ip_addr),
+    .conf_subnet_mask(subnet_mask),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
@@ -293,6 +294,8 @@ ros2 (
 
   .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
+  .conf_subnet_mask_0(subnet_mask[7:0]), .conf_subnet_mask_1(subnet_mask[15:8]),
+  .conf_subnet_mask_2(subnet_mask[23:16]), .conf_subnet_mask_3(subnet_mask[31:24]),
   .conf_node_name_00(ros2_node_name[7:0]), .conf_node_name_01(ros2_node_name[15:8]),
   .conf_node_name_02(ros2_node_name[23:16]), .conf_node_name_03(ros2_node_name[31:24]),
   .conf_node_name_04(ros2_node_name[39:32]), .conf_node_name_05(ros2_node_name[47:40]),

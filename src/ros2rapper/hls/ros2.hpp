@@ -15,6 +15,7 @@
 
 typedef struct {
   uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+  uint8_t subnet_mask[4] /* Cyber array=EXPAND */;
   uint8_t node_name[MAX_NODE_NAME_LEN] /* Cyber array=EXPAND */;
   uint8_t node_name_len;
   uint8_t node_udp_port[2] /* Cyber array=EXPAND */;

@@ -143,8 +143,9 @@ static void ros2_in(
   spdp_reader(s4, sedp_reader_cnt, sedp_reader_tbl, enable,
               conf->port_num_seed);
 
-  sedp_reader(s5, app_reader_cnt, app_reader_tbl, enable, conf->port_num_seed,
-              conf->guid_prefix, conf->pub_topic_name, conf->pub_topic_name_len,
+  sedp_reader(s5, app_reader_cnt, app_reader_tbl, enable, conf->ip_addr,
+              conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
+              conf->pub_topic_name, conf->pub_topic_name_len,
               conf->pub_topic_type_name, conf->pub_topic_type_name_len,
               conf->sub_topic_name, conf->sub_topic_name_len,
               conf->sub_topic_type_name, conf->sub_topic_type_name_len);
@@ -830,6 +831,8 @@ void ros2(
 #pragma HLS disaggregate variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
+#pragma HLS array_reshape variable = conf->subnet_mask type = complete dim = 0
+#pragma HLS interface mode = ap_none port = conf->subnet_mask
 #pragma HLS array_reshape variable = conf->node_name type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->node_name
 #pragma HLS interface mode = ap_none port = conf->node_name_len

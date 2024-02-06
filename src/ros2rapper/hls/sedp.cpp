@@ -34,6 +34,18 @@ static void compare_entity_id(const uint8_t x,
   }
 }
 
+/* Cyber func=inline */
+static bool is_same_subnet(const uint8_t locator_ip_addr[4],
+                           const uint8_t ip_addr[4],
+                           const uint8_t subnet_mask[4]) {
+
+#pragma HLS inline
+  return (((locator_ip_addr[0] ^ ip_addr[0]) & subnet_mask[0]) |
+          ((locator_ip_addr[1] ^ ip_addr[1]) & subnet_mask[1]) |
+          ((locator_ip_addr[2] ^ ip_addr[2]) & subnet_mask[2]) |
+          ((locator_ip_addr[3] ^ ip_addr[3]) & subnet_mask[3])) == 0;
+}
+
 #define FLAGS_FOUND_GUID 0x01
 #define FLAGS_FOUND_LOCATOR 0x02
 #define FLAGS_UNMATCH_DOMAIN 0x04
@@ -43,6 +55,7 @@ static void compare_entity_id(const uint8_t x,
 /* Cyber func=inline */
 void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
                  app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
+                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
                  uint16_t port_num_seed, const uint8_t guid_prefix[12],
                  const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
                  uint8_t pub_topic_name_len,
@@ -351,7 +364,9 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
             port_num_seed /*DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID*/) {
           flags |= (hls_uint<5>)FLAGS_UNMATCH_DOMAIN;
         }
-        flags |= (hls_uint<5>)FLAGS_FOUND_LOCATOR;
+        if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
+          flags |= (hls_uint<5>)FLAGS_FOUND_LOCATOR;
+        }
       }
       offset = 0;
       state = 5;
