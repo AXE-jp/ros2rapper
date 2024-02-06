@@ -240,11 +240,11 @@ module top (
         .udp_txbuf_ce(),
         .udp_txbuf_rdata(32'b0),
 
-        .payloadsmem_addr(payloadsmem_addr),
-        .payloadsmem_ce(payloadsmem_cs),
-        .payloadsmem_we(payloadsmem_we),
-        .payloadsmem_wdata(payloadsmem_wdata),
-        .payloadsmem_rdata(payloadsmem_rdata),
+        .ip_payloadsmem_addr(payloadsmem_addr),
+        .ip_payloadsmem_ce(payloadsmem_cs),
+        .ip_payloadsmem_we(payloadsmem_we),
+        .ip_payloadsmem_wdata(payloadsmem_wdata),
+        .ip_payloadsmem_rdata(payloadsmem_rdata),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),

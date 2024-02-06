@@ -61,6 +61,7 @@ current_run -implementation [get_runs impl_1]
 # Import sources
 add_files -norecurse -fileset sources_1 [ glob ./*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/include/*.vh ]
+add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
