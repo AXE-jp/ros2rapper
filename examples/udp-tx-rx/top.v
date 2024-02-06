@@ -137,7 +137,7 @@ module top (
 
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
-            rx_buf[1] <= 0;
+            rx_buf[1] <= 8;
         end else begin
             if (rxbuf_we)
                 rx_buf[rxbuf_addr] <= rxbuf_wdata;
@@ -178,7 +178,7 @@ module top (
         case (txbuf_addr)
         6'h00: txbuf_rdata <= 32'h0a01a8c0;  // Destinaton IP address: 192.168.1.10
         6'h01: txbuf_rdata <= 32'h0457_04d2; // Source Port: 1111, Destination Port: 1234
-        6'h02: txbuf_rdata <= 32'h0000000e;  // Payload length: 14
+        6'h02: txbuf_rdata <= 32'h0000000f;  // Payload length: 15
         6'h03: txbuf_rdata <= 32'h20504455;  // Payload: "UDP Send Test\n"
         6'h04: txbuf_rdata <= 32'h646e6553;
         6'h05: txbuf_rdata <= 32'h73655420;
