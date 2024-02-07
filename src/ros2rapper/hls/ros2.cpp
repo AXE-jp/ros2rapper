@@ -182,7 +182,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 }
 
 /* Cyber func=inline */
-static void sedp_writer_out(
+static void sedp_pub_writer_out(
     const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
     const uint8_t reader_entity_id[4], const uint8_t usertraffic_port[2],
@@ -198,6 +198,28 @@ static void sedp_writer_out(
               tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->pub_topic_name,
               conf->pub_topic_name_len, conf->pub_topic_type_name,
               conf->pub_topic_type_name_len);
+
+  tx_buf.head = 0;
+  tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
+}
+
+/* Cyber func=inline */
+static void sedp_sub_writer_out(
+    const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
+    const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
+    const uint8_t reader_entity_id[4], const uint8_t usertraffic_port[2],
+    const uint8_t app_entity_id[4], tx_buf &tx_buf, const config_t *conf) {
+  ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
+                SEDP_WRITER_UDP_PKT_LEN, tx_buf.buf);
+
+  udp_set_header(conf->node_udp_port, dst_port, SEDP_WRITER_RTPS_PKT_LEN,
+                 tx_buf.buf + IP_HDR_SIZE);
+
+  sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
+              reader_entity_id, conf->ip_addr, usertraffic_port, app_entity_id,
+              tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->sub_topic_name,
+              conf->sub_topic_name_len, conf->sub_topic_type_name,
+              conf->sub_topic_type_name_len);
 
   tx_buf.head = 0;
   tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -328,20 +350,22 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 #define SEDP_PUB_WRITER_OUT(id)                                                \
   do {                                                                         \
     if (sedp_reader_cnt > (id)) {                                              \
-      sedp_writer_out(pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,     \
-                      sedp_reader_tbl[(id)].udp_port,                          \
-                      sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, \
-                      default_port, app_writer_entity_id, tx_buf, conf);       \
+      sedp_pub_writer_out(pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr, \
+                          sedp_reader_tbl[(id)].udp_port,                      \
+                          sedp_reader_tbl[(id)].guid_prefix,                   \
+                          pub_reader_entity_id, default_port,                  \
+                          app_writer_entity_id, tx_buf, conf);                 \
     }                                                                          \
   } while (0)
 
 #define SEDP_SUB_WRITER_OUT(id)                                                \
   do {                                                                         \
     if (sedp_reader_cnt > (id)) {                                              \
-      sedp_writer_out(sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,     \
-                      sedp_reader_tbl[(id)].udp_port,                          \
-                      sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, \
-                      default_port, app_reader_entity_id, tx_buf, conf);       \
+      sedp_sub_writer_out(sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr, \
+                          sedp_reader_tbl[(id)].udp_port,                      \
+                          sedp_reader_tbl[(id)].guid_prefix,                   \
+                          sub_reader_entity_id, default_port,                  \
+                          app_reader_entity_id, tx_buf, conf);                 \
     }                                                                          \
   } while (0)
 
