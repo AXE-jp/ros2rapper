@@ -38,7 +38,7 @@ void process_ip_packet(const uint8_t *packet, size_t packet_size) {
 
     hls_uint<9> y;
     if (out.read_nb(y)) {
-      //printf("%% out: %02x\n", y & 0xff);
+      // printf("%% out: %02x\n", y & 0xff);
       if (y & 0x100)
         break;
     }
