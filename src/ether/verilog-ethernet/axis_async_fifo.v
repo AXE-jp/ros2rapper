@@ -324,6 +324,13 @@ always @(posedge m_clk or negedge m_rst_n) begin
     end
 end
 
+function [ADDR_WIDTH:0] calc_gray;
+    input [ADDR_WIDTH:0] x;
+    begin
+        calc_gray = x ^ (x >> 1);
+    end
+endfunction
+
 integer i;
 
 // Write logic
@@ -407,7 +414,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
                 end else begin
                     // update pointers
                     wr_ptr_reg <= (wr_ptr_reg + 1);
-                    wr_ptr_gray_reg <= (wr_ptr_reg + 1) ^ ((wr_ptr_reg + 1) >> 1);
+                    wr_ptr_gray_reg <= calc_gray(wr_ptr_reg + 1);
                 end
             end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg) begin
                 // full, packet overflow, or currently dropping frame
@@ -416,31 +423,31 @@ always @(posedge s_clk or negedge s_rst_n) begin
                 if (s_axis_tlast) begin
                     // end of frame, reset write pointer
                     wr_ptr_cur_reg <= wr_ptr_reg;
-                    wr_ptr_cur_gray_reg <= wr_ptr_reg ^ (wr_ptr_reg >> 1);
+                    wr_ptr_cur_gray_reg <= calc_gray(wr_ptr_reg);
                     drop_frame_reg <= s_drop;
                     overflow_reg <= 1'b1;
                 end
             end else begin
                 mem[wr_ptr_cur_reg[ADDR_WIDTH-1:0]] <= s_axis;
                 wr_ptr_cur_reg <= wr_ptr_cur_reg + 1;
-                wr_ptr_cur_gray_reg <= (wr_ptr_cur_reg + 1) ^ ((wr_ptr_cur_reg + 1) >> 1);
+                wr_ptr_cur_gray_reg <= calc_gray(wr_ptr_cur_reg + 1);
                 if (s_axis_tlast || (!DROP_OVERSIZE_FRAME && (full_wr || send_frame_reg))) begin
                     // end of frame or send frame
                     send_frame_reg <= !s_axis_tlast;
                     if (s_axis_tlast && DROP_BAD_FRAME && USER_BAD_FRAME_MASK & ~(s_axis_tuser ^ USER_BAD_FRAME_VALUE)) begin
                         // bad packet, reset write pointer
                         wr_ptr_cur_reg <= wr_ptr_reg;
-                        wr_ptr_cur_gray_reg <= wr_ptr_reg ^ (wr_ptr_reg >> 1);
+                        wr_ptr_cur_gray_reg <= calc_gray(wr_ptr_reg);
                         bad_frame_reg <= 1'b1;
                     end else begin
                         // good packet or packet overflow, update write pointer
                         wr_ptr_reg <= wr_ptr_cur_reg + 1;
-                        wr_ptr_gray_reg <= (wr_ptr_cur_reg + 1) ^ ((wr_ptr_cur_reg + 1) >> 1);
+                        wr_ptr_gray_reg <= calc_gray(wr_ptr_cur_reg + 1);
 
                         if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
                             // no sync in progress; sync update
                             wr_ptr_update_valid_reg <= 1'b0;
-                            wr_ptr_sync_gray_reg <= (wr_ptr_cur_reg + 1) ^ ((wr_ptr_cur_reg + 1) >> 1);
+                            wr_ptr_sync_gray_reg <= calc_gray(wr_ptr_cur_reg + 1);
                             wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
                         end else begin
                             // sync in progress; flag it for later
@@ -456,12 +463,12 @@ always @(posedge s_clk or negedge s_rst_n) begin
             // update write pointer
             send_frame_reg <= 1'b1;
             wr_ptr_reg <= wr_ptr_cur_reg;
-            wr_ptr_gray_reg <= wr_ptr_cur_reg ^ (wr_ptr_cur_reg >> 1);
+            wr_ptr_gray_reg <= calc_gray(wr_ptr_cur_reg);
 
             if (wr_ptr_update_reg == wr_ptr_update_ack_sync2_reg) begin
                 // no sync in progress; sync update
                 wr_ptr_update_valid_reg <= 1'b0;
-                wr_ptr_sync_gray_reg <= wr_ptr_cur_reg ^ (wr_ptr_cur_reg >> 1);
+                wr_ptr_sync_gray_reg <= calc_gray(wr_ptr_cur_reg);
                 wr_ptr_update_reg <= !wr_ptr_update_ack_sync2_reg;
             end else begin
                 // sync in progress; flag it for later
@@ -598,7 +605,7 @@ always @(posedge m_clk or negedge m_rst_n) begin
                 // not empty, increment pointer
                 m_axis_tvalid_pipe_reg[0] <= 1'b1;
                 rd_ptr_reg <= rd_ptr_reg + 1;
-                rd_ptr_gray_reg <= (rd_ptr_reg + 1) ^ ((rd_ptr_reg + 1) >> 1);
+                rd_ptr_gray_reg <= calc_gray(rd_ptr_reg + 1);
             end
         end
 
