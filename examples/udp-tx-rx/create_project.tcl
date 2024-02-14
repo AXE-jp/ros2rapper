@@ -68,6 +68,4 @@ add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/verilog-ethernet/*.v ]
 
 # Import xdc files
-if {[info exists design_xdc_file]} {
-    add_files    -fileset constrs_1 -norecurse $design_xdc_file
-}
+add_files -fileset constrs_1 -norecurse "./constrs/arty_a7_eth.xdc ./constrs/eth_mac_fifo.tcl ./constrs/axis_async_fifo.tcl ./constrs/sync_reset.tcl"
