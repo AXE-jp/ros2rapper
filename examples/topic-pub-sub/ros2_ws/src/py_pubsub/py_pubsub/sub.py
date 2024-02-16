@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 
 from std_msgs.msg import String
 
@@ -8,10 +9,11 @@ class StrSubscriber(Node):
 
     def __init__(self):
         super().__init__('str_subscriber')
-        self.subscription = self.create_subscription(String, 'aaa', self.listener_callback, 10)
+        qos_profile = QoSProfile(depth=10, reliability=QoSReliabilityPolicy.BEST_EFFORT)
+        self.subscription = self.create_subscription(String, 'bbb', self.listener_callback, qos_profile)
         self.subscription
 
-    def listener_callback(self):
+    def listener_callback(self, msg):
         self.get_logger().info('Received: "%s"' % msg.data)
 
 
