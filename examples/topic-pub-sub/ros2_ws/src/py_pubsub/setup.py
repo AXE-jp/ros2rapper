@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'pub_numstr'
+package_name = 'py_pubsub'
 
 setup(
     name=package_name,
@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pub = pub_numstr.pub:main',
+            'pub = py_pubsub.pub:main',
+            'sub = py_pubsub.sub:main',
         ],
     },
 )

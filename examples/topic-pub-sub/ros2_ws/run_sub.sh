@@ -6,4 +6,4 @@
 rosdep install -i --from-path src --rosdistro humble -y
 colcon build --packages-select py_pubsub
 source install/setup.bash
-ros2 run py_pubsub pub
+ros2 run py_pubsub sub
