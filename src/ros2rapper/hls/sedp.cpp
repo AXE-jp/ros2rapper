@@ -349,12 +349,10 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
       if (param_id == PID_ENDPOINT_GUID) {
         flags |= (hls_uint<5>)FLAGS_FOUND_GUID;
       } else if (param_id == PID_UNICAST_LOCATOR) {
-        if (udp_port ==
-            port_num_seed /*DOMAIN_ID(udp_port) != TARGET_DOMAIN_ID*/) {
-          flags |= (hls_uint<5>)FLAGS_UNMATCH_DOMAIN;
-        }
-        if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
-          flags |= (hls_uint<5>)FLAGS_FOUND_LOCATOR;
+        if (udp_port >= port_num_seed && udp_port - port_num_seed < DG) {
+          if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
+            flags |= (hls_uint<5>)FLAGS_FOUND_LOCATOR;
+          }
         }
       }
       offset = 0;
