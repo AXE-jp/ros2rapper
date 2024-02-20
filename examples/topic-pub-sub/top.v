@@ -124,8 +124,35 @@ module top (
     wire [7:0] ros2_pub_topic_name_len = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = "!dlrow reppar2SOR ,olleh"; // Published message
-    wire [7:0] ros2_pub_app_data_len = 8'd25;
+    reg [7:0] msg_number;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM"}; // Published message
+    wire [7:0] ros2_pub_app_data_len = 8'd22;
+
+    // --- ROS2 Publisher Message Control
+    reg ros2_pub_app_data_req;
+    reg ros2_pub_app_data_rel;
+    wire ros2_pub_app_data_grant;
+    reg [27:0] msg_change_counter;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            msg_number <= 8'd48; // '0'
+            ros2_pub_app_data_req <= 0;
+            ros2_pub_app_data_rel <= 0;
+            msg_change_counter <= 0;
+        end else begin
+            msg_change_counter <= msg_change_counter + 1;
+            ros2_pub_app_data_rel <= 0;
+
+            if (ros2_pub_app_data_req && ros2_pub_app_data_grant) begin
+                msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
+                ros2_pub_app_data_rel <= 1;
+                ros2_pub_app_data_req <= 0;
+                msg_change_counter <= 0;
+            end else if (msg_change_counter[27]) begin
+                ros2_pub_app_data_req <= 1;
+            end
+        end
+    end
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
@@ -213,9 +240,9 @@ module top (
 
         .ros2_pub_app_data(ros2_pub_app_data),
         .ros2_pub_app_data_len(ros2_pub_app_data_len),
-        .ros2_pub_app_data_req(1'b0),
-        .ros2_pub_app_data_rel(1'b0),
-        .ros2_pub_app_data_grant(),
+        .ros2_pub_app_data_req(ros2_pub_app_data_req),
+        .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
         .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),

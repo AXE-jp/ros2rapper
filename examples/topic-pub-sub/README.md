@@ -26,17 +26,17 @@ Then write generated bitstream (ros2rapper-pubsub/ros2rapper-pubsub.runs/impl\_1
 * Configure Linux machine's IP address to be the same network address of FPGA's. IP address of FPGA is `192.168.1.100`.
 
 ### Test ROS2rapper Publisher feature
-* This example publishes the "fpga_msg" topic.
+* This example publishes the "/bbb" topic.
 * To subscribe this topic, run following command.
   * `./run-subscriber.sh`
-  * This script runs subscriber on Docker container.
-* Message "Message from FPGA - n" will be shown periodically (Last number 'n' changes from 0 to 9 periodically).
+  * This script runs subscriber on Docker container. This docker container uses a host network.
+* Message "Message from FPGA - n" will be shown periodically (Last number 'n' changes from 0 to 9 at intervals of about 1 sec).
 
 ### Test ROS2rapper Subscriber feature
-* This example subscribes the "numstr" topic.
+* This example subscribes the "/aaa" topic.
 * To subscribe this topic, run following command.
   * `./run-publisher.sh`
-  * This script runs publisher on Docker container.
+  * This script runs publisher on Docker container. This docker container uses a host network.
 * Publisher on Linux machine sends following string messages with a period of 1 sec.
   *  "0", "1", "2", ..., "9", "0", "1", ...
 * When ROS2rapper receives message, LED 4-7 is changed according to lower 4 bits of first character of message.
