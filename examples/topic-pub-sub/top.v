@@ -115,7 +115,7 @@ module top (
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
     wire [15:0] ros2_port_num_seed = 16'd7400;
-    wire [31:0] ros2_tx_period = 32'd12500000;
+    wire [31:0] ros2_tx_period = 32'd125000;
     wire [31:0] ros2_fragment_expiration = 32'd3333333333;
     wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
 
