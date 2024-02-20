@@ -138,7 +138,6 @@ static void ros2_in(
 
   s4.write(x);
   s5.write(x);
-  s6.write(x);
 
   spdp_reader(s4, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
               conf->subnet_mask, conf->port_num_seed);
@@ -151,6 +150,7 @@ static void ros2_in(
               conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
   if (sub_enable) {
+    s6.write(x);
     app_reader(s6, conf->guid_prefix, app_reader_entity_id, sub_app_data_recv,
                sub_app_data_grant, sub_app_data, sub_app_data_len);
   }
