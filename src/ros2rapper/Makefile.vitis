@@ -15,6 +15,7 @@ synth: $(VERILOGTOP)
 
 $(VERILOGTOP): $(SRCS) $(HDRS) run_hls.tcl
 	vitis_hls run_hls.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2/solution1/syn/verilog
 
 csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
 	vitis_hls run_csim.tcl
