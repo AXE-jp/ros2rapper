@@ -6,7 +6,6 @@
 set     project_directory   [file dirname [info script]]
 set     project_name        "ros2rapper-pubsub"
 set     device_part         "xc7a100tcsg324-1"
-set     design_xdc_file     [ glob ./constrs/* ]
 
 # Create project
 create_project -force $project_name $project_directory/$project_name
