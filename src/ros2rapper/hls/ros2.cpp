@@ -834,7 +834,7 @@ void ros2(
         [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
     volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
     uint8_t sub_app_data
-        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared */,
     volatile uint8_t *sub_app_data_len,
     volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
