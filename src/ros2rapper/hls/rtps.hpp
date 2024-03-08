@@ -162,31 +162,23 @@
 #define D2 1
 #define D3 11
 
-#define DISCOVERY_TRAFFIC_MULTICAST_PORT(domain_id)                            \
-  { (PB + DG * (domain_id) + D0) >> 8, (PB + DG * (domain_id) + D0) & 0xff }
+#define DISCOVERY_TRAFFIC_MULTICAST_PORT(seed) ((seed) + D0)
 #define DISCOVERY_TRAFFIC_MULTICAST_PORT_0(seed) (((seed) + D0) >> 8)
 #define DISCOVERY_TRAFFIC_MULTICAST_PORT_1(seed) (((seed) + D0) & 0xff)
 
-#define DISCOVERY_TRAFFIC_UNICAST_PORT(domain_id, participant_id)              \
-  {                                                                            \
-    (PB + DG * (domain_id) + D1 + PG * (participant_id)) >> 8,                 \
-        (PB + DG * (domain_id) + D1 + PG * (participant_id)) & 0xff            \
-  }
+#define DISCOVERY_TRAFFIC_UNICAST_PORT(seed, participant_id)                   \
+  ((seed) + D1 + PG * (participant_id))
 #define DISCOVERY_TRAFFIC_UNICAST_PORT_0(seed, participant_id)                 \
   (((seed) + D1 + PG * (participant_id)) >> 8)
 #define DISCOVERY_TRAFFIC_UNICAST_PORT_1(seed, participant_id)                 \
   (((seed) + D1 + PG * (participant_id)) & 0xff)
 
-#define USER_TRAFFIC_MULTICAST_PORT(domain_id)                                 \
-  { (PB + DG * (domain_id) + D2) >> 8, (PB + DG * (domain_id) + D2) & 0xff }
+#define USER_TRAFFIC_MULTICAST_PORT(seed) ((seed) + D2)
 #define USER_TRAFFIC_MULTICAST_PORT_0(seed) (((seed) + D2) >> 8)
 #define USER_TRAFFIC_MULTICAST_PORT_1(seed) (((seed) + D2) & 0xff)
 
-#define USER_TRAFFIC_UNICAST_PORT(domain_id, participant_id)                   \
-  {                                                                            \
-    (PB + DG * (domain_id) + D3 + PG * (participant_id)) >> 8,                 \
-        (PB + DG * (domain_id) + D3 + PG * (participant_id)) & 0xff            \
-  }
+#define USER_TRAFFIC_UNICAST_PORT(seed, participant_id)                        \
+  ((seed) + D3 + PG * (participant_id))
 #define USER_TRAFFIC_UNICAST_PORT_0(seed, participant_id)                      \
   (((seed) + D3 + PG * (participant_id)) >> 8)
 #define USER_TRAFFIC_UNICAST_PORT_1(seed, participant_id)                      \
