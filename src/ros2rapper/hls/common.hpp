@@ -28,7 +28,7 @@
                    SEDP_WRITER_IP_PKT_LEN),                                    \
                SEDP_HEARTBEAT_IP_PKT_LEN),                                     \
            SEDP_ACKNACK_IP_PKT_LEN),                                           \
-       APP_WRITER_IP_PKT_LEN))
+       APP_WRITER_IP_PKT_LEN(MAX_APP_DATA_LEN)))
 
 #define MAX_TX_UDP_PAYLOAD_LEN (TX_BUF_LEN - (IP_HDR_SIZE + UDP_HDR_SIZE))
 
