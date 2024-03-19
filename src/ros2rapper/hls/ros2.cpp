@@ -99,7 +99,7 @@ static void ros2_in(
     volatile uint8_t *sub_app_data_recv, volatile uint8_t *sub_app_data_grant,
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint8_t *rawudp_rxbuf_rel, volatile uint8_t *rawudp_rxbuf_grant,
-    bool ignore_checksum) {
+    bool ignore_ip_checksum) {
     static bool ip_parity_error  = false;
     static bool udp_parity_error = false;
 
@@ -130,7 +130,7 @@ static void ros2_in(
 #else  // !USE_FIFOIF_ETHERNET
     slip_in(in, s1);
 #endif // USE_FIFOIF_ETHERNET
-    ip_in(s1, s2, ip_payloads, conf->fragment_expiration, ignore_checksum,
+    ip_in(s1, s2, ip_payloads, conf->fragment_expiration, ignore_ip_checksum,
           ip_parity_error);
     udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
            rawudp_rxbuf_grant, udp_parity_error);
@@ -928,7 +928,7 @@ void ros2(
             app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
             sub_app_data_recv, sub_app_data_grant, sub_app_data,
             sub_app_data_len, udp_rxbuf_rel, udp_rxbuf_grant,
-            conf->ignore_checksum);
+            conf->ignore_ip_checksum);
 
     ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
              app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,

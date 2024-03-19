@@ -36,7 +36,7 @@ typedef struct {
     uint8_t sub_topic_type_name
         [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
     uint8_t sub_topic_type_name_len;
-    bool    ignore_checksum;
+    bool    ignore_ip_checksum;
 } config_t;
 
 #endif // !ROS2_HPP
