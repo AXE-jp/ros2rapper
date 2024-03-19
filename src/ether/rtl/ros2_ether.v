@@ -256,6 +256,7 @@ ros2rapper (
     .ros2_tx_period(ros2_tx_period),
     .ros2_fragment_expiration(ros2_fragment_expiration),
     .ros2_guid_prefix(ros2_guid_prefix),
+    .ros2_ignore_ip_checksum(1'b0),
 
     .ros2_pub_topic_name(ros2_pub_topic_name),
     .ros2_pub_topic_name_len(ros2_pub_topic_name_len),

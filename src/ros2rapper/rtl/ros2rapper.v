@@ -33,6 +33,7 @@ module ros2rapper (
     input  wire [31:0] ros2_tx_period,
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
+    input  wire        ros2_ignore_ip_checksum,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
     input  wire [7:0] ros2_pub_topic_name_len,
@@ -222,6 +223,8 @@ ros2 (
     .conf_tx_period(ros2_tx_period),
     .conf_fragment_expiration(ros2_fragment_expiration),
     .conf_guid_prefix(ros2_guid_prefix),
+    .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
+
     .conf_pub_topic_name(ros2_pub_topic_name),
     .conf_pub_topic_name_len(ros2_pub_topic_name_len),
     .conf_pub_topic_type_name(ros2_pub_topic_type_name),
@@ -324,6 +327,7 @@ ros2 (
   .conf_guid_prefix_06(ros2_guid_prefix[55:48]), .conf_guid_prefix_07(ros2_guid_prefix[63:56]),
   .conf_guid_prefix_08(ros2_guid_prefix[71:64]), .conf_guid_prefix_09(ros2_guid_prefix[79:72]),
   .conf_guid_prefix_10(ros2_guid_prefix[87:80]), .conf_guid_prefix_11(ros2_guid_prefix[95:88]),
+  .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
 
   .conf_pub_topic_name_00(ros2_pub_topic_name[7:0]), .conf_pub_topic_name_01(ros2_pub_topic_name[15:8]),
   .conf_pub_topic_name_02(ros2_pub_topic_name[23:16]), .conf_pub_topic_name_03(ros2_pub_topic_name[31:24]),
