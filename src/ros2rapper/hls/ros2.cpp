@@ -899,7 +899,7 @@ void ros2(
     = complete                                                 dim = 0
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
-#pragma HLS interface mode = ap_none port = conf->ignore_checksum
+#pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
 #pragma HLS interface mode = ap_fifo port = pub_app_data
 #pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len
