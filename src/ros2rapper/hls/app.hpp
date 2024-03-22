@@ -15,9 +15,11 @@
 #define APP_TOT_LEN(len)                                                       \
   (RTPS_HDR_SIZE + SBM_HDR_SIZE + GUID_PREFIX_SIZE + SBM_HDR_SIZE +            \
    TIMESTAMP_SIZE + SBM_HDR_SIZE + APP_OCTETS_TO_NEXT_HEADER(len))
-#define APP_WRITER_RTPS_PKT_LEN APP_TOT_LEN(MAX_APP_DATA_LEN)
-#define APP_WRITER_UDP_PKT_LEN (UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN)
-#define APP_WRITER_IP_PKT_LEN (IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN)
+#define APP_WRITER_RTPS_PKT_LEN(app_data_len) APP_TOT_LEN(app_data_len)
+#define APP_WRITER_UDP_PKT_LEN(app_data_len)                                   \
+  (UDP_HDR_SIZE + APP_WRITER_RTPS_PKT_LEN(app_data_len))
+#define APP_WRITER_IP_PKT_LEN(app_data_len)                                    \
+  (IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN(app_data_len))
 
 void app_writer(const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],

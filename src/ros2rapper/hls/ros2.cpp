@@ -290,9 +290,10 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  APP_WRITER_UDP_PKT_LEN, tx_buf.buf);
+                  APP_WRITER_UDP_PKT_LEN(*pub_app_data_len), tx_buf.buf);
 
-    udp_set_header(src_port, dst_port, APP_WRITER_RTPS_PKT_LEN,
+    udp_set_header(src_port, dst_port,
+                   APP_WRITER_RTPS_PKT_LEN(*pub_app_data_len),
                    tx_buf.buf + IP_HDR_SIZE);
 
     app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
@@ -300,7 +301,7 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
     tx_buf.head = 0;
-    tx_buf.len  = APP_WRITER_IP_PKT_LEN;
+    tx_buf.len  = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
 }
 
 /* Cyber func=inline */
