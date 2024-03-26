@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "app.hpp"
+#include "ros2.hpp"
 
 #define APP_HDR_SIZE APP_TOT_LEN(0)
 
@@ -113,12 +114,9 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     buf[75] = rep_opt & 0xff;
 
     /* Cyber unroll_times=all */
-    for (int i = APP_HDR_SIZE; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+    for (int i = APP_HDR_SIZE; i < APP_HDR_SIZE + MAX_APP_DATA_LEN; i++) {
 #pragma HLS unroll
-        if (i < APP_HDR_SIZE + app_data_len)
-            buf[i] = app_data[i - APP_HDR_SIZE];
-        else
-            buf[i] = 0;
+        buf[i] = app_data[i - APP_HDR_SIZE];
     }
 }
 
