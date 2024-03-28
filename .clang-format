@@ -1,0 +1,9 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+AlignArrayOfStructures: Right
+AlignConsecutiveBitFields: AcrossComments
+AlignConsecutiveDeclarations: AcrossComments
+AlignConsecutiveMacros: AcrossComments
+AlignOperands: Align
+BreakBeforeBinaryOperators: true
+AlignTrailingComments: true
