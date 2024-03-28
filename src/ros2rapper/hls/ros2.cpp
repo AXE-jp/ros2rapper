@@ -45,7 +45,7 @@ class tx_buf {
 #pragma HLS inline
         if (!empty() && !out.full()) {
             uint8_t data = deque();
-            bool    end  = empty();
+            bool    end = empty();
 
             out.write(data | (end ? 0x100 : 0));
         }
@@ -58,7 +58,7 @@ class tx_buf {
 void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 #pragma HLS inline
     static uint16_t offset = 0;
-    static uint16_t len    = 0;
+    static uint16_t len = 0;
 
     uint8_t x;
 
@@ -80,7 +80,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
     if (offset == len) {
         out.write(x | 0x100);
         offset = 0;
-        len    = 0;
+        len = 0;
     } else {
         out.write(x);
     }
@@ -100,7 +100,7 @@ static void ros2_in(
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint8_t *rawudp_rxbuf_rel, volatile uint8_t *rawudp_rxbuf_grant,
     bool ignore_ip_checksum) {
-    static bool ip_parity_error  = false;
+    static bool ip_parity_error = false;
     static bool udp_parity_error = false;
 
     static const uint8_t app_reader_entity_id[4] /* Cyber array=EXPAND */
@@ -183,7 +183,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
                 conf->node_name_len);
 
     tx_buf.head = 0;
-    tx_buf.len  = SPDP_WRITER_IP_PKT_LEN;
+    tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
@@ -205,7 +205,7 @@ static void sedp_pub_writer_out(
                 conf->pub_topic_type_name, conf->pub_topic_type_name_len);
 
     tx_buf.head = 0;
-    tx_buf.len  = SEDP_WRITER_IP_PKT_LEN;
+    tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
@@ -227,7 +227,7 @@ static void sedp_sub_writer_out(
                 conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
     tx_buf.head = 0;
-    tx_buf.len  = SEDP_WRITER_IP_PKT_LEN;
+    tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
@@ -251,7 +251,7 @@ static void sedp_heartbeat_out(
                    tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
     tx_buf.head = 0;
-    tx_buf.len  = SEDP_HEARTBEAT_IP_PKT_LEN;
+    tx_buf.len = SEDP_HEARTBEAT_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
@@ -275,7 +275,7 @@ static void sedp_acknack_out(
                  tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
     tx_buf.head = 0;
-    tx_buf.len  = SEDP_ACKNACK_IP_PKT_LEN;
+    tx_buf.len = SEDP_ACKNACK_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
@@ -301,7 +301,7 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
     tx_buf.head = 0;
-    tx_buf.len  = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
+    tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
 }
 
 /* Cyber func=inline */
@@ -315,7 +315,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
                    tx_buf.buf + IP_HDR_SIZE);
 
     tx_buf.head = 0;
-    tx_buf.len  = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
+    tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
 #define ST_RAWUDP_OUT           0
@@ -570,8 +570,8 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
             switch (rawudp_txbuf_copy_status) {
             case RAWUDP_TXBUF_COPY_INIT:
                 if (*rawudp_txbuf_grant == 1) {
-                    rawudp_txbuf_rd_off      = 0;
-                    rawudp_txpayload_wr_off  = 0;
+                    rawudp_txbuf_rd_off = 0;
+                    rawudp_txpayload_wr_off = 0;
                     rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
                 } else if (clk_cnt >= conf->tx_period) {
                     clk_cnt = 0;
@@ -581,21 +581,21 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
                 case 0:
-                    ram_read_buf          = rawudp_txbuf[rawudp_txbuf_rd_off];
+                    ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
                     rawudp_tx_dst_addr[0] = ram_read_buf & 0xff;
                     rawudp_tx_dst_addr[1] = (ram_read_buf >> 8) & 0xff;
                     rawudp_tx_dst_addr[2] = (ram_read_buf >> 16) & 0xff;
                     rawudp_tx_dst_addr[3] = (ram_read_buf >> 24) & 0xff;
                     break;
                 case 1:
-                    ram_read_buf          = rawudp_txbuf[rawudp_txbuf_rd_off];
+                    ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
                     rawudp_tx_dst_port[1] = ram_read_buf & 0xff;
                     rawudp_tx_dst_port[0] = (ram_read_buf >> 8) & 0xff;
                     rawudp_tx_src_port[1] = (ram_read_buf >> 16) & 0xff;
                     rawudp_tx_src_port[0] = (ram_read_buf >> 24) & 0xff;
                     break;
                 case 2:
-                    ram_read_buf          = rawudp_txbuf[rawudp_txbuf_rd_off];
+                    ram_read_buf = rawudp_txbuf[rawudp_txbuf_rd_off];
                     rawudp_tx_payload_len = ram_read_buf & 0xff;
                     rawudp_tx_payload_len |= (ram_read_buf >> 8) & 0xff;
                     // padding 2byte
@@ -866,7 +866,7 @@ void ros2(
 #pragma HLS interface mode = ap_memory port = udp_txbuf storage_type = ram_1p
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
-#pragma HLS interface mode = ap_none port     = sub_enable
+#pragma HLS interface mode = ap_none port = sub_enable
 #pragma HLS disaggregate             variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
@@ -888,7 +888,7 @@ void ros2(
     = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_len
-#pragma HLS array_reshape variable        = conf->pub_topic_type_name type     \
+#pragma HLS array_reshape variable = conf->pub_topic_type_name type            \
     = complete                                                 dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len
@@ -896,7 +896,7 @@ void ros2(
     = 0
 #pragma HLS interface mode = ap_none port = conf->sub_topic_name
 #pragma HLS interface mode = ap_none port = conf->sub_topic_name_len
-#pragma HLS array_reshape variable        = conf->sub_topic_type_name type     \
+#pragma HLS array_reshape variable = conf->sub_topic_type_name type            \
     = complete                                                 dim = 0
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len

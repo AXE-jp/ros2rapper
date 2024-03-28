@@ -18,16 +18,16 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
-    static const uint16_t rep_id    = SP_ID_CDR_LE;
+    static const uint16_t rep_id = SP_ID_CDR_LE;
 #endif // SBM_ENDIAN_LITTLE
 #ifdef SBM_ENDIAN_BIG
     static const uint8_t  sbm_flags = 0;
-    static const uint16_t rep_id    = SP_ID_CDR_BE;
+    static const uint16_t rep_id = SP_ID_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now       = TIME_ZERO;
+    static const timestamp now = TIME_ZERO;
     static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt   = 0;
+    static const uint16_t  rep_opt = 0;
 
     const uint16_t tot_len = APP_TOT_LEN(app_data_len);
     const uint16_t octets_to_next_header
@@ -36,16 +36,16 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     int32_t  seqnum_h = seqnum >> 32;
     uint32_t seqnum_l = seqnum & 0xffffffff;
 
-    buf[0]  = 'R';
-    buf[1]  = 'T';
-    buf[2]  = 'P';
-    buf[3]  = 'S';
-    buf[4]  = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5]  = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6]  = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7]  = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8]  = writer_guid_prefix[0];
-    buf[9]  = writer_guid_prefix[1];
+    buf[0] = 'R';
+    buf[1] = 'T';
+    buf[2] = 'P';
+    buf[3] = 'S';
+    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[8] = writer_guid_prefix[0];
+    buf[9] = writer_guid_prefix[1];
     buf[10] = writer_guid_prefix[2];
     buf[11] = writer_guid_prefix[3];
     buf[12] = writer_guid_prefix[4];
@@ -154,7 +154,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
     if (!in.read_nb(x))
         return;
     data = x & 0x0FF;
-    end  = x & 0x100;
+    end = x & 0x100;
 
     switch (state) {
     case 0: // parse/check RTPS header
@@ -165,7 +165,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         offset++;
         if (offset == RTPS_HDR_SIZE) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 1: // parse/check sub-message header
@@ -203,7 +203,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 3: // parse/check sub-message : DATA
@@ -215,7 +215,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == SBM_DATA_HDR_SIZE) {
             sbm_len -= SBM_DATA_HDR_SIZE;
             offset = 0;
-            state  = 4;
+            state = 4;
         }
         break;
     case 4: // parse/check serialized_payload
@@ -230,9 +230,9 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             if ((rep_id & SP_ID_PL_CDR) == 0) {
-                offset      = 0;
+                offset = 0;
                 sp_data_len = 0;
-                state       = 5;
+                state = 5;
             } else {
                 state = 9;
             }
@@ -262,8 +262,8 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == sizeof(sp_data_len)) {
             if (sp_data_len <= MAX_APP_DATA_LEN) {
                 saved_grant = *sub_app_data_grant;
-                offset      = 0;
-                state       = 6;
+                offset = 0;
+                state = 6;
             } else {
                 state = 9;
             }
@@ -277,7 +277,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         offset++;
         if (offset == sp_data_len) {
             if (saved_grant) {
-                *sub_app_data_len  = sp_data_len;
+                *sub_app_data_len = sp_data_len;
                 *sub_app_data_recv = 0;
             }
             state = 9;
@@ -287,7 +287,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 9:; // do nothing
@@ -295,6 +295,6 @@ void app_reader(hls_stream<hls_uint<9>> &in,
 
     if (end) {
         offset = 0;
-        state  = 0;
+        state = 0;
     }
 }

@@ -44,7 +44,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         return;
 
     uint8_t data = x & 0xff;
-    bool    end  = x & 0x100;
+    bool    end = x & 0x100;
 
     switch (state) {
     case 0:
@@ -89,7 +89,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
                 out.write(len >> 8);
                 out.write(0x100 | (len & 0xff));
                 parity_error = true;
-                state        = 6;
+                state = 6;
             }
         }
         break;
@@ -100,9 +100,9 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     }
 
     if (end) {
-        state  = 0;
+        state = 0;
         offset = 0;
-        sum    = 0;
+        sum = 0;
     }
 }
 #else // USE_IP_FRAGMENTATION
@@ -124,11 +124,11 @@ struct pending_info {
 void init_pending_info(pending_info *pending, uint16_t id,
                        uint32_t fragment_expiration) {
 #pragma HLS inline
-    pending->is_used    = true;
-    pending->id         = id;
-    pending->n_arrived  = 0;
-    pending->n_total    = TOTAL_FRAGMENTS_UNKNOWN;
-    pending->len        = 0;
+    pending->is_used = true;
+    pending->id = id;
+    pending->n_arrived = 0;
+    pending->n_total = TOTAL_FRAGMENTS_UNKNOWN;
+    pending->len = 0;
     pending->expiration = fragment_expiration;
     TRACE("%s: pending entry activated (id=%d)\n", __func__, id);
 }
@@ -139,7 +139,7 @@ void init_pending_info(pending_info *pending, uint16_t id,
 pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
                                   uint32_t fragment_expiration) {
 #pragma HLS inline
-    pending_index_t found  = INVALID_PENDING_INDEX;
+    pending_index_t found = INVALID_PENDING_INDEX;
     pending_index_t unused = INVALID_PENDING_INDEX;
 
 #ifndef __SYNTHESIS__
@@ -314,13 +314,13 @@ void ip_in(
 
 #define reset_state()                                                          \
     do {                                                                       \
-        state            = IPIN_STATE_HEADER;                                  \
-        len              = 0;                                                  \
-        offset           = 0;                                                  \
-        sum              = 0;                                                  \
-        id               = 0;                                                  \
+        state = IPIN_STATE_HEADER;                                             \
+        len = 0;                                                               \
+        offset = 0;                                                            \
+        sum = 0;                                                               \
+        id = 0;                                                                \
         flags_and_offset = 0;                                                  \
-        pending_index    = INVALID_PENDING_INDEX;                              \
+        pending_index = INVALID_PENDING_INDEX;                                 \
     } while (0)
 
     static pending_info    pendings[MAX_PENDINGS] /* Cyber array=REG */;
@@ -342,7 +342,7 @@ void ip_in(
             return;
 
         data = x & 0xff;
-        end  = x & 0x100;
+        end = x & 0x100;
 
         checksum(sum, offset, data);
 
@@ -366,7 +366,7 @@ void ip_in(
         case (IP_HDR_OFFSET_FLAG_OFF + 1):
             flags_and_offset |= data;
             has_more_fragments = HAS_MORE_FRAGMENTS(flags_and_offset);
-            fragment_offset    = GET_FRAGMENT_OFFSET(flags_and_offset);
+            fragment_offset = GET_FRAGMENT_OFFSET(flags_and_offset);
             break;
         case (IP_HDR_OFFSET_SADDR + 0):
             src_addr[0] = data;
@@ -470,7 +470,7 @@ void ip_in(
             return;
 
         data = x & 0xff;
-        end  = x & 0x100;
+        end = x & 0x100;
 
         out.write(x);
         offset++;
@@ -491,7 +491,7 @@ void ip_in(
             return;
 
         data = x & 0xff;
-        end  = x & 0x100;
+        end = x & 0x100;
 
         ip_payloads[get_payload_offset(pending_index) + offset] = data;
         offset++;
@@ -565,7 +565,7 @@ void ip_in(
     case IPIN_STATE_PARITY_ERROR_1:
         out.write(0x100 | (len & 0xff));
         parity_error = true;
-        state        = IPIN_STATE_WAIT_DATAGRAM_END;
+        state = IPIN_STATE_WAIT_DATAGRAM_END;
         TRACE("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
         break;
     case IPIN_STATE_FRAGMENT_ERROR_0:
@@ -575,7 +575,7 @@ void ip_in(
     case IPIN_STATE_FRAGMENT_ERROR_1:
         out.write(0x100 | (len & 0xff));
         parity_error = true; // TODO: error reporting
-        state        = IPIN_STATE_WAIT_DATAGRAM_END;
+        state = IPIN_STATE_WAIT_DATAGRAM_END;
         TRACE("%s: state changed to WAIT_DATAGRAM_END\n", __func__);
         break;
     case IPIN_STATE_WAIT_DATAGRAM_END: {
@@ -583,7 +583,7 @@ void ip_in(
             return;
 
         data = x & 0xff;
-        end  = x & 0x100;
+        end = x & 0x100;
 
         if (end) {
             reset_state();
@@ -603,23 +603,23 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
     static uint16_t id;
 
     uint16_t tot_process_len = IP_HDR_SIZE + ip_data_process_len;
-    uint16_t tot_real_len    = IP_HDR_SIZE + ip_data_real_len;
-    uint32_t sum             = 0;
+    uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
+    uint32_t sum = 0;
     uint16_t sum_n;
 
     uint8_t ip_hdr[IP_HDR_SIZE] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = ip_hdr complete dim = 0
 
-    ip_hdr[0]  = IP_HDR_VERSION_IHL;
-    ip_hdr[1]  = IP_HDR_TOS;
-    ip_hdr[2]  = tot_real_len >> 8;
-    ip_hdr[3]  = tot_real_len & 0xff;
-    ip_hdr[4]  = id >> 8;
-    ip_hdr[5]  = id & 0xff;
-    ip_hdr[6]  = IP_HDR_FLAG_OFF >> 8;
-    ip_hdr[7]  = IP_HDR_FLAG_OFF & 0xff;
-    ip_hdr[8]  = ttl;
-    ip_hdr[9]  = IP_HDR_PROTOCOL;
+    ip_hdr[0] = IP_HDR_VERSION_IHL;
+    ip_hdr[1] = IP_HDR_TOS;
+    ip_hdr[2] = tot_real_len >> 8;
+    ip_hdr[3] = tot_real_len & 0xff;
+    ip_hdr[4] = id >> 8;
+    ip_hdr[5] = id & 0xff;
+    ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
+    ip_hdr[7] = IP_HDR_FLAG_OFF & 0xff;
+    ip_hdr[8] = ttl;
+    ip_hdr[9] = IP_HDR_PROTOCOL;
     ip_hdr[10] = 0;
     ip_hdr[11] = 0;
     ip_hdr[12] = src_addr[0];
@@ -640,8 +640,8 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
             sum += ip_hdr[i] << 8;
     }
 
-    sum   = (sum & 0xffff) + (sum >> 16);
-    sum   = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
     sum_n = ~sum;
 
     ip_hdr[10] = sum_n >> 8;
@@ -668,16 +668,16 @@ void ip_set_header(const uint8_t src_addr[4], const uint8_t dst_addr[4],
 
     uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
 
-    ip_hdr[0]  = IP_HDR_VERSION_IHL;
-    ip_hdr[1]  = IP_HDR_TOS;
-    ip_hdr[2]  = tot_real_len >> 8;
-    ip_hdr[3]  = tot_real_len & 0xff;
-    ip_hdr[4]  = id >> 8;
-    ip_hdr[5]  = id & 0xff;
-    ip_hdr[6]  = IP_HDR_FLAG_OFF >> 8;
-    ip_hdr[7]  = IP_HDR_FLAG_OFF & 0xff;
-    ip_hdr[8]  = ttl;
-    ip_hdr[9]  = IP_HDR_PROTOCOL;
+    ip_hdr[0] = IP_HDR_VERSION_IHL;
+    ip_hdr[1] = IP_HDR_TOS;
+    ip_hdr[2] = tot_real_len >> 8;
+    ip_hdr[3] = tot_real_len & 0xff;
+    ip_hdr[4] = id >> 8;
+    ip_hdr[5] = id & 0xff;
+    ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
+    ip_hdr[7] = IP_HDR_FLAG_OFF & 0xff;
+    ip_hdr[8] = ttl;
+    ip_hdr[9] = IP_HDR_PROTOCOL;
     ip_hdr[10] = 0;
     ip_hdr[11] = 0;
     ip_hdr[12] = src_addr[0];
@@ -707,8 +707,8 @@ void ip_set_checksum(uint8_t ip_hdr[]) {
             sum += ip_hdr[i] << 8;
     }
 
-    sum   = (sum & 0xffff) + (sum >> 16);
-    sum   = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
     sum_n = ~sum;
 
     ip_hdr[IP_HDR_OFFSET_CHECK + 0] = sum_n >> 8;

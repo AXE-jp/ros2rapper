@@ -57,8 +57,8 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
         return;
 
     sedp_endpoint &reader = reader_tbl[reader_cnt];
-    uint8_t        data   = x & 0xff;
-    bool           end    = x & 0x100;
+    uint8_t        data = x & 0xff;
+    bool           end = x & 0x100;
 
     switch (state) {
     case 0:
@@ -69,7 +69,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
         offset++;
         if (offset == RTPS_HDR_SIZE) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 1:
@@ -104,7 +104,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
         if (offset == SBM_DATA_HDR_SIZE) {
             sbm_len -= SBM_DATA_HDR_SIZE;
             offset = 0;
-            state  = 3;
+            state = 3;
         }
         break;
     case 3:
@@ -119,7 +119,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            state  = 4;
+            state = 4;
         }
         break;
     case 4:
@@ -131,7 +131,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
         if (offset == sizeof(param_id)) {
             sbm_len -= sizeof(param_id);
             offset = 0;
-            state  = 5;
+            state = 5;
         }
         break;
     case 5:
@@ -149,14 +149,14 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
                         reader_cnt++;
                 }
                 unmatched = 0;
-                flags     = 0;
-                offset    = 0;
-                state     = 1;
+                flags = 0;
+                offset = 0;
+                state = 1;
             } else {
                 sbm_len -= sizeof(param_len);
                 param_len = ROUND_UP(param_len, 4);
-                offset    = 0;
-                state     = 6;
+                offset = 0;
+                state = 6;
             }
         }
         break;
@@ -178,7 +178,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
             } else if (offset < 8) {
                 if (rep_id & SP_ID_CDR_LE) {
                     if (offset == 4) {
-                        udp_port           = data;
+                        udp_port = data;
                         reader.udp_port[1] = data;
                     } else if (offset == 5) {
                         udp_port |= data << 8;
@@ -186,7 +186,7 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
                     }
                 } else {
                     if (offset == 6) {
-                        udp_port           = data << 8;
+                        udp_port = data << 8;
                         reader.udp_port[0] = data;
                     } else if (offset == 7) {
                         udp_port |= data;
@@ -218,14 +218,14 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
                 }
             }
             offset = 0;
-            state  = 4;
+            state = 4;
         }
         break;
     case 7:
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 8:; // do nothing
@@ -233,9 +233,9 @@ void spdp_reader(hls_stream<hls_uint<9>> &in, sedp_reader_id_t &reader_cnt,
 
     if (end) {
         unmatched = 0;
-        flags     = 0;
-        offset    = 0;
-        state     = 0;
+        flags = 0;
+        offset = 0;
+        state = 0;
     }
 }
 
@@ -249,16 +249,16 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
-    static const uint16_t rep_id    = SP_ID_PL_CDR_LE;
+    static const uint16_t rep_id = SP_ID_PL_CDR_LE;
 #endif // SBM_ENDIAN_LITTLE
 #ifdef SBM_ENDIAN_BIG
     static const uint8_t  sbm_flags = 0;
-    static const uint16_t rep_id    = SP_ID_PL_CDR_BE;
+    static const uint16_t rep_id = SP_ID_PL_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now       = TIME_ZERO;
+    static const timestamp now = TIME_ZERO;
     static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt   = 0;
+    static const uint16_t  rep_opt = 0;
 
     static const uint16_t octets_to_next_header
         = SPDP_WRITER_OCTETS_TO_NEXT_HEADER;
@@ -284,7 +284,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 
     const uint16_t pid_entity_name_size = SP_STR_DATA_SIZE(entity_name_len);
 
-    static const uint32_t user_data_len      = 25;
+    static const uint32_t user_data_len = 25;
     static const uint16_t pid_user_data_size = SP_STR_DATA_SIZE(user_data_len);
 
     static const int64_t seqnum = 1;
@@ -293,106 +293,106 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     uint32_t seqnum_l = seqnum & 0xffffffff;
 
 #if MAX_NODE_NAME_LEN == 32
-    buf[0]   = 'R';
-    buf[1]   = 'T';
-    buf[2]   = 'P';
-    buf[3]   = 'S';
-    buf[4]   = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5]   = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6]   = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7]   = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8]   = writer_guid_prefix[0];
-    buf[9]   = writer_guid_prefix[1];
-    buf[10]  = writer_guid_prefix[2];
-    buf[11]  = writer_guid_prefix[3];
-    buf[12]  = writer_guid_prefix[4];
-    buf[13]  = writer_guid_prefix[5];
-    buf[14]  = writer_guid_prefix[6];
-    buf[15]  = writer_guid_prefix[7];
-    buf[16]  = writer_guid_prefix[8];
-    buf[17]  = writer_guid_prefix[9];
-    buf[18]  = writer_guid_prefix[10];
-    buf[19]  = writer_guid_prefix[11];
-    buf[20]  = SBM_ID_INFO_TS;
-    buf[21]  = sbm_flags;
-    buf[22]  = S_BYTE0(TIMESTAMP_SIZE);
-    buf[23]  = S_BYTE1(TIMESTAMP_SIZE);
-    buf[24]  = L_BYTE0(now.seconds);
-    buf[25]  = L_BYTE1(now.seconds);
-    buf[26]  = L_BYTE2(now.seconds);
-    buf[27]  = L_BYTE3(now.seconds);
-    buf[28]  = L_BYTE0(now.fraction);
-    buf[29]  = L_BYTE1(now.fraction);
-    buf[30]  = L_BYTE2(now.fraction);
-    buf[31]  = L_BYTE3(now.fraction);
-    buf[32]  = SBM_ID_DATA;
-    buf[33]  = sbm_flags | SBM_FLAGS_DATA;
-    buf[34]  = S_BYTE0(octets_to_next_header);
-    buf[35]  = S_BYTE1(octets_to_next_header);
-    buf[36]  = ext_flags >> 8;
-    buf[37]  = ext_flags & 0xff;
-    buf[38]  = S_BYTE0(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
-    buf[39]  = S_BYTE1(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
-    buf[40]  = reader_entity_id[0];
-    buf[41]  = reader_entity_id[1];
-    buf[42]  = reader_entity_id[2];
-    buf[43]  = reader_entity_id[3];
-    buf[44]  = writer_entity_id[0];
-    buf[45]  = writer_entity_id[1];
-    buf[46]  = writer_entity_id[2];
-    buf[47]  = writer_entity_id[3];
-    buf[48]  = L_BYTE0(seqnum_h);
-    buf[49]  = L_BYTE1(seqnum_h);
-    buf[50]  = L_BYTE2(seqnum_h);
-    buf[51]  = L_BYTE3(seqnum_h);
-    buf[52]  = L_BYTE0(seqnum_l);
-    buf[53]  = L_BYTE1(seqnum_l);
-    buf[54]  = L_BYTE2(seqnum_l);
-    buf[55]  = L_BYTE3(seqnum_l);
-    buf[56]  = rep_id >> 8;
-    buf[57]  = rep_id & 0xff;
-    buf[58]  = rep_opt >> 8;
-    buf[59]  = rep_opt & 0xff;
-    buf[60]  = S_BYTE0(PID_PROTOCOL_VERSION);
-    buf[61]  = S_BYTE1(PID_PROTOCOL_VERSION);
-    buf[62]  = S_BYTE0(PID_PROTOCOL_VERSION_SIZE);
-    buf[63]  = S_BYTE1(PID_PROTOCOL_VERSION_SIZE);
-    buf[64]  = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[65]  = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[66]  = 0; // padding
-    buf[67]  = 0; // padding
-    buf[68]  = S_BYTE0(PID_VENDOR_ID);
-    buf[69]  = S_BYTE1(PID_VENDOR_ID);
-    buf[70]  = S_BYTE0(PID_VENDOR_ID_SIZE);
-    buf[71]  = S_BYTE1(PID_VENDOR_ID_SIZE);
-    buf[72]  = RTPS_HDR_VENDOR_ID >> 8;
-    buf[73]  = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[74]  = 0; // padding
-    buf[75]  = 0; // padding
-    buf[76]  = S_BYTE0(PID_PARTICIPANT_GUID);
-    buf[77]  = S_BYTE1(PID_PARTICIPANT_GUID);
-    buf[78]  = S_BYTE0(PID_PARTICIPANT_GUID_SIZE);
-    buf[79]  = S_BYTE1(PID_PARTICIPANT_GUID_SIZE);
-    buf[80]  = writer_guid_prefix[0];
-    buf[81]  = writer_guid_prefix[1];
-    buf[82]  = writer_guid_prefix[2];
-    buf[83]  = writer_guid_prefix[3];
-    buf[84]  = writer_guid_prefix[4];
-    buf[85]  = writer_guid_prefix[5];
-    buf[86]  = writer_guid_prefix[6];
-    buf[87]  = writer_guid_prefix[7];
-    buf[88]  = writer_guid_prefix[8];
-    buf[89]  = writer_guid_prefix[9];
-    buf[90]  = writer_guid_prefix[10];
-    buf[91]  = writer_guid_prefix[11];
-    buf[92]  = participant_entity_id[0];
-    buf[93]  = participant_entity_id[1];
-    buf[94]  = participant_entity_id[2];
-    buf[95]  = participant_entity_id[3];
-    buf[96]  = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR);
-    buf[97]  = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR);
-    buf[98]  = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
-    buf[99]  = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
+    buf[0] = 'R';
+    buf[1] = 'T';
+    buf[2] = 'P';
+    buf[3] = 'S';
+    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[8] = writer_guid_prefix[0];
+    buf[9] = writer_guid_prefix[1];
+    buf[10] = writer_guid_prefix[2];
+    buf[11] = writer_guid_prefix[3];
+    buf[12] = writer_guid_prefix[4];
+    buf[13] = writer_guid_prefix[5];
+    buf[14] = writer_guid_prefix[6];
+    buf[15] = writer_guid_prefix[7];
+    buf[16] = writer_guid_prefix[8];
+    buf[17] = writer_guid_prefix[9];
+    buf[18] = writer_guid_prefix[10];
+    buf[19] = writer_guid_prefix[11];
+    buf[20] = SBM_ID_INFO_TS;
+    buf[21] = sbm_flags;
+    buf[22] = S_BYTE0(TIMESTAMP_SIZE);
+    buf[23] = S_BYTE1(TIMESTAMP_SIZE);
+    buf[24] = L_BYTE0(now.seconds);
+    buf[25] = L_BYTE1(now.seconds);
+    buf[26] = L_BYTE2(now.seconds);
+    buf[27] = L_BYTE3(now.seconds);
+    buf[28] = L_BYTE0(now.fraction);
+    buf[29] = L_BYTE1(now.fraction);
+    buf[30] = L_BYTE2(now.fraction);
+    buf[31] = L_BYTE3(now.fraction);
+    buf[32] = SBM_ID_DATA;
+    buf[33] = sbm_flags | SBM_FLAGS_DATA;
+    buf[34] = S_BYTE0(octets_to_next_header);
+    buf[35] = S_BYTE1(octets_to_next_header);
+    buf[36] = ext_flags >> 8;
+    buf[37] = ext_flags & 0xff;
+    buf[38] = S_BYTE0(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
+    buf[39] = S_BYTE1(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
+    buf[40] = reader_entity_id[0];
+    buf[41] = reader_entity_id[1];
+    buf[42] = reader_entity_id[2];
+    buf[43] = reader_entity_id[3];
+    buf[44] = writer_entity_id[0];
+    buf[45] = writer_entity_id[1];
+    buf[46] = writer_entity_id[2];
+    buf[47] = writer_entity_id[3];
+    buf[48] = L_BYTE0(seqnum_h);
+    buf[49] = L_BYTE1(seqnum_h);
+    buf[50] = L_BYTE2(seqnum_h);
+    buf[51] = L_BYTE3(seqnum_h);
+    buf[52] = L_BYTE0(seqnum_l);
+    buf[53] = L_BYTE1(seqnum_l);
+    buf[54] = L_BYTE2(seqnum_l);
+    buf[55] = L_BYTE3(seqnum_l);
+    buf[56] = rep_id >> 8;
+    buf[57] = rep_id & 0xff;
+    buf[58] = rep_opt >> 8;
+    buf[59] = rep_opt & 0xff;
+    buf[60] = S_BYTE0(PID_PROTOCOL_VERSION);
+    buf[61] = S_BYTE1(PID_PROTOCOL_VERSION);
+    buf[62] = S_BYTE0(PID_PROTOCOL_VERSION_SIZE);
+    buf[63] = S_BYTE1(PID_PROTOCOL_VERSION_SIZE);
+    buf[64] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[65] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[66] = 0; // padding
+    buf[67] = 0; // padding
+    buf[68] = S_BYTE0(PID_VENDOR_ID);
+    buf[69] = S_BYTE1(PID_VENDOR_ID);
+    buf[70] = S_BYTE0(PID_VENDOR_ID_SIZE);
+    buf[71] = S_BYTE1(PID_VENDOR_ID_SIZE);
+    buf[72] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[73] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[74] = 0; // padding
+    buf[75] = 0; // padding
+    buf[76] = S_BYTE0(PID_PARTICIPANT_GUID);
+    buf[77] = S_BYTE1(PID_PARTICIPANT_GUID);
+    buf[78] = S_BYTE0(PID_PARTICIPANT_GUID_SIZE);
+    buf[79] = S_BYTE1(PID_PARTICIPANT_GUID_SIZE);
+    buf[80] = writer_guid_prefix[0];
+    buf[81] = writer_guid_prefix[1];
+    buf[82] = writer_guid_prefix[2];
+    buf[83] = writer_guid_prefix[3];
+    buf[84] = writer_guid_prefix[4];
+    buf[85] = writer_guid_prefix[5];
+    buf[86] = writer_guid_prefix[6];
+    buf[87] = writer_guid_prefix[7];
+    buf[88] = writer_guid_prefix[8];
+    buf[89] = writer_guid_prefix[9];
+    buf[90] = writer_guid_prefix[10];
+    buf[91] = writer_guid_prefix[11];
+    buf[92] = participant_entity_id[0];
+    buf[93] = participant_entity_id[1];
+    buf[94] = participant_entity_id[2];
+    buf[95] = participant_entity_id[3];
+    buf[96] = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR);
+    buf[97] = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR);
+    buf[98] = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
+    buf[99] = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
     buf[100] = L_BYTE0(LOCATOR_KIND_UDPv4);
     buf[101] = L_BYTE1(LOCATOR_KIND_UDPv4);
     buf[102] = L_BYTE2(LOCATOR_KIND_UDPv4);

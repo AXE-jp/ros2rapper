@@ -492,108 +492,108 @@ static const uint8_t rtps_pkt_d1[] = {
 static const uint32_t rtps_pkt_d1_size = sizeof(rtps_pkt_d1);
 
 static void print_guid(const uint8_t guid[]) {
-  int ii;
-  for (ii = 0; ii < 12; ii += 4) {
-    printf("%02X%02X%02X%02X ", guid[ii + 0], guid[ii + 1], guid[ii + 2],
-           guid[ii + 3]);
-  }
-  printf("\n");
+    int ii;
+    for (ii = 0; ii < 12; ii += 4) {
+        printf("%02X%02X%02X%02X ", guid[ii + 0], guid[ii + 1], guid[ii + 2],
+               guid[ii + 3]);
+    }
+    printf("\n");
 }
 static void print_entity_id(const uint8_t ent_id[4]) {
-  int ii;
-  for (ii = 0; ii < 4; ii += 4) {
-    printf("%02X%02X%02X%02X ", ent_id[ii + 0], ent_id[ii + 1], ent_id[ii + 2],
-           ent_id[ii + 3]);
-  }
-  printf("\n");
+    int ii;
+    for (ii = 0; ii < 4; ii += 4) {
+        printf("%02X%02X%02X%02X ", ent_id[ii + 0], ent_id[ii + 1],
+               ent_id[ii + 2], ent_id[ii + 3]);
+    }
+    printf("\n");
 }
 static void print_ipaddr(const uint8_t ipaddr[]) {
-  printf("%d.%d.%d.%d\n", ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);
+    printf("%d.%d.%d.%d\n", ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);
 }
 static void print_port(const uint8_t portval[]) {
-  uint16_t wval;
+    uint16_t wval;
 
-  wval = portval[0];
-  wval <<= 8;
-  wval |= portval[1];
-  printf("%d\n", wval);
+    wval = portval[0];
+    wval <<= 8;
+    wval |= portval[1];
+    printf("%d\n", wval);
 }
 
 int main() {
-  hls_stream<hls_uint<9>> in;
-  hls_uint<9> x;
-  int ii;
-  int n = 0;
+    hls_stream<hls_uint<9>> in;
+    hls_uint<9>             x;
+    int                     ii;
+    int                     n = 0;
 
-  const uint8_t own_guid_prefix[12] = {0x01, 0x0f, 0x37, 0xad, 0xde, 0x09,
-                                       0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
-  const uint8_t sedp_pub_reader_entity_id[4] = {0x00, 0x00, 0x03, 0xc7};
-  const uint8_t sedp_sub_reader_entity_id[4] = {0x00, 0x00, 0x04, 0xc7};
+    const uint8_t own_guid_prefix[12] = {0x01, 0x0f, 0x37, 0xad, 0xde, 0x09,
+                                         0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
+    const uint8_t sedp_pub_reader_entity_id[4] = {0x00, 0x00, 0x03, 0xc7};
+    const uint8_t sedp_sub_reader_entity_id[4] = {0x00, 0x00, 0x04, 0xc7};
 
-  app_reader_id_t app_reader_cnt = (app_reader_id_t)0;
-  app_endpoint app_reader_tbl[APP_READER_MAX];
+    app_reader_id_t app_reader_cnt = (app_reader_id_t)0;
+    app_endpoint    app_reader_tbl[APP_READER_MAX];
 
-  const uint16_t port_num_seed = 7400;
+    const uint16_t port_num_seed = 7400;
 
-  const uint8_t pub_topic_name[] = "rt/chatter";
-  const uint8_t pub_topic_name_len = sizeof(pub_topic_name);
-  const uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
-  const uint8_t pub_type_name_len = sizeof(pub_type_name);
+    const uint8_t pub_topic_name[] = "rt/chatter";
+    const uint8_t pub_topic_name_len = sizeof(pub_topic_name);
+    const uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
+    const uint8_t pub_type_name_len = sizeof(pub_type_name);
 
-  const uint8_t sub_topic_name[] = "rt/chatter";
-  const uint8_t sub_topic_name_len = sizeof(sub_topic_name);
-  const uint8_t sub_type_name[] = "std_msgs::msg::dds_::String_";
-  const uint8_t sub_type_name_len = sizeof(sub_type_name);
+    const uint8_t sub_topic_name[] = "rt/chatter";
+    const uint8_t sub_topic_name_len = sizeof(sub_topic_name);
+    const uint8_t sub_type_name[] = "std_msgs::msg::dds_::String_";
+    const uint8_t sub_type_name_len = sizeof(sub_type_name);
 
-  /*****************************************************/
+    /*****************************************************/
 
-  for (ii = 0; ii < sizeof(rtps_pkt_d0); ii++) {
-    x = rtps_pkt_d0[ii];
-    if (ii == (sizeof(rtps_pkt_d0) - 1)) {
-      x |= 0x100;
+    for (ii = 0; ii < sizeof(rtps_pkt_d0); ii++) {
+        x = rtps_pkt_d0[ii];
+        if (ii == (sizeof(rtps_pkt_d0) - 1)) {
+            x |= 0x100;
+        }
+        in.write(x);
+
+        sedp_reader(in, app_reader_cnt, app_reader_tbl, port_num_seed,
+                    own_guid_prefix, pub_topic_name, pub_topic_name_len,
+                    pub_type_name, pub_type_name_len, sub_topic_name,
+                    sub_topic_name_len, sub_type_name, sub_type_name_len);
     }
-    in.write(x);
 
-    sedp_reader(in, app_reader_cnt, app_reader_tbl, port_num_seed,
-                own_guid_prefix, pub_topic_name, pub_topic_name_len,
-                pub_type_name, pub_type_name_len, sub_topic_name,
-                sub_topic_name_len, sub_type_name, sub_type_name_len);
-  }
-
-  std::cout << "reader_cnt = " << app_reader_cnt << std::endl;
-  for (ii = 0; ii < app_reader_cnt; ii++) {
-    printf("tbl[%d] ****\n", ii);
-    print_guid(app_reader_tbl[ii].guid_prefix);
-    print_entity_id(app_reader_tbl[ii].entity_id);
-    print_ipaddr(app_reader_tbl[ii].ip_addr);
-    print_port(app_reader_tbl[ii].udp_port);
-    std::cout << std::hex << app_reader_tbl[ii].ep_type << std::endl;
-  }
-
-  /*****************************************************/
-
-  for (ii = 0; ii < sizeof(rtps_pkt_d1); ii++) {
-    x = rtps_pkt_d1[ii];
-    if (ii == (sizeof(rtps_pkt_d1) - 1)) {
-      x |= 0x100;
+    std::cout << "reader_cnt = " << app_reader_cnt << std::endl;
+    for (ii = 0; ii < app_reader_cnt; ii++) {
+        printf("tbl[%d] ****\n", ii);
+        print_guid(app_reader_tbl[ii].guid_prefix);
+        print_entity_id(app_reader_tbl[ii].entity_id);
+        print_ipaddr(app_reader_tbl[ii].ip_addr);
+        print_port(app_reader_tbl[ii].udp_port);
+        std::cout << std::hex << app_reader_tbl[ii].ep_type << std::endl;
     }
-    in.write(x);
 
-    sedp_reader(in, app_reader_cnt, app_reader_tbl, port_num_seed,
-                own_guid_prefix, pub_topic_name, pub_topic_name_len,
-                pub_type_name, pub_type_name_len, sub_topic_name,
-                sub_topic_name_len, sub_type_name, sub_type_name_len);
-  }
+    /*****************************************************/
 
-  std::cout << "reader_cnt = " << app_reader_cnt << std::endl;
-  for (ii = 0; ii < app_reader_cnt; ii++) {
-    printf("tbl[%d] ****\n", ii);
-    print_guid(app_reader_tbl[ii].guid_prefix);
-    print_entity_id(app_reader_tbl[ii].entity_id);
-    print_ipaddr(app_reader_tbl[ii].ip_addr);
-    print_port(app_reader_tbl[ii].udp_port);
-    std::cout << std::hex << app_reader_tbl[ii].ep_type << std::endl;
-  }
+    for (ii = 0; ii < sizeof(rtps_pkt_d1); ii++) {
+        x = rtps_pkt_d1[ii];
+        if (ii == (sizeof(rtps_pkt_d1) - 1)) {
+            x |= 0x100;
+        }
+        in.write(x);
 
-  return 0;
+        sedp_reader(in, app_reader_cnt, app_reader_tbl, port_num_seed,
+                    own_guid_prefix, pub_topic_name, pub_topic_name_len,
+                    pub_type_name, pub_type_name_len, sub_topic_name,
+                    sub_topic_name_len, sub_type_name, sub_type_name_len);
+    }
+
+    std::cout << "reader_cnt = " << app_reader_cnt << std::endl;
+    for (ii = 0; ii < app_reader_cnt; ii++) {
+        printf("tbl[%d] ****\n", ii);
+        print_guid(app_reader_tbl[ii].guid_prefix);
+        print_entity_id(app_reader_tbl[ii].entity_id);
+        print_ipaddr(app_reader_tbl[ii].ip_addr);
+        print_port(app_reader_tbl[ii].udp_port);
+        std::cout << std::hex << app_reader_tbl[ii].ep_type << std::endl;
+    }
+
+    return 0;
 }

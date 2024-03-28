@@ -86,8 +86,8 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         return;
 
     app_endpoint &reader = reader_tbl[reader_cnt];
-    uint8_t       data   = x & 0xff;
-    bool          end    = x & 0x100;
+    uint8_t       data = x & 0xff;
+    bool          end = x & 0x100;
 
     switch (state) {
     case 0:
@@ -98,7 +98,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         offset++;
         if (offset == RTPS_HDR_SIZE) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 1:
@@ -122,7 +122,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
                 state = 2;
             else if (sbm_id == SBM_ID_DATA) {
                 ep_type = APP_EP_PUB | APP_EP_SUB;
-                state   = 3;
+                state = 3;
             } else
                 state = 8;
         }
@@ -137,7 +137,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 3: // parse sub-message header
@@ -155,7 +155,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         if (offset == SBM_DATA_HDR_SIZE) {
             sbm_len -= SBM_DATA_HDR_SIZE;
             offset = 0;
-            state  = 4;
+            state = 4;
         }
         break;
     case 4:
@@ -170,7 +170,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            state  = 5;
+            state = 5;
         }
         break;
     case 5:
@@ -182,7 +182,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
         if (offset == sizeof(param_id)) {
             sbm_len -= sizeof(param_id);
             offset = 0;
-            state  = 6;
+            state = 6;
         }
         break;
     case 6:
@@ -202,14 +202,14 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
                     }
                 }
                 unmatched = 0;
-                flags     = 0;
-                offset    = 0;
-                state     = 1;
+                flags = 0;
+                offset = 0;
+                state = 1;
             } else {
                 sbm_len -= sizeof(param_len);
                 param_len = ROUND_UP(param_len, 4);
-                offset    = 0;
-                state     = 7;
+                offset = 0;
+                state = 7;
             }
         }
         break;
@@ -223,7 +223,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
             } else if (offset < 8) {
                 if (rep_id & SP_ID_CDR_LE) {
                     if (offset == 4) {
-                        udp_port           = data;
+                        udp_port = data;
                         reader.udp_port[1] = data;
                     } else if (offset == 5) {
                         udp_port |= data << 8;
@@ -231,7 +231,7 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
                     }
                 } else {
                     if (offset == 6) {
-                        udp_port           = data << 8;
+                        udp_port = data << 8;
                         reader.udp_port[0] = data;
                     } else if (offset == 7) {
                         udp_port |= data;
@@ -363,14 +363,14 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
                 }
             }
             offset = 0;
-            state  = 5;
+            state = 5;
         }
         break;
     case 8:
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state  = 1;
+            state = 1;
         }
         break;
     case 9:; // do nothing
@@ -378,9 +378,9 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
 
     if (end) {
         unmatched = 0;
-        flags     = 0;
-        offset    = 0;
-        state     = 0;
+        flags = 0;
+        offset = 0;
+        state = 0;
     }
 }
 
@@ -395,16 +395,16 @@ void sedp_writer(
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
-    static const uint16_t rep_id    = SP_ID_PL_CDR_LE;
+    static const uint16_t rep_id = SP_ID_PL_CDR_LE;
 #endif // SBM_ENDIAN_LITTLE
 #ifdef SBM_ENDIAN_BIG
     static const uint8_t  sbm_flags = 0;
-    static const uint16_t rep_id    = SP_ID_PL_CDR_BE;
+    static const uint16_t rep_id = SP_ID_PL_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now       = TIME_ZERO;
+    static const timestamp now = TIME_ZERO;
     static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt   = 0;
+    static const uint16_t  rep_opt = 0;
 
     static const uint16_t octets_to_next_header
         = SEDP_WRITER_OCTETS_TO_NEXT_HEADER;
@@ -418,18 +418,18 @@ void sedp_writer(
     uint16_t pid_type_name_size = SP_STR_DATA_SIZE(type_name_len);
 
     static const uint32_t type_max_size_serialized = 84;
-    static const uint32_t durability_qos           = 0;
-    static const duration deadline                 = DURATION_INFINITE;
-    static const duration latency_budget           = DURATION_ZERO;
-    static const uint32_t liveliness_qos           = 0;
-    static const duration liveliness_duration      = DURATION_INFINITE;
-    static const uint32_t reliability_qos          = 1;
+    static const uint32_t durability_qos = 0;
+    static const duration deadline = DURATION_INFINITE;
+    static const duration latency_budget = DURATION_ZERO;
+    static const uint32_t liveliness_qos = 0;
+    static const duration liveliness_duration = DURATION_INFINITE;
+    static const uint32_t reliability_qos = 1;
     static const duration reliability_duration
         = {0, (uint64_t)((0.1 * (1ULL << 32)) + 0.5)}; // 100 ms
-    static const duration lifespan           = DURATION_INFINITE;
-    static const uint32_t ownership          = 0;
+    static const duration lifespan = DURATION_INFINITE;
+    static const uint32_t ownership = 0;
     static const uint32_t ownership_strength = 0;
-    static const uint32_t destination_order  = 0;
+    static const uint32_t destination_order = 0;
 
     static const int64_t seqnum = 1;
 
@@ -437,16 +437,16 @@ void sedp_writer(
     uint32_t seqnum_l = seqnum & 0xffffffff;
 
 #if MAX_TOPIC_NAME_LEN == 32 && MAX_TOPIC_TYPE_NAME_LEN == 64
-    buf[0]  = 'R';
-    buf[1]  = 'T';
-    buf[2]  = 'P';
-    buf[3]  = 'S';
-    buf[4]  = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5]  = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6]  = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7]  = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8]  = writer_guid_prefix[0];
-    buf[9]  = writer_guid_prefix[1];
+    buf[0] = 'R';
+    buf[1] = 'T';
+    buf[2] = 'P';
+    buf[3] = 'S';
+    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[8] = writer_guid_prefix[0];
+    buf[9] = writer_guid_prefix[1];
     buf[10] = writer_guid_prefix[2];
     buf[11] = writer_guid_prefix[3];
     buf[12] = writer_guid_prefix[4];
@@ -533,18 +533,18 @@ void sedp_writer(
     buf[86] = usertraffic_port[0];
     buf[87] = usertraffic_port[1];
 #endif // SBM_ENDIAN_BIG
-    buf[88]  = 0;
-    buf[89]  = 0;
-    buf[90]  = 0;
-    buf[91]  = 0;
-    buf[92]  = 0;
-    buf[93]  = 0;
-    buf[94]  = 0;
-    buf[95]  = 0;
-    buf[96]  = 0;
-    buf[97]  = 0;
-    buf[98]  = 0;
-    buf[99]  = 0;
+    buf[88] = 0;
+    buf[89] = 0;
+    buf[90] = 0;
+    buf[91] = 0;
+    buf[92] = 0;
+    buf[93] = 0;
+    buf[94] = 0;
+    buf[95] = 0;
+    buf[96] = 0;
+    buf[97] = 0;
+    buf[98] = 0;
+    buf[99] = 0;
     buf[100] = usertraffic_addr[0];
     buf[101] = usertraffic_addr[1];
     buf[102] = usertraffic_addr[2];
@@ -877,19 +877,19 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 
     int32_t  first_seqnum_h = first_seqnum >> 32;
     uint32_t first_seqnum_l = first_seqnum & 0xffffffff;
-    int32_t  last_seqnum_h  = last_seqnum >> 32;
-    uint32_t last_seqnum_l  = last_seqnum & 0xffffffff;
+    int32_t  last_seqnum_h = last_seqnum >> 32;
+    uint32_t last_seqnum_l = last_seqnum & 0xffffffff;
 
-    buf[0]  = 'R';
-    buf[1]  = 'T';
-    buf[2]  = 'P';
-    buf[3]  = 'S';
-    buf[4]  = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5]  = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6]  = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7]  = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8]  = writer_guid_prefix[0];
-    buf[9]  = writer_guid_prefix[1];
+    buf[0] = 'R';
+    buf[1] = 'T';
+    buf[2] = 'P';
+    buf[3] = 'S';
+    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[8] = writer_guid_prefix[0];
+    buf[9] = writer_guid_prefix[1];
     buf[10] = writer_guid_prefix[2];
     buf[11] = writer_guid_prefix[3];
     buf[12] = writer_guid_prefix[4];
@@ -974,16 +974,16 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     int32_t  bitmap_base_h = bitmap_base >> 32;
     uint32_t bitmap_base_l = bitmap_base & 0xffffffff;
 
-    buf[0]  = 'R';
-    buf[1]  = 'T';
-    buf[2]  = 'P';
-    buf[3]  = 'S';
-    buf[4]  = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5]  = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6]  = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7]  = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8]  = writer_guid_prefix[0];
-    buf[9]  = writer_guid_prefix[1];
+    buf[0] = 'R';
+    buf[1] = 'T';
+    buf[2] = 'P';
+    buf[3] = 'S';
+    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
+    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
+    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
+    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
+    buf[8] = writer_guid_prefix[0];
+    buf[9] = writer_guid_prefix[1];
     buf[10] = writer_guid_prefix[2];
     buf[11] = writer_guid_prefix[3];
     buf[12] = writer_guid_prefix[4];

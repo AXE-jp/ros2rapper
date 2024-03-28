@@ -9,15 +9,15 @@
 #define TIMESTAMP_SIZE 8
 
 struct timestamp {
-  int32_t seconds;
-  uint32_t fraction;
+    int32_t  seconds;
+    uint32_t fraction;
 };
 
 #define TIME_ZERO                                                              \
-  { 0x00000000, 0x00000000 }
+    { 0x00000000, 0x00000000 }
 #define TIME_INVALID                                                           \
-  { 0xffffffff, 0xffffffff }
+    { 0xffffffff, 0xffffffff }
 #define TIME_INFINITE                                                          \
-  { 0xffffffff, 0xfffffffe }
+    { 0xffffffff, 0xfffffffe }
 
 #endif // !TIMESTAMP_HPP

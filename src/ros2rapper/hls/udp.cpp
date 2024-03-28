@@ -67,7 +67,7 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         if (!in.read_nb(x))                                                    \
             return;                                                            \
         data = x & 0xff;                                                       \
-        end  = x & 0x100;                                                      \
+        end = x & 0x100;                                                       \
     } while (0)
 
     switch (state) {
@@ -178,15 +178,15 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         if (state == UDP_IN_STATE_OUT_UDP)
             *rawudp_rxbuf_rel = 0; /*write dummy value to assert ap_vld*/
 
-        offset      = 0;
-        ram_offset  = 0;
+        offset = 0;
+        ram_offset = 0;
         data_buf[0] = 0;
         data_buf[1] = 0;
         data_buf[2] = 0;
         data_buf[3] = 0;
-        data_pos    = 0;
-        sum         = PRE_CHECKSUM;
-        state       = UDP_IN_STATE_READ_HEADER;
+        data_pos = 0;
+        sum = PRE_CHECKSUM;
+        state = UDP_IN_STATE_READ_HEADER;
     }
 }
 
@@ -197,8 +197,8 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
              const uint16_t udp_data_real_len, uint8_t buf[]) {
 #pragma HLS inline
     uint16_t tot_process_len = UDP_HDR_SIZE + udp_data_process_len;
-    uint16_t tot_real_len    = UDP_HDR_SIZE + udp_data_real_len;
-    uint32_t sum             = 0;
+    uint16_t tot_real_len = UDP_HDR_SIZE + udp_data_real_len;
+    uint32_t sum = 0;
     uint16_t sum_n;
 
     uint8_t pseudo_hdr[PSEUDO_HDR_SIZE] /* Cyber array=EXPAND */;
@@ -206,16 +206,16 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
 #pragma HLS array_partition variable = pseudo_hdr complete dim = 0
 #pragma HLS array_partition variable = udp_hdr complete dim = 0
 
-    pseudo_hdr[0]  = src_addr[0];
-    pseudo_hdr[1]  = src_addr[1];
-    pseudo_hdr[2]  = src_addr[2];
-    pseudo_hdr[3]  = src_addr[3];
-    pseudo_hdr[4]  = dst_addr[0];
-    pseudo_hdr[5]  = dst_addr[1];
-    pseudo_hdr[6]  = dst_addr[2];
-    pseudo_hdr[7]  = dst_addr[3];
-    pseudo_hdr[8]  = 0;
-    pseudo_hdr[9]  = PSEUDO_HDR_PROTOCOL;
+    pseudo_hdr[0] = src_addr[0];
+    pseudo_hdr[1] = src_addr[1];
+    pseudo_hdr[2] = src_addr[2];
+    pseudo_hdr[3] = src_addr[3];
+    pseudo_hdr[4] = dst_addr[0];
+    pseudo_hdr[5] = dst_addr[1];
+    pseudo_hdr[6] = dst_addr[2];
+    pseudo_hdr[7] = dst_addr[3];
+    pseudo_hdr[8] = 0;
+    pseudo_hdr[9] = PSEUDO_HDR_PROTOCOL;
     pseudo_hdr[10] = tot_real_len >> 8;
     pseudo_hdr[11] = tot_real_len & 0xff;
 
@@ -255,8 +255,8 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
             sum += udp_data[i] << 8;
     }
 
-    sum   = (sum & 0xffff) + (sum >> 16);
-    sum   = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
     sum_n = ~sum;
 
     udp_hdr[6] = sum_n >> 8;
@@ -297,16 +297,16 @@ void udp_set_checksum(uint8_t buf[]) {
     uint8_t pseudo_hdr[PSEUDO_HDR_SIZE] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = pseudo_hdr complete dim = 0
 
-    pseudo_hdr[0]  = buf[IP_HDR_OFFSET_SADDR + 0];
-    pseudo_hdr[1]  = buf[IP_HDR_OFFSET_SADDR + 1];
-    pseudo_hdr[2]  = buf[IP_HDR_OFFSET_SADDR + 2];
-    pseudo_hdr[3]  = buf[IP_HDR_OFFSET_SADDR + 3];
-    pseudo_hdr[4]  = buf[IP_HDR_OFFSET_DADDR + 0];
-    pseudo_hdr[5]  = buf[IP_HDR_OFFSET_DADDR + 1];
-    pseudo_hdr[6]  = buf[IP_HDR_OFFSET_DADDR + 2];
-    pseudo_hdr[7]  = buf[IP_HDR_OFFSET_DADDR + 3];
-    pseudo_hdr[8]  = 0;
-    pseudo_hdr[9]  = PSEUDO_HDR_PROTOCOL;
+    pseudo_hdr[0] = buf[IP_HDR_OFFSET_SADDR + 0];
+    pseudo_hdr[1] = buf[IP_HDR_OFFSET_SADDR + 1];
+    pseudo_hdr[2] = buf[IP_HDR_OFFSET_SADDR + 2];
+    pseudo_hdr[3] = buf[IP_HDR_OFFSET_SADDR + 3];
+    pseudo_hdr[4] = buf[IP_HDR_OFFSET_DADDR + 0];
+    pseudo_hdr[5] = buf[IP_HDR_OFFSET_DADDR + 1];
+    pseudo_hdr[6] = buf[IP_HDR_OFFSET_DADDR + 2];
+    pseudo_hdr[7] = buf[IP_HDR_OFFSET_DADDR + 3];
+    pseudo_hdr[8] = 0;
+    pseudo_hdr[9] = PSEUDO_HDR_PROTOCOL;
     pseudo_hdr[10] = buf[IP_HDR_SIZE + UDP_HDR_OFFSET_ULEN + 0];
     pseudo_hdr[11] = buf[IP_HDR_SIZE + UDP_HDR_OFFSET_ULEN + 1];
 
@@ -328,8 +328,8 @@ void udp_set_checksum(uint8_t buf[]) {
             sum += buf[i] << 8;
     }
 
-    sum   = (sum & 0xffff) + (sum >> 16);
-    sum   = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
     sum_n = ~sum;
 
     buf[IP_HDR_SIZE + UDP_HDR_OFFSET_SUM + 0] = sum_n >> 8;
