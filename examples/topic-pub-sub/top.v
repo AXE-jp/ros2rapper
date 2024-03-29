@@ -171,6 +171,7 @@ module top (
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
     end
     wire [7:0] ros2_sub_app_data_len;
+    wire [15:0] ros2_sub_app_data_rep_id;
     assign led4 = rx_msg_reg[0][0];
     assign led5 = rx_msg_reg[0][1];
     assign led6 = rx_msg_reg[0][2];
@@ -249,6 +250,7 @@ module top (
         .ros2_sub_app_data_we(ros2_sub_app_data_we),
         .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
         .ros2_sub_app_data_len(ros2_sub_app_data_len),
+        .ros2_sub_app_data_rep_id(ros2_sub_app_data_rep_id),
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),
         .ros2_sub_app_data_grant(),

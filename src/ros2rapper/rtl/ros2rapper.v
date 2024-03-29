@@ -56,6 +56,7 @@ module ros2rapper (
     output wire ros2_sub_app_data_we,
     output wire [7:0] ros2_sub_app_data_wdata,
     output wire [7:0] ros2_sub_app_data_len,
+    output wire [15:0] ros2_sub_app_data_rep_id,
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
@@ -254,6 +255,7 @@ ros2 (
     .sub_app_data_we0(ros2_sub_app_data_we),
     .sub_app_data_d0(ros2_sub_app_data_wdata),
     .sub_app_data_len(ros2_sub_app_data_len),
+    .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
 
     .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
     .udp_rxbuf_rel(),
@@ -477,6 +479,7 @@ ros2 (
   .sub_app_data_WE1(ros2_sub_app_data_we),
   .sub_app_data_WD1(ros2_sub_app_data_wdata),
   .sub_app_data_len(ros2_sub_app_data_len),
+  .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
   .sub_app_data_recv_we(ros2_sub_app_data_recv),
   .sub_app_data_recv_wd(),
   .sub_app_data_grant_rd({7'b0, ros2_sub_app_data_ip_grant}),
