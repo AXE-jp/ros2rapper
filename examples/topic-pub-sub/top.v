@@ -125,8 +125,10 @@ module top (
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
     reg [7:0] msg_number;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM"}; // Published message
-    wire [7:0] ros2_pub_app_data_len = 8'd22;
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
 
     // --- ROS2 Publisher Message Control
     reg ros2_pub_app_data_req;
@@ -204,7 +206,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(1'b1),
-        .ros2sub_en(1'b1),
+        .ros2sub_en(1'b0),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -240,7 +242,7 @@ module top (
         .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
 
         .ros2_pub_app_data(ros2_pub_app_data),
-        .ros2_pub_app_data_len(ros2_pub_app_data_len),
+        .ros2_pub_app_data_len(ROS2_PUB_APP_DATA_LEN),
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
         .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
