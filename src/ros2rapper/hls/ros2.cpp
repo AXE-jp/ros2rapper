@@ -855,7 +855,8 @@ void ros2(
     volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_grant /* Cyber port_mode=shared */,
     volatile uint8_t *sub_app_data_recv /* Cyber port_mode=shared */,
-    volatile uint8_t *sub_app_data_grant /* Cyber port_mode=shared */,
+    volatile uint8_t
+        *sub_app_data_grant /* Cyber port_mode=shared, port_reg_stage=1 */,
     volatile uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared */,
     volatile uint8_t *udp_rxbuf_grant /* Cyber port_mode=shared */,
     volatile uint8_t *udp_txbuf_rel /* Cyber port_mode=shared */,
@@ -911,7 +912,7 @@ void ros2(
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
 #pragma HLS interface mode = ap_none port = pub_app_data_grant
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
-#pragma HLS interface mode = ap_none port = sub_app_data_grant
+#pragma HLS interface mode = ap_none port = sub_app_data_grant register
 #pragma HLS interface mode = ap_vld port = udp_rxbuf_rel
 #pragma HLS interface mode = ap_none port = udp_rxbuf_grant
 #pragma HLS interface mode = ap_vld port = udp_txbuf_rel
