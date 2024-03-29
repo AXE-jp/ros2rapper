@@ -127,6 +127,17 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     }
 }
 
+enum {
+    STATE_PARSE_RTPS_HDR,
+    STATE_PARSE_SUBMSG_HDR,
+    STATE_PARSE_INFO_DST,
+    STATE_PARSE_DATA,
+    STATE_PARSE_PAYLOAD_HDR,
+    STATE_PARSE_PAYLOAD_DATA,
+    STATE_PARSE_OTHER,
+    STATE_WAIT_END,
+};
+
 /* Cyber func=inline */
 void app_reader(hls_stream<hls_uint<9>> &in,
                 const uint8_t            reader_guid_prefix[12],
@@ -134,22 +145,23 @@ void app_reader(hls_stream<hls_uint<9>> &in,
                 volatile uint8_t        *sub_app_data_recv,
                 volatile uint8_t        *sub_app_data_grant,
                 uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
-                volatile uint8_t        *sub_app_data_len) {
+                volatile uint8_t        *sub_app_data_len,
+                volatile uint16_t       *sub_app_data_rep_id) {
 #pragma HLS inline
 
-    static hls_uint<4> state;
+    static hls_uint<3> state;
     static uint16_t    offset;
     static uint8_t     sbm_id;
     static bool        sbm_le;
     static uint16_t    sbm_len;
     static uint16_t    rep_id;
-    static uint32_t    sp_data_len;
-
-    static int saved_grant;
 
     hls_uint<9> x;
     uint8_t     data;
     bool        end;
+
+    if (state == STATE_PARSE_PAYLOAD_DATA && *sub_app_data_grant == 0)
+        return;
 
     if (!in.read_nb(x))
         return;
@@ -157,18 +169,18 @@ void app_reader(hls_stream<hls_uint<9>> &in,
     end = x & 0x100;
 
     switch (state) {
-    case 0: // parse/check RTPS header
+    case STATE_PARSE_RTPS_HDR: // parse/check RTPS header
         if (!rtps_compare_protocol(offset, data)) {
-            state = 9;
+            state = STATE_WAIT_END;
             break;
         }
         offset++;
         if (offset == RTPS_HDR_SIZE) {
             offset = 0;
-            state = 1;
+            state = STATE_PARSE_SUBMSG_HDR;
         }
         break;
-    case 1: // parse/check sub-message header
+    case STATE_PARSE_SUBMSG_HDR: // parse/check sub-message header
         switch (offset) {
         case SBM_HDR_OFFSET_SUBMESSAGE_ID:
             sbm_id = data;
@@ -186,39 +198,39 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == SBM_HDR_SIZE) {
             offset = 0;
             if (sbm_id == SBM_ID_INFO_DST)
-                state = 2;
+                state = STATE_PARSE_INFO_DST;
             else if (sbm_id == SBM_ID_DATA)
-                state = 3;
+                state = STATE_PARSE_DATA;
             else
-                state = 8;
+                state = STATE_PARSE_OTHER;
         }
         break;
-    case 2: // parse/check sub-message : INFO_DST
+    case STATE_PARSE_INFO_DST: // parse/check sub-message : INFO_DST
         if (offset < 12) {
             if (reader_guid_prefix[offset] != data) {
-                state = 9;
+                state = STATE_WAIT_END;
                 break;
             }
         }
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state = 1;
+            state = STATE_PARSE_SUBMSG_HDR;
         }
         break;
-    case 3: // parse/check sub-message : DATA
+    case STATE_PARSE_DATA: // parse/check sub-message : DATA
         if (!rtps_compare_reader_id(offset, data, reader_entity_id)) {
-            state = 9;
+            state = STATE_WAIT_END;
             break;
         }
         offset++;
         if (offset == SBM_DATA_HDR_SIZE) {
             sbm_len -= SBM_DATA_HDR_SIZE;
             offset = 0;
-            state = 4;
+            state = STATE_PARSE_PAYLOAD_HDR;
         }
         break;
-    case 4: // parse/check serialized_payload
+    case STATE_PARSE_PAYLOAD_HDR: // parse/check serialized_payload
         switch (offset) {
         case SP_HDR_OFFSET_REPRESENTATION_ID:
             rep_id = data << 8;
@@ -229,72 +241,34 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         offset++;
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
-            if ((rep_id & SP_ID_PL_CDR) == 0) {
-                offset = 0;
-                sp_data_len = 0;
-                state = 5;
-            } else {
-                state = 9;
-            }
+            offset = 0;
+            state = STATE_PARSE_PAYLOAD_DATA;
         }
         break;
-    case 5: // fetch serial_payload data length
-        if (rep_id & SP_ID_CDR_LE) {
-            switch (offset) {
-            case 0:
-                sp_data_len |= data;
-                break;
-            case 1:
-                sp_data_len |= data << 8;
-                break;
-            case 2:
-                sp_data_len |= data << 16;
-                break;
-            case 3:
-                sp_data_len |= data << 24;
-                break;
-            }
-        } else {
-            sp_data_len <<= 8;
-            sp_data_len |= data;
+    case STATE_PARSE_PAYLOAD_DATA:
+        if (offset < MAX_APP_DATA_LEN) {
+            sub_app_data[offset] = data;
         }
         offset++;
-        if (offset == sizeof(sp_data_len)) {
-            if (sp_data_len <= MAX_APP_DATA_LEN) {
-                saved_grant = *sub_app_data_grant;
-                offset = 0;
-                state = 6;
-            } else {
-                state = 9;
-            }
+        if (offset == MAX_APP_DATA_LEN) {
+            *sub_app_data_len = sbm_len;
+            *sub_app_data_rep_id = rep_id;
+            *sub_app_data_recv = 0;
+            state = STATE_WAIT_END;
         }
         break;
-    case 6:
-        if (offset < sp_data_len) {
-            if (saved_grant)
-                sub_app_data[offset] = data;
-        }
-        offset++;
-        if (offset == sp_data_len) {
-            if (saved_grant) {
-                *sub_app_data_len = sp_data_len;
-                *sub_app_data_recv = 0;
-            }
-            state = 9;
-        }
-        break;
-    case 8:
+    case STATE_PARSE_OTHER:
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state = 1;
+            state = STATE_PARSE_SUBMSG_HDR;
         }
         break;
-    case 9:; // do nothing
+    case STATE_WAIT_END:; // do nothing
     }
 
     if (end) {
         offset = 0;
-        state = 0;
+        state = STATE_PARSE_RTPS_HDR;
     }
 }

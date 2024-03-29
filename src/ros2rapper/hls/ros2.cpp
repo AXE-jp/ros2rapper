@@ -98,8 +98,8 @@ static void ros2_in(
     hls_uint<1> sub_enable, const config_t *conf,
     volatile uint8_t *sub_app_data_recv, volatile uint8_t *sub_app_data_grant,
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
-    volatile uint8_t *rawudp_rxbuf_rel, volatile uint8_t *rawudp_rxbuf_grant,
-    bool ignore_ip_checksum) {
+    volatile uint16_t *sub_app_data_rep_id, volatile uint8_t *rawudp_rxbuf_rel,
+    volatile uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum) {
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
 
@@ -155,7 +155,7 @@ static void ros2_in(
         s6.write(x);
         app_reader(s6, conf->guid_prefix, app_reader_entity_id,
                    sub_app_data_recv, sub_app_data_grant, sub_app_data,
-                   sub_app_data_len);
+                   sub_app_data_len, sub_app_data_rep_id);
     }
 }
 
@@ -850,7 +850,7 @@ void ros2(
     volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
     uint8_t
         sub_app_data[MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared */,
-    volatile uint8_t *sub_app_data_len,
+    volatile uint8_t *sub_app_data_len, volatile uint16_t *sub_app_data_rep_id,
     volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_grant /* Cyber port_mode=shared */,
@@ -906,6 +906,7 @@ void ros2(
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len
 #pragma HLS interface mode = ap_memory port = sub_app_data
 #pragma HLS interface mode = ap_none port = sub_app_data_len
+#pragma HLS interface mode = ap_none port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = pub_app_data_req
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
 #pragma HLS interface mode = ap_none port = pub_app_data_grant
@@ -928,8 +929,8 @@ void ros2(
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_cnt, sedp_reader_tbl,
             app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
             sub_app_data_recv, sub_app_data_grant, sub_app_data,
-            sub_app_data_len, udp_rxbuf_rel, udp_rxbuf_grant,
-            conf->ignore_ip_checksum);
+            sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
+            udp_rxbuf_grant, conf->ignore_ip_checksum);
 
     ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
              app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,

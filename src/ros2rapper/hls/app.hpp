@@ -34,6 +34,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
                 volatile uint8_t        *sub_app_data_recv,
                 volatile uint8_t        *sub_app_data_grant,
                 uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
-                volatile uint8_t        *sub_app_data_len);
+                volatile uint8_t        *sub_app_data_len,
+                volatile uint16_t       *sub_app_data_rep_id);
 
 #endif // !APP_HPP
