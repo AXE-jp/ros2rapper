@@ -15,7 +15,7 @@ class NumStrPublisher(Node):
 
     def timer_callback(self):
         msg = String()
-        msg.data = '%d' % (self.i % 10)
+        msg.data = 'A' * (self.i % 10 + 1)
         self.publisher_.publish(msg)
         self.get_logger().info('Publishing: "%s"' % msg.data)
         self.i += 1
