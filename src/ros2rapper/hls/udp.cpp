@@ -111,8 +111,10 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SUM + 1):
             /* all zero checksum means no checksum (RFC 768) */
             no_checksum = no_checksum && (data == 0);
+            break;
+        }
 
-            /* end of UDP header */
+        if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE - 1) {
             if (to_rx_udp_port) {
                 uint16_t payload_len
                     = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
@@ -129,7 +131,6 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
                     state = UDP_IN_STATE_DISCARD;
                 }
             }
-            break;
         }
 
         offset++;
