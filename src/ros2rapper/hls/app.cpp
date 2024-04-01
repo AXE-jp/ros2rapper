@@ -139,14 +139,13 @@ enum {
 };
 
 /* Cyber func=inline */
-void app_reader(hls_stream<hls_uint<9>> &in,
-                const uint8_t            reader_guid_prefix[12],
-                const uint8_t            reader_entity_id[4],
-                volatile uint8_t        *sub_app_data_recv,
-                volatile uint8_t        *sub_app_data_grant,
-                uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
-                volatile uint8_t        *sub_app_data_len,
-                volatile uint16_t       *sub_app_data_rep_id) {
+void app_reader(
+    hls_stream<hls_uint<9>> &in, const uint8_t reader_guid_prefix[12],
+    const uint8_t reader_entity_id[4], volatile uint8_t *sub_app_data_recv,
+    volatile uint8_t *sub_app_data_req, volatile uint8_t *sub_app_data_rel,
+    volatile uint8_t *sub_app_data_grant,
+    uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
+    volatile uint16_t *sub_app_data_rep_id) {
 #pragma HLS inline
 
     static hls_uint<3> state;
@@ -159,9 +158,6 @@ void app_reader(hls_stream<hls_uint<9>> &in,
     hls_uint<9> x;
     uint8_t     data;
     bool        end;
-
-    if (state == STATE_PARSE_PAYLOAD_DATA && *sub_app_data_grant == 0)
-        return;
 
     if (!in.read_nb(x))
         return;
@@ -227,6 +223,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == SBM_DATA_HDR_SIZE) {
             sbm_len -= SBM_DATA_HDR_SIZE;
             offset = 0;
+            *sub_app_data_req = 0;
             state = STATE_PARSE_PAYLOAD_HDR;
         }
         break;
@@ -242,7 +239,10 @@ void app_reader(hls_stream<hls_uint<9>> &in,
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            state = STATE_PARSE_PAYLOAD_DATA;
+            if (*sub_app_data_grant == 1)
+                state = STATE_PARSE_PAYLOAD_DATA;
+            else
+                state = STATE_WAIT_END;
         }
         break;
     case STATE_PARSE_PAYLOAD_DATA:
@@ -254,6 +254,7 @@ void app_reader(hls_stream<hls_uint<9>> &in,
             *sub_app_data_len = sbm_len;
             *sub_app_data_rep_id = rep_id;
             *sub_app_data_recv = 0;
+            *sub_app_data_rel = 0;
             state = STATE_WAIT_END;
         }
         break;

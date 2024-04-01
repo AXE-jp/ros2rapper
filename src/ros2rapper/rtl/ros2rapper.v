@@ -84,9 +84,9 @@ module ros2rapper (
 
 // arbiter for sharing publisher app_data between user and IP
 localparam [1:0]
-    PUB_APP_DATA_GRANT_NONE = 2'b00,
-    PUB_APP_DATA_GRANT_IP   = 2'b01,
-    PUB_APP_DATA_GRANT_USER = 2'b10;
+    APP_DATA_GRANT_NONE = 2'b00,
+    APP_DATA_GRANT_IP   = 2'b01,
+    APP_DATA_GRANT_USER = 2'b10;
 
 reg [1:0] r_ros2_pub_app_data_grant;
 wire ros2_pub_app_data_ip_req, ros2_pub_app_data_ip_rel, ros2_pub_app_data_ip_grant;
@@ -95,45 +95,52 @@ assign ros2_pub_app_data_grant = en & r_ros2_pub_app_data_grant[1];
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
+        r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
         case (r_ros2_pub_app_data_grant)
-            PUB_APP_DATA_GRANT_NONE: begin
+            APP_DATA_GRANT_NONE: begin
                 case ({ros2_pub_app_data_ip_req, ros2_pub_app_data_req})
-                    2'b00: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
-                    2'b01: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_USER;
-                    2'b10: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_IP;
-                    2'b11: r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_IP;
+                    2'b00: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
+                    2'b01: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_USER;
+                    2'b10: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_IP;
+                    2'b11: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_IP;
                 endcase
             end
-            PUB_APP_DATA_GRANT_IP:
-                if (ros2_pub_app_data_ip_rel) r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
-            PUB_APP_DATA_GRANT_USER:
-                if (ros2_pub_app_data_rel) r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
+            APP_DATA_GRANT_IP:
+                if (ros2_pub_app_data_ip_rel) r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
+            APP_DATA_GRANT_USER:
+                if (ros2_pub_app_data_rel) r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
             default:
-                r_ros2_pub_app_data_grant <= PUB_APP_DATA_GRANT_NONE;
+                r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
         endcase
     end
 end
 
 // arbiter for sharing subscriber app_data buffer between user and IP
-localparam SUB_APP_DATA_GRANT_IP   = 1'b0;
-localparam SUB_APP_DATA_GRANT_USER = 1'b1;
-
-reg r_ros2_sub_app_data_grant;
-wire ros2_sub_app_data_ip_grant;
-assign ros2_sub_app_data_ip_grant = (en & ros2sub_en) & (~r_ros2_sub_app_data_grant);
-assign ros2_sub_app_data_grant =(en &  ros2sub_en) & r_ros2_sub_app_data_grant;
+reg [1:0] r_ros2_sub_app_data_grant;
+wire ros2_sub_app_data_ip_req, ros2_sub_app_data_ip_rel, ros2_sub_app_data_ip_grant;
+assign ros2_sub_app_data_ip_grant = (en & ros2sub_en) & r_ros2_sub_app_data_grant[0];
+assign ros2_sub_app_data_grant = (en & ros2sub_en) & r_ros2_sub_app_data_grant[1];
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_IP;
+        r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
     end else begin
         case (r_ros2_sub_app_data_grant)
-            SUB_APP_DATA_GRANT_IP:
-                if (ros2_sub_app_data_req) r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_USER;
-            SUB_APP_DATA_GRANT_USER:
-                if (ros2_sub_app_data_rel) r_ros2_sub_app_data_grant <= SUB_APP_DATA_GRANT_IP;
+            APP_DATA_GRANT_NONE: begin
+                case ({ros2_sub_app_data_ip_req, ros2_sub_app_data_req})
+                    2'b00: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
+                    2'b01: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_USER;
+                    2'b10: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_IP;
+                    2'b11: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_IP;
+                endcase
+            end
+            APP_DATA_GRANT_IP:
+                if (ros2_sub_app_data_ip_rel) r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
+            APP_DATA_GRANT_USER:
+                if (ros2_sub_app_data_rel) r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
+            default:
+                r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
         endcase
     end
 end
@@ -249,6 +256,10 @@ ros2 (
 
     .sub_app_data_recv_ap_vld(ros2_sub_app_data_recv),
     .sub_app_data_recv(),
+    .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req),
+    .sub_app_data_req(),
+    .sub_app_data_rel_ap_vld(ros2_sub_app_data_ip_rel),
+    .sub_app_data_rel(),
     .sub_app_data_grant({7'b0, ros2_sub_app_data_ip_grant}),
     .sub_app_data_address0(ros2_sub_app_data_addr),
     .sub_app_data_ce0(ros2_sub_app_data_ce),
@@ -482,6 +493,10 @@ ros2 (
   .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
   .sub_app_data_recv_we(ros2_sub_app_data_recv),
   .sub_app_data_recv_wd(),
+  .sub_app_data_req_we(ros2_sub_app_data_ip_req),
+  .sub_app_data_req_wd(),
+  .sub_app_data_rel_we(ros2_sub_app_data_ip_rel),
+  .sub_app_data_rel_wd(),
   .sub_app_data_grant_rd({7'b0, ros2_sub_app_data_ip_grant}),
 
   .udp_rxbuf_rel_we(udp_rxbuf_ip_rel),
