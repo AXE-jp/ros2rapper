@@ -182,7 +182,7 @@ module top (
         6'h03: txbuf_rdata <= 32'h20504455;  // Payload: "UDP Send Test\n"
         6'h04: txbuf_rdata <= 32'h646e6553;
         6'h05: txbuf_rdata <= 32'h73655420;
-        6'h06: txbuf_rdata <= 32'h00000074;
+        6'h06: txbuf_rdata <= 32'h00000a74;
         default: txbuf_rdata <= 32'h0;
         endcase
     end
