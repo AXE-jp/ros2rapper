@@ -239,18 +239,16 @@ void app_reader(
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            if (*sub_app_data_grant == 1)
+            if (sbm_len != 0 && *sub_app_data_grant == 1)
                 state = STATE_PARSE_PAYLOAD_DATA;
             else
                 state = STATE_WAIT_END;
         }
         break;
     case STATE_PARSE_PAYLOAD_DATA:
-        if (offset < MAX_APP_DATA_LEN) {
-            sub_app_data[offset] = data;
-        }
+        sub_app_data[offset] = data;
         offset++;
-        if (offset == MAX_APP_DATA_LEN) {
+        if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
             *sub_app_data_len = sbm_len;
             *sub_app_data_rep_id = rep_id;
             *sub_app_data_recv = 0;
