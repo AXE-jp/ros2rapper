@@ -51,7 +51,7 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     static uint16_t    sum = PRE_CHECKSUM;
     static uint8_t     src_addr[4];
     static uint8_t     src_port[2];
-    static bool        to_rx_udp_port;
+    static uint8_t     dst_port[2];
     static bool        no_checksum;
     static uint8_t     tot_len[2];
     static hls_uint<2> data_pos;
@@ -100,10 +100,10 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
             src_port[1] = data;
             break;
         case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT):
-            to_rx_udp_port = (data == rx_udp_port[0]);
+            dst_port[0] = data;
             break;
         case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_DPORT + 1):
-            to_rx_udp_port = to_rx_udp_port && (data == rx_udp_port[1]);
+            dst_port[1] = data;
             break;
         case (IN_STREAM_HDR_SIZE + UDP_HDR_OFFSET_SUM):
             no_checksum = (data == 0);
@@ -114,8 +114,10 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
             break;
         }
 
-        if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE - 1) {
-            if (to_rx_udp_port) {
+        offset++;
+        if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
+            if (dst_port[0] == rx_udp_port[0]
+                && dst_port[1] == rx_udp_port[1]) {
                 uint16_t payload_len
                     = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
                 if (*rawudp_rxbuf_grant == 1
@@ -132,9 +134,6 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
                 }
             }
         }
-
-        offset++;
-
         break;
     case UDP_IN_STATE_OUT_RTPS:
         READ_AND_CHECKSUM;
