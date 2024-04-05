@@ -325,6 +325,7 @@ always @* begin
                 state_next = STATE_WAIT_PACKET;
             end
         end
+        default: begin end
     endcase
 end
 

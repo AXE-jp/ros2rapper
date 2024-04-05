@@ -428,6 +428,7 @@ always @* begin
                 state_next = STATE_WAIT_LAST;
             end
         end
+        default: begin end
     endcase
 end
 
