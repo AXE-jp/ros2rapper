@@ -105,9 +105,6 @@ end
     assign mac_mii_tx_clk = phy_mii_tx_clk;
 `endif
 
-assign mac_mii_tx_rst = ~rst_n;
-assign mac_mii_rx_rst = ~rst_n;
-/*
 // reset sync
 reg [3:0] tx_rst_reg;
 assign mac_mii_tx_rst = tx_rst_reg[0];
@@ -130,7 +127,6 @@ always @(posedge mac_mii_rx_clk or negedge rst_n) begin
         rx_rst_reg <= {1'b0, rx_rst_reg[3:1]};
     end
 end
-*/
 
 endmodule
 
