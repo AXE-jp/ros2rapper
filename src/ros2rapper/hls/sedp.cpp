@@ -42,7 +42,7 @@ static void compare_entity_id(const uint8_t             x,
 #define FLAGS_UNMATCH_TYPE   0x10
 
 /* Cyber func=inline */
-void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
+void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
                  app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
                  const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
                  uint16_t port_num_seed, const uint8_t guid_prefix[12],
@@ -77,17 +77,12 @@ void sedp_reader(hls_stream<hls_uint<9>> &in, app_reader_id_t &reader_cnt,
     static uint16_t udp_port;
     static uint32_t sp_len;
 
-    hls_uint<9> x;
-
-    if (!in.read_nb(x))
-        return;
-
     if (!enable || reader_cnt == APP_READER_MAX)
         return;
 
     app_endpoint &reader = reader_tbl[reader_cnt];
-    uint8_t       data = x & 0xff;
-    bool          end = x & 0x100;
+    uint8_t       data = in & 0xff;
+    bool          end = in & 0x100;
 
     switch (state) {
     case 0:

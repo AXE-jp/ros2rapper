@@ -139,13 +139,15 @@ enum {
 };
 
 /* Cyber func=inline */
-void app_reader(
-    hls_stream<hls_uint<9>> &in, const uint8_t reader_guid_prefix[12],
-    const uint8_t reader_entity_id[4], volatile uint8_t *sub_app_data_recv,
-    volatile uint8_t *sub_app_data_req, volatile uint8_t *sub_app_data_rel,
-    volatile uint8_t *sub_app_data_grant,
-    uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
-    volatile uint16_t *sub_app_data_rep_id) {
+void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
+                const uint8_t      reader_entity_id[4],
+                volatile uint8_t  *sub_app_data_recv,
+                volatile uint8_t  *sub_app_data_req,
+                volatile uint8_t  *sub_app_data_rel,
+                volatile uint8_t  *sub_app_data_grant,
+                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
+                volatile uint8_t  *sub_app_data_len,
+                volatile uint16_t *sub_app_data_rep_id) {
 #pragma HLS inline
 
     static hls_uint<3> state;
@@ -155,14 +157,11 @@ void app_reader(
     static uint16_t    sbm_len;
     static uint16_t    rep_id;
 
-    hls_uint<9> x;
-    uint8_t     data;
-    bool        end;
+    uint8_t data;
+    bool    end;
 
-    if (!in.read_nb(x))
-        return;
-    data = x & 0x0FF;
-    end = x & 0x100;
+    data = in & 0x0FF;
+    end = in & 0x100;
 
     switch (state) {
     case STATE_PARSE_RTPS_HDR: // parse/check RTPS header

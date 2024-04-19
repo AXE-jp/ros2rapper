@@ -112,15 +112,9 @@ static void ros2_in(
     static hls_stream<hls_uint<9>> s1 /* Cyber fifo_size=2 */;
     static hls_stream<hls_uint<9>> s2 /* Cyber fifo_size=2 */;
     static hls_stream<hls_uint<9>> s3 /* Cyber fifo_size=2 */;
-    static hls_stream<hls_uint<9>> s4 /* Cyber fifo_size=2 */;
-    static hls_stream<hls_uint<9>> s5 /* Cyber fifo_size=2 */;
-    static hls_stream<hls_uint<9>> s6 /* Cyber fifo_size=2 */;
 #pragma HLS stream variable = s1 depth = 2
 #pragma HLS stream variable = s2 depth = 2
 #pragma HLS stream variable = s3 depth = 2
-#pragma HLS stream variable = s4 depth = 2
-#pragma HLS stream variable = s5 depth = 2
-#pragma HLS stream variable = s6 depth = 2
 
     hls_uint<1> enable = pub_enable | sub_enable;
 
@@ -136,28 +130,23 @@ static void ros2_in(
     udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
            rawudp_rxbuf_grant, udp_parity_error);
 
-    if (!s3.read_nb(x))
-        return;
+    if (s3.read_nb(x)) {
+        spdp_reader(x, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
+                    conf->subnet_mask, conf->port_num_seed);
 
-    s4.write(x);
-    s5.write(x);
+        sedp_reader(x, app_reader_cnt, app_reader_tbl, enable, conf->ip_addr,
+                    conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
+                    conf->pub_topic_name, conf->pub_topic_name_len,
+                    conf->pub_topic_type_name, conf->pub_topic_type_name_len,
+                    conf->sub_topic_name, conf->sub_topic_name_len,
+                    conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
-    spdp_reader(s4, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
-                conf->subnet_mask, conf->port_num_seed);
-
-    sedp_reader(s5, app_reader_cnt, app_reader_tbl, enable, conf->ip_addr,
-                conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
-                conf->pub_topic_name, conf->pub_topic_name_len,
-                conf->pub_topic_type_name, conf->pub_topic_type_name_len,
-                conf->sub_topic_name, conf->sub_topic_name_len,
-                conf->sub_topic_type_name, conf->sub_topic_type_name_len);
-
-    if (sub_enable) {
-        s6.write(x);
-        app_reader(s6, conf->guid_prefix, app_reader_entity_id,
-                   sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
-                   sub_app_data_grant, sub_app_data, sub_app_data_len,
-                   sub_app_data_rep_id);
+        if (sub_enable) {
+            app_reader(x, conf->guid_prefix, app_reader_entity_id,
+                       sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
+                       sub_app_data_grant, sub_app_data, sub_app_data_len,
+                       sub_app_data_rep_id);
+        }
     }
 }
 
