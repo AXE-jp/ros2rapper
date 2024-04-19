@@ -543,10 +543,74 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
     static uint16_t    rawudp_txbuf_rd_off;
     static uint16_t    rawudp_txpayload_wr_off;
 
-    static uint32_t    clk_cnt;
-    static hls_uint<5> state = ST_RAWUDP_OUT;
+    static uint32_t cnt_interval;
+    static uint32_t cnt_spdp_wr;
+    static uint32_t cnt_sedp_pub_wr;
+    static uint32_t cnt_sedp_sub_wr;
+    static uint32_t cnt_sedp_pub_hb;
+    static uint32_t cnt_sedp_sub_hb;
+    static uint32_t cnt_sedp_pub_an;
+    static uint32_t cnt_sedp_sub_an;
+    static uint32_t cnt_app_wr;
 
-    clk_cnt++;
+    static hls_uint<2> tx_progress_sedp_pub_wr;
+    static hls_uint<2> tx_progress_sedp_sub_wr;
+    static hls_uint<2> tx_progress_sedp_pub_hb;
+    static hls_uint<2> tx_progress_sedp_sub_hb;
+    static hls_uint<2> tx_progress_sedp_pub_an;
+    static hls_uint<2> tx_progress_sedp_sub_an;
+    static hls_uint<2> tx_progress_app_wr;
+
+    static hls_uint<8> next_packet_type = 1;
+#define ROTATE_NEXT_PACKET_TYPE                                                \
+    next_packet_type = (next_packet_type << 1) | (next_packet_type >> 7)
+
+    hls_uint<8> candidates;
+
+    if (cnt_interval != 0)
+        cnt_interval--;
+
+    if (cnt_spdp_wr != 0)
+        cnt_spdp_wr--;
+    else
+        candidates |= 0x1;
+
+    if (cnt_sedp_pub_wr != 0)
+        cnt_sedp_pub_wr--;
+    else
+        candidates |= 0x2;
+
+    if (cnt_sedp_sub_wr != 0)
+        cnt_sedp_sub_wr--;
+    else
+        candidates |= 0x4;
+
+    if (cnt_sedp_pub_hb != 0)
+        cnt_sedp_pub_hb--;
+    else
+        candidates |= 0x8;
+
+    if (cnt_sedp_sub_hb != 0)
+        cnt_sedp_sub_hb--;
+    else
+        candidates |= 0x10;
+
+    if (cnt_sedp_pub_an != 0)
+        cnt_sedp_pub_an--;
+    else
+        candidates |= 0x20;
+
+    if (cnt_sedp_sub_an != 0)
+        cnt_sedp_sub_an--;
+    else
+        candidates |= 0x40;
+
+    if (cnt_app_wr != 0)
+        cnt_app_wr--;
+    else
+        candidates |= 0x80;
+
+    candidates = candidates & next_packet_type;
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
@@ -556,18 +620,17 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
 
         slip_out(s, out);
 #endif // USE_FIFOIF_ETHERNET
-    } else {
-        if (state == ST_RAWUDP_OUT) {
+
+        if (tx_buf.empty()) {
+            cnt_interval = conf->tx_interval;
+        }
+    } else if (cnt_interval == 0) {
+        if (*rawudp_txbuf_grant == 1) {
             switch (rawudp_txbuf_copy_status) {
             case RAWUDP_TXBUF_COPY_INIT:
-                if (*rawudp_txbuf_grant == 1) {
-                    rawudp_txbuf_rd_off = 0;
-                    rawudp_txpayload_wr_off = 0;
-                    rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
-                } else if (clk_cnt >= conf->tx_period) {
-                    clk_cnt = 0;
-                    state++;
-                }
+                rawudp_txbuf_rd_off = 0;
+                rawudp_txpayload_wr_off = 0;
+                rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
                 break;
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
@@ -630,193 +693,141 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 RAWUDP_OUT();
                 *rawudp_txbuf_rel = 0 /*write dummy value to assert ap_vld*/;
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
-                if (clk_cnt >= conf->tx_period) {
-                    clk_cnt = 0;
-                    state++;
-                }
                 break;
             default:
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if (!(pub_enable | sub_enable)) {
-            state = ST_RAWUDP_OUT;
-        } else {
-            switch (state) {
-            case ST_SPDP_WRITER:
-                SPDP_WRITER_OUT();
-                state++;
+        } else if (candidates & 0x1) {
+            SPDP_WRITER_OUT();
+            cnt_spdp_wr = conf->tx_period_spdp_wr;
+            ROTATE_NEXT_PACKET_TYPE;
+        } else if (pub_enable && (candidates & 0x2)) {
+            switch (tx_progress_sedp_pub_wr) {
+            case 0:
+                SEDP_PUB_WRITER_OUT(0);
                 break;
-            case ST_SEDP_PUB_WRITER_0:
-                if (pub_enable) {
-                    SEDP_PUB_WRITER_OUT(0);
-                }
-                state++;
+            case 1:
+                SEDP_PUB_WRITER_OUT(1);
                 break;
-            case ST_SEDP_PUB_WRITER_1:
-                if (pub_enable) {
-                    SEDP_PUB_WRITER_OUT(1);
-                }
-                state++;
+            case 2:
+                SEDP_PUB_WRITER_OUT(2);
                 break;
-            case ST_SEDP_PUB_WRITER_2:
-                if (pub_enable) {
-                    SEDP_PUB_WRITER_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_WRITER_3:
-                if (pub_enable) {
-                    SEDP_PUB_WRITER_OUT(3);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_WRITER_0:
-                if (sub_enable) {
-                    SEDP_SUB_WRITER_OUT(0);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_WRITER_1:
-                if (sub_enable) {
-                    SEDP_SUB_WRITER_OUT(1);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_WRITER_2:
-                if (sub_enable) {
-                    SEDP_SUB_WRITER_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_WRITER_3:
-                if (sub_enable) {
-                    SEDP_SUB_WRITER_OUT(3);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_HEARTBEAT_0:
-                if (pub_enable) {
-                    SEDP_PUB_HEARTBEAT_OUT(0);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_HEARTBEAT_1:
-                if (pub_enable) {
-                    SEDP_PUB_HEARTBEAT_OUT(1);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_HEARTBEAT_2:
-                if (pub_enable) {
-                    SEDP_PUB_HEARTBEAT_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_HEARTBEAT_3:
-                if (pub_enable) {
-                    SEDP_PUB_HEARTBEAT_OUT(3);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_HEARTBEAT_0:
-                if (sub_enable) {
-                    SEDP_SUB_HEARTBEAT_OUT(0);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_HEARTBEAT_1:
-                if (sub_enable) {
-                    SEDP_SUB_HEARTBEAT_OUT(1);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_HEARTBEAT_2:
-                if (sub_enable) {
-                    SEDP_SUB_HEARTBEAT_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_HEARTBEAT_3:
-                if (sub_enable) {
-                    SEDP_SUB_HEARTBEAT_OUT(3);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_ACKNACK_0:
-                if (pub_enable) {
-                    SEDP_PUB_ACKNACK_OUT(0);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_ACKNACK_1:
-                if (pub_enable) {
-                    SEDP_PUB_ACKNACK_OUT(1);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_ACKNACK_2:
-                if (pub_enable) {
-                    SEDP_PUB_ACKNACK_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_PUB_ACKNACK_3:
-                if (pub_enable) {
-                    SEDP_PUB_ACKNACK_OUT(3);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_ACKNACK_0:
-                if (sub_enable) {
-                    SEDP_SUB_ACKNACK_OUT(0);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_ACKNACK_1:
-                if (sub_enable) {
-                    SEDP_SUB_ACKNACK_OUT(1);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_ACKNACK_2:
-                if (sub_enable) {
-                    SEDP_SUB_ACKNACK_OUT(2);
-                }
-                state++;
-                break;
-            case ST_SEDP_SUB_ACKNACK_3:
-                if (sub_enable) {
-                    SEDP_SUB_ACKNACK_OUT(3);
-                }
-                state++;
-                break;
-            case ST_APP_WRITER_0:
-                if (pub_enable) {
-                    APP_WRITER_OUT(0);
-                }
-                state++;
-                break;
-            case ST_APP_WRITER_1:
-                if (pub_enable) {
-                    APP_WRITER_OUT(1);
-                }
-                state++;
-                break;
-            case ST_APP_WRITER_2:
-                if (pub_enable) {
-                    APP_WRITER_OUT(2);
-                }
-                state++;
-                break;
-            case ST_APP_WRITER_3:
-                if (pub_enable) {
-                    APP_WRITER_OUT(3);
-                }
-            default:
-                state = ST_RAWUDP_OUT;
+            case 3:
+                SEDP_PUB_WRITER_OUT(3);
+                cnt_sedp_pub_wr = conf->tx_period_sedp_pub_wr;
+                ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
+            tx_progress_sedp_pub_wr++;
+        } else if (sub_enable && (candidates & 0x4)) {
+            switch (tx_progress_sedp_sub_wr) {
+            case 0:
+                SEDP_SUB_WRITER_OUT(0);
+                break;
+            case 1:
+                SEDP_SUB_WRITER_OUT(1);
+                break;
+            case 2:
+                SEDP_SUB_WRITER_OUT(2);
+                break;
+            case 3:
+                SEDP_SUB_WRITER_OUT(3);
+                cnt_sedp_sub_wr = conf->tx_period_sedp_sub_wr;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_sedp_sub_wr++;
+        } else if (pub_enable && (candidates & 0x8)) {
+            switch (tx_progress_sedp_pub_hb) {
+            case 0:
+                SEDP_PUB_HEARTBEAT_OUT(0);
+                break;
+            case 1:
+                SEDP_PUB_HEARTBEAT_OUT(1);
+                break;
+            case 2:
+                SEDP_PUB_HEARTBEAT_OUT(2);
+                break;
+            case 3:
+                SEDP_PUB_HEARTBEAT_OUT(3);
+                cnt_sedp_pub_hb = conf->tx_period_sedp_pub_hb;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_sedp_pub_hb++;
+        } else if (sub_enable && (candidates & 0x10)) {
+            switch (tx_progress_sedp_sub_hb) {
+            case 0:
+                SEDP_SUB_HEARTBEAT_OUT(0);
+                break;
+            case 1:
+                SEDP_SUB_HEARTBEAT_OUT(1);
+                break;
+            case 2:
+                SEDP_SUB_HEARTBEAT_OUT(2);
+                break;
+            case 3:
+                SEDP_SUB_HEARTBEAT_OUT(3);
+                cnt_sedp_sub_hb = conf->tx_period_sedp_sub_hb;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_sedp_sub_hb++;
+        } else if (pub_enable && (candidates & 0x20)) {
+            switch (tx_progress_sedp_pub_an) {
+            case 0:
+                SEDP_PUB_ACKNACK_OUT(0);
+                break;
+            case 1:
+                SEDP_PUB_ACKNACK_OUT(1);
+                break;
+            case 2:
+                SEDP_PUB_ACKNACK_OUT(2);
+                break;
+            case 3:
+                SEDP_PUB_ACKNACK_OUT(3);
+                cnt_sedp_pub_an = conf->tx_period_sedp_pub_an;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_sedp_pub_an++;
+        } else if (sub_enable && (candidates & 0x40)) {
+            switch (tx_progress_sedp_sub_an) {
+            case 0:
+                SEDP_SUB_ACKNACK_OUT(0);
+                break;
+            case 1:
+                SEDP_SUB_ACKNACK_OUT(1);
+                break;
+            case 2:
+                SEDP_SUB_ACKNACK_OUT(2);
+                break;
+            case 3:
+                SEDP_SUB_ACKNACK_OUT(3);
+                cnt_sedp_sub_an = conf->tx_period_sedp_sub_an;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_sedp_sub_an++;
+        } else if (pub_enable && (candidates & 0x80)) {
+            switch (tx_progress_app_wr) {
+            case 0:
+                APP_WRITER_OUT(0);
+                break;
+            case 1:
+                APP_WRITER_OUT(1);
+                break;
+            case 2:
+                APP_WRITER_OUT(2);
+                break;
+            case 3:
+                APP_WRITER_OUT(3);
+                cnt_app_wr = conf->tx_period_app_wr;
+                ROTATE_NEXT_PACKET_TYPE;
+                break;
+            }
+            tx_progress_app_wr++;
         }
 
         if (!tx_buf.empty()) {
@@ -873,7 +884,15 @@ void ros2(
 #pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->rx_udp_port
 #pragma HLS interface mode = ap_none port = conf->port_num_seed
-#pragma HLS interface mode = ap_none port = conf->tx_period
+#pragma HLS interface mode = ap_none port = conf->tx_interval
+#pragma HLS interface mode = ap_none port = conf->tx_period_spdp_wr
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_wr
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_wr
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_hb
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_hb
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_an
+#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_an
+#pragma HLS interface mode = ap_none port = conf->tx_period_app_wr
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
