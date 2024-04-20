@@ -561,11 +561,10 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
     static hls_uint<2> tx_progress_sedp_sub_an;
     static hls_uint<2> tx_progress_app_wr;
 
-    static hls_uint<8> next_packet_type = 1;
-#define ROTATE_NEXT_PACKET_TYPE                                                \
-    next_packet_type = (next_packet_type << 1) | (next_packet_type >> 7)
+    static hls_uint<3> next_packet_type = 0;
+#define ROTATE_NEXT_PACKET_TYPE next_packet_type = next_packet_type + 1
 
-    hls_uint<8> candidates = 0;
+    bool matched = false;
 
     if (cnt_interval != 0)
         cnt_interval--;
@@ -573,50 +572,27 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
     if (pub_enable || sub_enable) {
         if (cnt_spdp_wr != 0)
             cnt_spdp_wr--;
-        else
-            candidates |= 0x1;
     }
 
     if (pub_enable) {
         if (cnt_sedp_pub_wr != 0)
             cnt_sedp_pub_wr--;
-        else
-            candidates |= 0x2;
-
         if (cnt_sedp_pub_hb != 0)
             cnt_sedp_pub_hb--;
-        else
-            candidates |= 0x8;
-
         if (cnt_sedp_pub_an != 0)
             cnt_sedp_pub_an--;
-        else
-            candidates |= 0x20;
-
         if (cnt_app_wr != 0)
             cnt_app_wr--;
-        else
-            candidates |= 0x80;
     }
 
     if (sub_enable) {
         if (cnt_sedp_sub_wr != 0)
             cnt_sedp_sub_wr--;
-        else
-            candidates |= 0x4;
-
         if (cnt_sedp_sub_hb != 0)
             cnt_sedp_sub_hb--;
-        else
-            candidates |= 0x10;
-
         if (cnt_sedp_sub_an != 0)
             cnt_sedp_sub_an--;
-        else
-            candidates |= 0x40;
     }
-
-    candidates = candidates & next_packet_type;
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
@@ -704,11 +680,11 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if (candidates & 0x1) {
+        } else if (cnt_spdp_wr == 0 && next_packet_type == 0) {
             SPDP_WRITER_OUT();
             cnt_spdp_wr = conf->tx_period_spdp_wr;
             ROTATE_NEXT_PACKET_TYPE;
-        } else if (candidates & 0x2) {
+        } else if (cnt_sedp_pub_wr == 0 && next_packet_type == 1) {
             switch (tx_progress_sedp_pub_wr) {
             case 0:
                 SEDP_PUB_WRITER_OUT(0);
@@ -726,7 +702,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_pub_wr++;
-        } else if (candidates & 0x4) {
+        } else if (cnt_sedp_sub_wr == 0 && next_packet_type == 2) {
             switch (tx_progress_sedp_sub_wr) {
             case 0:
                 SEDP_SUB_WRITER_OUT(0);
@@ -744,7 +720,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_sub_wr++;
-        } else if (candidates & 0x8) {
+        } else if (cnt_sedp_pub_hb == 0 && next_packet_type == 3) {
             switch (tx_progress_sedp_pub_hb) {
             case 0:
                 SEDP_PUB_HEARTBEAT_OUT(0);
@@ -762,7 +738,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_pub_hb++;
-        } else if (candidates & 0x10) {
+        } else if (cnt_sedp_sub_hb == 0 && next_packet_type == 4) {
             switch (tx_progress_sedp_sub_hb) {
             case 0:
                 SEDP_SUB_HEARTBEAT_OUT(0);
@@ -780,7 +756,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_sub_hb++;
-        } else if (candidates & 0x20) {
+        } else if (cnt_sedp_pub_an == 0 && next_packet_type == 5) {
             switch (tx_progress_sedp_pub_an) {
             case 0:
                 SEDP_PUB_ACKNACK_OUT(0);
@@ -798,7 +774,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_pub_an++;
-        } else if (candidates & 0x40) {
+        } else if (cnt_sedp_sub_an == 0 && next_packet_type == 6) {
             switch (tx_progress_sedp_sub_an) {
             case 0:
                 SEDP_SUB_ACKNACK_OUT(0);
@@ -816,7 +792,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_sedp_sub_an++;
-        } else if (candidates & 0x80) {
+        } else if (cnt_app_wr == 0 && next_packet_type == 7) {
             switch (tx_progress_app_wr) {
             case 0:
                 APP_WRITER_OUT(0);
