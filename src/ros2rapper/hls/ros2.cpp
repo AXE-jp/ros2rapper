@@ -698,7 +698,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if (candidates & 0x1) {
+        } else if ((pub_enable || sub_enable) && (candidates & 0x1)) {
             SPDP_WRITER_OUT();
             cnt_spdp_wr = conf->tx_period_spdp_wr;
             ROTATE_NEXT_PACKET_TYPE;
@@ -828,6 +828,8 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             }
             tx_progress_app_wr++;
+        } else {
+            ROTATE_NEXT_PACKET_TYPE;
         }
 
         if (!tx_buf.empty()) {
