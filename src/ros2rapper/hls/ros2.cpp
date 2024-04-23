@@ -543,15 +543,16 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
     static uint16_t    rawudp_txbuf_rd_off;
     static uint16_t    rawudp_txpayload_wr_off;
 
-    static uint32_t cnt_interval;
-    static uint32_t cnt_spdp_wr;
-    static uint32_t cnt_sedp_pub_wr;
-    static uint32_t cnt_sedp_sub_wr;
-    static uint32_t cnt_sedp_pub_hb;
-    static uint32_t cnt_sedp_sub_hb;
-    static uint32_t cnt_sedp_pub_an;
-    static uint32_t cnt_sedp_sub_an;
-    static uint32_t cnt_app_wr;
+    static hls_uint<8> cnt_prescaler;
+    static uint16_t    cnt_interval;
+    static uint16_t    cnt_spdp_wr;
+    static uint16_t    cnt_sedp_pub_wr;
+    static uint16_t    cnt_sedp_sub_wr;
+    static uint16_t    cnt_sedp_pub_hb;
+    static uint16_t    cnt_sedp_sub_hb;
+    static uint16_t    cnt_sedp_pub_an;
+    static uint16_t    cnt_sedp_sub_an;
+    static uint16_t    cnt_app_wr;
 
     static hls_uint<2> tx_progress_sedp_pub_wr;
     static hls_uint<2> tx_progress_sedp_sub_wr;
@@ -564,33 +565,37 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
     static hls_uint<3> next_packet_type = 0;
 #define ROTATE_NEXT_PACKET_TYPE next_packet_type++
 
-    if (cnt_interval != 0)
-        cnt_interval--;
+    if (cnt_prescaler == 0) {
+        if (cnt_interval != 0)
+            cnt_interval--;
 
-    if (pub_enable || sub_enable) {
-        if (cnt_spdp_wr != 0)
-            cnt_spdp_wr--;
+        if (pub_enable || sub_enable) {
+            if (cnt_spdp_wr != 0)
+                cnt_spdp_wr--;
+        }
+
+        if (pub_enable) {
+            if (cnt_sedp_pub_wr != 0)
+                cnt_sedp_pub_wr--;
+            if (cnt_sedp_pub_hb != 0)
+                cnt_sedp_pub_hb--;
+            if (cnt_sedp_pub_an != 0)
+                cnt_sedp_pub_an--;
+            if (cnt_app_wr != 0)
+                cnt_app_wr--;
+        }
+
+        if (sub_enable) {
+            if (cnt_sedp_sub_wr != 0)
+                cnt_sedp_sub_wr--;
+            if (cnt_sedp_sub_hb != 0)
+                cnt_sedp_sub_hb--;
+            if (cnt_sedp_sub_an != 0)
+                cnt_sedp_sub_an--;
+        }
     }
 
-    if (pub_enable) {
-        if (cnt_sedp_pub_wr != 0)
-            cnt_sedp_pub_wr--;
-        if (cnt_sedp_pub_hb != 0)
-            cnt_sedp_pub_hb--;
-        if (cnt_sedp_pub_an != 0)
-            cnt_sedp_pub_an--;
-        if (cnt_app_wr != 0)
-            cnt_app_wr--;
-    }
-
-    if (sub_enable) {
-        if (cnt_sedp_sub_wr != 0)
-            cnt_sedp_sub_wr--;
-        if (cnt_sedp_sub_hb != 0)
-            cnt_sedp_sub_hb--;
-        if (cnt_sedp_sub_an != 0)
-            cnt_sedp_sub_an--;
-    }
+    cnt_prescaler++;
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
