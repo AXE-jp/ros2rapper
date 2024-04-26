@@ -451,29 +451,27 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     } while (0)
 
 /* Cyber func=inline */
-static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
-                     sedp_reader_id_t &sedp_reader_cnt,
-                     sedp_endpoint     sedp_reader_tbl[SEDP_READER_MAX],
-                     app_reader_id_t  &app_reader_cnt,
-                     app_endpoint      app_reader_tbl[APP_READER_MAX],
-                     hls_uint<1> pub_enable, hls_uint<1> sub_enable,
-                     const config_t         *conf,
-                     volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-                     volatile const uint8_t *pub_app_data_len,
-                     volatile uint8_t       *pub_app_data_req,
-                     volatile uint8_t       *pub_app_data_rel,
-                     volatile uint8_t       *pub_app_data_grant,
-                     volatile uint8_t       *rawudp_txbuf_rel,
-                     volatile uint8_t       *rawudp_txbuf_grant,
-                     hls_uint<1>      cnt_interval_timeout,    volatile uint8_t *cnt_interval_rst,
-                     hls_uint<1>      cnt_spdp_wr_timeout,     volatile uint8_t *cnt_spdp_wr_rst,
-                     hls_uint<1>      cnt_sedp_pub_wr_timeout, volatile uint8_t *cnt_sedp_pub_wr_rst,
-                     hls_uint<1>      cnt_sedp_sub_wr_timeout, volatile uint8_t *cnt_sedp_sub_wr_rst,
-                     hls_uint<1>      cnt_sedp_pub_hb_timeout, volatile uint8_t *cnt_sedp_pub_hb_rst,
-                     hls_uint<1>      cnt_sedp_sub_hb_timeout, volatile uint8_t *cnt_sedp_sub_hb_rst,
-                     hls_uint<1>      cnt_sedp_pub_an_timeout, volatile uint8_t *cnt_sedp_pub_an_rst,
-                     hls_uint<1>      cnt_sedp_sub_an_timeout, volatile uint8_t *cnt_sedp_sub_an_rst,
-                     hls_uint<1>      cnt_app_wr_timeout,      volatile uint8_t *cnt_app_wr_rst) {
+static void ros2_out(
+    hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
+    sedp_reader_id_t &sedp_reader_cnt,
+    sedp_endpoint     sedp_reader_tbl[SEDP_READER_MAX],
+    app_reader_id_t  &app_reader_cnt,
+    app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
+    hls_uint<1> sub_enable, const config_t *conf,
+    volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
+    volatile const uint8_t *pub_app_data_len,
+    volatile uint8_t *pub_app_data_req, volatile uint8_t *pub_app_data_rel,
+    volatile uint8_t *pub_app_data_grant, volatile uint8_t *rawudp_txbuf_rel,
+    volatile uint8_t *rawudp_txbuf_grant, hls_uint<1> cnt_interval_elapsed,
+    volatile uint8_t *cnt_interval_set, hls_uint<1> cnt_spdp_wr_elapsed,
+    volatile uint8_t *cnt_spdp_wr_set, hls_uint<1> cnt_sedp_pub_wr_elapsed,
+    volatile uint8_t *cnt_sedp_pub_wr_set, hls_uint<1> cnt_sedp_sub_wr_elapsed,
+    volatile uint8_t *cnt_sedp_sub_wr_set, hls_uint<1> cnt_sedp_pub_hb_elapsed,
+    volatile uint8_t *cnt_sedp_pub_hb_set, hls_uint<1> cnt_sedp_sub_hb_elapsed,
+    volatile uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
+    volatile uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
+    volatile uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
+    volatile uint8_t *cnt_app_wr_set) {
 #pragma HLS inline
     static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
@@ -573,9 +571,9 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
 #endif // USE_FIFOIF_ETHERNET
 
         if (tx_buf.empty()) {
-            *cnt_interval_rst = 1;
+            *cnt_interval_set = 1;
         }
-    } else if (cnt_interval_timeout == 1) {
+    } else if (cnt_interval_elapsed == 1) {
         if (*rawudp_txbuf_grant == 1) {
             switch (rawudp_txbuf_copy_status) {
             case RAWUDP_TXBUF_COPY_INIT:
@@ -649,12 +647,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if ((pub_enable | sub_enable) && cnt_spdp_wr_timeout == 1
+        } else if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed == 1
                    && next_packet_type == 0) {
             SPDP_WRITER_OUT();
-            *cnt_spdp_wr_rst = 1;
+            *cnt_spdp_wr_set = 1;
             ROTATE_NEXT_PACKET_TYPE;
-        } else if (pub_enable && cnt_sedp_pub_wr_timeout == 1
+        } else if (pub_enable && cnt_sedp_pub_wr_elapsed == 1
                    && next_packet_type == 1) {
             switch (tx_progress_sedp_pub_wr) {
             case 0:
@@ -668,12 +666,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_PUB_WRITER_OUT(3);
-                *cnt_sedp_pub_wr_rst = 1;
+                *cnt_sedp_pub_wr_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_pub_wr++;
-        } else if (sub_enable && cnt_sedp_sub_wr_timeout == 1
+        } else if (sub_enable && cnt_sedp_sub_wr_elapsed == 1
                    && next_packet_type == 2) {
             switch (tx_progress_sedp_sub_wr) {
             case 0:
@@ -687,12 +685,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_SUB_WRITER_OUT(3);
-                *cnt_sedp_sub_wr_rst = 1;
+                *cnt_sedp_sub_wr_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_sub_wr++;
-        } else if (pub_enable && cnt_sedp_pub_hb_timeout == 1
+        } else if (pub_enable && cnt_sedp_pub_hb_elapsed == 1
                    && next_packet_type == 3) {
             switch (tx_progress_sedp_pub_hb) {
             case 0:
@@ -706,12 +704,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_PUB_HEARTBEAT_OUT(3);
-                *cnt_sedp_pub_hb_rst = 1;
+                *cnt_sedp_pub_hb_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_pub_hb++;
-        } else if (sub_enable && cnt_sedp_sub_hb_timeout == 1
+        } else if (sub_enable && cnt_sedp_sub_hb_elapsed == 1
                    && next_packet_type == 4) {
             switch (tx_progress_sedp_sub_hb) {
             case 0:
@@ -725,12 +723,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_SUB_HEARTBEAT_OUT(3);
-                *cnt_sedp_sub_hb_rst = 1;
+                *cnt_sedp_sub_hb_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_sub_hb++;
-        } else if (pub_enable && cnt_sedp_pub_an_timeout == 0
+        } else if (pub_enable && cnt_sedp_pub_an_elapsed == 0
                    && next_packet_type == 5) {
             switch (tx_progress_sedp_pub_an) {
             case 0:
@@ -744,12 +742,12 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_PUB_ACKNACK_OUT(3);
-                *cnt_sedp_pub_an_rst = 1;
+                *cnt_sedp_pub_an_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_pub_an++;
-        } else if (sub_enable && cnt_sedp_sub_an_timeout == 1
+        } else if (sub_enable && cnt_sedp_sub_an_elapsed == 1
                    && next_packet_type == 6) {
             switch (tx_progress_sedp_sub_an) {
             case 0:
@@ -763,12 +761,13 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 SEDP_SUB_ACKNACK_OUT(3);
-                *cnt_sedp_sub_an_rst = 1;
+                *cnt_sedp_sub_an_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
             tx_progress_sedp_sub_an++;
-        } else if (pub_enable && cnt_app_wr_timeout == 1 && next_packet_type == 7) {
+        } else if (pub_enable && cnt_app_wr_elapsed == 1
+                   && next_packet_type == 7) {
             switch (tx_progress_app_wr) {
             case 0:
                 APP_WRITER_OUT(0);
@@ -781,7 +780,7 @@ static void ros2_out(hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
                 break;
             case 3:
                 APP_WRITER_OUT(3);
-                *cnt_app_wr_rst = 1;
+                *cnt_app_wr_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
@@ -825,25 +824,25 @@ void ros2(
     volatile uint8_t *udp_txbuf_rel /* Cyber port_mode=shared */,
     volatile uint8_t *udp_txbuf_grant /* Cyber port_mode=shared */,
 
-    hls_uint<1>       cnt_interval_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_spdp_wr_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_pub_wr_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_sub_wr_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_pub_hb_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_sub_hb_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_pub_an_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_sedp_sub_an_timeout /* Cyber port_mode=in */, 
-    hls_uint<1>       cnt_app_wr_timeout /* Cyber port_mode=in */, 
+    hls_uint<1> cnt_interval_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_spdp_wr_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_pub_wr_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_sub_wr_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_pub_hb_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_sub_hb_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_pub_an_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_sedp_sub_an_elapsed /* Cyber port_mode=in */,
+    hls_uint<1> cnt_app_wr_elapsed /* Cyber port_mode=in */,
 
-    volatile uint8_t *cnt_spdp_wr_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_interval_rst /* Cyber port_mode=shared */,
-    volatile uint8_t *cnt_sedp_pub_wr_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_sedp_sub_wr_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_sedp_pub_hb_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_sedp_sub_hb_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_sedp_pub_an_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_sedp_sub_an_rst /* Cyber port_mode=shared */, 
-    volatile uint8_t *cnt_app_wr_rst /* Cyber port_mode=shared */ ) {
+    volatile uint8_t *cnt_interval_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_spdp_wr_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_pub_wr_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_sub_wr_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_pub_hb_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_sub_hb_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_pub_an_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_sedp_sub_an_set /* Cyber port_mode=shared */,
+    volatile uint8_t *cnt_app_wr_set /* Cyber port_mode=shared */) {
 
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = ap_fifo port = out
@@ -913,25 +912,25 @@ void ros2(
 #pragma HLS interface mode = ap_none port = udp_txbuf_grant
 #pragma HLS interface mode = ap_ctrl_none port = return
 
-#pragma HLS interface mode = ap_none port = cnt_interval_timeout
-#pragma HLS interface mode = ap_none port = cnt_spdp_wr_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_wr_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_wr_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_hb_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_hb_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_an_timeout
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_an_timeout
-#pragma HLS interface mode = ap_none port = cnt_app_wr_timeout
+#pragma HLS interface mode = ap_none port = cnt_interval_elapsed
+#pragma HLS interface mode = ap_none port = cnt_spdp_wr_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_pub_wr_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_sub_wr_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_pub_hb_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_sub_hb_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_pub_an_elapsed
+#pragma HLS interface mode = ap_none port = cnt_sedp_sub_an_elapsed
+#pragma HLS interface mode = ap_none port = cnt_app_wr_elapsed
 
-#pragma HLS interface mode = ap_vld port = cnt_interval_rst
-#pragma HLS interface mode = ap_vld port = cnt_spdp_wr_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_wr_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_wr_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_hb_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_hb_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_an_rst
-#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_an_rst
-#pragma HLS interface mode = ap_vld port = cnt_app_wr_rst
+#pragma HLS interface mode = ap_vld port = cnt_interval_set
+#pragma HLS interface mode = ap_vld port = cnt_spdp_wr_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_wr_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_wr_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_hb_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_hb_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_pub_an_set
+#pragma HLS interface mode = ap_vld port = cnt_sedp_sub_an_set
+#pragma HLS interface mode = ap_vld port = cnt_app_wr_set
 
     static sedp_reader_id_t sedp_reader_cnt;
     static app_reader_id_t  app_reader_cnt;
@@ -948,17 +947,15 @@ void ros2(
             sub_app_data_rep_id, udp_rxbuf_rel, udp_rxbuf_grant,
             conf->ignore_ip_checksum);
 
-    ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
-             app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
-             pub_app_data_len, pub_app_data_req, pub_app_data_rel,
-             pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant, 
-             cnt_interval_timeout,    cnt_interval_rst,
-             cnt_spdp_wr_timeout,     cnt_spdp_wr_rst,
-             cnt_sedp_pub_wr_timeout, cnt_sedp_pub_wr_rst,
-             cnt_sedp_sub_wr_timeout, cnt_sedp_sub_wr_rst,
-             cnt_sedp_pub_hb_timeout, cnt_sedp_pub_hb_rst,
-             cnt_sedp_sub_hb_timeout, cnt_sedp_sub_hb_rst,
-             cnt_sedp_pub_an_timeout, cnt_sedp_pub_an_rst,
-             cnt_sedp_sub_an_timeout, cnt_sedp_sub_an_rst,
-             cnt_app_wr_timeout,      cnt_app_wr_rst);
+    ros2_out(
+        out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+        app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
+        pub_app_data_len, pub_app_data_req, pub_app_data_rel,
+        pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
+        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
+        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
+        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
+        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
+        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set);
 }
