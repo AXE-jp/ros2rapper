@@ -249,16 +249,6 @@ ros2 (
     .conf_rx_udp_port({ros2_rx_udp_port[7:0], ros2_rx_udp_port[15:8]}),
     .conf_port_num_seed(ros2_port_num_seed),
 
-    .conf_tx_interval(ros2_tx_interval),
-    .conf_tx_period_spdp_wr(ros2_tx_period_spdp_wr),
-    .conf_tx_period_sedp_pub_wr(ros2_tx_period_sedp_pub_wr),
-    .conf_tx_period_sedp_sub_wr(ros2_tx_period_sedp_sub_wr),
-    .conf_tx_period_sedp_pub_hb(ros2_tx_period_sedp_pub_hb),
-    .conf_tx_period_sedp_sub_hb(ros2_tx_period_sedp_sub_hb),
-    .conf_tx_period_sedp_pub_an(ros2_tx_period_sedp_pub_an),
-    .conf_tx_period_sedp_sub_an(ros2_tx_period_sedp_sub_an),
-    .conf_tx_period_app_wr(ros2_tx_period_app_wr),
-
     .conf_fragment_expiration(ros2_fragment_expiration),
     .conf_guid_prefix(ros2_guid_prefix),
     .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
