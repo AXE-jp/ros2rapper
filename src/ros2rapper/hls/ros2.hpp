@@ -21,15 +21,6 @@ typedef struct {
     uint8_t  node_udp_port[2] /* Cyber array=EXPAND */;
     uint8_t  rx_udp_port[2] /* Cyber array=EXPAND */;
     uint16_t port_num_seed;
-    uint16_t tx_interval;
-    uint16_t tx_period_spdp_wr;
-    uint16_t tx_period_sedp_pub_wr;
-    uint16_t tx_period_sedp_sub_wr;
-    uint16_t tx_period_sedp_pub_hb;
-    uint16_t tx_period_sedp_sub_hb;
-    uint16_t tx_period_sedp_pub_an;
-    uint16_t tx_period_sedp_sub_an;
-    uint16_t tx_period_app_wr;
     uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t  pub_topic_name

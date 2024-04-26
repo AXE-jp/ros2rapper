@@ -864,15 +864,6 @@ void ros2(
 #pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->rx_udp_port
 #pragma HLS interface mode = ap_none port = conf->port_num_seed
-#pragma HLS interface mode = ap_none port = conf->tx_interval
-#pragma HLS interface mode = ap_none port = conf->tx_period_spdp_wr
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_wr
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_wr
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_hb
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_hb
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_pub_an
-#pragma HLS interface mode = ap_none port = conf->tx_period_sedp_sub_an
-#pragma HLS interface mode = ap_none port = conf->tx_period_app_wr
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
