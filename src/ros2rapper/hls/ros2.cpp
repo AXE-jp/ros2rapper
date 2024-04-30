@@ -130,9 +130,8 @@ static void ros2_in(
     udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
            rawudp_rxbuf_grant, udp_parity_error);
 
-    if (!s3.read_nb(x)) {
+    if (!s3.read_nb(x))
         return;
-    }
 
     spdp_reader(x, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
                 conf->subnet_mask, conf->port_num_seed);
