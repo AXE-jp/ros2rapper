@@ -131,7 +131,7 @@ static void ros2_in(
            rawudp_rxbuf_grant, udp_parity_error);
 
     if (!s3.read_nb(x)) {
-        break;
+        return;
     }
 
     spdp_reader(x, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
