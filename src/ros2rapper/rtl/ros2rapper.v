@@ -323,7 +323,10 @@ ros2 (
 
     .udp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
     .udp_txbuf_rel(),
-    .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant})
+    .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
+
+    .xout(),
+    .xout_ap_vld()
 );
 `elsif ROS2RAPPER_HLS_CWB
 ros2
@@ -583,7 +586,9 @@ ros2 (
 
   .udp_txbuf_rel_we(udp_txbuf_ip_rel),
   .udp_txbuf_rel_wd(),
-  .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant})
+  .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
+
+  .xout()
 );
 `endif
 
