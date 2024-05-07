@@ -588,7 +588,7 @@ ros2 (
   .udp_txbuf_rel_wd(),
   .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
 
-  .xout_i(0),
+  .xout_i(9'h0),
   .xout_o()
 );
 `endif
