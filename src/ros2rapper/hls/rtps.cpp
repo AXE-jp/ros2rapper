@@ -20,7 +20,7 @@ bool rtps_compare_protocol(const hls_uint<5> offset, const uint8_t x) {
     case RTPS_HDR_OFFSET_PROTOCOL_VERSION:
         return x == (RTPS_HDR_PROTOCOL_VERSION >> 8) ? true : false;
     case RTPS_HDR_OFFSET_PROTOCOL_VERSION + 1:
-        return x == (RTPS_HDR_PROTOCOL_VERSION & 0xff) ? true : false;
+        return true; // Skip Minor Version Check
     default:
         return true;
     }
