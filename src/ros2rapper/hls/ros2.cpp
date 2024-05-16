@@ -733,7 +733,7 @@ static void ros2_out(
                 break;
             }
             tx_progress_sedp_sub_hb++;
-        } else if (pub_enable && cnt_sedp_pub_an_elapsed == 0
+        } else if (pub_enable && cnt_sedp_pub_an_elapsed == 1
                    && next_packet_type == 5) {
             switch (tx_progress_sedp_pub_an) {
             case 0:
