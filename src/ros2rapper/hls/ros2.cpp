@@ -477,7 +477,7 @@ static void ros2_out(
     volatile uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
     volatile uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
     volatile uint8_t *cnt_app_wr_set) {
-#pragma HLS inline
+
     static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
     static const uint8_t sub_writer_entity_id[4] /* Cyber array=EXPAND */
