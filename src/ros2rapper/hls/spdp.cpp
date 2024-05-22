@@ -8,10 +8,9 @@
 #include "spdp.hpp"
 
 /* Cyber func=inline */
-static void compare_guid_prefix(const uint8_t              x,
-                                const sedp_endpoint        tbl[SEDP_READER_MAX],
-                                const int                  idx,
-                                hls_uint<SEDP_READER_MAX> &unmatched) {
+void compare_guid_prefix_of_sedp_endpoint(
+    const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
+    hls_uint<SEDP_READER_MAX> &unmatched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < SEDP_READER_MAX; i++) {
@@ -140,8 +139,13 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
                     hls_uint<SEDP_READER_MAX> valid = (0x1 << reader_cnt) - 1;
-                    if ((unmatched & valid) == valid)
+                    if ((unmatched & valid) == valid) {
+                        reader.builtin_pubrd_rd_seqnum = 1;
+                        reader.builtin_subrd_rd_seqnum = 1;
+                        reader.builtin_pubrd_wr_seqnum = 0;
+                        reader.builtin_subrd_wr_seqnum = 0;
                         reader_cnt++;
+                    }
                 }
                 unmatched = 0;
                 flags = 0;
@@ -162,7 +166,8 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
                 break;
             if (offset < 12) {
                 reader.guid_prefix[offset] = data;
-                compare_guid_prefix(data, reader_tbl, offset, unmatched);
+                compare_guid_prefix_of_sedp_endpoint(data, reader_tbl, offset,
+                                                     unmatched);
             }
             break;
         case PID_METATRAFFIC_UNICAST_LOCATOR:

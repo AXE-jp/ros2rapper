@@ -4,14 +4,16 @@
 #include "common.hpp"
 
 #include "duration.hpp"
+#include "endpoint.hpp"
 #include "ip.hpp"
+#include "rtps.hpp"
 #include "sedp.hpp"
+#include "spdp.hpp"
 
 /* Cyber func=inline */
-static void compare_guid_prefix(const uint8_t             x,
-                                const app_endpoint        tbl[APP_READER_MAX],
-                                const int                 idx,
-                                hls_uint<APP_READER_MAX> &unmatched) {
+static void compare_guid_prefix_of_app_endpoint(
+    const uint8_t x, const app_endpoint tbl[APP_READER_MAX], const int idx,
+    hls_uint<APP_READER_MAX> &unmatched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
@@ -35,17 +37,48 @@ static void compare_entity_id(const uint8_t             x,
     }
 }
 
+/* Cyber func=inline */
+static uint8_t get_matched_index(hls_uint<SEDP_READER_MAX> unmatched) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (uint8_t i = 0; i < SEDP_READER_MAX; i++) {
+#pragma HLS unroll
+        if (!unmatched[i]) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 #define FLAGS_FOUND_GUID     0x01
 #define FLAGS_FOUND_LOCATOR  0x02
 #define FLAGS_UNMATCH_DOMAIN 0x04
 #define FLAGS_UNMATCH_TOPIC  0x08
 #define FLAGS_UNMATCH_TYPE   0x10
 
+enum {
+    SEDP_READ_HDR_PROTOCOL,
+    SEDP_READ_HDR_GUID_PREFIX,
+    SEDP_READ_SBM_HDR,
+    SEDP_READ_INFO_DST,
+    SEDP_READ_HEARTBEAT,
+    SEDP_READ_SBM_DATA_HDR,
+    SEDP_READ_SP_HDR,
+    SEDP_READ_PARAM_ID,
+    SEDP_READ_PARAM_LEN,
+    SEDP_READ_PARAM,
+    SEDP_READ_SKIP_SBM,
+    SEDP_READ_DO_NOTHING,
+};
+
 /* Cyber func=inline */
-void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
-                 app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t port_num_seed, const uint8_t guid_prefix[12],
+void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
+                 sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+                 app_reader_id_t &app_reader_cnt,
+                 app_endpoint     app_reader_tbl[APP_READER_MAX],
+                 hls_uint<1> enable, const uint8_t ip_addr[4],
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
+                 const uint8_t guid_prefix[12],
                  const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
                  uint8_t       pub_topic_name_len,
                  const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
@@ -62,41 +95,59 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
         = ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable = sub_reader_id complete dim = 0
 
-    static hls_uint<4>              state;
-    static uint16_t                 offset;
-    static hls_uint<5>              flags;
-    static hls_uint<APP_READER_MAX> unmatched;
-    static hls_uint<2>              ep_type;
+    static hls_uint<4>               state;
+    static uint16_t                  offset;
+    static hls_uint<5>               flags;
+    static hls_uint<APP_READER_MAX>  app_unmatched;
+    static hls_uint<SEDP_READER_MAX> sedp_unmatched;
+    static hls_uint<2>               ep_type;
 
     static uint8_t  sbm_id;
     static bool     sbm_le;
     static uint16_t sbm_len;
+    static uint8_t  sbm_writer_sn;
     static uint16_t rep_id;
     static uint16_t param_id;
     static uint16_t param_len;
     static uint16_t udp_port;
     static uint32_t sp_len;
 
-    if (!enable || reader_cnt == APP_READER_MAX)
+    if (!enable || app_reader_cnt == APP_READER_MAX)
         return;
 
-    app_endpoint &reader = reader_tbl[reader_cnt];
-    uint8_t       data = in & 0xff;
-    bool          end = in & 0x100;
+    app_endpoint &reader = app_reader_tbl[app_reader_cnt];
+
+    uint8_t        sedp_matched_idx = get_matched_index(sedp_unmatched);
+    bool           is_participant_matched = ((~sedp_unmatched) == 0);
+    sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
+
+    uint8_t data = in & 0xff;
+    bool    end = in & 0x100;
 
     switch (state) {
-    case 0:
+    case SEDP_READ_HDR_PROTOCOL:
         if (!rtps_compare_protocol(offset, data)) {
-            state = 9;
+            state = SEDP_READ_DO_NOTHING;
             break;
+        }
+        offset++;
+        if (offset == RTPS_HDR_OFFSET_GUID_PREFIX) {
+            offset = 0;
+            state = SEDP_READ_HDR_GUID_PREFIX;
+        }
+        break;
+    case SEDP_READ_HDR_GUID_PREFIX:
+        if (offset < 12) {
+            compare_guid_prefix_of_sedp_endpoint(data, sedp_reader_tbl, offset,
+                                                 sedp_unmatched);
         }
         offset++;
         if (offset == RTPS_HDR_SIZE) {
             offset = 0;
-            state = 1;
+            state = SEDP_READ_SBM_HDR;
         }
         break;
-    case 1:
+    case SEDP_READ_SBM_HDR:
         switch (offset) {
         case SBM_HDR_OFFSET_SUBMESSAGE_ID:
             sbm_id = data;
@@ -113,47 +164,78 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
         offset++;
         if (offset == SBM_HDR_SIZE) {
             offset = 0;
-            if (sbm_id == SBM_ID_INFO_DST)
-                state = 2;
-            else if (sbm_id == SBM_ID_DATA) {
+            if (sbm_id == SBM_ID_INFO_DST) {
+                state = SEDP_READ_INFO_DST;
+            } else if (sbm_id == SBM_ID_DATA) {
                 ep_type = APP_EP_PUB | APP_EP_SUB;
-                state = 3;
+                state = SEDP_READ_SBM_DATA_HDR;
+            } else if (sbm_id == SBM_ID_HEARTBEAT) {
+                state = SEDP_READ_SKIP_SBM;
             } else
-                state = 8;
+                state = SEDP_READ_SKIP_SBM;
         }
         break;
-    case 2:
+    case SEDP_READ_INFO_DST:
         if (offset < 12) {
             if (guid_prefix[offset] != data) {
-                state = 9;
+                state = SEDP_READ_DO_NOTHING;
                 break;
             }
         }
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state = 1;
+            state = SEDP_READ_SBM_HDR;
         }
         break;
-    case 3: // parse sub-message header
+    case SEDP_READ_HEARTBEAT:
+        break;
+    case SEDP_READ_SBM_DATA_HDR: // parse sub-message header
         if (!rtps_compare_reader_id(offset, data, sub_reader_id)) {
             ep_type &= ~(APP_EP_PUB);
         }
         if (!rtps_compare_reader_id(offset, data, pub_reader_id)) {
             ep_type &= ~(APP_EP_SUB);
         }
+
+        // Ignore other than lower 8-bit of Sequence Number to reduce resources
+        if (sbm_le && offset == SBM_DATA_HDR_OFFSET_WRITER_SN + 4) {
+            sbm_writer_sn = data;
+        } else if (!sbm_le && offset == SBM_DATA_HDR_OFFSET_WRITER_SN + 7) {
+            sbm_writer_sn = data;
+        }
+
+        offset++;
+
         if (ep_type == 0) {
-            state = 9;
+            state = SEDP_READ_SKIP_SBM;
             break;
         }
-        offset++;
         if (offset == SBM_DATA_HDR_SIZE) {
-            sbm_len -= SBM_DATA_HDR_SIZE;
-            offset = 0;
-            state = 4;
+            if (!is_participant_matched) {
+                state = SEDP_READ_SKIP_SBM;
+            } else if (ep_type & APP_EP_PUB) {
+                if (participant.builtin_pubrd_rd_seqnum == sbm_writer_sn) {
+                    participant.builtin_pubrd_rd_seqnum++;
+                    sbm_len -= SBM_DATA_HDR_SIZE;
+                    offset = 0;
+                    state = SEDP_READ_SP_HDR;
+                } else {
+                    state = SEDP_READ_SKIP_SBM;
+                }
+            } else {
+                if (participant.builtin_subrd_rd_seqnum == sbm_writer_sn) {
+                    participant.builtin_subrd_rd_seqnum++;
+                    sbm_len -= SBM_DATA_HDR_SIZE;
+                    offset = 0;
+                    state = SEDP_READ_SP_HDR;
+                } else {
+                    state = SEDP_READ_SKIP_SBM;
+                }
+            }
         }
         break;
-    case 4:
+    case SEDP_READ_SP_HDR:
         switch (offset) {
         case SP_HDR_OFFSET_REPRESENTATION_ID:
             rep_id = data << 8;
@@ -165,10 +247,10 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            state = 5;
+            state = SEDP_READ_PARAM_ID;
         }
         break;
-    case 5:
+    case SEDP_READ_PARAM_ID:
         if (offset == 0)
             param_id = rep_id & SP_ID_CDR_LE ? data : data << 8;
         else
@@ -177,10 +259,10 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
         if (offset == sizeof(param_id)) {
             sbm_len -= sizeof(param_id);
             offset = 0;
-            state = 6;
+            state = SEDP_READ_PARAM_LEN;
         }
         break;
-    case 6:
+    case SEDP_READ_PARAM_LEN:
         if (offset == 0)
             param_len = rep_id & SP_ID_CDR_LE ? data : data << 8;
         else
@@ -190,25 +272,26 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
             if (param_id == PID_SENTINEL) {
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<APP_READER_MAX> valid = (0x1 << reader_cnt) - 1;
-                    if ((unmatched & valid) == valid) {
+                    hls_uint<APP_READER_MAX> valid
+                        = (0x1 << app_reader_cnt) - 1;
+                    if ((app_unmatched & valid) == valid) {
                         reader.ep_type = ep_type;
-                        reader_cnt++;
+                        app_reader_cnt++;
                     }
                 }
-                unmatched = 0;
+                app_unmatched = 0;
                 flags = 0;
                 offset = 0;
-                state = 1;
+                state = SEDP_READ_SBM_HDR;
             } else {
                 sbm_len -= sizeof(param_len);
                 param_len = ROUND_UP(param_len, 4);
                 offset = 0;
-                state = 7;
+                state = SEDP_READ_PARAM;
             }
         }
         break;
-    case 7:
+    case SEDP_READ_PARAM:
         switch (param_id) {
         case PID_UNICAST_LOCATOR:
             if (flags & FLAGS_FOUND_LOCATOR)
@@ -339,10 +422,12 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
                 break;
             if (offset < 12) {
                 reader.guid_prefix[offset] = data;
-                compare_guid_prefix(data, reader_tbl, offset, unmatched);
+                compare_guid_prefix_of_app_endpoint(data, app_reader_tbl,
+                                                    offset, app_unmatched);
             } else if (offset < 16) {
                 reader.entity_id[offset - 12] = data;
-                compare_entity_id(data, reader_tbl, offset - 12, unmatched);
+                compare_entity_id(data, app_reader_tbl, offset - 12,
+                                  app_unmatched);
             }
         }
         offset++;
@@ -358,24 +443,25 @@ void sedp_reader(hls_uint<9> in, app_reader_id_t &reader_cnt,
                 }
             }
             offset = 0;
-            state = 5;
+            state = SEDP_READ_PARAM_ID;
         }
         break;
-    case 8:
+    case SEDP_READ_SKIP_SBM:
         offset++;
         if (offset == sbm_len) {
             offset = 0;
-            state = 1;
+            state = SEDP_READ_SBM_HDR;
         }
         break;
-    case 9:; // do nothing
+    default:; // do nothing
     }
 
     if (end) {
-        unmatched = 0;
+        app_unmatched = 0;
+        sedp_unmatched = 0;
         flags = 0;
         offset = 0;
-        state = 0;
+        state = SEDP_READ_HDR_PROTOCOL;
     }
 }
 
