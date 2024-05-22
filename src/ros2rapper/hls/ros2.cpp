@@ -372,25 +372,25 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         }                                                                      \
     } while (0)
 
-#define SEDP_PUB_HEARTBEAT_OUT(id)                                             \
+#define SEDP_PUB_HEARTBEAT_OUT(id, pub_enable)                                             \
     do {                                                                       \
         if (sedp_reader_cnt > (id)) {                                          \
             sedp_heartbeat_out(                                                \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1, 1, \
+                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1, pub_enable ? 1 : 0, \
                 tx_buf, sedp_pub_heartbeat_cnt[(id)], conf->ip_addr,           \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
     } while (0)
 
-#define SEDP_SUB_HEARTBEAT_OUT(id)                                             \
+#define SEDP_SUB_HEARTBEAT_OUT(id, sub_enable)                                             \
     do {                                                                       \
         if (sedp_reader_cnt > (id)) {                                          \
             sedp_heartbeat_out(                                                \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1, 0, \
+                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1, sub_enable ? 1 : 0, \
                 tx_buf, sedp_sub_heartbeat_cnt[(id)], conf->ip_addr,           \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
@@ -698,16 +698,16 @@ static void ros2_out(
         } else if (cnt_sedp_pub_hb_elapsed == 1 && next_packet_type == 3) {
             switch (tx_progress_sedp_pub_hb) {
             case 0:
-                SEDP_PUB_HEARTBEAT_OUT(0);
+                SEDP_PUB_HEARTBEAT_OUT(0, pub_enable);
                 break;
             case 1:
-                SEDP_PUB_HEARTBEAT_OUT(1);
+                SEDP_PUB_HEARTBEAT_OUT(1, pub_enable);
                 break;
             case 2:
-                SEDP_PUB_HEARTBEAT_OUT(2);
+                SEDP_PUB_HEARTBEAT_OUT(2, pub_enable);
                 break;
             case 3:
-                SEDP_PUB_HEARTBEAT_OUT(3);
+                SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
                 *cnt_sedp_pub_hb_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
@@ -716,16 +716,16 @@ static void ros2_out(
         } else if (cnt_sedp_sub_hb_elapsed == 1 && next_packet_type == 4) {
             switch (tx_progress_sedp_sub_hb) {
             case 0:
-                SEDP_SUB_HEARTBEAT_OUT(0);
+                SEDP_SUB_HEARTBEAT_OUT(0, sub_enable);
                 break;
             case 1:
-                SEDP_SUB_HEARTBEAT_OUT(1);
+                SEDP_SUB_HEARTBEAT_OUT(1, sub_enable);
                 break;
             case 2:
-                SEDP_SUB_HEARTBEAT_OUT(2);
+                SEDP_SUB_HEARTBEAT_OUT(2, sub_enable);
                 break;
             case 3:
-                SEDP_SUB_HEARTBEAT_OUT(3);
+                SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
                 *cnt_sedp_sub_hb_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
