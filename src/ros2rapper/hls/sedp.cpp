@@ -1081,9 +1081,9 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 void sedp_acknack(const uint8_t writer_guid_prefix[12],
                   const uint8_t writer_entity_id[4],
                   const uint8_t reader_guid_prefix[12],
-                  const uint8_t reader_entity_id[4], const int64_t bitmap_base,
-                  const uint32_t num_bits, const uint8_t bitmap[4],
-                  const uint32_t cnt, uint8_t buf[SEDP_ACKNACK_TOT_LEN]) {
+                  const uint8_t reader_entity_id[4], uint8_t snstate_base,
+                  bool snstate_is_empty, const uint32_t cnt,
+                  uint8_t buf[SEDP_ACKNACK_TOT_LEN]) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -1091,9 +1091,6 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
 #ifdef SBM_ENDIAN_BIG
     static const uint8_t sbm_flags = 0;
 #endif // SBM_ENDIAN_BIG
-
-    int32_t  bitmap_base_h = bitmap_base >> 32;
-    uint32_t bitmap_base_l = bitmap_base & 0xffffffff;
 
     buf[0] = 'R';
     buf[1] = 'T';
@@ -1143,22 +1140,25 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[45] = writer_entity_id[1];
     buf[46] = writer_entity_id[2];
     buf[47] = writer_entity_id[3];
-    buf[48] = L_BYTE0(bitmap_base_h);
-    buf[49] = L_BYTE1(bitmap_base_h);
-    buf[50] = L_BYTE2(bitmap_base_h);
-    buf[51] = L_BYTE3(bitmap_base_h);
-    buf[52] = L_BYTE0(bitmap_base_l);
-    buf[53] = L_BYTE1(bitmap_base_l);
-    buf[54] = L_BYTE2(bitmap_base_l);
-    buf[55] = L_BYTE3(bitmap_base_l);
-    buf[56] = L_BYTE0(num_bits);
-    buf[57] = L_BYTE1(num_bits);
-    buf[58] = L_BYTE2(num_bits);
-    buf[59] = L_BYTE3(num_bits);
-    buf[60] = bitmap[0];
-    buf[61] = bitmap[1];
-    buf[62] = bitmap[2];
-    buf[63] = bitmap[3];
+    buf[48] = 0;
+    buf[49] = 0;
+    buf[50] = 0;
+    buf[51] = 0;
+    buf[52] = snstate_base;
+    buf[53] = 0;
+    buf[54] = 0;
+    buf[55] = 0;
+    buf[56] = 1;
+    buf[57] = 0;
+    buf[58] = 0;
+    buf[59] = 0;
+    buf[60] = 0;
+    buf[61] = 0;
+    buf[62] = 0;
+    buf[63]
+        = snstate_is_empty
+              ? 0x00
+              : 0x80; // Reporting missing seqnum by ACKNACK is done one by one.
     buf[64] = L_BYTE0(cnt);
     buf[65] = L_BYTE1(cnt);
     buf[66] = L_BYTE2(cnt);

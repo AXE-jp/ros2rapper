@@ -64,8 +64,8 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 void sedp_acknack(const uint8_t writer_guid_prefix[12],
                   const uint8_t writer_entity_id[4],
                   const uint8_t reader_guid_prefix[12],
-                  const uint8_t reader_entity_id[4], const int64_t bitmap_base,
-                  const uint32_t num_bits, const uint8_t bitmap[4],
-                  const uint32_t cnt, uint8_t buf[SEDP_ACKNACK_TOT_LEN]);
+                  const uint8_t reader_entity_id[4], uint8_t snstate_base,
+                  bool snstate_is_empty, const uint32_t cnt,
+                  uint8_t buf[SEDP_ACKNACK_TOT_LEN]);
 
 #endif // !SEDP_HPP

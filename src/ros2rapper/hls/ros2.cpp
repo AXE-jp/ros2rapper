@@ -252,13 +252,14 @@ static void sedp_heartbeat_out(
 }
 
 /* Cyber func=inline */
-static void sedp_acknack_out(
-    const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-    const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-    const uint8_t reader_entity_id[4], const int64_t bitmap_base,
-    const uint32_t num_bits, const uint8_t bitmap[4], tx_buf &tx_buf,
-    uint32_t &cnt, const uint8_t src_addr[4], const uint8_t src_port[2],
-    const uint8_t writer_guid_prefix[12]) {
+static void
+sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
+                 const uint8_t dst_port[2],
+                 const uint8_t reader_guid_prefix[12],
+                 const uint8_t reader_entity_id[4], uint8_t snstate_base,
+                 bool snstate_is_empty, tx_buf &tx_buf, uint32_t &cnt,
+                 const uint8_t src_addr[4], const uint8_t src_port[2],
+                 const uint8_t writer_guid_prefix[12]) {
     cnt++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
@@ -268,7 +269,7 @@ static void sedp_acknack_out(
                    tx_buf.buf + IP_HDR_SIZE);
 
     sedp_acknack(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
-                 reader_entity_id, bitmap_base, num_bits, bitmap, cnt,
+                 reader_entity_id, snstate_base, snstate_is_empty, cnt,
                  tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
 
     tx_buf.head = 0;
@@ -403,8 +404,9 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
             sedp_acknack_out(                                                  \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1,    \
-                32, bitmap, tx_buf, sedp_pub_acknack_cnt[(id)], conf->ip_addr, \
+                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id,       \
+                snstate_base, snstate_is_empty, tx_buf,                        \
+                sedp_pub_acknack_cnt[(id)], conf->ip_addr,                     \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
     } while (0)
@@ -415,8 +417,9 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
             sedp_acknack_out(                                                  \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1,    \
-                32, bitmap, tx_buf, sedp_sub_acknack_cnt[(id)], conf->ip_addr, \
+                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id,       \
+                snstate_base, snstate_is_empty, tx_buf,                        \
+                sedp_sub_acknack_cnt[(id)], conf->ip_addr,                     \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
     } while (0)
@@ -513,10 +516,6 @@ static void ros2_out(
 
 #pragma HLS array_partition variable = metatraffic_port complete dim = 0
 #pragma HLS array_partition variable = default_port complete dim = 0
-
-    static const uint8_t bitmap[4] /* Cyber array=EXPAND */ = {0xff, 0xff, 0xff,
-                                                               0xff};
-#pragma HLS array_partition variable = bitmap complete dim = 0
 
     static tx_buf tx_buf;
 
@@ -733,6 +732,13 @@ static void ros2_out(
             }
             tx_progress_sedp_sub_hb++;
         } else if (cnt_sedp_pub_an_elapsed == 1 && next_packet_type == 5) {
+            uint8_t wr_seqnum = sedp_reader_tbl[tx_progress_sedp_pub_an]
+                                    .builtin_pubrd_wr_seqnum;
+            uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_pub_an]
+                                    .builtin_pubrd_rd_seqnum;
+            uint8_t snstate_base = rd_seqnum;
+            bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
             switch (tx_progress_sedp_pub_an) {
             case 0:
                 SEDP_PUB_ACKNACK_OUT(0);
@@ -751,6 +757,13 @@ static void ros2_out(
             }
             tx_progress_sedp_pub_an++;
         } else if (cnt_sedp_sub_an_elapsed == 1 && next_packet_type == 6) {
+            uint8_t wr_seqnum = sedp_reader_tbl[tx_progress_sedp_sub_an]
+                                    .builtin_subrd_wr_seqnum;
+            uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_sub_an]
+                                    .builtin_subrd_rd_seqnum;
+            uint8_t snstate_base = rd_seqnum;
+            bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
             switch (tx_progress_sedp_sub_an) {
             case 0:
                 SEDP_SUB_ACKNACK_OUT(0);
