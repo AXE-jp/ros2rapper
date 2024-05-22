@@ -72,8 +72,7 @@ enum {
 };
 
 /* Cyber func=inline */
-void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
-                 sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  app_reader_id_t &app_reader_cnt,
                  app_endpoint     app_reader_tbl[APP_READER_MAX],
                  hls_uint<1> enable, const uint8_t ip_addr[4],
@@ -105,7 +104,8 @@ void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
     static uint8_t  sbm_id;
     static bool     sbm_le;
     static uint16_t sbm_len;
-    static uint8_t  sbm_writer_sn;
+    static uint8_t  sbm_sn_0;
+    static uint8_t  sbm_sn_1;
     static uint16_t rep_id;
     static uint16_t param_id;
     static uint16_t param_len;
@@ -170,7 +170,8 @@ void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
                 ep_type = APP_EP_PUB | APP_EP_SUB;
                 state = SEDP_READ_SBM_DATA_HDR;
             } else if (sbm_id == SBM_ID_HEARTBEAT) {
-                state = SEDP_READ_SKIP_SBM;
+                ep_type = APP_EP_PUB | APP_EP_SUB;
+                state = SEDP_READ_HEARTBEAT;
             } else
                 state = SEDP_READ_SKIP_SBM;
         }
@@ -189,20 +190,59 @@ void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
         }
         break;
     case SEDP_READ_HEARTBEAT:
-        break;
-    case SEDP_READ_SBM_DATA_HDR: // parse sub-message header
-        if (!rtps_compare_reader_id(offset, data, sub_reader_id)) {
+        if (!rtps_compare_heartbeat_hdr_reader_id(offset, data,
+                                                  pub_reader_id)) {
             ep_type &= ~(APP_EP_PUB);
         }
-        if (!rtps_compare_reader_id(offset, data, pub_reader_id)) {
+        if (!rtps_compare_heartbeat_hdr_reader_id(offset, data,
+                                                  sub_reader_id)) {
+            ep_type &= ~(APP_EP_SUB);
+        }
+        // Ignore other than lower 8-bit of Sequence Number to reduce resources
+        if (sbm_le && offset == SBM_HEARTBEAT_DATA_OFFSET_FIRST_SN + 4) {
+            sbm_sn_0 = data;
+        } else if (!sbm_le
+                   && offset == SBM_HEARTBEAT_DATA_OFFSET_FIRST_SN + 7) {
+            sbm_sn_0 = data;
+        } else if (sbm_le && offset == SBM_HEARTBEAT_DATA_OFFSET_LAST_SN + 4) {
+            sbm_sn_1 = data;
+        } else if (!sbm_le && offset == SBM_HEARTBEAT_DATA_OFFSET_LAST_SN + 7) {
+            sbm_sn_1 = data;
+        }
+
+        offset++;
+
+        if (offset == SBM_HEARTBEAT_DATA_SIZE) {
+            if (is_participant_matched) {
+                if (ep_type & APP_EP_PUB) {
+                    if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0)
+                        participant.builtin_pubrd_rd_seqnum = sbm_sn_0;
+                    if (participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
+                        participant.builtin_pubrd_wr_seqnum = sbm_sn_1;
+                } else {
+                    if (participant.builtin_subrd_rd_seqnum < sbm_sn_0)
+                        participant.builtin_subrd_rd_seqnum = sbm_sn_0;
+                    if (participant.builtin_subrd_wr_seqnum < sbm_sn_1)
+                        participant.builtin_subrd_wr_seqnum = sbm_sn_1;
+                }
+            }
+            offset = 0;
+            state = SEDP_READ_SBM_HDR;
+        }
+        break;
+    case SEDP_READ_SBM_DATA_HDR: // parse sub-message header
+        if (!rtps_compare_data_hdr_reader_id(offset, data, sub_reader_id)) {
+            ep_type &= ~(APP_EP_PUB);
+        }
+        if (!rtps_compare_data_hdr_reader_id(offset, data, pub_reader_id)) {
             ep_type &= ~(APP_EP_SUB);
         }
 
         // Ignore other than lower 8-bit of Sequence Number to reduce resources
         if (sbm_le && offset == SBM_DATA_HDR_OFFSET_WRITER_SN + 4) {
-            sbm_writer_sn = data;
+            sbm_sn_0 = data;
         } else if (!sbm_le && offset == SBM_DATA_HDR_OFFSET_WRITER_SN + 7) {
-            sbm_writer_sn = data;
+            sbm_sn_0 = data;
         }
 
         offset++;
@@ -215,7 +255,7 @@ void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
             if (!is_participant_matched) {
                 state = SEDP_READ_SKIP_SBM;
             } else if (ep_type & APP_EP_PUB) {
-                if (participant.builtin_pubrd_rd_seqnum == sbm_writer_sn) {
+                if (participant.builtin_pubrd_rd_seqnum == sbm_sn_0) {
                     participant.builtin_pubrd_rd_seqnum++;
                     sbm_len -= SBM_DATA_HDR_SIZE;
                     offset = 0;
@@ -224,7 +264,7 @@ void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
                     state = SEDP_READ_SKIP_SBM;
                 }
             } else {
-                if (participant.builtin_subrd_rd_seqnum == sbm_writer_sn) {
+                if (participant.builtin_subrd_rd_seqnum == sbm_sn_0) {
                     participant.builtin_subrd_rd_seqnum++;
                     sbm_len -= SBM_DATA_HDR_SIZE;
                     offset = 0;

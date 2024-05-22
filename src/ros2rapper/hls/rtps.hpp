@@ -187,7 +187,10 @@
 #define DOMAIN_ID(udp_port) (((udp_port)-PB) / DG)
 
 bool rtps_compare_protocol(const hls_uint<5> offset, const uint8_t x);
-bool rtps_compare_reader_id(const hls_uint<5> offset, const uint8_t x,
-                            const uint8_t entity_id[4]);
+bool rtps_compare_data_hdr_reader_id(const hls_uint<5> offset, const uint8_t x,
+                                     const uint8_t entity_id[4]);
+bool rtps_compare_heartbeat_hdr_reader_id(const hls_uint<5> offset,
+                                          const uint8_t     x,
+                                          const uint8_t     entity_id[4]);
 
 #endif // !RTPS_HPP

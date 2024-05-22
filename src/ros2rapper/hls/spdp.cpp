@@ -90,7 +90,7 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
         }
         break;
     case 2:
-        if (!rtps_compare_reader_id(offset, data, par_reader_id)) {
+        if (!rtps_compare_data_hdr_reader_id(offset, data, par_reader_id)) {
             state = 8;
             break;
         }

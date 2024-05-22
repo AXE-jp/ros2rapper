@@ -37,8 +37,7 @@
 #define SEDP_ACKNACK_UDP_PKT_LEN  (UDP_HDR_SIZE + SEDP_ACKNACK_RTPS_PKT_LEN)
 #define SEDP_ACKNACK_IP_PKT_LEN   (IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
 
-void sedp_reader(hls_uint<9> in, sedp_reader_id_t &sedp_reader_cnt,
-                 sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  app_reader_id_t &reader_cnt,
                  app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
                  const uint8_t ip_addr[4], const uint8_t subnet_mask[4],

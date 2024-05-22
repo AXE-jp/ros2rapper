@@ -214,7 +214,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         }
         break;
     case STATE_PARSE_DATA: // parse/check sub-message : DATA
-        if (!rtps_compare_reader_id(offset, data, reader_entity_id)) {
+        if (!rtps_compare_data_hdr_reader_id(offset, data, reader_entity_id)) {
             state = STATE_WAIT_END;
             break;
         }

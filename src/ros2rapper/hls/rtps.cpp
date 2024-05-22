@@ -27,8 +27,8 @@ bool rtps_compare_protocol(const hls_uint<5> offset, const uint8_t x) {
 }
 
 /* Cyber func=inline */
-bool rtps_compare_reader_id(const hls_uint<5> offset, const uint8_t x,
-                            const uint8_t entity_id[4]) {
+bool rtps_compare_data_hdr_reader_id(const hls_uint<5> offset, const uint8_t x,
+                                     const uint8_t entity_id[4]) {
 #pragma HLS inline
     switch (offset) {
     case SBM_DATA_HDR_OFFSET_READER_ID:
@@ -38,6 +38,25 @@ bool rtps_compare_reader_id(const hls_uint<5> offset, const uint8_t x,
     case SBM_DATA_HDR_OFFSET_READER_ID + 2:
         return x == entity_id[2] ? true : false;
     case SBM_DATA_HDR_OFFSET_READER_ID + 3:
+        return x == entity_id[3] ? true : false;
+    default:
+        return true;
+    }
+}
+
+/* Cyber func=inline */
+bool rtps_compare_heartbeat_hdr_reader_id(const hls_uint<5> offset,
+                                          const uint8_t     x,
+                                          const uint8_t     entity_id[4]) {
+#pragma HLS inline
+    switch (offset) {
+    case SBM_HEARTBEAT_DATA_OFFSET_READER_ID:
+        return x == entity_id[0] ? true : false;
+    case SBM_HEARTBEAT_DATA_OFFSET_READER_ID + 1:
+        return x == entity_id[1] ? true : false;
+    case SBM_HEARTBEAT_DATA_OFFSET_READER_ID + 2:
+        return x == entity_id[2] ? true : false;
+    case SBM_HEARTBEAT_DATA_OFFSET_READER_ID + 3:
         return x == entity_id[3] ? true : false;
     default:
         return true;
