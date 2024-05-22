@@ -378,7 +378,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
             sedp_heartbeat_out(                                                \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1, pub_enable ? 1 : 0, \
+                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1, (pub_enable) ? 1 : 0, \
                 tx_buf, sedp_pub_heartbeat_cnt[(id)], conf->ip_addr,           \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
@@ -390,7 +390,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
             sedp_heartbeat_out(                                                \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1, sub_enable ? 1 : 0, \
+                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1, (sub_enable) ? 1 : 0, \
                 tx_buf, sedp_sub_heartbeat_cnt[(id)], conf->ip_addr,           \
                 conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
