@@ -12,13 +12,14 @@
 typedef hls_uint<3> sedp_reader_id_t;
 
 struct sedp_endpoint {
-    uint8_t ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t builtin_pubrd_wr_seqnum;
-    uint8_t builtin_pubrd_rd_seqnum;
-    uint8_t builtin_subrd_wr_seqnum;
-    uint8_t builtin_subrd_rd_seqnum;
+    uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t     udp_port[2] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t     builtin_pubrd_wr_seqnum;
+    uint8_t     builtin_pubrd_rd_seqnum;
+    uint8_t     builtin_subrd_wr_seqnum;
+    uint8_t     builtin_subrd_rd_seqnum;
+    hls_uint<2> initial_send_counter;
 };
 
 #define APP_READER_MAX 4
