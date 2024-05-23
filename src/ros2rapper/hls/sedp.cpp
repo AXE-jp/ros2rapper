@@ -142,7 +142,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                                                  sedp_unmatched);
         }
         offset++;
-        if (offset == RTPS_HDR_SIZE) {
+        if (offset == RTPS_HDR_SIZE - RTPS_HDR_OFFSET_GUID_PREFIX) {
             offset = 0;
             state = SEDP_READ_SBM_HDR;
         }
