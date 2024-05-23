@@ -118,7 +118,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint &reader = app_reader_tbl[app_reader_cnt];
 
     uint8_t        sedp_matched_idx = get_matched_index(sedp_unmatched);
-    bool           is_participant_matched = ((~sedp_unmatched) == 0);
+    bool           is_participant_matched = !((~sedp_unmatched) == 0);
     sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
 
     uint8_t data = in & 0xff;
@@ -212,14 +212,14 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 
         offset++;
 
-        if (offset == SBM_HEARTBEAT_DATA_SIZE) {
+        if (offset == sbm_len) {
             if (is_participant_matched) {
                 if (ep_type & APP_EP_PUB) {
                     if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_pubrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
                         participant.builtin_pubrd_wr_seqnum = sbm_sn_1;
-                } else {
+                } else if (ep_type & APP_EP_SUB) {
                     if (participant.builtin_subrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_subrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_subrd_wr_seqnum < sbm_sn_1)
