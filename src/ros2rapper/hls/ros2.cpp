@@ -428,7 +428,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     /* Cyber scheduling_block = non-transparent */                             \
     do {                                                                       \
         if ((app_reader_cnt > (id))                                            \
-            && (app_reader_tbl[(id)].ep_type & APP_EP_PUB)) {                  \
+            && (app_reader_tbl[(id)].app_ep_type & APP_EP_PUB)) {              \
             /* Cyber scheduling_block = non-transparent */                     \
             {                                                                  \
                 *pub_app_data_req                                              \
