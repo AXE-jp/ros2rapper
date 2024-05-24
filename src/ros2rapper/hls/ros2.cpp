@@ -529,6 +529,7 @@ static void ros2_out(
     static uint16_t    rawudp_txpayload_wr_off;
 
     static hls_uint<2> tx_progress;
+    static hls_uint<2> tx_cnt_elapsed;
 
     static hls_uint<3> next_packet_type = 0;
 #define ROTATE_NEXT_PACKET_TYPE next_packet_type++
@@ -627,9 +628,13 @@ static void ros2_out(
         } else if (pub_enable && next_packet_type == 1) {
             if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_pub_wr_elapsed) {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             } else {
+                if (cnt_sedp_pub_wr_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_PUB_WRITER_OUT(0);
@@ -642,9 +647,10 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_WRITER_OUT(3);
-                    if (cnt_sedp_pub_wr_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_pub_wr_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             }
@@ -652,9 +658,13 @@ static void ros2_out(
         } else if (sub_enable && next_packet_type == 2) {
             if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_sub_wr_elapsed) {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             } else {
+                if (cnt_sedp_sub_wr_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_SUB_WRITER_OUT(0);
@@ -667,9 +677,10 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_WRITER_OUT(3);
-                    if (cnt_sedp_sub_wr_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_sub_wr_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             }
@@ -677,9 +688,13 @@ static void ros2_out(
         } else if (next_packet_type == 3) {
             if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_pub_hb_elapsed) {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             } else {
+                if (cnt_sedp_pub_hb_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_PUB_HEARTBEAT_OUT(0, pub_enable);
@@ -692,9 +707,10 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
-                    if (cnt_sedp_pub_hb_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_pub_hb_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             }
@@ -702,9 +718,13 @@ static void ros2_out(
         } else if (next_packet_type == 4) {
             if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_sub_hb_elapsed) {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             } else {
+                if (cnt_sedp_sub_hb_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_SUB_HEARTBEAT_OUT(0, sub_enable);
@@ -717,9 +737,10 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
-                    if (cnt_sedp_sub_hb_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_sub_hb_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             }
@@ -735,6 +756,8 @@ static void ros2_out(
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
             if (cnt_sedp_pub_an_elapsed || (acknack_req && !snstate_is_empty)) {
+                if (cnt_sedp_pub_an_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_PUB_ACKNACK_OUT(0);
@@ -747,14 +770,17 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_ACKNACK_OUT(3);
-                    if (cnt_sedp_pub_an_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_pub_an_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             } else {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             }
             tx_progress++;
         } else if (next_packet_type == 6) {
@@ -768,6 +794,8 @@ static void ros2_out(
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
             if (cnt_sedp_sub_an_elapsed || (acknack_req && !snstate_is_empty)) {
+                if (cnt_sedp_sub_an_elapsed)
+                    tx_cnt_elapsed++;
                 switch (tx_progress) {
                 case 0:
                     SEDP_SUB_ACKNACK_OUT(0);
@@ -780,14 +808,17 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_ACKNACK_OUT(3);
-                    if (cnt_sedp_sub_an_elapsed)
+                    if (tx_cnt_elapsed == 3)
                         *cnt_sedp_sub_an_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
                     break;
                 }
             } else {
-                if (tx_progress == 3)
+                if (tx_progress == 3) {
                     ROTATE_NEXT_PACKET_TYPE;
+                    tx_cnt_elapsed = 0;
+                }
             }
             tx_progress++;
         } else if (pub_enable && cnt_app_wr_elapsed && next_packet_type == 7) {
