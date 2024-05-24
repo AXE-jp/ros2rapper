@@ -11,6 +11,19 @@
 // #include "ros2.hpp"
 #include "sedp.hpp"
 
+/*
+Link Error:  
+cannot find crt1.o: No such file or directory ...
+Solution:
+export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
+
+HEARTBEAT Message Content:
+guidPrefix: 010f702e401a134600000000
+firstAvailableSeqNumber: 1
+lastSeqNumber: 8
+count: 1
+*/
+
 // Frame (110 bytes)
 static const unsigned char pkt22[110] = {
     0x52, 0x54, 0x50, 0x53, 0x02, 0x02,             // ..RTPS..
@@ -71,13 +84,13 @@ int main() {
     sedp_endpoint sedp_reader_tbl[APP_READER_MAX];
     sedp_reader_tbl[0].guid_prefix[0] = 0x01;
     sedp_reader_tbl[0].guid_prefix[1] = 0x0f;
-    sedp_reader_tbl[0].guid_prefix[2] = 0x37;
-    sedp_reader_tbl[0].guid_prefix[3] = 0xad;
-    sedp_reader_tbl[0].guid_prefix[4] = 0xde;
-    sedp_reader_tbl[0].guid_prefix[5] = 0x09;
-    sedp_reader_tbl[0].guid_prefix[6] = 0x00;
-    sedp_reader_tbl[0].guid_prefix[7] = 0x00;
-    sedp_reader_tbl[0].guid_prefix[8] = 0x01;
+    sedp_reader_tbl[0].guid_prefix[2] = 0x70;
+    sedp_reader_tbl[0].guid_prefix[3] = 0x2e;
+    sedp_reader_tbl[0].guid_prefix[4] = 0x40;
+    sedp_reader_tbl[0].guid_prefix[5] = 0x1a;
+    sedp_reader_tbl[0].guid_prefix[6] = 0x13;
+    sedp_reader_tbl[0].guid_prefix[7] = 0x46;
+    sedp_reader_tbl[0].guid_prefix[8] = 0x00;
     sedp_reader_tbl[0].guid_prefix[9] = 0x00;
     sedp_reader_tbl[0].guid_prefix[10] = 0x00;
     sedp_reader_tbl[0].guid_prefix[11] = 0x00;
