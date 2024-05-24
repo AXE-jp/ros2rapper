@@ -12,11 +12,6 @@
 #include "sedp.hpp"
 
 /*
-Link Error:  
-cannot find crt1.o: No such file or directory ...
-Solution:
-export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
-
 HEARTBEAT Message Content:
 guidPrefix: 010f702e401a134600000000
 firstAvailableSeqNumber: 1
