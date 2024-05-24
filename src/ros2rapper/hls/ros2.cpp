@@ -316,37 +316,6 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
 
-#define ST_RAWUDP_OUT           0
-#define ST_SPDP_WRITER          1
-#define ST_SEDP_PUB_WRITER_0    2
-#define ST_SEDP_PUB_WRITER_1    3
-#define ST_SEDP_PUB_WRITER_2    4
-#define ST_SEDP_PUB_WRITER_3    5
-#define ST_SEDP_SUB_WRITER_0    6
-#define ST_SEDP_SUB_WRITER_1    7
-#define ST_SEDP_SUB_WRITER_2    8
-#define ST_SEDP_SUB_WRITER_3    9
-#define ST_SEDP_PUB_HEARTBEAT_0 10
-#define ST_SEDP_PUB_HEARTBEAT_1 11
-#define ST_SEDP_PUB_HEARTBEAT_2 12
-#define ST_SEDP_PUB_HEARTBEAT_3 13
-#define ST_SEDP_SUB_HEARTBEAT_0 14
-#define ST_SEDP_SUB_HEARTBEAT_1 15
-#define ST_SEDP_SUB_HEARTBEAT_2 16
-#define ST_SEDP_SUB_HEARTBEAT_3 17
-#define ST_SEDP_PUB_ACKNACK_0   18
-#define ST_SEDP_PUB_ACKNACK_1   19
-#define ST_SEDP_PUB_ACKNACK_2   20
-#define ST_SEDP_PUB_ACKNACK_3   21
-#define ST_SEDP_SUB_ACKNACK_0   22
-#define ST_SEDP_SUB_ACKNACK_1   23
-#define ST_SEDP_SUB_ACKNACK_2   24
-#define ST_SEDP_SUB_ACKNACK_3   25
-#define ST_APP_WRITER_0         26
-#define ST_APP_WRITER_1         27
-#define ST_APP_WRITER_2         28
-#define ST_APP_WRITER_3         29
-
 #define SPDP_WRITER_OUT()                                                      \
     do {                                                                       \
         spdp_writer_out(metatraffic_port, default_port, tx_buf, conf);         \
