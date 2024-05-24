@@ -633,7 +633,7 @@ static void ros2_out(
         } else if (pub_enable && next_packet_type == 1) {
             if (sedp_reader_tbl[tx_progress_sedp_pub_wr].initial_send_counter
                     == 3
-                && cnt_sedp_pub_wr_elapsed == 0) {
+                && !cnt_sedp_pub_wr_elapsed) {
                 if (tx_progress_sedp_pub_wr == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -658,7 +658,7 @@ static void ros2_out(
         } else if (sub_enable && next_packet_type == 2) {
             if (sedp_reader_tbl[tx_progress_sedp_sub_wr].initial_send_counter
                     == 3
-                && cnt_sedp_sub_wr_elapsed == 0) {
+                && !cnt_sedp_sub_wr_elapsed) {
                 if (tx_progress_sedp_sub_wr == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -683,7 +683,7 @@ static void ros2_out(
         } else if (next_packet_type == 3) {
             if (sedp_reader_tbl[tx_progress_sedp_pub_hb].initial_send_counter
                     == 3
-                && cnt_sedp_pub_hb_elapsed == 0) {
+                && !cnt_sedp_pub_hb_elapsed) {
                 if (tx_progress_sedp_pub_hb == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -708,7 +708,7 @@ static void ros2_out(
         } else if (next_packet_type == 4) {
             if (sedp_reader_tbl[tx_progress_sedp_sub_hb].initial_send_counter
                     == 3
-                && cnt_sedp_sub_hb_elapsed == 0) {
+                && !cnt_sedp_sub_hb_elapsed) {
                 if (tx_progress_sedp_sub_hb == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
