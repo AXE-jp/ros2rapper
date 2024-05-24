@@ -528,13 +528,7 @@ static void ros2_out(
     static uint16_t    rawudp_txbuf_rd_off;
     static uint16_t    rawudp_txpayload_wr_off;
 
-    static hls_uint<2> tx_progress_sedp_pub_wr;
-    static hls_uint<2> tx_progress_sedp_sub_wr;
-    static hls_uint<2> tx_progress_sedp_pub_hb;
-    static hls_uint<2> tx_progress_sedp_sub_hb;
-    static hls_uint<2> tx_progress_sedp_pub_an;
-    static hls_uint<2> tx_progress_sedp_sub_an;
-    static hls_uint<2> tx_progress_app_wr;
+    static hls_uint<2> tx_progress;
 
     static hls_uint<3> next_packet_type = 0;
 #define ROTATE_NEXT_PACKET_TYPE next_packet_type++
@@ -631,13 +625,12 @@ static void ros2_out(
             *cnt_spdp_wr_set = 1;
             ROTATE_NEXT_PACKET_TYPE;
         } else if (pub_enable && next_packet_type == 1) {
-            if (sedp_reader_tbl[tx_progress_sedp_pub_wr].initial_send_counter
-                    == 3
+            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_pub_wr_elapsed) {
-                if (tx_progress_sedp_pub_wr == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
-                switch (tx_progress_sedp_pub_wr) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_PUB_WRITER_OUT(0);
                     break;
@@ -655,15 +648,14 @@ static void ros2_out(
                     break;
                 }
             }
-            tx_progress_sedp_pub_wr++;
+            tx_progress++;
         } else if (sub_enable && next_packet_type == 2) {
-            if (sedp_reader_tbl[tx_progress_sedp_sub_wr].initial_send_counter
-                    == 3
+            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_sub_wr_elapsed) {
-                if (tx_progress_sedp_sub_wr == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
-                switch (tx_progress_sedp_sub_wr) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_SUB_WRITER_OUT(0);
                     break;
@@ -681,15 +673,14 @@ static void ros2_out(
                     break;
                 }
             }
-            tx_progress_sedp_sub_wr++;
+            tx_progress++;
         } else if (next_packet_type == 3) {
-            if (sedp_reader_tbl[tx_progress_sedp_pub_hb].initial_send_counter
-                    == 3
+            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_pub_hb_elapsed) {
-                if (tx_progress_sedp_pub_hb == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
-                switch (tx_progress_sedp_pub_hb) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_PUB_HEARTBEAT_OUT(0, pub_enable);
                     break;
@@ -707,15 +698,14 @@ static void ros2_out(
                     break;
                 }
             }
-            tx_progress_sedp_pub_hb++;
+            tx_progress++;
         } else if (next_packet_type == 4) {
-            if (sedp_reader_tbl[tx_progress_sedp_sub_hb].initial_send_counter
-                    == 3
+            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
                 && !cnt_sedp_sub_hb_elapsed) {
-                if (tx_progress_sedp_sub_hb == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
-                switch (tx_progress_sedp_sub_hb) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_SUB_HEARTBEAT_OUT(0, sub_enable);
                     break;
@@ -733,19 +723,19 @@ static void ros2_out(
                     break;
                 }
             }
-            tx_progress_sedp_sub_hb++;
+            tx_progress++;
         } else if (next_packet_type == 5) {
-            uint8_t wr_seqnum = sedp_reader_tbl[tx_progress_sedp_pub_an]
-                                    .builtin_pubrd_wr_seqnum;
-            uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_pub_an]
-                                    .builtin_pubrd_rd_seqnum;
-            bool acknack_req = sedp_reader_tbl[tx_progress_sedp_pub_an]
-                                   .builtin_pubrd_acknack_req;
+            uint8_t wr_seqnum
+                = sedp_reader_tbl[tx_progress].builtin_pubrd_wr_seqnum;
+            uint8_t rd_seqnum
+                = sedp_reader_tbl[tx_progress].builtin_pubrd_rd_seqnum;
+            bool acknack_req
+                = sedp_reader_tbl[tx_progress].builtin_pubrd_acknack_req;
             uint8_t snstate_base = rd_seqnum;
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
             if (cnt_sedp_pub_an_elapsed || (acknack_req && !snstate_is_empty)) {
-                switch (tx_progress_sedp_pub_an) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_PUB_ACKNACK_OUT(0);
                     break;
@@ -763,22 +753,22 @@ static void ros2_out(
                     break;
                 }
             } else {
-                if (tx_progress_sedp_pub_an == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             }
-            tx_progress_sedp_pub_an++;
+            tx_progress++;
         } else if (next_packet_type == 6) {
-            uint8_t wr_seqnum = sedp_reader_tbl[tx_progress_sedp_sub_an]
-                                    .builtin_subrd_wr_seqnum;
-            uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_sub_an]
-                                    .builtin_subrd_rd_seqnum;
-            bool acknack_req = sedp_reader_tbl[tx_progress_sedp_sub_an]
-                                   .builtin_subrd_acknack_req;
+            uint8_t wr_seqnum
+                = sedp_reader_tbl[tx_progress].builtin_subrd_wr_seqnum;
+            uint8_t rd_seqnum
+                = sedp_reader_tbl[tx_progress].builtin_subrd_rd_seqnum;
+            bool acknack_req
+                = sedp_reader_tbl[tx_progress].builtin_subrd_acknack_req;
             uint8_t snstate_base = rd_seqnum;
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
             if (cnt_sedp_sub_an_elapsed || (acknack_req && !snstate_is_empty)) {
-                switch (tx_progress_sedp_sub_an) {
+                switch (tx_progress) {
                 case 0:
                     SEDP_SUB_ACKNACK_OUT(0);
                     break;
@@ -796,12 +786,12 @@ static void ros2_out(
                     break;
                 }
             } else {
-                if (tx_progress_sedp_sub_an == 3)
+                if (tx_progress == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             }
-            tx_progress_sedp_sub_an++;
+            tx_progress++;
         } else if (pub_enable && cnt_app_wr_elapsed && next_packet_type == 7) {
-            switch (tx_progress_app_wr) {
+            switch (tx_progress) {
             case 0:
                 APP_WRITER_OUT(0);
                 break;
@@ -817,7 +807,7 @@ static void ros2_out(
                 ROTATE_NEXT_PACKET_TYPE;
                 break;
             }
-            tx_progress_app_wr++;
+            tx_progress++;
         } else {
             ROTATE_NEXT_PACKET_TYPE;
         }
