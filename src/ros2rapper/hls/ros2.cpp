@@ -410,6 +410,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
                 snstate_base, snstate_is_empty, tx_buf,                        \
                 sedp_pub_acknack_cnt[(id)], conf->ip_addr,                     \
                 conf->node_udp_port, conf->guid_prefix);                       \
+            sedp_reader_tbl[(id)].builtin_pubrd_acknack_req = false;           \
         }                                                                      \
     } while (0)
 
@@ -423,6 +424,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
                 snstate_base, snstate_is_empty, tx_buf,                        \
                 sedp_sub_acknack_cnt[(id)], conf->ip_addr,                     \
                 conf->node_udp_port, conf->guid_prefix);                       \
+            sedp_reader_tbl[(id)].builtin_subrd_acknack_req = false;           \
         }                                                                      \
     } while (0)
 
@@ -580,7 +582,7 @@ static void ros2_out(
         if (tx_buf.empty()) {
             *cnt_interval_set = 1;
         }
-    } else if (cnt_interval_elapsed == 1) {
+    } else if (cnt_interval_elapsed) {
         if (*rawudp_txbuf_grant == 1) {
             switch (rawudp_txbuf_copy_status) {
             case RAWUDP_TXBUF_COPY_INIT:
@@ -654,7 +656,7 @@ static void ros2_out(
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed == 1
+        } else if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed
                    && next_packet_type == 0) {
             SPDP_WRITER_OUT();
             *cnt_spdp_wr_set = 1;
@@ -662,7 +664,7 @@ static void ros2_out(
         } else if (pub_enable && next_packet_type == 1) {
             if (sedp_reader_tbl[tx_progress_sedp_pub_wr].initial_send_counter
                     == 3
-                && cnt_sedp_pub_wr_elapsed == 0) {
+                && !cnt_sedp_pub_wr_elapsed) {
                 if (tx_progress_sedp_pub_wr == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -687,7 +689,7 @@ static void ros2_out(
         } else if (sub_enable && next_packet_type == 2) {
             if (sedp_reader_tbl[tx_progress_sedp_sub_wr].initial_send_counter
                     == 3
-                && cnt_sedp_sub_wr_elapsed == 0) {
+                && !cnt_sedp_sub_wr_elapsed) {
                 if (tx_progress_sedp_sub_wr == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -712,7 +714,7 @@ static void ros2_out(
         } else if (next_packet_type == 3) {
             if (sedp_reader_tbl[tx_progress_sedp_pub_hb].initial_send_counter
                     == 3
-                && cnt_sedp_pub_hb_elapsed == 0) {
+                && !cnt_sedp_pub_hb_elapsed) {
                 if (tx_progress_sedp_pub_hb == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -737,7 +739,7 @@ static void ros2_out(
         } else if (next_packet_type == 4) {
             if (sedp_reader_tbl[tx_progress_sedp_sub_hb].initial_send_counter
                     == 3
-                && cnt_sedp_sub_hb_elapsed == 0) {
+                && !cnt_sedp_sub_hb_elapsed) {
                 if (tx_progress_sedp_sub_hb == 3)
                     ROTATE_NEXT_PACKET_TYPE;
             } else {
@@ -764,13 +766,12 @@ static void ros2_out(
                                     .builtin_pubrd_wr_seqnum;
             uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_pub_an]
                                     .builtin_pubrd_rd_seqnum;
+            bool acknack_req = sedp_reader_tbl[tx_progress_sedp_pub_an]
+                                   .builtin_pubrd_acknack_req;
             uint8_t snstate_base = rd_seqnum;
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-            if (snstate_is_empty && cnt_sedp_pub_an_elapsed == 0) {
-                if (tx_progress_sedp_pub_an == 3)
-                    ROTATE_NEXT_PACKET_TYPE;
-            } else {
+            if (cnt_sedp_pub_an_elapsed || (acknack_req && !snstate_is_empty)) {
                 switch (tx_progress_sedp_pub_an) {
                 case 0:
                     SEDP_PUB_ACKNACK_OUT(0);
@@ -787,6 +788,9 @@ static void ros2_out(
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
+            } else {
+                if (tx_progress_sedp_pub_an == 3)
+                    ROTATE_NEXT_PACKET_TYPE;
             }
             tx_progress_sedp_pub_an++;
         } else if (next_packet_type == 6) {
@@ -794,13 +798,12 @@ static void ros2_out(
                                     .builtin_subrd_wr_seqnum;
             uint8_t rd_seqnum = sedp_reader_tbl[tx_progress_sedp_sub_an]
                                     .builtin_subrd_rd_seqnum;
+            bool acknack_req = sedp_reader_tbl[tx_progress_sedp_sub_an]
+                                   .builtin_subrd_acknack_req;
             uint8_t snstate_base = rd_seqnum;
             bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-            if (snstate_is_empty && cnt_sedp_sub_an_elapsed == 0) {
-                if (tx_progress_sedp_sub_an == 3)
-                    ROTATE_NEXT_PACKET_TYPE;
-            } else {
+            if (cnt_sedp_sub_an_elapsed || (acknack_req && !snstate_is_empty)) {
                 switch (tx_progress_sedp_sub_an) {
                 case 0:
                     SEDP_SUB_ACKNACK_OUT(0);
@@ -817,10 +820,12 @@ static void ros2_out(
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
+            } else {
+                if (tx_progress_sedp_sub_an == 3)
+                    ROTATE_NEXT_PACKET_TYPE;
             }
             tx_progress_sedp_sub_an++;
-        } else if (pub_enable && cnt_app_wr_elapsed == 1
-                   && next_packet_type == 7) {
+        } else if (pub_enable && cnt_app_wr_elapsed && next_packet_type == 7) {
             switch (tx_progress_app_wr) {
             case 0:
                 APP_WRITER_OUT(0);

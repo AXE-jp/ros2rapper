@@ -17,8 +17,10 @@ struct sedp_endpoint {
     uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t     builtin_pubrd_wr_seqnum;
     uint8_t     builtin_pubrd_rd_seqnum;
+    bool        builtin_pubrd_acknack_req;
     uint8_t     builtin_subrd_wr_seqnum;
     uint8_t     builtin_subrd_rd_seqnum;
+    bool        builtin_subrd_acknack_req;
     hls_uint<2> initial_send_counter;
 };
 
