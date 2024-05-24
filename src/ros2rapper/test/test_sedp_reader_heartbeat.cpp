@@ -141,5 +141,7 @@ int main() {
                sedp_reader_tbl[ii].builtin_subrd_wr_seqnum);
         printf("builtin_subrd_rd_seqnum: %d\n",
                sedp_reader_tbl[ii].builtin_subrd_rd_seqnum);
+        printf("builtin_subrd_acknack_req: %d\n",
+               sedp_reader_tbl[ii].builtin_subrd_acknack_req);
     }
 }
