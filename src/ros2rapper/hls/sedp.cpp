@@ -215,21 +215,21 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         if (offset == sbm_len) {
             if (is_participant_matched) {
                 if (ep_type & BUILTIN_EP_PUB) {
+                    if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0
+                        || participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
+                        participant.builtin_pubrd_acknack_req = true;
                     if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_pubrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
                         participant.builtin_pubrd_wr_seqnum = sbm_sn_1;
-                    if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0
-                        || participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_pubrd_acknack_req = true;
                 } else if (ep_type & BUILTIN_EP_SUB) {
+                    if (participant.builtin_subrd_rd_seqnum < sbm_sn_0
+                        || participant.builtin_subrd_wr_seqnum < sbm_sn_1)
+                        participant.builtin_subrd_acknack_req = true;
                     if (participant.builtin_subrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_subrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_subrd_wr_seqnum < sbm_sn_1)
                         participant.builtin_subrd_wr_seqnum = sbm_sn_1;
-                    if (participant.builtin_subrd_rd_seqnum < sbm_sn_0
-                        || participant.builtin_subrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_subrd_acknack_req = true;
                 }
             }
             offset = 0;
