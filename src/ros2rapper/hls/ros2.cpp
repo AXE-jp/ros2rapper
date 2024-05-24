@@ -649,7 +649,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_WRITER_OUT(3);
-                    *cnt_sedp_pub_wr_set = 1;
+                    if (cnt_sedp_pub_wr_elapsed)
+                        *cnt_sedp_pub_wr_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
@@ -674,7 +675,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_WRITER_OUT(3);
-                    *cnt_sedp_sub_wr_set = 1;
+                    if (cnt_sedp_sub_wr_elapsed)
+                        *cnt_sedp_sub_wr_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
@@ -699,7 +701,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
-                    *cnt_sedp_pub_hb_set = 1;
+                    if (cnt_sedp_pub_hb_elapsed)
+                        *cnt_sedp_pub_hb_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
@@ -724,7 +727,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
-                    *cnt_sedp_sub_hb_set = 1;
+                    if (cnt_sedp_sub_hb_elapsed)
+                        *cnt_sedp_sub_hb_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
@@ -753,7 +757,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_PUB_ACKNACK_OUT(3);
-                    *cnt_sedp_pub_an_set = 1;
+                    if (cnt_sedp_pub_an_elapsed)
+                        *cnt_sedp_pub_an_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
@@ -785,7 +790,8 @@ static void ros2_out(
                     break;
                 case 3:
                     SEDP_SUB_ACKNACK_OUT(3);
-                    *cnt_sedp_sub_an_set = 1;
+                    if (cnt_sedp_sub_an_elapsed)
+                        *cnt_sedp_sub_an_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
