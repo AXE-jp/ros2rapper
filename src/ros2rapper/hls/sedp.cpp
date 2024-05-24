@@ -99,7 +99,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     static hls_uint<5>               flags;
     static hls_uint<APP_READER_MAX>  app_unmatched;
     static hls_uint<SEDP_READER_MAX> sedp_unmatched;
-    static hls_uint<2>               ep_type;
+    static builtin_ep_type_t         ep_type;
 
     static uint8_t  sbm_id;
     static bool     sbm_le;
@@ -167,10 +167,10 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
             if (sbm_id == SBM_ID_INFO_DST) {
                 state = SEDP_READ_INFO_DST;
             } else if (sbm_id == SBM_ID_DATA) {
-                ep_type = APP_EP_PUB | APP_EP_SUB;
+                ep_type = BUILTIN_EP_PUB | BUILTIN_EP_SUB;
                 state = SEDP_READ_SBM_DATA_HDR;
             } else if (sbm_id == SBM_ID_HEARTBEAT) {
-                ep_type = APP_EP_PUB | APP_EP_SUB;
+                ep_type = BUILTIN_EP_PUB | BUILTIN_EP_SUB;
                 state = SEDP_READ_HEARTBEAT;
             } else
                 state = SEDP_READ_SKIP_SBM;
@@ -192,11 +192,11 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     case SEDP_READ_HEARTBEAT:
         if (!rtps_compare_heartbeat_hdr_reader_id(offset, data,
                                                   pub_reader_id)) {
-            ep_type &= ~(APP_EP_PUB);
+            ep_type &= ~(BUILTIN_EP_PUB);
         }
         if (!rtps_compare_heartbeat_hdr_reader_id(offset, data,
                                                   sub_reader_id)) {
-            ep_type &= ~(APP_EP_SUB);
+            ep_type &= ~(BUILTIN_EP_SUB);
         }
         // Ignore other than lower 8-bit of Sequence Number to reduce resources
         if (sbm_le && offset == SBM_HEARTBEAT_DATA_OFFSET_FIRST_SN + 4) {
@@ -214,12 +214,12 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 
         if (offset == sbm_len) {
             if (is_participant_matched) {
-                if (ep_type & APP_EP_PUB) {
+                if (ep_type & BUILTIN_EP_PUB) {
                     if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_pubrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
                         participant.builtin_pubrd_wr_seqnum = sbm_sn_1;
-                } else if (ep_type & APP_EP_SUB) {
+                } else if (ep_type & BUILTIN_EP_SUB) {
                     if (participant.builtin_subrd_rd_seqnum < sbm_sn_0)
                         participant.builtin_subrd_rd_seqnum = sbm_sn_0;
                     if (participant.builtin_subrd_wr_seqnum < sbm_sn_1)
@@ -231,11 +231,11 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         }
         break;
     case SEDP_READ_SBM_DATA_HDR: // parse sub-message header
-        if (!rtps_compare_data_hdr_reader_id(offset, data, sub_reader_id)) {
-            ep_type &= ~(APP_EP_PUB);
-        }
         if (!rtps_compare_data_hdr_reader_id(offset, data, pub_reader_id)) {
-            ep_type &= ~(APP_EP_SUB);
+            ep_type &= ~(BUILTIN_EP_PUB);
+        }
+        if (!rtps_compare_data_hdr_reader_id(offset, data, sub_reader_id)) {
+            ep_type &= ~(BUILTIN_EP_SUB);
         }
 
         // Ignore other than lower 8-bit of Sequence Number to reduce resources
@@ -254,7 +254,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         if (offset == SBM_DATA_HDR_SIZE) {
             if (!is_participant_matched) {
                 state = SEDP_READ_SKIP_SBM;
-            } else if (ep_type & APP_EP_PUB) {
+            } else if (ep_type & BUILTIN_EP_PUB) {
                 if (participant.builtin_pubrd_rd_seqnum == sbm_sn_0) {
                     participant.builtin_pubrd_rd_seqnum++;
                     sbm_len -= SBM_DATA_HDR_SIZE;
@@ -315,7 +315,9 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                     hls_uint<APP_READER_MAX> valid
                         = (0x1 << app_reader_cnt) - 1;
                     if ((app_unmatched & valid) == valid) {
-                        reader.ep_type = ep_type;
+                        reader.app_ep_type = (ep_type & BUILTIN_EP_PUB)
+                                                 ? APP_EP_SUB
+                                                 : APP_EP_PUB;
                         app_reader_cnt++;
                     }
                 }
@@ -391,7 +393,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                 }
             } else {
                 if (offset == 4) {
-                    uint8_t topic_name_len = (ep_type & APP_EP_PUB)
+                    uint8_t topic_name_len = (ep_type & BUILTIN_EP_SUB)
                                                  ? pub_topic_name_len
                                                  : sub_topic_name_len;
 
@@ -400,7 +402,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         break;
                     }
                 }
-                if (ep_type & APP_EP_PUB) {
+                if (ep_type & BUILTIN_EP_SUB) {
                     if (offset < sp_len + 4
                         && pub_topic_name[offset - 4] != data) {
                         flags |= (hls_uint<5>)FLAGS_UNMATCH_TOPIC;
@@ -436,7 +438,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                 }
             } else {
                 if (offset == 4) {
-                    uint8_t type_name_len = (ep_type & APP_EP_PUB)
+                    uint8_t type_name_len = (ep_type & BUILTIN_EP_SUB)
                                                 ? pub_type_name_len
                                                 : sub_type_name_len;
                     if (sp_len != type_name_len) {
@@ -444,7 +446,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         break;
                     }
                 }
-                if (ep_type & APP_EP_PUB) {
+                if (ep_type & BUILTIN_EP_SUB) {
                     if (offset < sp_len + 4
                         && pub_type_name[offset - 4] != data) {
                         flags |= (hls_uint<5>)FLAGS_UNMATCH_TYPE;
