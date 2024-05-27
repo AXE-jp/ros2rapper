@@ -529,7 +529,7 @@ static void ros2_out(
     static uint16_t    rawudp_txpayload_wr_off;
 
     static hls_uint<2> tx_progress;
-    static hls_uint<2> tx_cnt_elapsed;
+    static hls_uint<3> tx_cnt_elapsed;
 
     static hls_uint<3> next_packet_type = 0;
 #define ROTATE_NEXT_PACKET_TYPE next_packet_type++
