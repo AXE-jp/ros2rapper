@@ -551,7 +551,7 @@ static void ros2_out(
         if (tx_buf.empty()) {
             *cnt_interval_set = 1;
         }
-    } else if (cnt_interval_elapsed) {
+    } else {
         if (*rawudp_txbuf_grant == 1) {
             switch (rawudp_txbuf_copy_status) {
             case RAWUDP_TXBUF_COPY_INIT:
@@ -625,233 +625,238 @@ static void ros2_out(
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_INIT;
                 break;
             }
-        } else if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed
-                   && next_packet_type == 0) {
-            SPDP_WRITER_OUT();
-            *cnt_spdp_wr_set = 1;
-            ROTATE_NEXT_PACKET_TYPE;
-        } else if (pub_enable && next_packet_type == 1) {
-            if (cnt_sedp_pub_wr_elapsed)
-                tx_cnt_elapsed++;
-
-            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                && !cnt_sedp_pub_wr_elapsed) {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            } else {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_PUB_WRITER_OUT(0);
-                    break;
-                case 1:
-                    SEDP_PUB_WRITER_OUT(1);
-                    break;
-                case 2:
-                    SEDP_PUB_WRITER_OUT(2);
-                    break;
-                case 3:
-                    SEDP_PUB_WRITER_OUT(3);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_pub_wr_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            }
-            tx_progress++;
-        } else if (sub_enable && next_packet_type == 2) {
-            if (cnt_sedp_sub_wr_elapsed)
-                tx_cnt_elapsed++;
-
-            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                && !cnt_sedp_sub_wr_elapsed) {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            } else {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_SUB_WRITER_OUT(0);
-                    break;
-                case 1:
-                    SEDP_SUB_WRITER_OUT(1);
-                    break;
-                case 2:
-                    SEDP_SUB_WRITER_OUT(2);
-                    break;
-                case 3:
-                    SEDP_SUB_WRITER_OUT(3);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_sub_wr_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            }
-            tx_progress++;
-        } else if (next_packet_type == 3) {
-            if (cnt_sedp_pub_hb_elapsed)
-                tx_cnt_elapsed++;
-
-            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                && !cnt_sedp_pub_hb_elapsed) {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            } else {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_PUB_HEARTBEAT_OUT(0, pub_enable);
-                    break;
-                case 1:
-                    SEDP_PUB_HEARTBEAT_OUT(1, pub_enable);
-                    break;
-                case 2:
-                    SEDP_PUB_HEARTBEAT_OUT(2, pub_enable);
-                    break;
-                case 3:
-                    SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_pub_hb_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            }
-            tx_progress++;
-        } else if (next_packet_type == 4) {
-            if (cnt_sedp_sub_hb_elapsed)
-                tx_cnt_elapsed++;
-
-            if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                && !cnt_sedp_sub_hb_elapsed) {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            } else {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_SUB_HEARTBEAT_OUT(0, sub_enable);
-                    break;
-                case 1:
-                    SEDP_SUB_HEARTBEAT_OUT(1, sub_enable);
-                    break;
-                case 2:
-                    SEDP_SUB_HEARTBEAT_OUT(2, sub_enable);
-                    break;
-                case 3:
-                    SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_sub_hb_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            }
-            tx_progress++;
-        } else if (next_packet_type == 5) {
-            uint8_t wr_seqnum
-                = sedp_reader_tbl[tx_progress].builtin_pubrd_wr_seqnum;
-            uint8_t rd_seqnum
-                = sedp_reader_tbl[tx_progress].builtin_pubrd_rd_seqnum;
-            bool acknack_req
-                = sedp_reader_tbl[tx_progress].builtin_pubrd_acknack_req;
-            uint8_t snstate_base = rd_seqnum;
-            bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-            if (cnt_sedp_pub_an_elapsed)
-                tx_cnt_elapsed++;
-
-            if (cnt_sedp_pub_an_elapsed || (acknack_req && !snstate_is_empty)) {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_PUB_ACKNACK_OUT(0);
-                    break;
-                case 1:
-                    SEDP_PUB_ACKNACK_OUT(1);
-                    break;
-                case 2:
-                    SEDP_PUB_ACKNACK_OUT(2);
-                    break;
-                case 3:
-                    SEDP_PUB_ACKNACK_OUT(3);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_pub_an_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            } else {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            }
-            tx_progress++;
-        } else if (next_packet_type == 6) {
-            uint8_t wr_seqnum
-                = sedp_reader_tbl[tx_progress].builtin_subrd_wr_seqnum;
-            uint8_t rd_seqnum
-                = sedp_reader_tbl[tx_progress].builtin_subrd_rd_seqnum;
-            bool acknack_req
-                = sedp_reader_tbl[tx_progress].builtin_subrd_acknack_req;
-            uint8_t snstate_base = rd_seqnum;
-            bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-            if (cnt_sedp_sub_an_elapsed)
-                tx_cnt_elapsed++;
-
-            if (cnt_sedp_sub_an_elapsed || (acknack_req && !snstate_is_empty)) {
-                switch (tx_progress) {
-                case 0:
-                    SEDP_SUB_ACKNACK_OUT(0);
-                    break;
-                case 1:
-                    SEDP_SUB_ACKNACK_OUT(1);
-                    break;
-                case 2:
-                    SEDP_SUB_ACKNACK_OUT(2);
-                    break;
-                case 3:
-                    SEDP_SUB_ACKNACK_OUT(3);
-                    if (tx_cnt_elapsed == 4)
-                        *cnt_sedp_sub_an_set = 1;
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                    break;
-                }
-            } else {
-                if (tx_progress == 3) {
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_cnt_elapsed = 0;
-                }
-            }
-            tx_progress++;
-        } else if (pub_enable && cnt_app_wr_elapsed && next_packet_type == 7) {
-            switch (tx_progress) {
-            case 0:
-                APP_WRITER_OUT(0);
-                break;
-            case 1:
-                APP_WRITER_OUT(1);
-                break;
-            case 2:
-                APP_WRITER_OUT(2);
-                break;
-            case 3:
-                APP_WRITER_OUT(3);
-                *cnt_app_wr_set = 1;
+        } else if (cnt_interval_elapsed) {
+            if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed
+                && next_packet_type == 0) {
+                SPDP_WRITER_OUT();
+                *cnt_spdp_wr_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
-                break;
+            } else if (pub_enable && next_packet_type == 1) {
+                if (cnt_sedp_pub_wr_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
+                    && !cnt_sedp_pub_wr_elapsed) {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_PUB_WRITER_OUT(0);
+                        break;
+                    case 1:
+                        SEDP_PUB_WRITER_OUT(1);
+                        break;
+                    case 2:
+                        SEDP_PUB_WRITER_OUT(2);
+                        break;
+                    case 3:
+                        SEDP_PUB_WRITER_OUT(3);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_pub_wr_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                }
+                tx_progress++;
+            } else if (sub_enable && next_packet_type == 2) {
+                if (cnt_sedp_sub_wr_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
+                    && !cnt_sedp_sub_wr_elapsed) {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_SUB_WRITER_OUT(0);
+                        break;
+                    case 1:
+                        SEDP_SUB_WRITER_OUT(1);
+                        break;
+                    case 2:
+                        SEDP_SUB_WRITER_OUT(2);
+                        break;
+                    case 3:
+                        SEDP_SUB_WRITER_OUT(3);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_sub_wr_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                }
+                tx_progress++;
+            } else if (next_packet_type == 3) {
+                if (cnt_sedp_pub_hb_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
+                    && !cnt_sedp_pub_hb_elapsed) {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_PUB_HEARTBEAT_OUT(0, pub_enable);
+                        break;
+                    case 1:
+                        SEDP_PUB_HEARTBEAT_OUT(1, pub_enable);
+                        break;
+                    case 2:
+                        SEDP_PUB_HEARTBEAT_OUT(2, pub_enable);
+                        break;
+                    case 3:
+                        SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_pub_hb_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                }
+                tx_progress++;
+            } else if (next_packet_type == 4) {
+                if (cnt_sedp_sub_hb_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
+                    && !cnt_sedp_sub_hb_elapsed) {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_SUB_HEARTBEAT_OUT(0, sub_enable);
+                        break;
+                    case 1:
+                        SEDP_SUB_HEARTBEAT_OUT(1, sub_enable);
+                        break;
+                    case 2:
+                        SEDP_SUB_HEARTBEAT_OUT(2, sub_enable);
+                        break;
+                    case 3:
+                        SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_sub_hb_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                }
+                tx_progress++;
+            } else if (next_packet_type == 5) {
+                uint8_t wr_seqnum
+                    = sedp_reader_tbl[tx_progress].builtin_pubrd_wr_seqnum;
+                uint8_t rd_seqnum
+                    = sedp_reader_tbl[tx_progress].builtin_pubrd_rd_seqnum;
+                bool acknack_req
+                    = sedp_reader_tbl[tx_progress].builtin_pubrd_acknack_req;
+                uint8_t snstate_base = rd_seqnum;
+                bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
+                if (cnt_sedp_pub_an_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (cnt_sedp_pub_an_elapsed
+                    || (acknack_req && !snstate_is_empty)) {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_PUB_ACKNACK_OUT(0);
+                        break;
+                    case 1:
+                        SEDP_PUB_ACKNACK_OUT(1);
+                        break;
+                    case 2:
+                        SEDP_PUB_ACKNACK_OUT(2);
+                        break;
+                    case 3:
+                        SEDP_PUB_ACKNACK_OUT(3);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_pub_an_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                } else {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                }
+                tx_progress++;
+            } else if (next_packet_type == 6) {
+                uint8_t wr_seqnum
+                    = sedp_reader_tbl[tx_progress].builtin_subrd_wr_seqnum;
+                uint8_t rd_seqnum
+                    = sedp_reader_tbl[tx_progress].builtin_subrd_rd_seqnum;
+                bool acknack_req
+                    = sedp_reader_tbl[tx_progress].builtin_subrd_acknack_req;
+                uint8_t snstate_base = rd_seqnum;
+                bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
+                if (cnt_sedp_sub_an_elapsed)
+                    tx_cnt_elapsed++;
+
+                if (cnt_sedp_sub_an_elapsed
+                    || (acknack_req && !snstate_is_empty)) {
+                    switch (tx_progress) {
+                    case 0:
+                        SEDP_SUB_ACKNACK_OUT(0);
+                        break;
+                    case 1:
+                        SEDP_SUB_ACKNACK_OUT(1);
+                        break;
+                    case 2:
+                        SEDP_SUB_ACKNACK_OUT(2);
+                        break;
+                    case 3:
+                        SEDP_SUB_ACKNACK_OUT(3);
+                        if (tx_cnt_elapsed == 4)
+                            *cnt_sedp_sub_an_set = 1;
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                        break;
+                    }
+                } else {
+                    if (tx_progress == 3) {
+                        ROTATE_NEXT_PACKET_TYPE;
+                        tx_cnt_elapsed = 0;
+                    }
+                }
+                tx_progress++;
+            } else if (pub_enable && cnt_app_wr_elapsed
+                       && next_packet_type == 7) {
+                switch (tx_progress) {
+                case 0:
+                    APP_WRITER_OUT(0);
+                    break;
+                case 1:
+                    APP_WRITER_OUT(1);
+                    break;
+                case 2:
+                    APP_WRITER_OUT(2);
+                    break;
+                case 3:
+                    APP_WRITER_OUT(3);
+                    *cnt_app_wr_set = 1;
+                    ROTATE_NEXT_PACKET_TYPE;
+                    break;
+                }
+                tx_progress++;
+            } else {
+                ROTATE_NEXT_PACKET_TYPE;
             }
-            tx_progress++;
-        } else {
-            ROTATE_NEXT_PACKET_TYPE;
         }
 
         if (!tx_buf.empty()) {
