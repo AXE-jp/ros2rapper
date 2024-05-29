@@ -415,14 +415,26 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                     const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t app_seqnum) {
 #pragma HLS inline
+
     if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
-    /* Cyber scheduling_block = non-transparent */
+
+#ifdef VITIS_HLS
     app_data_request_section : {
 #pragma HLS protocol fixed
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
-        WAIT_CLOCK;
-        WAIT_CLOCK;
+        ap_wait();
+        ap_wait();
     }
+#else
+        /* Cyber scheduling_block = non-transparent */
+        {
+            *pub_app_data_req
+                = 0 /* write dummy value to assert valid signal */;
+            cwb::cwb_clk();
+            cwb::cwb_clk();
+        }
+#endif
+
         if (*pub_app_data_grant == 1) {
             app_writer_out(app_writer_entity_id, app_reader_tbl[id].ip_addr,
                            app_reader_tbl[id].udp_port,
@@ -430,15 +442,26 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                            app_reader_tbl[id].entity_id, tx_buf, app_seqnum,
                            conf->ip_addr, conf->node_udp_port,
                            conf->guid_prefix, pub_app_data, pub_app_data_len);
-        /* Cyber scheduling_block = non-transparent */
+
+#ifdef VITIS_HLS
         app_data_release_section : {
 #pragma HLS protocol fixed
-            WAIT_CLOCK;
+            ap_wait();
             *pub_app_data_rel
                 = 0 /* write dummy value to assert valid signal */;
-            WAIT_CLOCK;
-            WAIT_CLOCK;
+            ap_wait();
+            ap_wait();
         }
+#else
+            /* Cyber scheduling_block = non-transparent */
+            {
+                cwb::cwb_clk();
+                *pub_app_data_rel
+                    = 0 /* write dummy value to assert valid signal */;
+                cwb::cwb_clk();
+                cwb::cwb_clk();
+            }
+#endif
         }
     }
 }
