@@ -120,8 +120,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     }
 
     /* Cyber unroll_times=all */
-    for (int i = APP_HDR_SIZE + MAX_APP_DATA_LEN; i < MAX_TX_UDP_PAYLOAD_LEN;
-         i++) {
+    for (int i = APP_HDR_SIZE + MAX_APP_DATA_LEN; i < TX_BUF_LEN; i++) {
 #pragma HLS unroll
         buf[i] = 0;
     }

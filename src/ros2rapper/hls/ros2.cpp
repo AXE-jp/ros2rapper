@@ -312,8 +312,8 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     udp_set_header(src_port, dst_port, udp_payload_len,
                    tx_buf.buf + IP_HDR_SIZE);
 
-    for (int i = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
-         i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
+    for (int i = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len; i < TX_BUF_LEN;
+         i++) {
         tx_buf.buf[i] = 0;
     }
 
