@@ -412,7 +412,7 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                     volatile uint8_t       *pub_app_data_req,
                     volatile uint8_t       *pub_app_data_rel,
                     volatile uint8_t       *pub_app_data_grant,
-                    const uint8_t app_writer_entity_id[4], tx_buf tx_buf,
+                    const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t app_seqnum) {
 #pragma HLS inline
     if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
