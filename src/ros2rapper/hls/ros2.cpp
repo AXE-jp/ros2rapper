@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "app.hpp"
+#include "endpoint.hpp"
 #include "ip.hpp"
 #include "ros2.hpp"
 #include "sedp.hpp"
@@ -402,34 +403,45 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         }                                                                      \
     } while (0)
 
-#define APP_WRITER_OUT(id)                                                     \
-    /* Cyber scheduling_block = non-transparent */                             \
-    do {                                                                       \
-        if ((app_reader_cnt > (id))                                            \
-            && (app_reader_tbl[(id)].app_ep_type & APP_EP_PUB)) {              \
-            /* Cyber scheduling_block = non-transparent */                     \
-            {                                                                  \
-                *pub_app_data_req                                              \
-                    = 0 /* write dummy value to assert valid signal */;        \
-                WAIT_CLOCK;                                                    \
-                WAIT_CLOCK;                                                    \
-                if (*pub_app_data_grant == 1) {                                \
-                    app_writer_out(                                            \
-                        app_writer_entity_id, app_reader_tbl[(id)].ip_addr,    \
-                        app_reader_tbl[(id)].udp_port,                         \
-                        app_reader_tbl[(id)].guid_prefix,                      \
-                        app_reader_tbl[(id)].entity_id, tx_buf, app_seqnum,    \
-                        conf->ip_addr, conf->node_udp_port, conf->guid_prefix, \
-                        pub_app_data, pub_app_data_len);                       \
-                    WAIT_CLOCK;                                                \
-                    *pub_app_data_rel                                          \
-                        = 0 /* write dummy value to assert valid signal */;    \
-                    WAIT_CLOCK;                                                \
-                    WAIT_CLOCK;                                                \
-                }                                                              \
-            }                                                                  \
-        }                                                                      \
-    } while (0)
+/* Cyber func=inline */
+void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
+                    app_endpoint            app_reader_tbl[APP_READER_MAX],
+                    const config_t         *conf,
+                    volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
+                    volatile const uint8_t *pub_app_data_len,
+                    volatile uint8_t       *pub_app_data_req,
+                    volatile uint8_t       *pub_app_data_rel,
+                    volatile uint8_t       *pub_app_data_grant,
+                    const uint8_t app_writer_entity_id[4], tx_buf tx_buf,
+                    int64_t app_seqnum) {
+#pragma HLS inline
+    if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
+    /* Cyber scheduling_block = non-transparent */
+    app_data_request_section : {
+#pragma HLS protocol fixed
+        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
+        WAIT_CLOCK;
+        WAIT_CLOCK;
+    }
+        if (*pub_app_data_grant == 1) {
+            app_writer_out(app_writer_entity_id, app_reader_tbl[id].ip_addr,
+                           app_reader_tbl[id].udp_port,
+                           app_reader_tbl[id].guid_prefix,
+                           app_reader_tbl[id].entity_id, tx_buf, app_seqnum,
+                           conf->ip_addr, conf->node_udp_port,
+                           conf->guid_prefix, pub_app_data, pub_app_data_len);
+        /* Cyber scheduling_block = non-transparent */
+        app_data_release_section : {
+#pragma HLS protocol fixed
+            WAIT_CLOCK;
+            *pub_app_data_rel
+                = 0 /* write dummy value to assert valid signal */;
+            WAIT_CLOCK;
+            WAIT_CLOCK;
+        }
+        }
+    }
+}
 
 #define RAWUDP_OUT()                                                           \
     do {                                                                       \
@@ -839,16 +851,32 @@ static void ros2_out(
                        && next_packet_type == 7) {
                 switch (tx_progress) {
                 case 0:
-                    APP_WRITER_OUT(0);
+                    APP_WRITER_OUT(0, app_reader_cnt, app_reader_tbl, conf,
+                                   pub_app_data, pub_app_data_len,
+                                   pub_app_data_req, pub_app_data_rel,
+                                   pub_app_data_grant, app_writer_entity_id,
+                                   tx_buf, app_seqnum);
                     break;
                 case 1:
-                    APP_WRITER_OUT(1);
+                    APP_WRITER_OUT(1, app_reader_cnt, app_reader_tbl, conf,
+                                   pub_app_data, pub_app_data_len,
+                                   pub_app_data_req, pub_app_data_rel,
+                                   pub_app_data_grant, app_writer_entity_id,
+                                   tx_buf, app_seqnum);
                     break;
                 case 2:
-                    APP_WRITER_OUT(2);
+                    APP_WRITER_OUT(2, app_reader_cnt, app_reader_tbl, conf,
+                                   pub_app_data, pub_app_data_len,
+                                   pub_app_data_req, pub_app_data_rel,
+                                   pub_app_data_grant, app_writer_entity_id,
+                                   tx_buf, app_seqnum);
                     break;
                 case 3:
-                    APP_WRITER_OUT(3);
+                    APP_WRITER_OUT(3, app_reader_cnt, app_reader_tbl, conf,
+                                   pub_app_data, pub_app_data_len,
+                                   pub_app_data_req, pub_app_data_rel,
+                                   pub_app_data_grant, app_writer_entity_id,
+                                   tx_buf, app_seqnum);
                     *cnt_app_wr_set = 1;
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
