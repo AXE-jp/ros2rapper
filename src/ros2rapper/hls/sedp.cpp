@@ -985,7 +985,7 @@ void sedp_writer(
 #endif
 
     /* Cyber unroll_times=all */
-    for (int i = SEDP_WRITER_TOT_LEN; i < TX_BUF_LEN; i++) {
+    for (int i = SEDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
 #pragma HLS unroll
         buf[i] = 0;
     }
@@ -1081,7 +1081,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     buf[67] = L_BYTE3(cnt);
 
     /* Cyber unroll_times=all */
-    for (int i = SEDP_HEARTBEAT_TOT_LEN; i < TX_BUF_LEN; i++) {
+    for (int i = SEDP_HEARTBEAT_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
 #pragma HLS unroll
         buf[i] = 0;
     }
@@ -1175,7 +1175,7 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[67] = L_BYTE3(cnt);
 
     /* Cyber unroll_times=all */
-    for (int i = SEDP_ACKNACK_TOT_LEN; i < TX_BUF_LEN; i++) {
+    for (int i = SEDP_ACKNACK_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
 #pragma HLS unroll
         buf[i] = 0;
     }

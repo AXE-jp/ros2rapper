@@ -570,7 +570,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 #endif
 
     /* Cyber unroll_times=all */
-    for (int i = SPDP_WRITER_TOT_LEN; i < TX_BUF_LEN; i++) {
+    for (int i = SPDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
 #pragma HLS unroll
         buf[i] = 0;
     }
