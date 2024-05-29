@@ -313,11 +313,6 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     udp_set_header(src_port, dst_port, udp_payload_len,
                    tx_buf.buf + IP_HDR_SIZE);
 
-    for (int i = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len; i < TX_BUF_LEN;
-         i++) {
-        tx_buf.buf[i] = 0;
-    }
-
     tx_buf.head = 0;
     tx_buf.len = IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
@@ -593,6 +588,15 @@ static void ros2_out(
                 rawudp_txbuf_rd_off = 0;
                 rawudp_txpayload_wr_off = 0;
                 rawudp_txbuf_copy_status = RAWUDP_TXBUF_COPY_RUNNING;
+
+                // Clear tx buffer before constructing packet to prevent
+                // variable length zero clear.
+
+                /* Cyber unroll_times=all */
+                for (int i = 0; i < TX_BUF_LEN; i++) {
+#pragma HLS unroll
+                    tx_buf.buf[i] = 0;
+                }
                 break;
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
