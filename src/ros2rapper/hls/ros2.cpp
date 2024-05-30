@@ -409,8 +409,8 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
     app_data_request_section : {
 #pragma HLS protocol fixed
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
-        WAIT_CLOCK();
-        WAIT_CLOCK();
+        CLOCK_BOUNDARY;
+        CLOCK_BOUNDARY;
     }
 
         if (*pub_app_data_grant == 1) {
@@ -424,11 +424,11 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
             /* Cyber scheduling_block = non-transparent */
         app_data_release_section : {
 #pragma HLS protocol fixed
-            WAIT_CLOCK();
+            CLOCK_BOUNDARY;
             *pub_app_data_rel
                 = 0 /* write dummy value to assert valid signal */;
-            WAIT_CLOCK();
-            WAIT_CLOCK();
+            CLOCK_BOUNDARY;
+            CLOCK_BOUNDARY;
         }
         }
     }

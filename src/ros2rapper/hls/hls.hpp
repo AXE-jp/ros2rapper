@@ -17,9 +17,9 @@ template <typename T> using hls_stream = hls::stream<T>;
 template <int W> using hls_int = ap_int<W>;
 template <int W> using hls_uint = ap_uint<W>;
 #ifdef __SYNTHESIS__
-#define WAIT_CLOCK ap_wait()
+#define CLOCK_BOUNDARY ap_wait()
 #else
-#define WAIT_CLOCK
+#define CLOCK_BOUNDARY
 #endif
 #endif // VITIS_HLS
 
@@ -33,7 +33,7 @@ template <typename T> using hls_stream = cwb::cwb_stream<T>;
 template <int W> using hls_int = sc_int<W>;
 template <int W> using hls_uint = sc_uint<W>;
 #define __SYNTHESIS__
-#define WAIT_CLOCK cwb::cwb_clk()
+#define CLOCK_BOUNDARY cwb::cwb_clk()
 #endif // CWB_HLS
 
 #endif // !HLS_HPP
