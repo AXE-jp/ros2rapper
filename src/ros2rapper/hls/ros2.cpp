@@ -5,6 +5,7 @@
 
 #include "app.hpp"
 #include "endpoint.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 #include "ros2.hpp"
 #include "sedp.hpp"
@@ -404,22 +405,13 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
 
     if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
-#ifdef VITIS_HLS
+        /* Cyber scheduling_block = non-transparent */
     app_data_request_section : {
 #pragma HLS protocol fixed
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
-        ap_wait();
-        ap_wait();
+        WAIT_CLOCK();
+        WAIT_CLOCK();
     }
-#else
-        /* Cyber scheduling_block = non-transparent */
-        {
-            *pub_app_data_req
-                = 0 /* write dummy value to assert valid signal */;
-            cwb::cwb_clk();
-            cwb::cwb_clk();
-        }
-#endif
 
         if (*pub_app_data_grant == 1) {
             app_writer_out(app_writer_entity_id, app_reader_tbl[id].ip_addr,
@@ -429,25 +421,15 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                            conf->ip_addr, conf->node_udp_port,
                            conf->guid_prefix, pub_app_data, pub_app_data_len);
 
-#ifdef VITIS_HLS
+            /* Cyber scheduling_block = non-transparent */
         app_data_release_section : {
 #pragma HLS protocol fixed
-            ap_wait();
+            WAIT_CLOCK();
             *pub_app_data_rel
                 = 0 /* write dummy value to assert valid signal */;
-            ap_wait();
-            ap_wait();
+            WAIT_CLOCK();
+            WAIT_CLOCK();
         }
-#else
-            /* Cyber scheduling_block = non-transparent */
-            {
-                cwb::cwb_clk();
-                *pub_app_data_rel
-                    = 0 /* write dummy value to assert valid signal */;
-                cwb::cwb_clk();
-                cwb::cwb_clk();
-            }
-#endif
         }
     }
 }
