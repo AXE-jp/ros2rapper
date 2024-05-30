@@ -552,7 +552,13 @@ static void ros2_out(
 #endif // USE_FIFOIF_ETHERNET
 
         if (tx_buf.empty()) {
+            /* Cyber scheduling_block = non-transparent */
+        cnt_reset_interval : {
+#pragma HLS protocol fixed
             *cnt_interval_set = 1;
+            CLOCK_BOUNDARY;
+            CLOCK_BOUNDARY;
+        }
         }
     } else {
         if (*rawudp_txbuf_grant == 1) {
@@ -641,8 +647,16 @@ static void ros2_out(
             if ((pub_enable | sub_enable) && cnt_spdp_wr_elapsed
                 && next_packet_type == 0) {
                 SPDP_WRITER_OUT();
-                *cnt_spdp_wr_set = 1;
                 ROTATE_NEXT_PACKET_TYPE;
+
+                /* Cyber scheduling_block = non-transparent */
+            cnt_reset_0 : {
+#pragma HLS protocol fixed
+                *cnt_spdp_wr_set = 1;
+                CLOCK_BOUNDARY;
+                CLOCK_BOUNDARY;
+            }
+
             } else if (pub_enable && next_packet_type == 1) {
                 if (cnt_sedp_pub_wr_elapsed)
                     tx_cnt_elapsed++;
@@ -666,8 +680,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_PUB_WRITER_OUT(3);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_1 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_pub_wr_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -697,8 +718,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_SUB_WRITER_OUT(3);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_2 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_sub_wr_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -728,8 +756,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_3 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_pub_hb_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -759,8 +794,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_4 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_sub_hb_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -794,8 +836,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_PUB_ACKNACK_OUT(3);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_5 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_pub_an_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -834,8 +883,15 @@ static void ros2_out(
                         break;
                     case 3:
                         SEDP_SUB_ACKNACK_OUT(3);
-                        if (tx_cnt_elapsed == 4)
+                        if (tx_cnt_elapsed == 4) {
+                            /* Cyber scheduling_block = non-transparent */
+                        cnt_reset_6 : {
+#pragma HLS protocol fixed
                             *cnt_sedp_sub_an_set = 1;
+                            CLOCK_BOUNDARY;
+                            CLOCK_BOUNDARY;
+                        }
+                        }
                         ROTATE_NEXT_PACKET_TYPE;
                         tx_cnt_elapsed = 0;
                         break;
@@ -877,7 +933,14 @@ static void ros2_out(
                                    pub_app_data_req, pub_app_data_rel,
                                    pub_app_data_grant, app_writer_entity_id,
                                    tx_buf, app_seqnum);
+
+                    /* Cyber scheduling_block = non-transparent */
+                cnt_reset_7 : {
+#pragma HLS protocol fixed
                     *cnt_app_wr_set = 1;
+                    CLOCK_BOUNDARY;
+                    CLOCK_BOUNDARY;
+                }
                     ROTATE_NEXT_PACKET_TYPE;
                     break;
                 }
