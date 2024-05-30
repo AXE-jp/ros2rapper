@@ -157,7 +157,6 @@ static void ros2_in(
                // asserted if result of read_nb() is unused.
 }
 
-/* Cyber func=inline */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
                             const uint8_t default_port[2], tx_buf &tx_buf,
                             const config_t *conf) {
@@ -184,7 +183,6 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
     tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=inline */
 static void sedp_pub_writer_out(
     const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
@@ -206,7 +204,6 @@ static void sedp_pub_writer_out(
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=inline */
 static void sedp_sub_writer_out(
     const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
@@ -228,7 +225,6 @@ static void sedp_sub_writer_out(
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
-/* Cyber func=inline */
 static void sedp_heartbeat_out(
     const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
@@ -252,7 +248,6 @@ static void sedp_heartbeat_out(
     tx_buf.len = SEDP_HEARTBEAT_IP_PKT_LEN;
 }
 
-/* Cyber func=inline */
 static void
 sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                  const uint8_t dst_port[2],
@@ -277,7 +272,6 @@ sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     tx_buf.len = SEDP_ACKNACK_IP_PKT_LEN;
 }
 
-/* Cyber func=inline */
 static void
 app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
@@ -303,7 +297,6 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
     tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
 }
 
-/* Cyber func=inline */
 static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
                        tx_buf &tx_buf, const uint8_t src_addr[4],
                        const uint8_t src_port[2], uint8_t udp_payload_len) {
@@ -398,7 +391,6 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         }                                                                      \
     } while (0)
 
-/* Cyber func=inline */
 void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                     app_endpoint            app_reader_tbl[APP_READER_MAX],
                     const config_t         *conf,
@@ -409,7 +401,6 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                     volatile uint8_t       *pub_app_data_grant,
                     const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t &app_seqnum) {
-#pragma HLS inline
 
     if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
