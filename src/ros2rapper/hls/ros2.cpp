@@ -1059,30 +1059,30 @@ void ros2(
 #pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len
 #pragma HLS interface mode = ap_memory port = sub_app_data
-#pragma HLS interface mode = ap_none port = sub_app_data_len
-#pragma HLS interface mode = ap_none port = sub_app_data_rep_id
+#pragma HLS interface mode = ap_ack port = sub_app_data_len
+#pragma HLS interface mode = ap_ack port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = pub_app_data_req
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
-#pragma HLS interface mode = ap_none port = pub_app_data_grant
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
-#pragma HLS interface mode = ap_none port = sub_app_data_grant
+#pragma HLS interface mode = ap_ack port = sub_app_data_grant
 #pragma HLS interface mode = ap_vld port = udp_rxbuf_rel
-#pragma HLS interface mode = ap_none port = udp_rxbuf_grant
+#pragma HLS interface mode = ap_ack port = udp_rxbuf_grant
 #pragma HLS interface mode = ap_vld port = udp_txbuf_rel
-#pragma HLS interface mode = ap_none port = udp_txbuf_grant
+#pragma HLS interface mode = ap_ack port = udp_txbuf_grant
 #pragma HLS interface mode = ap_ctrl_none port = return
 
-#pragma HLS interface mode = ap_none port = cnt_interval_elapsed
-#pragma HLS interface mode = ap_none port = cnt_spdp_wr_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_wr_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_wr_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_hb_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_hb_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_pub_an_elapsed
-#pragma HLS interface mode = ap_none port = cnt_sedp_sub_an_elapsed
-#pragma HLS interface mode = ap_none port = cnt_app_wr_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_interval_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_spdp_wr_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_pub_wr_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_sub_wr_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_pub_hb_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_sub_hb_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_pub_an_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_sedp_sub_an_elapsed
+#pragma HLS interface mode = ap_ack port = cnt_app_wr_elapsed
 
 #pragma HLS interface mode = ap_vld port = cnt_interval_set
 #pragma HLS interface mode = ap_vld port = cnt_spdp_wr_set
