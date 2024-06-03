@@ -420,7 +420,6 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
         CLOCK_BOUNDARY;
         CLOCK_BOUNDARY;
-    }
 
         if (*pub_app_data_grant == 1) {
             app_writer_out(app_writer_entity_id, app_reader_tbl[id].ip_addr,
@@ -430,16 +429,13 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
                            conf->ip_addr, conf->node_udp_port,
                            conf->guid_prefix, pub_app_data, pub_app_data_len);
 
-            /* Cyber scheduling_block = non-transparent */
-        app_data_release_section : {
-#pragma HLS protocol fixed
             CLOCK_BOUNDARY;
             *pub_app_data_rel
                 = 0 /* write dummy value to assert valid signal */;
             CLOCK_BOUNDARY;
             CLOCK_BOUNDARY;
         }
-        }
+    }
     }
 }
 
