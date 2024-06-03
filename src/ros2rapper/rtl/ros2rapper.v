@@ -288,9 +288,7 @@ ros2 (
     .sub_app_data_we0(ros2_sub_app_data_we),
     .sub_app_data_d0(ros2_sub_app_data_wdata),
     .sub_app_data_len(ros2_sub_app_data_len),
-    .sub_app_data_len_ap_ack(),
     .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
-    .sub_app_data_rep_id_ap_ack(),
 
     .cnt_interval_set(),
     .cnt_interval_set_ap_vld(ros2_cnt_interval_set),

@@ -1055,8 +1055,8 @@ void ros2(
 #pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len
 #pragma HLS interface mode = ap_memory port = sub_app_data
-#pragma HLS interface mode = ap_ack port = sub_app_data_len
-#pragma HLS interface mode = ap_ack port = sub_app_data_rep_id
+#pragma HLS interface mode = ap_none port = sub_app_data_len
+#pragma HLS interface mode = ap_none port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = pub_app_data_req
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
 #pragma HLS interface mode = ap_ack port = pub_app_data_grant
