@@ -966,8 +966,8 @@ static void ros2_out(
 void ros2(
     hls_stream<uint8_t> &in /* Cyber port_mode=cw_fifo */,
     hls_stream<uint8_t> &out /* Cyber port_mode=cw_fifo */,
-    uint32_t             udp_rxbuf[RAWUDP_RXBUF_LEN / 4],
-    uint32_t             udp_txbuf[RAWUDP_TXBUF_LEN / 4],
+    uint32_t             udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
+    uint32_t             udp_txbuf[RAWUDP_TXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<1>            pub_enable /* Cyber port_mode=in */,
     hls_uint<1>            sub_enable /* Cyber port_mode=in */,
@@ -975,8 +975,8 @@ void ros2(
     volatile const uint8_t pub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
     volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
-    uint8_t
-        sub_app_data[MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared */,
+    uint8_t                 sub_app_data
+        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     volatile uint8_t *sub_app_data_len, volatile uint16_t *sub_app_data_rep_id,
     volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
     volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
