@@ -19,9 +19,9 @@ proj_ros2test/
 *.VSG
 *.err
 *.tips
-*.v
 *.LSInfo
 *.scuba
 *.vgerr
 *.warn
 *.IFF
+ros2_cwb.v
