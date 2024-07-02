@@ -27,13 +27,13 @@ Then write generated bitstream (ros2rapper-udp/ros2rapper-udp.runs/impl\_1/top.b
 ### Test UDP send feature
 * This example sends UDP datagrams to port 1234 of `192.168.1.10`.
 * To show payload of UDP datagrams arrived at port 1234 of Linux machine, run following command.
-  * `nc -u 1234`
+  * `nc -ul 1234`
 * Text "UDP Send Test\n" will be shown periodically.
 
 ### Test UDP receive feature
 * This example receives only UDP datagrams arrived at port 1234.
 * To send UDP datagrams to port 1234 of FPGA, run following command.
-  * `nc -ul 192.168.1.100 1234`
+  * `nc -u 192.168.1.100 1234`
 * Input any text, then press enter key to send UDP datagram.
 * LED 4-8 on FPGA board will be changed when UDP datagram has been arrived.
   * LED 4 is on when datagram length >= 1.
