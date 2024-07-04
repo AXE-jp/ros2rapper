@@ -7,7 +7,19 @@
 `include "ros2_config.vh"
 `include "ros2_ether_config.vh"
 
-module ros2_ether (
+module ros2_ether #(
+    parameter PRESCALER_DIV               = 64,
+    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+)
+(
     input  wire       clk,
     input  wire       rst_n,
 
@@ -63,26 +75,6 @@ module ros2_ether (
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
     output wire ros2_sub_app_data_recv,
-
-    output wire ros2_cnt_interval_set,
-    output wire ros2_cnt_spdp_wr_set,
-    output wire ros2_cnt_sedp_pub_wr_set,
-    output wire ros2_cnt_sedp_sub_wr_set,
-    output wire ros2_cnt_sedp_pub_hb_set,
-    output wire ros2_cnt_sedp_sub_hb_set,
-    output wire ros2_cnt_sedp_pub_an_set,
-    output wire ros2_cnt_sedp_sub_an_set,
-    output wire ros2_cnt_app_wr_set,
-
-    input wire ros2_cnt_interval_elapsed,
-    input wire ros2_cnt_spdp_wr_elapsed,
-    input wire ros2_cnt_sedp_pub_wr_elapsed,
-    input wire ros2_cnt_sedp_sub_wr_elapsed,
-    input wire ros2_cnt_sedp_pub_hb_elapsed,
-    input wire ros2_cnt_sedp_sub_hb_elapsed,
-    input wire ros2_cnt_sedp_pub_an_elapsed,
-    input wire ros2_cnt_sedp_sub_an_elapsed,
-    input wire ros2_cnt_app_wr_elapsed,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
@@ -248,7 +240,18 @@ rx_fifo (
     .empty(rx_fifo_empty)
 );
 
-ros2rapper
+ros2rapper #(
+    .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
+    .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
+    .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
+    .TX_PERIOD_SEDP_SUB_WR_COUNT(TX_PERIOD_SEDP_SUB_WR_COUNT),
+    .TX_PERIOD_SEDP_PUB_HB_COUNT(TX_PERIOD_SEDP_PUB_HB_COUNT),
+    .TX_PERIOD_SEDP_SUB_HB_COUNT(TX_PERIOD_SEDP_SUB_HB_COUNT),
+    .TX_PERIOD_SEDP_PUB_AN_COUNT(TX_PERIOD_SEDP_PUB_AN_COUNT),
+    .TX_PERIOD_SEDP_SUB_AN_COUNT(TX_PERIOD_SEDP_SUB_AN_COUNT),
+    .TX_PERIOD_APP_WR_COUNT     (TX_PERIOD_APP_WR_COUNT     )
+)
 ros2rapper (
     .clk(clk),
     .rst_n(rst_n),
@@ -303,26 +306,6 @@ ros2rapper (
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
     .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
     .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
-
-    .ros2_cnt_interval_set(ros2_cnt_interval_set),
-    .ros2_cnt_spdp_wr_set(ros2_cnt_spdp_wr_set),
-    .ros2_cnt_sedp_pub_wr_set(ros2_cnt_sedp_pub_wr_set),
-    .ros2_cnt_sedp_sub_wr_set(ros2_cnt_sedp_sub_wr_set),
-    .ros2_cnt_sedp_pub_hb_set(ros2_cnt_sedp_pub_hb_set),
-    .ros2_cnt_sedp_sub_hb_set(ros2_cnt_sedp_sub_hb_set),
-    .ros2_cnt_sedp_pub_an_set(ros2_cnt_sedp_pub_an_set),
-    .ros2_cnt_sedp_sub_an_set(ros2_cnt_sedp_sub_an_set),
-    .ros2_cnt_app_wr_set(ros2_cnt_app_wr_set),
-
-    .ros2_cnt_interval_elapsed(ros2_cnt_interval_elapsed),
-    .ros2_cnt_spdp_wr_elapsed(ros2_cnt_spdp_wr_elapsed),
-    .ros2_cnt_sedp_pub_wr_elapsed(ros2_cnt_sedp_pub_wr_elapsed),
-    .ros2_cnt_sedp_sub_wr_elapsed(ros2_cnt_sedp_sub_wr_elapsed),
-    .ros2_cnt_sedp_pub_hb_elapsed(ros2_cnt_sedp_pub_hb_elapsed),
-    .ros2_cnt_sedp_sub_hb_elapsed(ros2_cnt_sedp_sub_hb_elapsed),
-    .ros2_cnt_sedp_pub_an_elapsed(ros2_cnt_sedp_pub_an_elapsed),
-    .ros2_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
-    .ros2_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
 
     .udp_rxbuf_rel(udp_rxbuf_rel),
     .udp_rxbuf_grant(udp_rxbuf_grant),

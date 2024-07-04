@@ -198,52 +198,6 @@ module top (
         .o_rdata(payloadsmem_rdata)
     );
 
-    wire w_cnt_interval_set;
-    wire w_cnt_spdp_wr_set;
-    wire w_cnt_sedp_pub_wr_set;
-    wire w_cnt_sedp_sub_wr_set;
-    wire w_cnt_sedp_pub_hb_set;
-    wire w_cnt_sedp_sub_hb_set;
-    wire w_cnt_sedp_pub_an_set;
-    wire w_cnt_sedp_sub_an_set;
-    wire w_cnt_app_wr_set;
-
-    wire w_cnt_interval_elapsed;
-    wire w_cnt_spdp_wr_elapsed;
-    wire w_cnt_sedp_pub_wr_elapsed;
-    wire w_cnt_sedp_sub_wr_elapsed;
-    wire w_cnt_sedp_pub_hb_elapsed;
-    wire w_cnt_sedp_sub_hb_elapsed;
-    wire w_cnt_sedp_pub_an_elapsed;
-    wire w_cnt_sedp_sub_an_elapsed;
-    wire w_cnt_app_wr_elapsed;
-
-    ros2rapper_tx_counters ros2rapper_tx_counters
-    (
-        .i_clk(clk_int),
-        .i_rst_n(rst_n_int),
-    
-        .i_cnt_interval_set(w_cnt_interval_set),
-        .i_cnt_spdp_wr_set(w_cnt_spdp_wr_set),
-        .i_cnt_sedp_pub_wr_set(w_cnt_sedp_pub_wr_set),
-        .i_cnt_sedp_sub_wr_set(w_cnt_sedp_sub_wr_set),
-        .i_cnt_sedp_pub_hb_set(w_cnt_sedp_pub_hb_set),
-        .i_cnt_sedp_sub_hb_set(w_cnt_sedp_sub_hb_set),
-        .i_cnt_sedp_pub_an_set(w_cnt_sedp_pub_an_set),
-        .i_cnt_sedp_sub_an_set(w_cnt_sedp_sub_an_set),
-        .i_cnt_app_wr_set(w_cnt_app_wr_set),
-    
-        .o_cnt_interval_elapsed(w_cnt_interval_elapsed),
-        .o_cnt_spdp_wr_elapsed(w_cnt_spdp_wr_elapsed),
-        .o_cnt_sedp_pub_wr_elapsed(w_cnt_sedp_pub_wr_elapsed),
-        .o_cnt_sedp_sub_wr_elapsed(w_cnt_sedp_sub_wr_elapsed),
-        .o_cnt_sedp_pub_hb_elapsed(w_cnt_sedp_pub_hb_elapsed),
-        .o_cnt_sedp_sub_hb_elapsed(w_cnt_sedp_sub_hb_elapsed),
-        .o_cnt_sedp_pub_an_elapsed(w_cnt_sedp_pub_an_elapsed),
-        .o_cnt_sedp_sub_an_elapsed(w_cnt_sedp_sub_an_elapsed),
-        .o_cnt_app_wr_elapsed(w_cnt_app_wr_elapsed)
-    );
-
     // --- ROS2rapper with Ethernet
     ros2_ether ros2 (
         .clk(clk_int),
@@ -301,26 +255,6 @@ module top (
         .ros2_sub_app_data_rel(1'b0),
         .ros2_sub_app_data_grant(),
         .ros2_sub_app_data_recv(),
-
-        .ros2_cnt_interval_set(w_cnt_interval_set),
-        .ros2_cnt_spdp_wr_set(w_cnt_spdp_wr_set),
-        .ros2_cnt_sedp_pub_wr_set(w_cnt_sedp_pub_wr_set),
-        .ros2_cnt_sedp_sub_wr_set(w_cnt_sedp_sub_wr_set),
-        .ros2_cnt_sedp_pub_hb_set(w_cnt_sedp_pub_hb_set),
-        .ros2_cnt_sedp_sub_hb_set(w_cnt_sedp_sub_hb_set),
-        .ros2_cnt_sedp_pub_an_set(w_cnt_sedp_pub_an_set),
-        .ros2_cnt_sedp_sub_an_set(w_cnt_sedp_sub_an_set),
-        .ros2_cnt_app_wr_set(w_cnt_app_wr_set),
-
-        .ros2_cnt_interval_elapsed(w_cnt_interval_elapsed),
-        .ros2_cnt_spdp_wr_elapsed(w_cnt_spdp_wr_elapsed),
-        .ros2_cnt_sedp_pub_wr_elapsed(w_cnt_sedp_pub_wr_elapsed),
-        .ros2_cnt_sedp_sub_wr_elapsed(w_cnt_sedp_sub_wr_elapsed),
-        .ros2_cnt_sedp_pub_hb_elapsed(w_cnt_sedp_pub_hb_elapsed),
-        .ros2_cnt_sedp_sub_hb_elapsed(w_cnt_sedp_sub_hb_elapsed),
-        .ros2_cnt_sedp_pub_an_elapsed(w_cnt_sedp_pub_an_elapsed),
-        .ros2_cnt_sedp_sub_an_elapsed(w_cnt_sedp_sub_an_elapsed),
-        .ros2_cnt_app_wr_elapsed(w_cnt_app_wr_elapsed),
 
         .udp_rxbuf_rel(1'b1),
         .udp_rxbuf_grant(),

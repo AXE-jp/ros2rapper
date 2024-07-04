@@ -6,7 +6,19 @@
 
 `include "ros2_config.vh"
 
-module ros2rapper (
+module ros2rapper #(
+    parameter PRESCALER_DIV               = 64,
+    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+)
+(
     input  wire       clk,
     input  wire       rst_n,
 
@@ -61,26 +73,6 @@ module ros2rapper (
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
     output wire ros2_sub_app_data_recv,
-
-    output wire ros2_cnt_interval_set,
-    output wire ros2_cnt_spdp_wr_set,
-    output wire ros2_cnt_sedp_pub_wr_set,
-    output wire ros2_cnt_sedp_sub_wr_set,
-    output wire ros2_cnt_sedp_pub_hb_set,
-    output wire ros2_cnt_sedp_sub_hb_set,
-    output wire ros2_cnt_sedp_pub_an_set,
-    output wire ros2_cnt_sedp_sub_an_set,
-    output wire ros2_cnt_app_wr_set,
-
-    input wire ros2_cnt_interval_elapsed,
-    input wire ros2_cnt_spdp_wr_elapsed,
-    input wire ros2_cnt_sedp_pub_wr_elapsed,
-    input wire ros2_cnt_sedp_sub_wr_elapsed,
-    input wire ros2_cnt_sedp_pub_hb_elapsed,
-    input wire ros2_cnt_sedp_sub_hb_elapsed,
-    input wire ros2_cnt_sedp_pub_an_elapsed,
-    input wire ros2_cnt_sedp_sub_an_elapsed,
-    input wire ros2_cnt_app_wr_elapsed,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
@@ -208,6 +200,63 @@ always @(posedge clk or negedge rst_n) begin
         endcase
     end
 end
+
+wire ros2_cnt_interval_set;
+wire ros2_cnt_spdp_wr_set;
+wire ros2_cnt_sedp_pub_wr_set;
+wire ros2_cnt_sedp_sub_wr_set;
+wire ros2_cnt_sedp_pub_hb_set;
+wire ros2_cnt_sedp_sub_hb_set;
+wire ros2_cnt_sedp_pub_an_set;
+wire ros2_cnt_sedp_sub_an_set;
+wire ros2_cnt_app_wr_set;
+
+wire ros2_cnt_interval_elapsed;
+wire ros2_cnt_spdp_wr_elapsed;
+wire ros2_cnt_sedp_pub_wr_elapsed;
+wire ros2_cnt_sedp_sub_wr_elapsed;
+wire ros2_cnt_sedp_pub_hb_elapsed;
+wire ros2_cnt_sedp_sub_hb_elapsed;
+wire ros2_cnt_sedp_pub_an_elapsed;
+wire ros2_cnt_sedp_sub_an_elapsed;
+wire ros2_cnt_app_wr_elapsed;
+
+ros2rapper_tx_counters #(
+    .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
+    .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
+    .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
+    .TX_PERIOD_SEDP_SUB_WR_COUNT(TX_PERIOD_SEDP_SUB_WR_COUNT),
+    .TX_PERIOD_SEDP_PUB_HB_COUNT(TX_PERIOD_SEDP_PUB_HB_COUNT),
+    .TX_PERIOD_SEDP_SUB_HB_COUNT(TX_PERIOD_SEDP_SUB_HB_COUNT),
+    .TX_PERIOD_SEDP_PUB_AN_COUNT(TX_PERIOD_SEDP_PUB_AN_COUNT),
+    .TX_PERIOD_SEDP_SUB_AN_COUNT(TX_PERIOD_SEDP_SUB_AN_COUNT),
+    .TX_PERIOD_APP_WR_COUNT     (TX_PERIOD_APP_WR_COUNT     )
+)
+ros2rapper_tx_counters (
+    .i_clk(clk),
+    .i_rst_n(rst_n),
+
+    .i_cnt_interval_set(ros2_cnt_interval_set),
+    .i_cnt_spdp_wr_set(ros2_cnt_spdp_wr_set),
+    .i_cnt_sedp_pub_wr_set(ros2_cnt_sedp_pub_wr_set),
+    .i_cnt_sedp_sub_wr_set(ros2_cnt_sedp_sub_wr_set),
+    .i_cnt_sedp_pub_hb_set(ros2_cnt_sedp_pub_hb_set),
+    .i_cnt_sedp_sub_hb_set(ros2_cnt_sedp_sub_hb_set),
+    .i_cnt_sedp_pub_an_set(ros2_cnt_sedp_pub_an_set),
+    .i_cnt_sedp_sub_an_set(ros2_cnt_sedp_sub_an_set),
+    .i_cnt_app_wr_set(ros2_cnt_app_wr_set),
+
+    .o_cnt_interval_elapsed(ros2_cnt_interval_elapsed),
+    .o_cnt_spdp_wr_elapsed(ros2_cnt_spdp_wr_elapsed),
+    .o_cnt_sedp_pub_wr_elapsed(ros2_cnt_sedp_pub_wr_elapsed),
+    .o_cnt_sedp_sub_wr_elapsed(ros2_cnt_sedp_sub_wr_elapsed),
+    .o_cnt_sedp_pub_hb_elapsed(ros2_cnt_sedp_pub_hb_elapsed),
+    .o_cnt_sedp_sub_hb_elapsed(ros2_cnt_sedp_sub_hb_elapsed),
+    .o_cnt_sedp_pub_an_elapsed(ros2_cnt_sedp_pub_an_elapsed),
+    .o_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
+    .o_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed)
+);
 
 `ifdef ROS2RAPPER_HLS_VITIS
 ros2
@@ -606,6 +655,128 @@ ros2 (
 );
 `endif
 
+endmodule
+
+module ros2rapper_tx_counters #
+(
+    parameter PRESCALER_DIV               = 64,
+    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+)
+(
+    input wire i_clk,
+    input wire i_rst_n,
+
+    input wire i_cnt_interval_set,
+    input wire i_cnt_spdp_wr_set,
+    input wire i_cnt_sedp_pub_wr_set,
+    input wire i_cnt_sedp_sub_wr_set,
+    input wire i_cnt_sedp_pub_hb_set,
+    input wire i_cnt_sedp_sub_hb_set,
+    input wire i_cnt_sedp_pub_an_set,
+    input wire i_cnt_sedp_sub_an_set,
+    input wire i_cnt_app_wr_set,
+
+    output wire o_cnt_interval_elapsed,
+    output wire o_cnt_spdp_wr_elapsed,
+    output wire o_cnt_sedp_pub_wr_elapsed,
+    output wire o_cnt_sedp_sub_wr_elapsed,
+    output wire o_cnt_sedp_pub_hb_elapsed,
+    output wire o_cnt_sedp_sub_hb_elapsed,
+    output wire o_cnt_sedp_pub_an_elapsed,
+    output wire o_cnt_sedp_sub_an_elapsed,
+    output wire o_cnt_app_wr_elapsed
+);
+    // Counters for ROS2rapper TX scheduler
+    reg [$clog2(PRESCALER_DIV              )-1:0] cnt_prescaler;
+    reg [$clog2(TX_INTERVAL_COUNT          )-1:0] cnt_interval;
+    reg [$clog2(TX_PERIOD_SPDP_WR_COUNT    )-1:0] cnt_spdp_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_WR_COUNT)-1:0] cnt_sedp_pub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_WR_COUNT)-1:0] cnt_sedp_sub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_HB_COUNT)-1:0] cnt_sedp_pub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_HB_COUNT)-1:0] cnt_sedp_sub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_AN_COUNT)-1:0] cnt_sedp_pub_an;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_AN_COUNT)-1:0] cnt_sedp_sub_an;
+    reg [$clog2(TX_PERIOD_APP_WR_COUNT     )-1:0] cnt_app_wr;
+
+    assign o_cnt_interval_elapsed    = (cnt_interval == 0);
+    assign o_cnt_spdp_wr_elapsed     = (cnt_spdp_wr == 0);
+    assign o_cnt_sedp_pub_wr_elapsed = (cnt_sedp_pub_wr == 0);
+    assign o_cnt_sedp_sub_wr_elapsed = (cnt_sedp_sub_wr == 0);
+    assign o_cnt_sedp_pub_hb_elapsed = (cnt_sedp_pub_hb == 0);
+    assign o_cnt_sedp_sub_hb_elapsed = (cnt_sedp_sub_hb == 0);
+    assign o_cnt_sedp_pub_an_elapsed = (cnt_sedp_pub_an == 0);
+    assign o_cnt_sedp_sub_an_elapsed = (cnt_sedp_sub_an == 0);
+    assign o_cnt_app_wr_elapsed      = (cnt_app_wr == 0);
+
+    always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            cnt_prescaler <= 0;
+            cnt_interval <= 0;
+            cnt_spdp_wr <= 0;
+            cnt_sedp_pub_wr <= 0;
+            cnt_sedp_sub_wr <= 0;
+            cnt_sedp_pub_hb <= 0;
+            cnt_sedp_sub_hb <= 0;
+            cnt_sedp_pub_an <= 0;
+            cnt_sedp_sub_an <= 0;
+            cnt_app_wr <= 0;
+        end else begin
+            cnt_prescaler <= cnt_prescaler + 1;
+
+            if (i_cnt_interval_set)
+                cnt_interval <= TX_INTERVAL_COUNT;
+            else if (cnt_prescaler == 0 && cnt_interval != 0)
+                cnt_interval <= cnt_interval - 1;
+
+            if (i_cnt_spdp_wr_set)
+                cnt_spdp_wr <= TX_PERIOD_SPDP_WR_COUNT;
+            else if (cnt_prescaler == 0 && cnt_spdp_wr != 0)
+                cnt_spdp_wr <= cnt_spdp_wr - 1;
+
+            if (i_cnt_sedp_pub_wr_set)
+                cnt_sedp_pub_wr <= TX_PERIOD_SEDP_PUB_WR_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_pub_wr != 0)
+                cnt_sedp_pub_wr <= cnt_sedp_pub_wr - 1;
+
+            if (i_cnt_sedp_sub_wr_set)
+                cnt_sedp_sub_wr <= TX_PERIOD_SEDP_SUB_WR_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_sub_wr != 0)
+                cnt_sedp_sub_wr <= cnt_sedp_sub_wr - 1;
+
+            if (i_cnt_sedp_pub_hb_set)
+                cnt_sedp_pub_hb <= TX_PERIOD_SEDP_PUB_HB_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_pub_hb != 0)
+                cnt_sedp_pub_hb <= cnt_sedp_pub_hb - 1;
+
+            if (i_cnt_sedp_sub_hb_set)
+                cnt_sedp_sub_hb <= TX_PERIOD_SEDP_SUB_HB_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_sub_hb != 0)
+                cnt_sedp_sub_hb <= cnt_sedp_sub_hb - 1;
+
+            if (i_cnt_sedp_pub_an_set)
+                cnt_sedp_pub_an <= TX_PERIOD_SEDP_PUB_AN_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_pub_an != 0)
+                cnt_sedp_pub_an <= cnt_sedp_pub_an - 1;
+
+            if (i_cnt_sedp_sub_an_set)
+                cnt_sedp_sub_an <= TX_PERIOD_SEDP_SUB_AN_COUNT;
+            else if (cnt_prescaler == 0 && cnt_sedp_sub_an != 0)
+                cnt_sedp_sub_an <= cnt_sedp_sub_an - 1;
+
+            if (i_cnt_app_wr_set)
+                cnt_app_wr <= TX_PERIOD_APP_WR_COUNT;
+            else if (cnt_prescaler == 0 && cnt_app_wr != 0)
+                cnt_app_wr <= cnt_app_wr - 1;
+        end
+    end
 endmodule
 
 `resetall
