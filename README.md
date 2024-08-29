@@ -1,5 +1,5 @@
 # ros2rapper
-ROS2 IP for FPGA/ASIC
+ROS2 communicating protocol hardware IP for FPGA/ASIC
 
 ## Prerequisites
 ROS2rapper is mainly written in C++ and supports following high-level synthesis softwares.
