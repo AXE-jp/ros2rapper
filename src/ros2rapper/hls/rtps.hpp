@@ -70,7 +70,7 @@
 
 #define SP_DATA_LEN_SIZE 4
 
-#define ROUND_UP(x, size)     (((x) + ((size)-1)) & ~((size)-1))
+#define ROUND_UP(x, size)     (((x) + ((size) - 1)) & ~((size) - 1))
 #define SP_STR_DATA_SIZE(len) (SP_DATA_LEN_SIZE + ROUND_UP(len, 4))
 
 #define GUID_PREFIX_SIZE 12
@@ -184,7 +184,7 @@
 #define USER_TRAFFIC_UNICAST_PORT_1(seed, participant_id)                      \
     (((seed) + D3 + PG * (participant_id)) & 0xff)
 
-#define DOMAIN_ID(udp_port) (((udp_port)-PB) / DG)
+#define DOMAIN_ID(udp_port) (((udp_port) - PB) / DG)
 
 bool rtps_compare_protocol(const hls_uint<5> offset, const uint8_t x);
 bool rtps_compare_data_hdr_reader_id(const hls_uint<5> offset, const uint8_t x,

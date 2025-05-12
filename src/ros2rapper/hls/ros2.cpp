@@ -415,7 +415,7 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
     if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
         /* Cyber scheduling_block = non-transparent */
-    app_data_request_section : {
+    app_data_request_section: {
 #pragma HLS protocol fixed
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
         CLOCK_BOUNDARY;
@@ -558,7 +558,7 @@ static void ros2_out(
 
         if (tx_buf.empty()) {
             /* Cyber scheduling_block = non-transparent */
-        cnt_reset_interval : {
+        cnt_reset_interval: {
 #pragma HLS protocol fixed
             *cnt_interval_set = 1;
             CLOCK_BOUNDARY;
@@ -655,7 +655,7 @@ static void ros2_out(
                 ROTATE_NEXT_PACKET_TYPE;
 
                 /* Cyber scheduling_block = non-transparent */
-            cnt_reset_0 : {
+            cnt_reset_0: {
 #pragma HLS protocol fixed
                 *cnt_spdp_wr_set = 1;
                 CLOCK_BOUNDARY;
@@ -687,7 +687,7 @@ static void ros2_out(
                         SEDP_PUB_WRITER_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_1 : {
+                        cnt_reset_1: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_wr_set = 1;
                             CLOCK_BOUNDARY;
@@ -725,7 +725,7 @@ static void ros2_out(
                         SEDP_SUB_WRITER_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_2 : {
+                        cnt_reset_2: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_wr_set = 1;
                             CLOCK_BOUNDARY;
@@ -763,7 +763,7 @@ static void ros2_out(
                         SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_3 : {
+                        cnt_reset_3: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_hb_set = 1;
                             CLOCK_BOUNDARY;
@@ -801,7 +801,7 @@ static void ros2_out(
                         SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_4 : {
+                        cnt_reset_4: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_hb_set = 1;
                             CLOCK_BOUNDARY;
@@ -843,7 +843,7 @@ static void ros2_out(
                         SEDP_PUB_ACKNACK_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_5 : {
+                        cnt_reset_5: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_an_set = 1;
                             CLOCK_BOUNDARY;
@@ -890,7 +890,7 @@ static void ros2_out(
                         SEDP_SUB_ACKNACK_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_6 : {
+                        cnt_reset_6: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_an_set = 1;
                             CLOCK_BOUNDARY;
@@ -940,7 +940,7 @@ static void ros2_out(
                                    tx_buf, app_seqnum);
 
                     /* Cyber scheduling_block = non-transparent */
-                cnt_reset_7 : {
+                cnt_reset_7: {
 #pragma HLS protocol fixed
                     *cnt_app_wr_set = 1;
                     CLOCK_BOUNDARY;

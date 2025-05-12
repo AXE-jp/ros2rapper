@@ -41,9 +41,9 @@
 // #define SBM_ENDIAN_BIG
 
 #ifdef SBM_ENDIAN_LITTLE
-#define S_BYTE0(x) ((x)&0xff)
+#define S_BYTE0(x) ((x) & 0xff)
 #define S_BYTE1(x) (((x) >> 8) & 0xff)
-#define L_BYTE0(x) ((x)&0xff)
+#define L_BYTE0(x) ((x) & 0xff)
 #define L_BYTE1(x) (((x) >> 8) & 0xff)
 #define L_BYTE2(x) (((x) >> 16) & 0xff)
 #define L_BYTE3(x) (((x) >> 24) & 0xff)
@@ -51,11 +51,11 @@
 
 #ifdef SBM_ENDIAN_BIG
 #define S_BYTE0(x) (((x) >> 8) & 0xff)
-#define S_BYTE1(x) ((x)&0xff)
+#define S_BYTE1(x) ((x) & 0xff)
 #define L_BYTE0(x) (((x) >> 24) & 0xff)
 #define L_BYTE1(x) (((x) >> 16) & 0xff)
 #define L_BYTE2(x) (((x) >> 8) & 0xff)
-#define L_BYTE3(x) ((x)&0xff)
+#define L_BYTE3(x) ((x) & 0xff)
 #endif // SBM_ENDIAN_BIG
 
 #endif // !COMMON_HPP
