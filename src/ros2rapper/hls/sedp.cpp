@@ -11,9 +11,10 @@
 #include "spdp.hpp"
 
 /* Cyber func=inline */
-static void compare_guid_prefix_of_app_endpoint(
-    const uint8_t x, const app_endpoint tbl[APP_READER_MAX], const int idx,
-    hls_uint<APP_READER_MAX> &unmatched) {
+void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
+                                         const app_endpoint tbl[APP_READER_MAX],
+                                         const int          idx,
+                                         hls_uint<APP_READER_MAX> &unmatched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
@@ -326,6 +327,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         reader.app_ep_type = (ep_type & BUILTIN_EP_PUB)
                                                  ? APP_EP_SUB
                                                  : APP_EP_PUB;
+                        reader.alive = true;
                         app_reader_cnt++;
                     }
                 }

@@ -144,6 +144,7 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
                         reader.builtin_subrd_rd_seqnum = 1;
                         reader.builtin_pubrd_wr_seqnum = 0;
                         reader.builtin_subrd_wr_seqnum = 0;
+                        reader.alive = true;
                         reader_cnt++;
                     }
                 }

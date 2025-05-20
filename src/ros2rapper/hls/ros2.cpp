@@ -7,6 +7,7 @@
 #include "endpoint.hpp"
 #include "hls.hpp"
 #include "ip.hpp"
+#include "remove_endpoints.hpp"
 #include "ros2.hpp"
 #include "sedp.hpp"
 #include "slip.hpp"
@@ -103,7 +104,7 @@ static void ros2_in(
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint16_t *sub_app_data_rep_id, volatile uint8_t *rawudp_rxbuf_rel,
     volatile uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
-    hls_uint<9> *xout) {
+    bool *reading_rtps_message, hls_uint<9> *xout) {
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
 
@@ -135,6 +136,9 @@ static void ros2_in(
 
     if (!s3.read_nb(x))
         return;
+
+    update_liveliness(x, conf, sedp_reader_tbl, app_reader_tbl,
+                      reading_rtps_message);
 
     spdp_reader(x, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
                 conf->subnet_mask, conf->port_num_seed);
@@ -466,7 +470,7 @@ static void ros2_out(
     volatile uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
     volatile uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
     volatile uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
-    volatile uint8_t *cnt_app_wr_set) {
+    volatile uint8_t *cnt_app_wr_set, bool reading_rtps_message) {
 
     static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
@@ -544,8 +548,15 @@ static void ros2_out(
     static hls_uint<2> tx_progress;
     static hls_uint<3> tx_cnt_elapsed;
 
-    static hls_uint<3> next_packet_type = 0;
-#define ROTATE_NEXT_PACKET_TYPE next_packet_type++
+    static hls_uint<4> next_packet_type = 0;
+#define ROTATE_NEXT_PACKET_TYPE                                                \
+    do {                                                                       \
+        if (next_packet_type < 8) {                                            \
+            next_packet_type++;                                                \
+        } else {                                                               \
+            next_packet_type = 0;                                              \
+        }                                                                      \
+    } while (0)
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
@@ -950,6 +961,48 @@ static void ros2_out(
                     break;
                 }
                 tx_progress++;
+            } else if (next_packet_type == 8) {
+                // Collect a dead endpoint.
+                if (reading_rtps_message) {
+                    // Do not touch the endpoint tables while reading a RTPS
+                    // message.
+                    tx_progress = 0;
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        collect_dead_endpoint(
+                            0, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+                            app_reader_tbl, sedp_pub_heartbeat_cnt,
+                            sedp_sub_heartbeat_cnt, sedp_pub_acknack_cnt,
+                            sedp_sub_heartbeat_cnt);
+                        break;
+                    case 1:
+                        collect_dead_endpoint(
+                            1, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+                            app_reader_tbl, sedp_pub_heartbeat_cnt,
+                            sedp_sub_heartbeat_cnt, sedp_pub_acknack_cnt,
+                            sedp_sub_heartbeat_cnt);
+                        break;
+                    case 2:
+                        collect_dead_endpoint(
+                            2, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+                            app_reader_tbl, sedp_pub_heartbeat_cnt,
+                            sedp_sub_heartbeat_cnt, sedp_pub_acknack_cnt,
+                            sedp_sub_heartbeat_cnt);
+                        break;
+                    case 3:
+                        collect_dead_endpoint(
+                            3, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+                            app_reader_tbl, sedp_pub_heartbeat_cnt,
+                            sedp_sub_heartbeat_cnt, sedp_pub_acknack_cnt,
+                            sedp_sub_heartbeat_cnt);
+                        break;
+                    }
+                    tx_progress++;
+                }
+                if (tx_progress == 0) {
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else {
                 ROTATE_NEXT_PACKET_TYPE;
             }
@@ -1098,22 +1151,28 @@ void ros2(
 #pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
+    // This flag becomes true when ros2rapper begins to read the GUID prefix in
+    // a RTPS message and becomes false when ros2rapper reaches the end of a
+    // RTPS message.
+    static bool reading_rtps_message;
+
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_cnt, sedp_reader_tbl,
             app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
             sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
             sub_app_data_grant, sub_app_data, sub_app_data_len,
             sub_app_data_rep_id, udp_rxbuf_rel, udp_rxbuf_grant,
-            conf->ignore_ip_checksum, xout);
+            conf->ignore_ip_checksum, &reading_rtps_message, xout);
 
-    ros2_out(
-        out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
-        app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
-        pub_app_data_len, pub_app_data_req, pub_app_data_rel,
-        pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
-        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
-        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
-        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
-        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
-        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set);
+    ros2_out(out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
+             app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
+             pub_app_data_len, pub_app_data_req, pub_app_data_rel,
+             pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
+             cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
+             cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
+             cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
+             cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
+             cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+             cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
+             cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
+             cnt_app_wr_set, reading_rtps_message);
 }

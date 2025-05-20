@@ -30,6 +30,7 @@
 #define SBM_ID_DATA      0x15
 
 #define SBM_FLAGS_ENDIANNESS 0x01
+#define SBM_FLAGS_INLINE_QOS 0x02
 #define SBM_FLAGS_DATA       0x04
 
 #define SBM_DATA_HDR_SIZE 20
@@ -127,6 +128,7 @@
 #define PID_TYPE_MAX_SIZE_SERIALIZED    0x0060
 #define PID_ENTITY_NAME                 0x0062
 #define PID_KEY_HASH                    0x0070
+#define PID_STATUS_INFO                 0x0071
 
 #define PID_PARTICIPANT_LEASE_DURATION_SIZE  8
 #define PID_OWNERSHIP_STRENGTH_SIZE          4
@@ -148,6 +150,7 @@
 #define PID_ENDPOINT_GUID_SIZE               16
 #define PID_TYPE_MAX_SIZE_SERIALIZED_SIZE    4
 #define PID_KEY_HASH_SIZE                    16
+#define PID_STATUS_INFO_SIZE                 4
 
 #define LOCATOR_KIND_INVALID  -1
 #define LOCATOR_KIND_RESERVED 0
