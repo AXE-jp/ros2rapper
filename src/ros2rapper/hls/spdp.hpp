@@ -36,6 +36,6 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
                  uint8_t buf[SPDP_WRITER_TOT_LEN], const uint8_t entity_name[],
-                 uint8_t entity_name_len);
+                 uint8_t entity_name_len, timestamp now);
 
 #endif // !SPDP_HPP

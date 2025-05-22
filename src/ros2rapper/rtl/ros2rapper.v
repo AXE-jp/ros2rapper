@@ -201,6 +201,20 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+// local_timestamp[63:32] is time in second and local_timestamp[31:0] is the fractional part.
+reg [63:0] local_timestamp;
+// Designate the bit length to prevent overflow.
+localparam [33:0] TWO_SECONDS = 2 * (2 ** 32);
+// How much local_timestamp increases in each cycle.
+localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + `ROS2CLK_HZ) / (2 * `ROS2CLK_HZ);
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        local_timestamp <= 64'd0;
+    end else begin
+        local_timestamp = local_timestamp + LOCAL_TIMESTAMP_INCREMENT;
+    end
+end
+
 wire ros2_cnt_interval_set;
 wire ros2_cnt_spdp_wr_set;
 wire ros2_cnt_sedp_pub_wr_set;
@@ -386,6 +400,8 @@ ros2 (
     .udp_txbuf_rel(),
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
     .udp_txbuf_grant_ap_ack(),
+
+    .timestamp_i64(local_timestamp),
 
     .xout(),
     .xout_ap_vld()

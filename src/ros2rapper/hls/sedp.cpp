@@ -524,7 +524,8 @@ void sedp_writer(
     const uint8_t usertraffic_addr[4], const uint8_t usertraffic_port[2],
     const uint8_t app_entity_id[4], uint8_t buf[SEDP_WRITER_TOT_LEN],
     const uint8_t topic_name[MAX_TOPIC_NAME_LEN], uint8_t topic_name_len,
-    const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len) {
+    const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len,
+    timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -535,9 +536,8 @@ void sedp_writer(
     static const uint16_t rep_id = SP_ID_PL_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now = TIME_ZERO;
-    static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt = 0;
+    static const uint16_t ext_flags = 0;
+    static const uint16_t rep_opt = 0;
 
     static const uint16_t octets_to_next_header
         = SEDP_WRITER_OCTETS_TO_NEXT_HEADER;

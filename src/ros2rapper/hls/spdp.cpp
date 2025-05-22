@@ -246,7 +246,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
                  uint8_t buf[], const uint8_t entity_name[MAX_NODE_NAME_LEN],
-                 uint8_t entity_name_len) {
+                 uint8_t entity_name_len, timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -257,9 +257,8 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     static const uint16_t rep_id = SP_ID_PL_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now = TIME_ZERO;
-    static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt = 0;
+    static const uint16_t ext_flags = 0;
+    static const uint16_t rep_opt = 0;
 
     static const uint16_t octets_to_next_header
         = SPDP_WRITER_OCTETS_TO_NEXT_HEADER;

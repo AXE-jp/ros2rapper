@@ -57,7 +57,8 @@ void sedp_writer(
     const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
     const uint8_t usertraffic_addr[4], const uint8_t usertraffic_port[2],
     const uint8_t app_entity_id[4], uint8_t buf[], const uint8_t topic_name[],
-    uint8_t topic_name_len, const uint8_t type_name[], uint8_t type_name_len);
+    uint8_t topic_name_len, const uint8_t type_name[], uint8_t type_name_len,
+    timestamp now);
 
 void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
                     const uint8_t writer_entity_id[4],
