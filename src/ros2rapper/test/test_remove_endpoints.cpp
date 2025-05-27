@@ -155,8 +155,8 @@ constexpr uint8_t test_update_liveliness_dead_data_3[] = {
 constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00};
 
-void setup_sedp_reader_tbl(unsigned int mask, const uint8_t test_data[],
-                           sedp_endpoint tbl[SEDP_READER_MAX]) {
+static void setup_sedp_reader_tbl(unsigned int mask, const uint8_t test_data[],
+                                  sedp_endpoint tbl[SEDP_READER_MAX]) {
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         bool jth_selected = ((1 << j) & mask);
         // setup GUID prefix
@@ -176,8 +176,9 @@ void setup_sedp_reader_tbl(unsigned int mask, const uint8_t test_data[],
     }
 }
 
-int check_sedp_reader_tbl_liveliness(unsigned int  mask,
-                                     sedp_endpoint tbl[SEDP_READER_MAX]) {
+static int
+check_sedp_reader_tbl_liveliness(unsigned int  mask,
+                                 sedp_endpoint tbl[SEDP_READER_MAX]) {
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         bool jth_selected = ((1 << j) & mask);
         if (jth_selected) {
@@ -197,10 +198,9 @@ int check_sedp_reader_tbl_liveliness(unsigned int  mask,
     return 0;
 }
 
-int call_update_liveliness(const config_t *conf,
-                           sedp_endpoint   sedp_reader_tbl[SEDP_READER_MAX],
-                           int64_t timestamp_i64, const uint8_t test_data[],
-                           size_t length) {
+static int call_update_liveliness(
+    const config_t *conf, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+    int64_t timestamp_i64, const uint8_t test_data[], size_t length) {
     app_endpoint app_reader_tbl[APP_READER_MAX];
     bool         reading_rtps_message = false;
     for (auto j = 0; j < length; j++) {
@@ -208,7 +208,8 @@ int call_update_liveliness(const config_t *conf,
         if (j == (length - 1)) {
             data |= hls_uint<9>(0x100);
         }
-        update_liveliness(data, conf, sedp_reader_tbl, app_reader_tbl, &reading_rtps_message, timestamp_i64);
+        update_liveliness(data, conf->guid_prefix, sedp_reader_tbl,
+                          app_reader_tbl, &reading_rtps_message, timestamp_i64);
         // check reading_rtps_message
         if (j < RTPS_HDR_OFFSET_GUID_PREFIX) {
             if (reading_rtps_message != false) {
@@ -233,10 +234,12 @@ int call_update_liveliness(const config_t *conf,
     return 0;
 }
 
-int test_update_liveliness_1(const config_t *conf, unsigned int sedp_set_mask,
-                             unsigned int  sedp_check_mask,
-                             const uint8_t test_data[], size_t test_data_length,
-                             const char *test_data_name) {
+static int test_update_liveliness_1(const config_t *conf,
+                                    unsigned int    sedp_set_mask,
+                                    unsigned int    sedp_check_mask,
+                                    const uint8_t   test_data[],
+                                    size_t          test_data_length,
+                                    const char     *test_data_name) {
     // setup reader tables
     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
     setup_sedp_reader_tbl(sedp_set_mask, test_data, sedp_reader_tbl);
@@ -263,7 +266,7 @@ int test_update_liveliness_1(const config_t *conf, unsigned int sedp_set_mask,
     test_update_liveliness_1(conf, sedp_set_mask, sedp_check_mask, test_data,  \
                              sizeof(test_data), #test_data)
 
-int test_update_liveliness() {
+static int test_update_liveliness() {
     config_t conf;
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
         conf.guid_prefix[j] = test_update_liveliness_guid_prefix[j];
@@ -288,7 +291,7 @@ int test_update_liveliness() {
     return 0;
 }
 
-int test_update_timestamp() {
+static int test_update_timestamp() {
     // Test whether update_timestamp updates timestamps in sedp_reader_tbl
     // correctly.
     constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
@@ -325,7 +328,7 @@ int test_update_timestamp() {
     return 0;
 }
 
-int test_remove_dead_endpoints_1() {
+static int test_remove_dead_endpoints_1() {
     constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
     sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
     app_endpoint           app_reader_tbl[APP_READER_MAX];
@@ -369,7 +372,7 @@ int test_remove_dead_endpoints_1() {
     return 0;
 }
 
-int test_remove_dead_endpoints_2() {
+static int test_remove_dead_endpoints_2() {
     // If lease_duration is DURATION_INFINITE, sedp_endpoint never timeouts.
     constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
     sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];

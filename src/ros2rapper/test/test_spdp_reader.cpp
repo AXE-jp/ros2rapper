@@ -95,10 +95,11 @@ constexpr uint8_t test_spdp_reader_data_2[] = {
 constexpr uint8_t SOURCE_GUID_PREFIX[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0xcf, 0xe4, 0x00, 0x00, 0x00, 0x00};
 
-void call_spdp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                      const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                      uint16_t port_num_seed, int64_t timestamp_i64,
-                      const uint8_t test_data[], size_t test_data_size) {
+static void call_spdp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+                             const uint8_t ip_addr[4],
+                             const uint8_t subnet_mask[4],
+                             uint16_t port_num_seed, int64_t timestamp_i64,
+                             const uint8_t test_data[], size_t test_data_size) {
     for (auto j = 0; j < test_data_size; j++) {
         hls_uint<9> data = test_data[j];
         if (j == (test_data_size - 1)) {
@@ -114,7 +115,7 @@ void call_spdp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     call_spdp_reader(sedp_reader_tbl, ip_addr, subnet_mask, port_num_seed,     \
                      timestamp_i64, test_data, sizeof(test_data))
 
-int test_spdp_reader_1() {
+static int test_spdp_reader_1() {
     constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t      subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t     port_num_seed = 7400;
@@ -180,7 +181,7 @@ int test_spdp_reader_1() {
     return 0;
 }
 
-int test_spdp_reader_2() {
+static int test_spdp_reader_2() {
     constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t port_num_seed = 7400;

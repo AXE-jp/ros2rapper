@@ -135,7 +135,8 @@ static void ros2_in(
     if (!s3.read_nb(x))
         return;
 
-    update_liveliness(x, conf, sedp_reader_tbl, app_reader_tbl, reading_rtps_message, timestamp_i64);
+    update_liveliness(x, conf->guid_prefix, sedp_reader_tbl, app_reader_tbl,
+                      reading_rtps_message, timestamp_i64);
 
     spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
                 conf->port_num_seed, timestamp_i64);

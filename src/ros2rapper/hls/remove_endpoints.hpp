@@ -6,7 +6,8 @@
 
 #include "common.hpp"
 
-void update_liveliness(hls_uint<9> in, const config_t *conf,
+void update_liveliness(hls_uint<9>   in,
+                       const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
                        sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                        app_endpoint  app_reader_tbl[APP_READER_MAX],
                        bool *reading_rtps_message, int64_t timestamp_i64);

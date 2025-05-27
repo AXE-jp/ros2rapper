@@ -4,9 +4,9 @@
 #include "remove_endpoints.hpp"
 
 /* Cyber func=inline */
-void remove_sedp_endpoint(sedp_reader_id_t index,
-                          sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
-                          app_endpoint     app_reader_tbl[APP_READER_MAX]) {
+static void remove_sedp_endpoint(sedp_reader_id_t index,
+                                 sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+                                 app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
     if (index < SEDP_READER_MAX) {
         // Set sedp_reader_tbl[index] dead.
@@ -38,7 +38,8 @@ typedef enum {
 } update_liveliness_state_t;
 
 /* Cyber func=inline */
-void update_liveliness(hls_uint<9> in, const config_t *conf,
+void update_liveliness(hls_uint<9>   in,
+                       const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
                        sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                        app_endpoint  app_reader_tbl[APP_READER_MAX],
                        bool *reading_rtps_message, int64_t timestamp_i64) {
@@ -133,7 +134,7 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
         break;
     case STATE_READ_INFO_DST:
         if (offset < GUID_PREFIX_SIZE) {
-            if (conf->guid_prefix[offset] != data) {
+            if (reader_guid_prefix[offset] != data) {
                 state = STATE_WAIT_END;
                 break;
             }
