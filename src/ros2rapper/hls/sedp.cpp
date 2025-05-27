@@ -26,14 +26,14 @@ void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
 
 /* Cyber func=inline */
 hls_uint<APP_READER_MAX>
-find_living_app_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
+find_living_app_endpoints(const app_endpoint tbl[APP_READER_MAX]) {
 #pragma HLS inline
     hls_uint<APP_READER_MAX> alive = 0;
     /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+    for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
         if (tbl[j].alive) {
-            alive |= tbl[j].children;
+            alive |= hls_uint<APP_READER_MAX>(1 << j);
         }
     }
     return alive;
@@ -131,14 +131,12 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         return;
     }
 
-    hls_uint<APP_READER_MAX> living_app_endpoints
-        = find_living_app_endpoints(sedp_reader_tbl);
     app_reader_id_t app_reader_cnt;
     /* Cyber unroll_times=all */
     for (app_reader_cnt = 0; app_reader_cnt < APP_READER_MAX;
          app_reader_cnt++) {
 #pragma HLS unroll
-        if (!living_app_endpoints[app_reader_cnt]) {
+        if (!app_reader_tbl[app_reader_cnt].alive) {
             break;
         }
     }
@@ -353,7 +351,8 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
             if (param_id == PID_SENTINEL) {
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<APP_READER_MAX> valid = living_app_endpoints;
+                    hls_uint<APP_READER_MAX> valid
+                        = find_living_app_endpoints(app_reader_tbl);
                     if ((app_unmatched & valid) == valid) {
                         reader.app_ep_type = (ep_type & BUILTIN_EP_PUB)
                                                  ? APP_EP_SUB
@@ -361,6 +360,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         // Validate app_reader_tbl[app_reader_cnt]
                         participant.children
                             |= hls_uint<APP_READER_MAX>(1 << app_reader_cnt);
+                        app_reader_tbl[app_reader_cnt].alive = true;
                     }
                 }
                 app_unmatched = 0;

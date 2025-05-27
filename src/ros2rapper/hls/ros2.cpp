@@ -135,8 +135,7 @@ static void ros2_in(
     if (!s3.read_nb(x))
         return;
 
-    update_liveliness(x, conf, sedp_reader_tbl, reading_rtps_message,
-                      timestamp_i64);
+    update_liveliness(x, conf, sedp_reader_tbl, app_reader_tbl, reading_rtps_message, timestamp_i64);
 
     spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
                 conf->port_num_seed, timestamp_i64);
@@ -410,16 +409,15 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 
 /* Cyber func=inline */
 void APP_WRITER_OUT(
-    app_reader_id_t id, hls_uint<APP_READER_MAX> living_app_endpoints,
-    app_endpoint app_reader_tbl[APP_READER_MAX], const config_t *conf,
-    volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
+    app_reader_id_t id, app_endpoint app_reader_tbl[APP_READER_MAX],
+    const config_t *conf, volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
     volatile const uint8_t *pub_app_data_len,
     volatile uint8_t *pub_app_data_req, volatile uint8_t *pub_app_data_rel,
     volatile uint8_t *pub_app_data_grant, const uint8_t app_writer_entity_id[4],
     tx_buf &tx_buf, int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
 
-    if ((id < APP_READER_MAX) && living_app_endpoints[id]
+    if ((id < APP_READER_MAX) && app_reader_tbl[id].alive
         && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
         /* Cyber scheduling_block = non-transparent */
@@ -915,36 +913,30 @@ static void ros2_out(
                 tx_progress++;
             } else if (pub_enable && cnt_app_wr_elapsed
                        && next_packet_type == 7) {
-                hls_uint<APP_READER_MAX> living_app_endpoints
-                    = find_living_app_endpoints(sedp_reader_tbl);
                 switch (tx_progress) {
                 case 0:
-                    APP_WRITER_OUT(0, living_app_endpoints, app_reader_tbl,
-                                   conf, pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT(
+                        0, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 1:
-                    APP_WRITER_OUT(1, living_app_endpoints, app_reader_tbl,
-                                   conf, pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT(
+                        1, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 2:
-                    APP_WRITER_OUT(2, living_app_endpoints, app_reader_tbl,
-                                   conf, pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT(
+                        2, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 3:
-                    APP_WRITER_OUT(3, living_app_endpoints, app_reader_tbl,
-                                   conf, pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT(
+                        3, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
 
                     /* Cyber scheduling_block = non-transparent */
                 cnt_reset_7: {
@@ -967,19 +959,19 @@ static void ros2_out(
                     switch (tx_progress) {
                     case 0:
                         remove_dead_endpoints(0, sedp_reader_tbl,
-                                              timestamp_i64);
+                                              app_reader_tbl, timestamp_i64);
                         break;
                     case 1:
                         remove_dead_endpoints(1, sedp_reader_tbl,
-                                              timestamp_i64);
+                                              app_reader_tbl, timestamp_i64);
                         break;
                     case 2:
                         remove_dead_endpoints(2, sedp_reader_tbl,
-                                              timestamp_i64);
+                                              app_reader_tbl, timestamp_i64);
                         break;
                     case 3:
                         remove_dead_endpoints(3, sedp_reader_tbl,
-                                              timestamp_i64);
+                                              app_reader_tbl, timestamp_i64);
                         break;
                     }
                     tx_progress++;

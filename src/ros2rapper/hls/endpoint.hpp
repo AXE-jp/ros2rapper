@@ -50,6 +50,7 @@ struct app_endpoint {
     uint8_t       guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t       entity_id[4] /* Cyber array=EXPAND, array_index=const */;
     app_ep_type_t app_ep_type;
+    bool          alive;
 };
 
 #endif // !ENDPOINT_HPP

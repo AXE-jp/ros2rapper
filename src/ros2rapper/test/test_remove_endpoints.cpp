@@ -201,14 +201,14 @@ int call_update_liveliness(const config_t *conf,
                            sedp_endpoint   sedp_reader_tbl[SEDP_READER_MAX],
                            int64_t timestamp_i64, const uint8_t test_data[],
                            size_t length) {
-    bool reading_rtps_message = false;
+    app_endpoint app_reader_tbl[APP_READER_MAX];
+    bool         reading_rtps_message = false;
     for (auto j = 0; j < length; j++) {
         hls_uint<9> data = test_data[j];
         if (j == (length - 1)) {
             data |= hls_uint<9>(0x100);
         }
-        update_liveliness(data, conf, sedp_reader_tbl, &reading_rtps_message,
-                          timestamp_i64);
+        update_liveliness(data, conf, sedp_reader_tbl, app_reader_tbl, &reading_rtps_message, timestamp_i64);
         // check reading_rtps_message
         if (j < RTPS_HDR_OFFSET_GUID_PREFIX) {
             if (reading_rtps_message != false) {
@@ -328,6 +328,7 @@ int test_update_timestamp() {
 int test_remove_dead_endpoints_1() {
     constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
     sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
+    app_endpoint           app_reader_tbl[APP_READER_MAX];
 
     int64_t count = 0;
     for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
@@ -350,7 +351,8 @@ int test_remove_dead_endpoints_1() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, sedp_reader_tbl, timestamp_i64);
+            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+                                  timestamp_i64);
             for (auto k = 0; k < SEDP_READER_MAX; k++) {
                 if (k > j) {
                     // sedp_reader_tbl[k] shoud not be changed before
@@ -371,6 +373,7 @@ int test_remove_dead_endpoints_2() {
     // If lease_duration is DURATION_INFINITE, sedp_endpoint never timeouts.
     constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
     sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
+    app_endpoint           app_reader_tbl[APP_READER_MAX];
 
     // set lease_duration INFINITE.
     constexpr int64_t lease_duration
@@ -392,7 +395,8 @@ int test_remove_dead_endpoints_2() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, sedp_reader_tbl, timestamp_i64);
+            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+                                  timestamp_i64);
             for (auto k = 0; k < SEDP_READER_MAX; k++) {
                 assert(sedp_reader_tbl[j].alive);
             }

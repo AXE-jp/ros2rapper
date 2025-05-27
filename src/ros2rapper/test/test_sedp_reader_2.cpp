@@ -144,6 +144,10 @@ int test_sedp_reader_2() {
         sedp_reader_tbl[j].builtin_pubrd_rd_seqnum = 1;
         sedp_reader_tbl[j].builtin_subrd_rd_seqnum = 1;
     }
+    // Setup app_reader_tbl.
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        app_reader_tbl[j].alive = false;
+    }
     // sedp_reader gets a message from a known and dead participant.
     call_sedp_reader(sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask,
                      port_num_seed, guid_prefix, pub_topic_name,
@@ -152,7 +156,10 @@ int test_sedp_reader_2() {
                      sub_type_name_len, test_sedp_reader_pub_data,
                      sizeof(test_sedp_reader_pub_data));
     // sedp_reader should not create app_endpoint.
-    assert(find_living_app_endpoints(sedp_reader_tbl) == 0);
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        assert(sedp_reader_tbl[j].children == 0);
+    }
+    assert(find_living_app_endpoints(app_reader_tbl) == 0);
 
     // Test whether sedp_reader overwrites when app_reader_tbl is full.
     // Setup sedp_reader_tbl.
@@ -169,6 +176,7 @@ int test_sedp_reader_2() {
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             app_reader_tbl[j].guid_prefix[k] = 0;
         }
+        app_reader_tbl[j].alive = true;
     }
     // sedp_reader gets a message from a known participant, but app_reader_tbl
     // is full.
@@ -202,7 +210,6 @@ int test_sedp_reader_2() {
         for (auto j = 1; j < SEDP_READER_MAX; j++) {
             sedp_reader_tbl[j].alive = false;
         }
-        assert(find_living_app_endpoints(sedp_reader_tbl) == known_endpoints);
         // Setup app_reader_tbl.
         for (auto j = 0; j < APP_READER_MAX; j++) {
             bool known = ((1 << j) & known_endpoints);
@@ -216,7 +223,9 @@ int test_sedp_reader_2() {
             app_reader_tbl[j].entity_id[1] = 0x00;
             app_reader_tbl[j].entity_id[2] = 0x11;
             app_reader_tbl[j].entity_id[3] = 0x03;
+            app_reader_tbl[j].alive = known;
         }
+        assert(find_living_app_endpoints(app_reader_tbl) == known_endpoints);
         // sedp_reader gets a message from a known endpoint.
         call_sedp_reader(sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask,
                          port_num_seed, guid_prefix, pub_topic_name,
@@ -225,7 +234,8 @@ int test_sedp_reader_2() {
                          sub_type_name_len, test_sedp_reader_pub_data,
                          sizeof(test_sedp_reader_pub_data));
         // sedp_reader should not create a new app_endpoint.
-        assert(find_living_app_endpoints(sedp_reader_tbl) == known_endpoints);
+        assert(sedp_reader_tbl[0].children == known_endpoints);
+        assert(find_living_app_endpoints(app_reader_tbl) == known_endpoints);
     }
 
     // Test whether sedp_reader create a new app_endpoint correctly.
@@ -254,13 +264,14 @@ int test_sedp_reader_2() {
         sedp_reader_tbl[1].children = 0;
         sedp_reader_tbl[1].builtin_pubrd_rd_seqnum = 1;
         sedp_reader_tbl[1].builtin_subrd_rd_seqnum = 1;
-        assert(find_living_app_endpoints(sedp_reader_tbl) == expected);
         // Setup app_reader_tbl.
         for (auto j = 0; j < APP_READER_MAX; j++) {
             for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
                 app_reader_tbl[j].guid_prefix[k] = 0;
             }
+            app_reader_tbl[j].alive = (j < first_n_app_endpoints_alive);
         }
+        assert(find_living_app_endpoints(app_reader_tbl) == expected);
         call_sedp_reader(sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask,
                          port_num_seed, guid_prefix, pub_topic_name,
                          pub_topic_name_len, pub_type_name, pub_type_name_len,
@@ -271,6 +282,8 @@ int test_sedp_reader_2() {
         assert(sedp_reader_tbl[0].children == expected);
         assert(sedp_reader_tbl[1].children
                == (1 << first_n_app_endpoints_alive));
+        assert(find_living_app_endpoints(app_reader_tbl)
+               == (expected | (1 << first_n_app_endpoints_alive)));
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             assert(
                 app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]

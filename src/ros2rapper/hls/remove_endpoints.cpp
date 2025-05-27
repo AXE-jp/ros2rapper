@@ -3,6 +3,25 @@
 
 #include "remove_endpoints.hpp"
 
+/* Cyber func=inline */
+void remove_sedp_endpoint(sedp_reader_id_t index,
+                          sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+                          app_endpoint     app_reader_tbl[APP_READER_MAX]) {
+#pragma HLS inline
+    if (index < SEDP_READER_MAX) {
+        // Set sedp_reader_tbl[index] dead.
+        sedp_reader_tbl[index].alive = false;
+        // Set children of sedp_reader_tbl[index] dead.
+        /* Cyber unroll_times=all */
+        for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+            if (sedp_reader_tbl[index].children[j]) {
+                app_reader_tbl[j].alive = false;
+            }
+        }
+    }
+}
+
 typedef enum {
     STATE_READ_RTPS_HDR,
     STATE_READ_HDR_GUID_PREFIX,
@@ -21,6 +40,7 @@ typedef enum {
 /* Cyber func=inline */
 void update_liveliness(hls_uint<9> in, const config_t *conf,
                        sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+                       app_endpoint  app_reader_tbl[APP_READER_MAX],
                        bool *reading_rtps_message, int64_t timestamp_i64) {
     // 1. Change reading_rtps_message to tell whether or not the garbage
     //    collector can change the endpoint tables. When reading_rtps_message is
@@ -192,12 +212,14 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
     case STATE_READ_STATUS_INFO:
         // See RTPS 2.3 specification 9.6.3.9.
         if (offset == 3) {
-            bool alive = ((data & 3) == 0);
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            if ((data & 3) != 0) {
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
-                if (!sedp_unmatched[j]) {
-                    sedp_reader_tbl[j].alive = alive;
+                    if (!sedp_unmatched[j]) {
+                        remove_sedp_endpoint(j, sedp_reader_tbl,
+                                             app_reader_tbl);
+                    }
                 }
             }
         }
@@ -230,13 +252,14 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
 /* Cyber func=inline */
 void remove_dead_endpoints(sedp_reader_id_t tx_progress,
                            sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+                           app_endpoint     app_reader_tbl[APP_READER_MAX],
                            int64_t          timestamp_i64) {
 #pragma HLS inline
     // Check timeout
     if (tx_progress < SEDP_READER_MAX) {
         if (timestamp_i64 - sedp_reader_tbl[tx_progress].timestamp
             > sedp_reader_tbl[tx_progress].lease_duration) {
-            sedp_reader_tbl[tx_progress].alive = false;
+            remove_sedp_endpoint(tx_progress, sedp_reader_tbl, app_reader_tbl);
         }
     }
 }

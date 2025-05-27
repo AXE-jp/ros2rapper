@@ -43,7 +43,7 @@ void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
                                          hls_uint<APP_READER_MAX> &unmatched);
 
 hls_uint<APP_READER_MAX>
-find_living_app_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]);
+find_living_app_endpoints(const app_endpoint tbl[APP_READER_MAX]);
 
 void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
