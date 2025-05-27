@@ -21,7 +21,6 @@ typedef enum {
 /* Cyber func=inline */
 void update_liveliness(hls_uint<9> in, const config_t *conf,
                        sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                       app_endpoint  app_reader_tbl[APP_READER_MAX],
                        bool         *reading_rtps_message) {
     // 1. Change reading_rtps_message to tell whether or not the garbage
     //    collector can change the endpoint tables. When reading_rtps_message is
@@ -43,7 +42,6 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
     static uint16_t param_len;
 
     static hls_uint<SEDP_READER_MAX> sedp_unmatched;
-    static hls_uint<APP_READER_MAX>  app_unmatched;
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -64,8 +62,6 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
         if (offset < GUID_PREFIX_SIZE) {
             compare_guid_prefix_of_sedp_endpoint(data, sedp_reader_tbl, offset,
                                                  sedp_unmatched);
-            compare_guid_prefix_of_app_endpoint(data, app_reader_tbl, offset,
-                                                app_unmatched);
         }
         // Tell the garbage collector not to change the endpoint tables
         // because the ros2rapper uses them to process the RTPS message.
@@ -194,13 +190,6 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
                     sedp_reader_tbl[j].alive = alive;
                 }
             }
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-                if (!app_unmatched[j]) {
-                    app_reader_tbl[j].alive = alive;
-                }
-            }
         }
         offset++;
         if (offset == PID_STATUS_INFO_SIZE) {
@@ -223,71 +212,7 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
         // Allow the garbage collector to change the endpoint tables.
         *reading_rtps_message = false;
         sedp_unmatched = 0;
-        app_unmatched = 0;
         offset = 0;
         state = STATE_READ_RTPS_HDR;
-    }
-}
-
-/* Cyber func=inline */
-void collect_dead_endpoint(hls_uint<2>       tx_progress,
-                           sedp_reader_id_t &sedp_reader_cnt,
-                           sedp_endpoint     sedp_reader_tbl[SEDP_READER_MAX],
-                           app_reader_id_t  &app_reader_cnt,
-                           app_endpoint      app_reader_tbl[APP_READER_MAX],
-                           uint32_t sedp_pub_heartbeat_cnt[SEDP_READER_MAX],
-                           uint32_t sedp_sub_heartbeat_cnt[SEDP_READER_MAX],
-                           uint32_t sedp_pub_acknack_cnt[SEDP_READER_MAX],
-                           uint32_t sedp_sub_acknack_cnt[SEDP_READER_MAX]) {
-#pragma HLS inline
-    constexpr uint8_t invalid_guid_prefix[GUID_PREFIX_SIZE]
-        = GUID_PREFIX_UNKNOWN;
-    if ((tx_progress < SEDP_READER_MAX)
-        && !sedp_reader_tbl[tx_progress].alive) {
-        if (((tx_progress + 1) < SEDP_READER_MAX)
-            && ((tx_progress + 1) < sedp_reader_cnt)) {
-            // If there is a dead sedp_endpoint in the middle of the table,
-            // remove the dead sedp_endpoint and copy the next one.
-            sedp_reader_tbl[tx_progress] = sedp_reader_tbl[tx_progress + 1];
-            // Kill the copied sedp_endpoint.
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-                sedp_reader_tbl[tx_progress + 1].guid_prefix[j]
-                    = invalid_guid_prefix[j];
-            }
-            sedp_reader_tbl[tx_progress + 1].alive = false;
-            // Copy counters.
-            sedp_pub_heartbeat_cnt[tx_progress]
-                = sedp_pub_heartbeat_cnt[tx_progress + 1];
-            sedp_sub_heartbeat_cnt[tx_progress]
-                = sedp_sub_heartbeat_cnt[tx_progress + 1];
-            sedp_pub_acknack_cnt[tx_progress]
-                = sedp_pub_acknack_cnt[tx_progress + 1];
-            sedp_sub_acknack_cnt[tx_progress]
-                = sedp_sub_acknack_cnt[tx_progress + 1];
-        } else if ((tx_progress + 1) == sedp_reader_cnt) {
-            // If there is a dead sedp_endpoint at the end of the table
-            sedp_reader_cnt--;
-        }
-    }
-    if ((tx_progress < APP_READER_MAX) && !app_reader_tbl[tx_progress].alive) {
-        if (((tx_progress + 1) < APP_READER_MAX)
-            && ((tx_progress + 1) < app_reader_cnt)) {
-            // If there is a dead app_endpoint in the middle of the table,
-            // remove the dead app_endpoint and copy the next one.
-            app_reader_tbl[tx_progress] = app_reader_tbl[tx_progress + 1];
-            // Kill the copied app_endpoint.
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-                app_reader_tbl[tx_progress + 1].guid_prefix[j]
-                    = invalid_guid_prefix[j];
-            }
-            app_reader_tbl[tx_progress + 1].alive = false;
-        } else if ((tx_progress + 1) == app_reader_cnt) {
-            // If there is a dead app_endpoint at the end of the table
-            app_reader_cnt--;
-        }
     }
 }

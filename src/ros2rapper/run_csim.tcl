@@ -13,7 +13,12 @@ add_files hls/sedp.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
 add_files hls/udp.cpp
+add_files -tb -cflags "-Ihls" test/test.cpp
 add_files -tb -cflags "-Ihls" test/test_remove_endpoints.cpp
+add_files -tb -cflags "-Ihls" test/test_sedp_reader_2.cpp
+add_files -tb -cflags "-Ihls" test/test_sedp_reader_heartbeat.cpp
+add_files -tb -cflags "-Ihls" test/test_spdp_reader.cpp
+add_files -tb -cflags "-Ihls" test/test_udp.cpp
 
 open_solution -reset solution1
 

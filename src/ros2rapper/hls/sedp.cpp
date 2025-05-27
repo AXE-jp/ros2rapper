@@ -25,6 +25,21 @@ void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
 }
 
 /* Cyber func=inline */
+hls_uint<APP_READER_MAX>
+find_living_app_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
+#pragma HLS inline
+    hls_uint<APP_READER_MAX> alive = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (tbl[j].alive) {
+            alive |= tbl[j].children;
+        }
+    }
+    return alive;
+}
+
+/* Cyber func=inline */
 static void compare_entity_id(const uint8_t             x,
                               const app_endpoint        tbl[APP_READER_MAX],
                               const int                 idx,
@@ -74,8 +89,7 @@ enum {
 
 /* Cyber func=inline */
 void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                 app_reader_id_t &app_reader_cnt,
-                 app_endpoint     app_reader_tbl[APP_READER_MAX],
+                 app_endpoint app_reader_tbl[APP_READER_MAX],
                  hls_uint<1> enable, const uint8_t ip_addr[4],
                  const uint8_t subnet_mask[4], uint16_t port_num_seed,
                  const uint8_t guid_prefix[12],
@@ -113,13 +127,31 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     static uint16_t udp_port;
     static uint32_t sp_len;
 
-    if (!enable || app_reader_cnt == APP_READER_MAX)
+    if (!enable) {
         return;
+    }
+
+    hls_uint<APP_READER_MAX> living_app_endpoints
+        = find_living_app_endpoints(sedp_reader_tbl);
+    app_reader_id_t app_reader_cnt;
+    /* Cyber unroll_times=all */
+    for (app_reader_cnt = 0; app_reader_cnt < APP_READER_MAX;
+         app_reader_cnt++) {
+#pragma HLS unroll
+        if (!living_app_endpoints[app_reader_cnt]) {
+            break;
+        }
+    }
+    if (app_reader_cnt == APP_READER_MAX) {
+        return;
+    }
 
     app_endpoint &reader = app_reader_tbl[app_reader_cnt];
 
-    uint8_t        sedp_matched_idx = get_matched_index(sedp_unmatched);
-    bool           is_participant_matched = !((~sedp_unmatched) == 0);
+    uint8_t sedp_matched_idx = get_matched_index(sedp_unmatched);
+    bool    is_participant_matched
+        = ((find_living_sedp_endpoints(sedp_reader_tbl) & ~sedp_unmatched)
+           != 0);
     sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
 
     uint8_t data = in & 0xff;
@@ -321,14 +353,13 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
             if (param_id == PID_SENTINEL) {
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<APP_READER_MAX> valid
-                        = (0x1 << app_reader_cnt) - 1;
+                    hls_uint<APP_READER_MAX> valid = living_app_endpoints;
                     if ((app_unmatched & valid) == valid) {
                         reader.app_ep_type = (ep_type & BUILTIN_EP_PUB)
                                                  ? APP_EP_SUB
                                                  : APP_EP_PUB;
-                        reader.alive = true;
-                        app_reader_cnt++;
+                        // Validate app_reader_tbl[app_reader_cnt]
+                        participant.children |= (1 << app_reader_cnt);
                     }
                 }
                 app_unmatched = 0;

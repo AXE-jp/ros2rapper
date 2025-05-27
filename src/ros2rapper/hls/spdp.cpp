@@ -20,15 +20,29 @@ void compare_guid_prefix_of_sedp_endpoint(
     }
 }
 
+/* Cyber func=inline */
+hls_uint<SEDP_READER_MAX>
+find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
+#pragma HLS inline
+    hls_uint<SEDP_READER_MAX> alive = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (tbl[j].alive) {
+            alive |= hls_uint<SEDP_READER_MAX>(1 << j);
+        }
+    }
+    return alive;
+}
+
 #define FLAGS_FOUND_GUID     0x01
 #define FLAGS_FOUND_LOCATOR  0x02
 #define FLAGS_UNMATCH_DOMAIN 0x04
 
 /* Cyber func=inline */
-void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
-                 sedp_endpoint reader_tbl[SEDP_READER_MAX], hls_uint<1> enable,
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t port_num_seed) {
+void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
+                 hls_uint<1> enable, const uint8_t ip_addr[4],
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed) {
 #pragma HLS inline
     static const uint8_t par_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PARTICIPANT_READER;
@@ -47,8 +61,21 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
     static uint16_t param_len;
     static uint16_t udp_port;
 
-    if (!enable || reader_cnt == SEDP_READER_MAX)
+    if (!enable) {
         return;
+    }
+
+    sedp_reader_id_t reader_cnt;
+    /* Cyber unroll_times=all */
+    for (reader_cnt = 0; reader_cnt < SEDP_READER_MAX; reader_cnt++) {
+#pragma HLS unroll
+        if (!reader_tbl[reader_cnt].alive) {
+            break;
+        }
+    }
+    if (reader_cnt == SEDP_READER_MAX) {
+        return;
+    }
 
     sedp_endpoint &reader = reader_tbl[reader_cnt];
     uint8_t        data = in & 0xff;
@@ -138,14 +165,20 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
             if (param_id == PID_SENTINEL) {
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<SEDP_READER_MAX> valid = (0x1 << reader_cnt) - 1;
+                    hls_uint<SEDP_READER_MAX> valid
+                        = find_living_sedp_endpoints(reader_tbl);
                     if ((unmatched & valid) == valid) {
+                        // Validate and initialize sedp_endpoint.
                         reader.builtin_pubrd_rd_seqnum = 1;
                         reader.builtin_subrd_rd_seqnum = 1;
                         reader.builtin_pubrd_wr_seqnum = 0;
                         reader.builtin_subrd_wr_seqnum = 0;
+                        reader.pub_heartbeat_cnt = 0;
+                        reader.sub_heartbeat_cnt = 0;
+                        reader.pub_acknack_cnt = 0;
+                        reader.sub_acknack_cnt = 0;
                         reader.alive = true;
-                        reader_cnt++;
+                        reader.children = 0;
                     }
                 }
                 unmatched = 0;

@@ -80,7 +80,7 @@ void process_ip_packet(const uint8_t *packet, size_t packet_size) {
     printf("--- --- ---\n");
 }
 
-int main() {
+int test_udp() {
     process_ip_packet(ip_packet, sizeof(ip_packet));
     process_ip_packet(ip_packet, sizeof(ip_packet));
 

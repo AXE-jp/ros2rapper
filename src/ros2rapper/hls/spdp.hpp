@@ -26,10 +26,12 @@ void compare_guid_prefix_of_sedp_endpoint(
     const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
     hls_uint<SEDP_READER_MAX> &unmatched);
 
-void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
-                 sedp_endpoint reader_tbl[SEDP_READER_MAX], hls_uint<1> enable,
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t port_num_seed);
+hls_uint<SEDP_READER_MAX>
+find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]);
+
+void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
+                 hls_uint<1> enable, const uint8_t ip_addr[4],
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed);
 
 void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
