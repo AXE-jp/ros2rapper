@@ -1,8 +1,8 @@
 // Copyright (c) 2021-2025 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef RM_PARTICIPANT_HPP
-#define RM_PARTICIPANT_HPP
+#ifndef REMOVE_ENDPOINTS_HPP
+#define REMOVE_ENDPOINTS_HPP
 
 #include "common.hpp"
 
@@ -14,4 +14,4 @@ void remove_dead_endpoints(sedp_reader_id_t tx_progress,
                            sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
                            int64_t          timestamp_i64);
 
-#endif // !RM_PARTICIPANT_HPP
+#endif // !REMOVE_ENDPOINTS_HPP

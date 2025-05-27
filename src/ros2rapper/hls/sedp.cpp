@@ -359,7 +359,8 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                                                  ? APP_EP_SUB
                                                  : APP_EP_PUB;
                         // Validate app_reader_tbl[app_reader_cnt]
-                        participant.children |= (1 << app_reader_cnt);
+                        participant.children
+                            |= hls_uint<APP_READER_MAX>(1 << app_reader_cnt);
                     }
                 }
                 app_unmatched = 0;

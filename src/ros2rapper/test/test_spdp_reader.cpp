@@ -1,6 +1,8 @@
+// Copyright (c) 2021-2025 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "spdp.hpp"
 #include <cassert>
-#include <cstdio>
 
 // SPDP message sample with PID_PARTICIPANT_LEASE_DURATION.
 constexpr uint8_t test_spdp_reader_data_1[] = {

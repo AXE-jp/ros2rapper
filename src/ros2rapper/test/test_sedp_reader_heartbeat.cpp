@@ -122,7 +122,7 @@ int test_sedp_reader_heartbeat() {
     for (ii = 0; ii < sizeof(pkt22); ii++) {
         x = pkt22[ii];
         if (ii == (sizeof(pkt22) - 1)) {
-            x |= 0x100;
+            x |= hls_uint<9>(0x100);
         }
         in.write(x);
 
