@@ -31,7 +31,8 @@ find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]);
 
 void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                  hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed);
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
+                 int64_t timestamp_i64);
 
 void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],

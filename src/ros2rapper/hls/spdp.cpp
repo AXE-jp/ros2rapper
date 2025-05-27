@@ -42,7 +42,8 @@ find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
 /* Cyber func=inline */
 void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                  hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed) {
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
+                 int64_t timestamp_i64) {
 #pragma HLS inline
     static const uint8_t par_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PARTICIPANT_READER;
@@ -60,6 +61,8 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     static uint16_t param_id;
     static uint16_t param_len;
     static uint16_t udp_port;
+
+    static bool lease_duration_found;
 
     if (!enable) {
         return;
@@ -179,11 +182,16 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                         reader.sub_acknack_cnt = 0;
                         reader.alive = true;
                         reader.children = 0;
+                        if (!lease_duration_found) {
+                            reader.lease_duration = SPDP_LEASE_DURATION_DEFAULT;
+                        }
+                        reader.timestamp = timestamp_i64;
                     }
                 }
                 unmatched = 0;
                 flags = 0;
                 offset = 0;
+                lease_duration_found = false;
                 state = 1;
             } else {
                 sbm_len -= sizeof(param_len);
@@ -238,6 +246,28 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             } else if (offset == 23) {
                 reader.ip_addr[3] = data;
             }
+            break;
+        case PID_PARTICIPANT_LEASE_DURATION:
+            if (offset < 8) {
+                if (offset == 0) {
+                    reader.lease_duration = 0;
+                }
+                if (rep_id & SP_ID_CDR_LE) {
+                    if (offset < 4) {
+                        // Read the seconds of the lease duration.
+                        reader.lease_duration |= static_cast<int64_t>(data)
+                                                 << (32 + 8 * offset);
+                    } else {
+                        // Read the fractional part of the lease duration.
+                        reader.lease_duration |= static_cast<int64_t>(data)
+                                                 << (8 * offset - 32);
+                    }
+                } else {
+                    reader.lease_duration |= static_cast<int64_t>(data)
+                                             << (56 - 8 * offset);
+                }
+            }
+            break;
         }
         offset++;
         if (offset == param_len) {
@@ -250,6 +280,8 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                         flags |= (hls_uint<3>)FLAGS_FOUND_LOCATOR;
                     }
                 }
+            } else if (param_id == PID_PARTICIPANT_LEASE_DURATION) {
+                lease_duration_found = true;
             }
             offset = 0;
             state = 4;
@@ -269,6 +301,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
         unmatched = 0;
         flags = 0;
         offset = 0;
+        lease_duration_found = false;
         state = 0;
     }
 }

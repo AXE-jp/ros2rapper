@@ -21,7 +21,7 @@ typedef enum {
 /* Cyber func=inline */
 void update_liveliness(hls_uint<9> in, const config_t *conf,
                        sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                       bool         *reading_rtps_message) {
+                       bool *reading_rtps_message, int64_t timestamp_i64) {
     // 1. Change reading_rtps_message to tell whether or not the garbage
     //    collector can change the endpoint tables. When reading_rtps_message is
     //    true, the endpoint tables should not be changed.
@@ -29,6 +29,8 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
     //    unregistered by inline QoS, set endpoint table status dead (set the
     //    member alive false.) This module only uses GUID prefix and INFO_DST to
     //    find which endpoint dies.
+    // 3. When the ros2rapper gets a message from a known participant, update
+    //    timestamp of it.
 #pragma HLS inline
     static update_liveliness_state_t state;
     static uint16_t                  offset;
@@ -70,6 +72,14 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
         if (offset == GUID_PREFIX_SIZE) {
             offset = 0;
             state = STATE_READ_SBM_HDR;
+            // update timestamps of matched sedp_endpoints.
+            /* Cyber unroll_times=all */
+            for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+                if (!sedp_unmatched[j]) {
+                    sedp_reader_tbl[j].timestamp = timestamp_i64;
+                }
+            }
         }
         break;
     case STATE_READ_SBM_HDR:
@@ -214,5 +224,19 @@ void update_liveliness(hls_uint<9> in, const config_t *conf,
         sedp_unmatched = 0;
         offset = 0;
         state = STATE_READ_RTPS_HDR;
+    }
+}
+
+/* Cyber func=inline */
+void remove_dead_endpoints(sedp_reader_id_t tx_progress,
+                           sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
+                           int64_t          timestamp_i64) {
+#pragma HLS inline
+    // Check timeout
+    if (tx_progress < SEDP_READER_MAX) {
+        if (timestamp_i64 - sedp_reader_tbl[tx_progress].timestamp
+            > sedp_reader_tbl[tx_progress].lease_duration) {
+            sedp_reader_tbl[tx_progress].alive = false;
+        }
     }
 }

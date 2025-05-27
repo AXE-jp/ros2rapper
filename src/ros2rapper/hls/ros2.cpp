@@ -102,7 +102,7 @@ static void ros2_in(
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint16_t *sub_app_data_rep_id, volatile uint8_t *rawudp_rxbuf_rel,
     volatile uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
-    bool *reading_rtps_message, hls_uint<9> *xout) {
+    bool *reading_rtps_message, int64_t timestamp_i64, hls_uint<9> *xout) {
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
 
@@ -135,10 +135,11 @@ static void ros2_in(
     if (!s3.read_nb(x))
         return;
 
-    update_liveliness(x, conf, sedp_reader_tbl, reading_rtps_message);
+    update_liveliness(x, conf, sedp_reader_tbl, reading_rtps_message,
+                      timestamp_i64);
 
     spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
-                conf->port_num_seed);
+                conf->port_num_seed, timestamp_i64);
 
     sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, conf->ip_addr,
                 conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
@@ -472,7 +473,7 @@ static void ros2_out(
     volatile uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
     volatile uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
     volatile uint8_t *cnt_app_wr_set, bool reading_rtps_message,
-    timestamp now) {
+    int64_t timestamp_i64) {
 
     static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
@@ -546,6 +547,10 @@ static void ros2_out(
             next_packet_type = 0;                                              \
         }                                                                      \
     } while (0)
+
+    timestamp now
+        = {.seconds = static_cast<int32_t>(timestamp_i64 >> 32),
+           .fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff)};
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
@@ -952,6 +957,36 @@ static void ros2_out(
                     break;
                 }
                 tx_progress++;
+            } else if (next_packet_type == 8) {
+                // Remove dead endpoints.
+                if (reading_rtps_message) {
+                    // Do not change endpoint tables while reading a RTPS
+                    // message.
+                    tx_progress = 0;
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        remove_dead_endpoints(0, sedp_reader_tbl,
+                                              timestamp_i64);
+                        break;
+                    case 1:
+                        remove_dead_endpoints(1, sedp_reader_tbl,
+                                              timestamp_i64);
+                        break;
+                    case 2:
+                        remove_dead_endpoints(2, sedp_reader_tbl,
+                                              timestamp_i64);
+                        break;
+                    case 3:
+                        remove_dead_endpoints(3, sedp_reader_tbl,
+                                              timestamp_i64);
+                        break;
+                    }
+                    tx_progress++;
+                }
+                if (tx_progress == 0) {
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else {
                 ROTATE_NEXT_PACKET_TYPE;
             }
@@ -1105,16 +1140,12 @@ void ros2(
     // RTPS message.
     static bool reading_rtps_message;
 
-    timestamp now
-        = {.seconds = static_cast<int32_t>(timestamp_i64 >> 32),
-           .fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff)};
-
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
             pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
             sub_app_data_rel, sub_app_data_grant, sub_app_data,
             sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
             udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
-            xout);
+            timestamp_i64, xout);
 
     ros2_out(out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable,
              sub_enable, conf, pub_app_data, pub_app_data_len, pub_app_data_req,
@@ -1126,5 +1157,5 @@ void ros2(
              cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
              cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
              cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, reading_rtps_message, now);
+             cnt_app_wr_set, reading_rtps_message, timestamp_i64);
 }

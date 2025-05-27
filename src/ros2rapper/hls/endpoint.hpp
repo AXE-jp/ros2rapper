@@ -30,6 +30,8 @@ struct sedp_endpoint {
     uint32_t    sub_acknack_cnt;
     bool        alive;
     hls_uint<APP_READER_MAX> children;
+    int64_t                  lease_duration;
+    int64_t                  timestamp;
 };
 
 using builtin_ep_type_t = hls_uint<2>;
