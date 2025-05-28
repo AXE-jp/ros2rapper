@@ -54,12 +54,14 @@ static void compare_entity_id(const uint8_t             x,
 }
 
 /* Cyber func=inline */
-static uint8_t get_matched_index(hls_uint<SEDP_READER_MAX> unmatched) {
+static uint8_t
+get_matched_index(hls_uint<SEDP_READER_MAX> unmatched,
+                  sedp_endpoint             sedp_reader_tbl[SEDP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (uint8_t i = 0; i < SEDP_READER_MAX; i++) {
 #pragma HLS unroll
-        if (!unmatched[i]) {
+        if ((!unmatched[i]) & sedp_reader_tbl[i].alive) {
             return i;
         }
     }
@@ -147,8 +149,9 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 
     app_endpoint &reader = app_reader_tbl[app_reader_cnt];
 
-    uint8_t sedp_matched_idx = get_matched_index(sedp_unmatched);
-    bool    is_participant_matched
+    uint8_t sedp_matched_idx
+        = get_matched_index(sedp_unmatched, sedp_reader_tbl);
+    bool is_participant_matched
         = ((find_living_sedp_endpoints(sedp_reader_tbl) & ~sedp_unmatched)
            != 0);
     sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];

@@ -291,5 +291,44 @@ int test_sedp_reader_2() {
         }
     }
 
+    // Test whether ros2rapper uses valid endpoint's data and does not use
+    // invalid endpoint data. Setup sedp_reader_tbl and app_reader_tbl.
+    // - sedp_reader_tbl[0] is a known and dead endpoint.
+    // - sedp_reader_tbl[1] is a known and living endpoint.
+    // - sedp_reader_tbl[0] and sedp_reader_tbl[1] have the same GUID prefix.
+    // - app_reader_tbl is empty.
+    // When ros2rapper gets a RTPS message from sedp_reader_tbl[1],
+    // ros2rapper shoud use sedp_reader_tbl[1] and should not use
+    // sedp_reader_tbl[0].
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        sedp_reader_tbl[j].alive = (j == 1);
+    }
+    sedp_reader_tbl[0].children = 0;
+    sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
+    sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
+    sedp_reader_tbl[1].children = 0;
+    sedp_reader_tbl[1].builtin_pubrd_rd_seqnum = 1;
+    sedp_reader_tbl[1].builtin_subrd_rd_seqnum = 1;
+    for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+        sedp_reader_tbl[0].guid_prefix[k]
+            = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
+        sedp_reader_tbl[1].guid_prefix[k]
+            = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
+    }
+    // Setup app_reader_tbl.
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        app_reader_tbl[j].alive = false;
+    }
+    call_sedp_reader(sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask,
+                     port_num_seed, guid_prefix, pub_topic_name,
+                     pub_topic_name_len, pub_type_name, pub_type_name_len,
+                     sub_topic_name, sub_topic_name_len, sub_type_name,
+                     sub_type_name_len, test_sedp_reader_pub_data,
+                     sizeof(test_sedp_reader_pub_data));
+    // Check
+    assert(sedp_reader_tbl[0].children == 0);
+    assert(sedp_reader_tbl[1].children == 1);
+    assert(app_reader_tbl[0].alive);
+
     return 0;
 }
