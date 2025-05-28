@@ -131,6 +131,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         return;
     }
 
+    // Find an unused point in app_reader_tbl.
     app_reader_id_t app_reader_cnt;
     /* Cyber unroll_times=all */
     for (app_reader_cnt = 0; app_reader_cnt < APP_READER_MAX;

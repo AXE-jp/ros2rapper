@@ -1129,7 +1129,7 @@ void ros2(
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
     // This flag becomes true when ros2rapper begins to read the GUID prefix in
-    // a RTPS message and becomes false when ros2rapper reaches the end of a
+    // a RTPS message and becomes false when ros2rapper reaches the end of the
     // RTPS message.
     static bool reading_rtps_message;
 
