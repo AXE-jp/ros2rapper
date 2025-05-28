@@ -4,18 +4,18 @@
 #include "remove_endpoints.hpp"
 
 /* Cyber func=inline */
-static void remove_sedp_endpoint(sedp_reader_id_t index,
+static void remove_sedp_endpoint(sedp_reader_id_t id,
                                  sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                                  app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
-    if (index < SEDP_READER_MAX) {
-        // Remove sedp_reader_tbl[index].
-        sedp_reader_tbl[index].alive = false;
-        // Remove the children of sedp_reader_tbl[index].
+    if (id < SEDP_READER_MAX) {
+        // Remove sedp_reader_tbl[id].
+        sedp_reader_tbl[id].alive = false;
+        // Remove the children of sedp_reader_tbl[id].
         /* Cyber unroll_times=all */
         for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
-            if (sedp_reader_tbl[index].children[j]) {
+            if (sedp_reader_tbl[id].children[j]) {
                 app_reader_tbl[j].alive = false;
             }
         }
@@ -251,16 +251,16 @@ void update_liveliness(hls_uint<9>   in,
 }
 
 /* Cyber func=inline */
-void remove_dead_endpoints(sedp_reader_id_t tx_progress,
+void remove_dead_endpoints(sedp_reader_id_t id,
                            sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
                            app_endpoint     app_reader_tbl[APP_READER_MAX],
                            int64_t          timestamp_i64) {
 #pragma HLS inline
     // Check timeout
-    if (tx_progress < SEDP_READER_MAX) {
-        if (timestamp_i64 - sedp_reader_tbl[tx_progress].timestamp
-            > sedp_reader_tbl[tx_progress].lease_duration) {
-            remove_sedp_endpoint(tx_progress, sedp_reader_tbl, app_reader_tbl);
+    if (id < SEDP_READER_MAX) {
+        if ((timestamp_i64 - sedp_reader_tbl[id].timestamp)
+            > sedp_reader_tbl[id].lease_duration) {
+            remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
         }
     }
 }

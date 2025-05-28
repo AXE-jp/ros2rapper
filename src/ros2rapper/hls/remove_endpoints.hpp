@@ -12,7 +12,7 @@ void update_liveliness(hls_uint<9>   in,
                        app_endpoint  app_reader_tbl[APP_READER_MAX],
                        bool *reading_rtps_message, int64_t timestamp_i64);
 
-void remove_dead_endpoints(sedp_reader_id_t tx_progress,
+void remove_dead_endpoints(sedp_reader_id_t id,
                            sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
                            app_endpoint     app_reader_tbl[APP_READER_MAX],
                            int64_t          timestamp_i64);
