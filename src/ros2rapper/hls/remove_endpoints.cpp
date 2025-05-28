@@ -9,9 +9,9 @@ static void remove_sedp_endpoint(sedp_reader_id_t index,
                                  app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
     if (index < SEDP_READER_MAX) {
-        // Set sedp_reader_tbl[index] dead.
+        // Remove sedp_reader_tbl[index].
         sedp_reader_tbl[index].alive = false;
-        // Set children of sedp_reader_tbl[index] dead.
+        // Remove the children of sedp_reader_tbl[index].
         /* Cyber unroll_times=all */
         for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
@@ -47,11 +47,10 @@ void update_liveliness(hls_uint<9>   in,
     //    collector can change the endpoint tables. When reading_rtps_message is
     //    true, the endpoint tables should not be changed.
     // 2. When the ros2rapper gets a message which tells disposed or
-    //    unregistered by inline QoS, set endpoint table status dead (set the
-    //    member alive false.) This module only uses GUID prefix and INFO_DST to
-    //    find which endpoint dies.
+    //    unregistered, remove (i.e. set the member '.alive' false) the endpoint
+    //    which sent the message.
     // 3. When the ros2rapper gets a message from a known participant, update
-    //    timestamp of it.
+    //    timestamp of its data.
 #pragma HLS inline
     static update_liveliness_state_t state;
     static uint16_t                  offset;
@@ -87,13 +86,13 @@ void update_liveliness(hls_uint<9>   in,
                                                  sedp_unmatched);
         }
         // Tell the garbage collector not to change the endpoint tables
-        // because the ros2rapper uses them to process the RTPS message.
+        // because the ros2rapper uses them to process a RTPS message.
         *reading_rtps_message = true;
         offset++;
         if (offset == GUID_PREFIX_SIZE) {
             offset = 0;
             state = STATE_READ_SBM_HDR;
-            // update timestamps of matched sedp_endpoints.
+            // Update timestamps of matched endpoints in sedp_reader_tbl.
             /* Cyber unroll_times=all */
             for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
@@ -214,6 +213,7 @@ void update_liveliness(hls_uint<9>   in,
         // See RTPS 2.3 specification 9.6.3.9.
         if (offset == 3) {
             if ((data & 3) != 0) {
+                // disposed (0x01) or unregistered (0x02)
                 /* Cyber unroll_times=all */
                 for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
