@@ -128,9 +128,9 @@ int test_sedp_reader_2() {
     constexpr uint8_t pub_type_name_len = sizeof(pub_type_name);
 
     constexpr uint8_t sub_topic_name[] = "rt/aaa";
-    constexpr uint8_t sub_topic_name_len = sizeof(pub_topic_name);
+    constexpr uint8_t sub_topic_name_len = sizeof(sub_topic_name);
     constexpr uint8_t sub_type_name[] = "std_msgs::msg::dds_::String_";
-    constexpr uint8_t sub_type_name_len = sizeof(pub_type_name);
+    constexpr uint8_t sub_type_name_len = sizeof(sub_type_name);
 
     // Test whether sedp_reader ignores dead participants.
     // Setup sedp_reader_tbl.
