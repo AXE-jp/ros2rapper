@@ -379,7 +379,7 @@ static int test_remove_dead_endpoints_2() {
     app_endpoint           app_reader_tbl[APP_READER_MAX];
 
     // set lease_duration INFINITE.
-    constexpr int64_t lease_duration
+    const int64_t lease_duration
         = (static_cast<int64_t>(DURATION_INFINITE.seconds) << 32)
           | DURATION_INFINITE.fraction;
     for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
