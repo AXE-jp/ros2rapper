@@ -178,6 +178,9 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                         reader.builtin_subrd_rd_seqnum = 1;
                         reader.builtin_pubrd_wr_seqnum = 0;
                         reader.builtin_subrd_wr_seqnum = 0;
+                        reader.builtin_pubrd_acknack_req = false;
+                        reader.builtin_subrd_acknack_req = false;
+                        reader.initial_send_counter = 0;
                         reader.pub_heartbeat_cnt = 0;
                         reader.sub_heartbeat_cnt = 0;
                         reader.pub_acknack_cnt = 0;
