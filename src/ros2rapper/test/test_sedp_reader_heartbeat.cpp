@@ -61,7 +61,7 @@ static void print_port(const uint8_t portval[]) {
     printf("%d\n", wval);
 }
 
-int main() {
+int test_sedp_reader_heartbeat() {
     // hls_stream<hls_uint<9>> in;
     hls_uint<9> in;
     hls_uint<9> x;
@@ -99,10 +99,9 @@ int main() {
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_pubrd_wr_seqnum = 0;
     sedp_reader_tbl[0].builtin_subrd_wr_seqnum = 0;
-    app_reader_id_t sedp_reader_cnt = (app_reader_id_t)1;
+    sedp_reader_tbl[0].alive = true;
 
-    app_endpoint    app_reader_tbl[APP_READER_MAX];
-    app_reader_id_t app_reader_cnt = (app_reader_id_t)0;
+    app_endpoint app_reader_tbl[APP_READER_MAX];
 
     hls_uint<1> enable = 1;
 
@@ -123,25 +122,35 @@ int main() {
     for (ii = 0; ii < sizeof(pkt22); ii++) {
         x = pkt22[ii];
         if (ii == (sizeof(pkt22) - 1)) {
-            x |= 0x100;
+            x |= hls_uint<9>(0x100);
         }
         in.write(x);
 
-        sedp_reader(in, sedp_reader_tbl, app_reader_cnt, app_reader_tbl, enable,
-                    ip_addr, subnet_mask, port_num_seed, own_guid_prefix,
-                    pub_topic_name, pub_topic_name_len, pub_type_name,
-                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
-                    sub_type_name, sub_type_name_len);
+        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
+                    subnet_mask, port_num_seed, own_guid_prefix, pub_topic_name,
+                    pub_topic_name_len, pub_type_name, pub_type_name_len,
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
 
-    std::cout << "reader_cnt = " << sedp_reader_cnt << std::endl;
-    for (ii = 0; ii < sedp_reader_cnt; ii++) {
-        printf("tbl[%d] ****\n", ii);
-        printf("builtin_subrd_wr_seqnum: %d\n",
-               sedp_reader_tbl[ii].builtin_subrd_wr_seqnum);
-        printf("builtin_subrd_rd_seqnum: %d\n",
-               sedp_reader_tbl[ii].builtin_subrd_rd_seqnum);
-        printf("builtin_subrd_acknack_req: %d\n",
-               sedp_reader_tbl[ii].builtin_subrd_acknack_req);
+    unsigned int sedp_reader_cnt = 0;
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        if (sedp_reader_tbl[j].alive) {
+            sedp_reader_cnt++;
+        }
     }
+    std::cout << "reader_cnt = " << sedp_reader_cnt << std::endl;
+    for (ii = 0; ii < SEDP_READER_MAX; ii++) {
+        if (sedp_reader_tbl[ii].alive) {
+            printf("tbl[%d] ****\n", ii);
+            printf("builtin_subrd_wr_seqnum: %d\n",
+                   sedp_reader_tbl[ii].builtin_subrd_wr_seqnum);
+            printf("builtin_subrd_rd_seqnum: %d\n",
+                   sedp_reader_tbl[ii].builtin_subrd_rd_seqnum);
+            printf("builtin_subrd_acknack_req: %d\n",
+                   sedp_reader_tbl[ii].builtin_subrd_acknack_req);
+        }
+    }
+
+    return 0;
 }

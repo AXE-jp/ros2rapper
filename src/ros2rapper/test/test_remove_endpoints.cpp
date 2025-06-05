@@ -1,0 +1,417 @@
+// Copyright (c) 2021-2025 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "remove_endpoints.hpp"
+#include <cassert>
+#include <cstdio>
+
+// Heartbeat
+constexpr uint8_t test_update_liveliness_alive_data_1[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x37, 0xad,
+    0xde, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    // Submessage (INFO_DST)
+    0x0e, 0x01, 0x0c, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00,
+    // Submessage (HEARTBEAT)
+    0x07, 0x01, 0x1c, 0x00, 0x00, 0x00, 0x03, 0xc7, 0x00, 0x00, 0x03, 0xc2,
+    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
+
+// Data
+constexpr uint8_t test_update_liveliness_alive_data_2[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x37, 0xad,
+    0xde, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    // Submessage (INFO_DST)
+    0x0e, 0x01, 0x0c, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (DATA)
+    0x15, 0x05, 0x34, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x11, 0x04,
+    0x00, 0x00, 0x10, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x4d, 0x65, 0x73, 0x73,
+    0x61, 0x67, 0x65, 0x20, 0x46, 0x72, 0x6f, 0x6d, 0x20, 0x46, 0x50, 0x47,
+    0x41, 0x20, 0x2d, 0x20, 0x35, 0x00, 0x00, 0x00};
+
+// Inline QoS with alive status info
+constexpr uint8_t test_update_liveliness_alive_data_3[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x50, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0xc7,
+    0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // UNKNOWN
+    0x0f, 0x80, 0x18, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
+// Inline QoS with dead status info without INFO_DST to another endpoint
+constexpr uint8_t test_update_liveliness_alive_data_4[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_DST)
+    0x0e, 0x01, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x50, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0xc7,
+    0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // UNKNOWN
+    0x0f, 0x80, 0x18, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
+// Inline QoS with dead status info without INFO_DST
+constexpr uint8_t test_update_liveliness_dead_data_1[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x50, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0xc7,
+    0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // UNKNOWN
+    0x0f, 0x80, 0x18, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
+// Inline QoS with dead status info to the ros2rapper
+constexpr uint8_t test_update_liveliness_dead_data_2[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_DST)
+    0x0e, 0x01, 0x0c, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x34, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x04, 0xc7,
+    0x00, 0x00, 0x04, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
+// Inline QoS with dead status info to another endpoint,
+// and INFO_DST appears after inline QoS.
+constexpr uint8_t test_update_liveliness_dead_data_3[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x34, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x04, 0xc7,
+    0x00, 0x00, 0x04, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00,
+    // Submessage (INFO_DST)
+    0x0e, 0x01, 0x0c, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00};
+
+constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
+    = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00};
+
+static void setup_sedp_reader_tbl(unsigned int mask, const uint8_t test_data[],
+                                  sedp_endpoint tbl[SEDP_READER_MAX]) {
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        bool jth_selected = ((1 << j) & mask);
+        // setup GUID prefix
+        for (auto k = RTPS_HDR_OFFSET_GUID_PREFIX; k < RTPS_HDR_SIZE; k++) {
+            uint8_t data;
+            if (jth_selected) {
+                // Copy GUID prefix from test_data.
+                data = test_data[k];
+            } else {
+                // set GUID prefix to UNKNOWN.
+                data = 0;
+            }
+            tbl[j].guid_prefix[k - RTPS_HDR_OFFSET_GUID_PREFIX] = data;
+        }
+        // setup liveliness
+        tbl[j].alive = true;
+    }
+}
+
+static int
+check_sedp_reader_tbl_liveliness(unsigned int  mask,
+                                 sedp_endpoint tbl[SEDP_READER_MAX]) {
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        bool jth_selected = ((1 << j) & mask);
+        if (jth_selected) {
+            // tbl[j] shoud be alive.
+            if (tbl[j].alive != true) {
+                printf("check_sedp_reader_tbl_alive: %d is not alive.\n", j);
+                return 1;
+            }
+        } else {
+            // tbl[j] should be dead.
+            if (tbl[j].alive != false) {
+                printf("check_sedp_reader_tbl_alive: %d is not dead.\n", j);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int call_update_liveliness(
+    const config_t *conf, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+    int64_t timestamp_i64, const uint8_t test_data[], size_t length) {
+    app_endpoint app_reader_tbl[APP_READER_MAX];
+    bool         reading_rtps_message = false;
+    for (auto j = 0; j < length; j++) {
+        hls_uint<9> data = test_data[j];
+        if (j == (length - 1)) {
+            data |= hls_uint<9>(0x100);
+        }
+        update_liveliness(data, conf->guid_prefix, sedp_reader_tbl,
+                          app_reader_tbl, &reading_rtps_message, timestamp_i64);
+        // check reading_rtps_message
+        if (j < RTPS_HDR_OFFSET_GUID_PREFIX) {
+            if (reading_rtps_message != false) {
+                puts("reading_rtps_message becomes true before the message "
+                     "reaches the GUID prefix.");
+                return 1;
+            }
+        } else if (j < (length - 1)) {
+            if (reading_rtps_message != true) {
+                puts("reading_rtps_message becomes false while reading RTPS "
+                     "message.");
+                return 1;
+            }
+        } else {
+            if (reading_rtps_message != false) {
+                puts("reading_rtps_message does not become false at the end of "
+                     "the RTPS message.");
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int test_update_liveliness_1(const config_t *conf,
+                                    unsigned int    sedp_set_mask,
+                                    unsigned int    sedp_check_mask,
+                                    const uint8_t   test_data[],
+                                    size_t          test_data_length,
+                                    const char     *test_data_name) {
+    // setup reader tables
+    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+    setup_sedp_reader_tbl(sedp_set_mask, test_data, sedp_reader_tbl);
+
+    // process test_data
+    int64_t timestamp_i64 = 0;
+    assert(call_update_liveliness(conf, sedp_reader_tbl, timestamp_i64,
+                                  test_data, test_data_length)
+           == 0);
+
+    // check liveliness
+    int result
+        = check_sedp_reader_tbl_liveliness(sedp_check_mask, sedp_reader_tbl);
+    if (result == 0) {
+        return 0;
+    } else {
+        printf("%s: %x %x\n", test_data_name, sedp_set_mask, sedp_check_mask);
+        return 1;
+    }
+}
+
+#define TEST_UPDATE_LIVELINESS(conf, sedp_set_mask, sedp_check_mask,           \
+                               test_data)                                      \
+    test_update_liveliness_1(conf, sedp_set_mask, sedp_check_mask, test_data,  \
+                             sizeof(test_data), #test_data)
+
+static int test_update_liveliness() {
+    config_t conf;
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+        conf.guid_prefix[j] = test_update_liveliness_guid_prefix[j];
+    }
+    unsigned int n_sedp_patterns = (1 << SEDP_READER_MAX);
+    for (unsigned int sedp_mask = 0; sedp_mask < n_sedp_patterns; sedp_mask++) {
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~0,
+                               test_update_liveliness_alive_data_1);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~0,
+                               test_update_liveliness_alive_data_2);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~0,
+                               test_update_liveliness_alive_data_3);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~0,
+                               test_update_liveliness_alive_data_4);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
+                               test_update_liveliness_dead_data_1);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
+                               test_update_liveliness_dead_data_2);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
+                               test_update_liveliness_dead_data_3);
+    }
+    return 0;
+}
+
+static int test_update_timestamp() {
+    // Test whether update_timestamp updates timestamps in sedp_reader_tbl
+    // correctly.
+    constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
+    sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
+    config_t               conf;
+    for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
+         sedp_pattern++) {
+        int64_t timestamp_i64_orig = 0;
+        int64_t timestamp_i64_new = static_cast<int64_t>(sedp_pattern + 1)
+                                    << 32;
+        // Initialize sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            sedp_reader_tbl[j].timestamp = timestamp_i64_orig;
+            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+                sedp_reader_tbl[j].guid_prefix[k]
+                    = ((1 << j) & sedp_pattern)
+                          ? test_update_liveliness_alive_data_1
+                                [k + RTPS_HDR_OFFSET_GUID_PREFIX]
+                          : 0;
+            }
+        }
+        call_update_liveliness(&conf, sedp_reader_tbl, timestamp_i64_new,
+                               test_update_liveliness_alive_data_1,
+                               sizeof(test_update_liveliness_alive_data_1));
+        // Check sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            if ((1 << j) & sedp_pattern) {
+                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_new);
+            } else {
+                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_orig);
+            }
+        }
+    }
+    return 0;
+}
+
+static int test_remove_dead_endpoints_1() {
+    constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
+    sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
+    app_endpoint           app_reader_tbl[APP_READER_MAX];
+
+    int64_t count = 0;
+    for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
+         sedp_pattern++) {
+        int64_t timestamp_i64 = static_cast<int64_t>(sedp_pattern + 1) << 32;
+        // Initialize sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            count++;
+            int64_t lease_duration = count << 32;
+            sedp_reader_tbl[j].alive = true;
+            sedp_reader_tbl[j].lease_duration = lease_duration;
+            if ((1 << j) & sedp_pattern) {
+                // sedp_reader_tbl[j] should be alive.
+                sedp_reader_tbl[j].timestamp = timestamp_i64 - lease_duration;
+            } else {
+                // sedp_reader_tbl[j] should be dead.
+                sedp_reader_tbl[j].timestamp
+                    = timestamp_i64 - lease_duration - 1;
+            }
+        }
+        // Call remove_dead_endpoints and check sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+                                  timestamp_i64);
+            for (auto k = 0; k < SEDP_READER_MAX; k++) {
+                if (k > j) {
+                    // sedp_reader_tbl[k] shoud not be changed before
+                    // remove_dead_endpoints(k, ...) is called.
+                    assert(sedp_reader_tbl[k].alive);
+                } else if ((1 << j) & sedp_pattern) {
+                    assert(sedp_reader_tbl[j].alive);
+                } else {
+                    assert(!sedp_reader_tbl[j].alive);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+static int test_remove_dead_endpoints_2() {
+    // If lease_duration is DURATION_INFINITE, sedp_endpoint never timeouts.
+    constexpr unsigned int n_sedp_patterns = 1 << SEDP_READER_MAX;
+    sedp_endpoint          sedp_reader_tbl[SEDP_READER_MAX];
+    app_endpoint           app_reader_tbl[APP_READER_MAX];
+
+    // set lease_duration INFINITE.
+    const int64_t lease_duration
+        = (static_cast<int64_t>(DURATION_INFINITE.seconds) << 32)
+          | DURATION_INFINITE.fraction;
+    for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
+         sedp_pattern++) {
+        int64_t timestamp_i64 = static_cast<int64_t>(sedp_pattern + 1) << 32;
+        // Initialize sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            sedp_reader_tbl[j].alive = true;
+            sedp_reader_tbl[j].lease_duration = lease_duration;
+            if ((1 << j) & sedp_pattern) {
+                sedp_reader_tbl[j].timestamp = timestamp_i64 - lease_duration;
+            } else {
+                sedp_reader_tbl[j].timestamp
+                    = timestamp_i64 - lease_duration - 1;
+            }
+        }
+        // Call remove_dead_endpoints and check sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+                                  timestamp_i64);
+            for (auto k = 0; k < SEDP_READER_MAX; k++) {
+                assert(sedp_reader_tbl[j].alive);
+            }
+        }
+    }
+    return 0;
+}
+
+int test_remove_endpoints() {
+    assert(test_update_liveliness() == 0);
+    assert(test_update_timestamp() == 0);
+    assert(test_remove_dead_endpoints_1() == 0);
+    assert(test_remove_dead_endpoints_2() == 0);
+    return 0;
+}

@@ -7,6 +7,7 @@
 #include "endpoint.hpp"
 #include "hls.hpp"
 #include "ip.hpp"
+#include "remove_endpoints.hpp"
 #include "ros2.hpp"
 #include "sedp.hpp"
 #include "slip.hpp"
@@ -93,9 +94,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 static void ros2_in(
     hls_stream<uint8_t> &in, uint32_t rawudp_rxbuf[],
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    sedp_reader_id_t &sedp_reader_cnt,
-    sedp_endpoint     sedp_reader_tbl[SEDP_READER_MAX],
-    app_reader_id_t  &app_reader_cnt,
+    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
     hls_uint<1> sub_enable, const config_t *conf,
     volatile uint8_t *sub_app_data_recv, volatile uint8_t *sub_app_data_req,
@@ -103,7 +102,7 @@ static void ros2_in(
     uint8_t sub_app_data[MAX_APP_DATA_LEN], volatile uint8_t *sub_app_data_len,
     volatile uint16_t *sub_app_data_rep_id, volatile uint8_t *rawudp_rxbuf_rel,
     volatile uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
-    hls_uint<9> *xout) {
+    bool *reading_rtps_message, int64_t timestamp_i64, hls_uint<9> *xout) {
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
 
@@ -136,16 +135,18 @@ static void ros2_in(
     if (!s3.read_nb(x))
         return;
 
-    spdp_reader(x, sedp_reader_cnt, sedp_reader_tbl, enable, conf->ip_addr,
-                conf->subnet_mask, conf->port_num_seed);
+    update_liveliness(x, conf->guid_prefix, sedp_reader_tbl, app_reader_tbl,
+                      reading_rtps_message, timestamp_i64);
 
-    sedp_reader(x, sedp_reader_tbl, app_reader_cnt, app_reader_tbl, enable,
-                conf->ip_addr, conf->subnet_mask, conf->port_num_seed,
-                conf->guid_prefix, conf->pub_topic_name,
-                conf->pub_topic_name_len, conf->pub_topic_type_name,
-                conf->pub_topic_type_name_len, conf->sub_topic_name,
-                conf->sub_topic_name_len, conf->sub_topic_type_name,
-                conf->sub_topic_type_name_len);
+    spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
+                conf->port_num_seed, timestamp_i64);
+
+    sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, conf->ip_addr,
+                conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
+                conf->pub_topic_name, conf->pub_topic_name_len,
+                conf->pub_topic_type_name, conf->pub_topic_type_name_len,
+                conf->sub_topic_name, conf->sub_topic_name_len,
+                conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
     if (sub_enable) {
         app_reader(x, conf->guid_prefix, app_reader_entity_id,
@@ -161,7 +162,7 @@ static void ros2_in(
 /* Cyber func=inline */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
                             const uint8_t default_port[2], tx_buf &tx_buf,
-                            const config_t *conf) {
+                            const config_t *conf, timestamp now) {
     static const uint8_t dst_addr[4] /* Cyber array=EXPAND */
         = IP_MULTICAST_ADDR;
     uint8_t dst_port[2] /* Cyber array=EXPAND */;
@@ -179,18 +180,21 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
                 conf->ip_addr, default_port,
                 tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
-                conf->node_name_len);
+                conf->node_name_len, now);
 
     tx_buf.head = 0;
     tx_buf.len = SPDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
-static void sedp_pub_writer_out(
-    const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-    const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-    const uint8_t reader_entity_id[4], const uint8_t usertraffic_port[2],
-    const uint8_t app_entity_id[4], tx_buf &tx_buf, const config_t *conf) {
+static void sedp_pub_writer_out(const uint8_t writer_entity_id[4],
+                                const uint8_t dst_addr[4],
+                                const uint8_t dst_port[2],
+                                const uint8_t reader_guid_prefix[12],
+                                const uint8_t reader_entity_id[4],
+                                const uint8_t usertraffic_port[2],
+                                const uint8_t app_entity_id[4], tx_buf &tx_buf,
+                                const config_t *conf, timestamp now) {
     ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
                   SEDP_WRITER_UDP_PKT_LEN, tx_buf.buf);
 
@@ -201,18 +205,21 @@ static void sedp_pub_writer_out(
                 reader_entity_id, conf->ip_addr, usertraffic_port,
                 app_entity_id, tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
                 conf->pub_topic_name, conf->pub_topic_name_len,
-                conf->pub_topic_type_name, conf->pub_topic_type_name_len);
+                conf->pub_topic_type_name, conf->pub_topic_type_name_len, now);
 
     tx_buf.head = 0;
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
-static void sedp_sub_writer_out(
-    const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-    const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-    const uint8_t reader_entity_id[4], const uint8_t usertraffic_port[2],
-    const uint8_t app_entity_id[4], tx_buf &tx_buf, const config_t *conf) {
+static void sedp_sub_writer_out(const uint8_t writer_entity_id[4],
+                                const uint8_t dst_addr[4],
+                                const uint8_t dst_port[2],
+                                const uint8_t reader_guid_prefix[12],
+                                const uint8_t reader_entity_id[4],
+                                const uint8_t usertraffic_port[2],
+                                const uint8_t app_entity_id[4], tx_buf &tx_buf,
+                                const config_t *conf, timestamp now) {
     ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
                   SEDP_WRITER_UDP_PKT_LEN, tx_buf.buf);
 
@@ -223,7 +230,7 @@ static void sedp_sub_writer_out(
                 reader_entity_id, conf->ip_addr, usertraffic_port,
                 app_entity_id, tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
                 conf->sub_topic_name, conf->sub_topic_name_len,
-                conf->sub_topic_type_name, conf->sub_topic_type_name_len);
+                conf->sub_topic_type_name, conf->sub_topic_type_name_len, now);
 
     tx_buf.head = 0;
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -286,7 +293,7 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                int64_t &seqnum, const uint8_t src_addr[4],
                const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
                volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-               volatile const uint8_t *pub_app_data_len) {
+               volatile const uint8_t *pub_app_data_len, timestamp now) {
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
@@ -298,7 +305,7 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
 
     app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
                reader_entity_id, seqnum, pub_app_data, *pub_app_data_len,
-               tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
+               tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), now);
 
     tx_buf.head = 0;
     tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
@@ -320,52 +327,54 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 
 #define SPDP_WRITER_OUT()                                                      \
     do {                                                                       \
-        spdp_writer_out(metatraffic_port, default_port, tx_buf, conf);         \
+        spdp_writer_out(metatraffic_port, default_port, tx_buf, conf, now);    \
     } while (0)
 
 #define SEDP_PUB_WRITER_OUT(id)                                                \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_pub_writer_out(                                               \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id,       \
-                default_port, app_writer_entity_id, tx_buf, conf);             \
+                default_port, app_writer_entity_id, tx_buf, conf, now);        \
         }                                                                      \
     } while (0)
 
 #define SEDP_SUB_WRITER_OUT(id)                                                \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_sub_writer_out(                                               \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id,       \
-                default_port, app_reader_entity_id, tx_buf, conf);             \
+                default_port, app_reader_entity_id, tx_buf, conf, now);        \
         }                                                                      \
     } while (0)
 
 #define SEDP_PUB_HEARTBEAT_OUT(id, pub_enable)                                 \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_heartbeat_out(                                                \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1,    \
-                (pub_enable) ? 1 : 0, tx_buf, sedp_pub_heartbeat_cnt[(id)],    \
-                conf->ip_addr, conf->node_udp_port, conf->guid_prefix);        \
+                (pub_enable) ? 1 : 0, tx_buf,                                  \
+                sedp_reader_tbl[(id)].pub_heartbeat_cnt, conf->ip_addr,        \
+                conf->node_udp_port, conf->guid_prefix);                       \
         }                                                                      \
     } while (0)
 
 #define SEDP_SUB_HEARTBEAT_OUT(id, sub_enable)                                 \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_heartbeat_out(                                                \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id, 1,    \
-                (sub_enable) ? 1 : 0, tx_buf, sedp_sub_heartbeat_cnt[(id)],    \
-                conf->ip_addr, conf->node_udp_port, conf->guid_prefix);        \
+                (sub_enable) ? 1 : 0, tx_buf,                                  \
+                sedp_reader_tbl[(id)].sub_heartbeat_cnt, conf->ip_addr,        \
+                conf->node_udp_port, conf->guid_prefix);                       \
             if (sedp_reader_tbl[(id)].initial_send_counter != 3)               \
                 sedp_reader_tbl[(id)].initial_send_counter++;                  \
         }                                                                      \
@@ -373,13 +382,13 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 
 #define SEDP_PUB_ACKNACK_OUT(id)                                               \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_acknack_out(                                                  \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id,       \
                 snstate_base, snstate_is_empty, tx_buf,                        \
-                sedp_pub_acknack_cnt[(id)], conf->ip_addr,                     \
+                sedp_reader_tbl[(id)].pub_acknack_cnt, conf->ip_addr,          \
                 conf->node_udp_port, conf->guid_prefix);                       \
             sedp_reader_tbl[(id)].builtin_pubrd_acknack_req = false;           \
         }                                                                      \
@@ -387,47 +396,45 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 
 #define SEDP_SUB_ACKNACK_OUT(id)                                               \
     do {                                                                       \
-        if (sedp_reader_cnt > (id)) {                                          \
+        if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_acknack_out(                                                  \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id,       \
                 snstate_base, snstate_is_empty, tx_buf,                        \
-                sedp_sub_acknack_cnt[(id)], conf->ip_addr,                     \
+                sedp_reader_tbl[(id)].sub_acknack_cnt, conf->ip_addr,          \
                 conf->node_udp_port, conf->guid_prefix);                       \
             sedp_reader_tbl[(id)].builtin_subrd_acknack_req = false;           \
         }                                                                      \
     } while (0)
 
 /* Cyber func=inline */
-void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
-                    app_endpoint            app_reader_tbl[APP_READER_MAX],
-                    const config_t         *conf,
-                    volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-                    volatile const uint8_t *pub_app_data_len,
-                    volatile uint8_t       *pub_app_data_req,
-                    volatile uint8_t       *pub_app_data_rel,
-                    volatile uint8_t       *pub_app_data_grant,
-                    const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
-                    int64_t &app_seqnum) {
+void APP_WRITER_OUT(
+    app_reader_id_t id, app_endpoint app_reader_tbl[APP_READER_MAX],
+    const config_t *conf, volatile const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+    volatile const uint8_t *pub_app_data_len,
+    volatile uint8_t *pub_app_data_req, volatile uint8_t *pub_app_data_rel,
+    volatile uint8_t *pub_app_data_grant, const uint8_t app_writer_entity_id[4],
+    tx_buf &tx_buf, int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
 
-    if (app_reader_cnt > id && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
+    if ((id < APP_READER_MAX) && app_reader_tbl[id].alive
+        && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
         /* Cyber scheduling_block = non-transparent */
-    app_data_request_section : {
+    app_data_request_section: {
 #pragma HLS protocol fixed
         *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
         CLOCK_BOUNDARY;
         CLOCK_BOUNDARY;
 
         if (*pub_app_data_grant == 1) {
-            app_writer_out(app_writer_entity_id, app_reader_tbl[id].ip_addr,
-                           app_reader_tbl[id].udp_port,
-                           app_reader_tbl[id].guid_prefix,
-                           app_reader_tbl[id].entity_id, tx_buf, app_seqnum,
-                           conf->ip_addr, conf->node_udp_port,
-                           conf->guid_prefix, pub_app_data, pub_app_data_len);
+            app_writer_out(
+                app_writer_entity_id, app_reader_tbl[id].ip_addr,
+                app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
+                app_reader_tbl[id].entity_id, tx_buf, app_seqnum, conf->ip_addr,
+                conf->node_udp_port, conf->guid_prefix, pub_app_data,
+                pub_app_data_len, now);
 
             CLOCK_BOUNDARY;
             *pub_app_data_rel
@@ -448,9 +455,7 @@ void APP_WRITER_OUT(app_reader_id_t id, app_reader_id_t app_reader_cnt,
 /* Cyber func=inline */
 static void ros2_out(
     hls_stream<uint8_t> &out, uint32_t rawudp_txbuf[],
-    sedp_reader_id_t &sedp_reader_cnt,
-    sedp_endpoint     sedp_reader_tbl[SEDP_READER_MAX],
-    app_reader_id_t  &app_reader_cnt,
+    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
     hls_uint<1> sub_enable, const config_t *conf,
     volatile const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
@@ -466,7 +471,8 @@ static void ros2_out(
     volatile uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
     volatile uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
     volatile uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
-    volatile uint8_t *cnt_app_wr_set) {
+    volatile uint8_t *cnt_app_wr_set, bool reading_rtps_message,
+    int64_t timestamp_i64) {
 
     static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
@@ -505,19 +511,6 @@ static void ros2_out(
 
     static tx_buf tx_buf;
 
-    static uint32_t
-        sedp_pub_heartbeat_cnt[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-    static uint32_t
-        sedp_sub_heartbeat_cnt[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-    static uint32_t
-        sedp_pub_acknack_cnt[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-    static uint32_t
-        sedp_sub_acknack_cnt[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = sedp_pub_heartbeat_cnt complete dim = 0
-#pragma HLS array_partition variable = sedp_sub_heartbeat_cnt complete dim = 0
-#pragma HLS array_partition variable = sedp_pub_acknack_cnt complete dim = 0
-#pragma HLS array_partition variable = sedp_sub_acknack_cnt complete dim = 0
-
     static int64_t app_seqnum;
 
 #ifndef USE_FIFOIF_ETHERNET
@@ -544,8 +537,19 @@ static void ros2_out(
     static hls_uint<2> tx_progress;
     static hls_uint<3> tx_cnt_elapsed;
 
-    static hls_uint<3> next_packet_type = 0;
-#define ROTATE_NEXT_PACKET_TYPE next_packet_type++
+    static hls_uint<4> next_packet_type = 0;
+#define ROTATE_NEXT_PACKET_TYPE                                                \
+    do {                                                                       \
+        if (next_packet_type < 8) {                                            \
+            next_packet_type++;                                                \
+        } else {                                                               \
+            next_packet_type = 0;                                              \
+        }                                                                      \
+    } while (0)
+
+    timestamp now
+        = {.seconds = static_cast<int32_t>(timestamp_i64 >> 32),
+           .fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff)};
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
@@ -558,7 +562,7 @@ static void ros2_out(
 
         if (tx_buf.empty()) {
             /* Cyber scheduling_block = non-transparent */
-        cnt_reset_interval : {
+        cnt_reset_interval: {
 #pragma HLS protocol fixed
             *cnt_interval_set = 1;
             CLOCK_BOUNDARY;
@@ -655,7 +659,7 @@ static void ros2_out(
                 ROTATE_NEXT_PACKET_TYPE;
 
                 /* Cyber scheduling_block = non-transparent */
-            cnt_reset_0 : {
+            cnt_reset_0: {
 #pragma HLS protocol fixed
                 *cnt_spdp_wr_set = 1;
                 CLOCK_BOUNDARY;
@@ -687,7 +691,7 @@ static void ros2_out(
                         SEDP_PUB_WRITER_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_1 : {
+                        cnt_reset_1: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_wr_set = 1;
                             CLOCK_BOUNDARY;
@@ -725,7 +729,7 @@ static void ros2_out(
                         SEDP_SUB_WRITER_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_2 : {
+                        cnt_reset_2: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_wr_set = 1;
                             CLOCK_BOUNDARY;
@@ -763,7 +767,7 @@ static void ros2_out(
                         SEDP_PUB_HEARTBEAT_OUT(3, pub_enable);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_3 : {
+                        cnt_reset_3: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_hb_set = 1;
                             CLOCK_BOUNDARY;
@@ -801,7 +805,7 @@ static void ros2_out(
                         SEDP_SUB_HEARTBEAT_OUT(3, sub_enable);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_4 : {
+                        cnt_reset_4: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_hb_set = 1;
                             CLOCK_BOUNDARY;
@@ -843,7 +847,7 @@ static void ros2_out(
                         SEDP_PUB_ACKNACK_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_5 : {
+                        cnt_reset_5: {
 #pragma HLS protocol fixed
                             *cnt_sedp_pub_an_set = 1;
                             CLOCK_BOUNDARY;
@@ -890,7 +894,7 @@ static void ros2_out(
                         SEDP_SUB_ACKNACK_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_6 : {
+                        cnt_reset_6: {
 #pragma HLS protocol fixed
                             *cnt_sedp_sub_an_set = 1;
                             CLOCK_BOUNDARY;
@@ -912,35 +916,31 @@ static void ros2_out(
                        && next_packet_type == 7) {
                 switch (tx_progress) {
                 case 0:
-                    APP_WRITER_OUT(0, app_reader_cnt, app_reader_tbl, conf,
-                                   pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum);
+                    APP_WRITER_OUT(
+                        0, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 1:
-                    APP_WRITER_OUT(1, app_reader_cnt, app_reader_tbl, conf,
-                                   pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum);
+                    APP_WRITER_OUT(
+                        1, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 2:
-                    APP_WRITER_OUT(2, app_reader_cnt, app_reader_tbl, conf,
-                                   pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum);
+                    APP_WRITER_OUT(
+                        2, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
                     break;
                 case 3:
-                    APP_WRITER_OUT(3, app_reader_cnt, app_reader_tbl, conf,
-                                   pub_app_data, pub_app_data_len,
-                                   pub_app_data_req, pub_app_data_rel,
-                                   pub_app_data_grant, app_writer_entity_id,
-                                   tx_buf, app_seqnum);
+                    APP_WRITER_OUT(
+                        3, app_reader_tbl, conf, pub_app_data, pub_app_data_len,
+                        pub_app_data_req, pub_app_data_rel, pub_app_data_grant,
+                        app_writer_entity_id, tx_buf, app_seqnum, now);
 
                     /* Cyber scheduling_block = non-transparent */
-                cnt_reset_7 : {
+                cnt_reset_7: {
 #pragma HLS protocol fixed
                     *cnt_app_wr_set = 1;
                     CLOCK_BOUNDARY;
@@ -950,6 +950,36 @@ static void ros2_out(
                     break;
                 }
                 tx_progress++;
+            } else if (next_packet_type == 8) {
+                // Remove dead endpoints.
+                if (reading_rtps_message) {
+                    // Do not change endpoint tables while reading a RTPS
+                    // message.
+                    tx_progress = 0;
+                } else {
+                    switch (tx_progress) {
+                    case 0:
+                        remove_dead_endpoints(0, sedp_reader_tbl,
+                                              app_reader_tbl, timestamp_i64);
+                        break;
+                    case 1:
+                        remove_dead_endpoints(1, sedp_reader_tbl,
+                                              app_reader_tbl, timestamp_i64);
+                        break;
+                    case 2:
+                        remove_dead_endpoints(2, sedp_reader_tbl,
+                                              app_reader_tbl, timestamp_i64);
+                        break;
+                    case 3:
+                        remove_dead_endpoints(3, sedp_reader_tbl,
+                                              app_reader_tbl, timestamp_i64);
+                        break;
+                    }
+                    tx_progress++;
+                }
+                if (tx_progress == 0) {
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else {
                 ROTATE_NEXT_PACKET_TYPE;
             }
@@ -1009,7 +1039,8 @@ void ros2(
     volatile uint8_t *cnt_sedp_pub_an_set /* Cyber port_mode=shared */,
     volatile uint8_t *cnt_sedp_sub_an_set /* Cyber port_mode=shared */,
     volatile uint8_t *cnt_app_wr_set /* Cyber port_mode=shared */,
-    hls_uint<9>      *xout) {
+
+    int64_t timestamp_i64 /* Cyber port_mode=in */, hls_uint<9> *xout) {
 
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = ap_fifo port = out
@@ -1090,30 +1121,34 @@ void ros2(
 #pragma HLS interface mode = ap_vld port = cnt_sedp_sub_an_set
 #pragma HLS interface mode = ap_vld port = cnt_app_wr_set
 
-    static sedp_reader_id_t sedp_reader_cnt;
-    static app_reader_id_t  app_reader_cnt;
+#pragma HLS interface mode = ap_none port = timestamp_i64
 
     static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
     static app_endpoint  app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
-    ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_cnt, sedp_reader_tbl,
-            app_reader_cnt, app_reader_tbl, pub_enable, sub_enable, conf,
-            sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
-            sub_app_data_grant, sub_app_data, sub_app_data_len,
-            sub_app_data_rep_id, udp_rxbuf_rel, udp_rxbuf_grant,
-            conf->ignore_ip_checksum, xout);
+    // This flag becomes true when ros2rapper begins to read the GUID prefix in
+    // a RTPS message and becomes false when ros2rapper reaches the end of the
+    // RTPS message.
+    static bool reading_rtps_message;
 
-    ros2_out(
-        out, udp_txbuf, sedp_reader_cnt, sedp_reader_tbl, app_reader_cnt,
-        app_reader_tbl, pub_enable, sub_enable, conf, pub_app_data,
-        pub_app_data_len, pub_app_data_req, pub_app_data_rel,
-        pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
-        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
-        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
-        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
-        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
-        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set);
+    ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
+            pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
+            sub_app_data_rel, sub_app_data_grant, sub_app_data,
+            sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
+            udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
+            timestamp_i64, xout);
+
+    ros2_out(out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable,
+             sub_enable, conf, pub_app_data, pub_app_data_len, pub_app_data_req,
+             pub_app_data_rel, pub_app_data_grant, udp_txbuf_rel,
+             udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
+             cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
+             cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
+             cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
+             cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+             cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
+             cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
+             cnt_app_wr_set, reading_rtps_message, timestamp_i64);
 }

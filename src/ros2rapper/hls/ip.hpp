@@ -34,8 +34,8 @@
 #define IP_MAX_PAYLOAD_LEN      (MTU - IP_HDR_SIZE)
 #define IP_FRAGMEMT_OFFSET_BASE (IP_MAX_PAYLOAD_LEN >> 3)
 
-#define HAS_MORE_FRAGMENTS(flags)  (((flags)&0x2000) == 0x2000)
-#define GET_FRAGMENT_OFFSET(flags) ((flags)&0x1FFF)
+#define HAS_MORE_FRAGMENTS(flags)  (((flags) & 0x2000) == 0x2000)
+#define GET_FRAGMENT_OFFSET(flags) ((flags) & 0x1FFF)
 
 #define MAX_IP_FRAGMENTS 2
 #define MAX_PENDINGS     1

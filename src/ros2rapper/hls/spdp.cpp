@@ -20,15 +20,30 @@ void compare_guid_prefix_of_sedp_endpoint(
     }
 }
 
+/* Cyber func=inline */
+hls_uint<SEDP_READER_MAX>
+find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
+#pragma HLS inline
+    hls_uint<SEDP_READER_MAX> alive = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (tbl[j].alive) {
+            alive |= hls_uint<SEDP_READER_MAX>(1 << j);
+        }
+    }
+    return alive;
+}
+
 #define FLAGS_FOUND_GUID     0x01
 #define FLAGS_FOUND_LOCATOR  0x02
 #define FLAGS_UNMATCH_DOMAIN 0x04
 
 /* Cyber func=inline */
-void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
-                 sedp_endpoint reader_tbl[SEDP_READER_MAX], hls_uint<1> enable,
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t port_num_seed) {
+void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
+                 hls_uint<1> enable, const uint8_t ip_addr[4],
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
+                 int64_t timestamp_i64) {
 #pragma HLS inline
     static const uint8_t par_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PARTICIPANT_READER;
@@ -47,10 +62,27 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
     static uint16_t param_len;
     static uint16_t udp_port;
 
-    if (!enable || reader_cnt == SEDP_READER_MAX)
-        return;
+    static bool lease_duration_found;
 
-    sedp_endpoint &reader = reader_tbl[reader_cnt];
+    if (!enable) {
+        return;
+    }
+
+    // Find an unused point in reader_tbl.
+    sedp_reader_id_t unused_reader_id;
+    /* Cyber unroll_times=all */
+    for (unused_reader_id = 0; unused_reader_id < SEDP_READER_MAX;
+         unused_reader_id++) {
+#pragma HLS unroll
+        if (!reader_tbl[unused_reader_id].alive) {
+            break;
+        }
+    }
+    if (unused_reader_id == SEDP_READER_MAX) {
+        return;
+    }
+
+    sedp_endpoint &reader = reader_tbl[unused_reader_id];
     uint8_t        data = in & 0xff;
     bool           end = in & 0x100;
 
@@ -138,18 +170,33 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
             if (param_id == PID_SENTINEL) {
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<SEDP_READER_MAX> valid = (0x1 << reader_cnt) - 1;
+                    hls_uint<SEDP_READER_MAX> valid
+                        = find_living_sedp_endpoints(reader_tbl);
                     if ((unmatched & valid) == valid) {
+                        // Validate and initialize sedp_endpoint.
                         reader.builtin_pubrd_rd_seqnum = 1;
                         reader.builtin_subrd_rd_seqnum = 1;
                         reader.builtin_pubrd_wr_seqnum = 0;
                         reader.builtin_subrd_wr_seqnum = 0;
-                        reader_cnt++;
+                        reader.builtin_pubrd_acknack_req = false;
+                        reader.builtin_subrd_acknack_req = false;
+                        reader.initial_send_counter = 0;
+                        reader.pub_heartbeat_cnt = 0;
+                        reader.sub_heartbeat_cnt = 0;
+                        reader.pub_acknack_cnt = 0;
+                        reader.sub_acknack_cnt = 0;
+                        reader.alive = true;
+                        reader.children = 0;
+                        if (!lease_duration_found) {
+                            reader.lease_duration = SPDP_LEASE_DURATION_DEFAULT;
+                        }
+                        reader.timestamp = timestamp_i64;
                     }
                 }
                 unmatched = 0;
                 flags = 0;
                 offset = 0;
+                lease_duration_found = false;
                 state = 1;
             } else {
                 sbm_len -= sizeof(param_len);
@@ -204,6 +251,28 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
             } else if (offset == 23) {
                 reader.ip_addr[3] = data;
             }
+            break;
+        case PID_PARTICIPANT_LEASE_DURATION:
+            if (offset < 8) {
+                if (offset == 0) {
+                    reader.lease_duration = 0;
+                }
+                if (rep_id & SP_ID_CDR_LE) {
+                    if (offset < 4) {
+                        // Read the seconds of the lease duration.
+                        reader.lease_duration |= static_cast<int64_t>(data)
+                                                 << (32 + 8 * offset);
+                    } else {
+                        // Read the fractional part of the lease duration.
+                        reader.lease_duration |= static_cast<int64_t>(data)
+                                                 << (8 * offset - 32);
+                    }
+                } else {
+                    reader.lease_duration |= static_cast<int64_t>(data)
+                                             << (56 - 8 * offset);
+                }
+            }
+            break;
         }
         offset++;
         if (offset == param_len) {
@@ -216,6 +285,8 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
                         flags |= (hls_uint<3>)FLAGS_FOUND_LOCATOR;
                     }
                 }
+            } else if (param_id == PID_PARTICIPANT_LEASE_DURATION) {
+                lease_duration_found = true;
             }
             offset = 0;
             state = 4;
@@ -235,6 +306,7 @@ void spdp_reader(hls_uint<9> in, sedp_reader_id_t &reader_cnt,
         unmatched = 0;
         flags = 0;
         offset = 0;
+        lease_duration_found = false;
         state = 0;
     }
 }
@@ -245,7 +317,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
                  uint8_t buf[], const uint8_t entity_name[MAX_NODE_NAME_LEN],
-                 uint8_t entity_name_len) {
+                 uint8_t entity_name_len, timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -256,9 +328,8 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     static const uint16_t rep_id = SP_ID_PL_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now = TIME_ZERO;
-    static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt = 0;
+    static const uint16_t ext_flags = 0;
+    static const uint16_t rep_opt = 0;
 
     static const uint16_t octets_to_next_header
         = SPDP_WRITER_OCTETS_TO_NEXT_HEADER;

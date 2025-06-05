@@ -8,8 +8,10 @@
 #include <cstdint>
 
 #define SEDP_READER_MAX 4
+#define APP_READER_MAX  4
 
 typedef hls_uint<3> sedp_reader_id_t;
+typedef hls_uint<3> app_reader_id_t;
 
 struct sedp_endpoint {
     uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
@@ -22,11 +24,15 @@ struct sedp_endpoint {
     uint8_t     builtin_subrd_rd_seqnum;
     bool        builtin_subrd_acknack_req;
     hls_uint<2> initial_send_counter;
+    uint32_t    pub_heartbeat_cnt;
+    uint32_t    sub_heartbeat_cnt;
+    uint32_t    pub_acknack_cnt;
+    uint32_t    sub_acknack_cnt;
+    bool        alive;
+    hls_uint<APP_READER_MAX> children;
+    int64_t                  lease_duration;
+    int64_t                  timestamp;
 };
-
-#define APP_READER_MAX 4
-
-typedef hls_uint<3> app_reader_id_t;
 
 using builtin_ep_type_t = hls_uint<2>;
 using app_ep_type_t = hls_uint<2>;
@@ -44,6 +50,7 @@ struct app_endpoint {
     uint8_t       guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t       entity_id[4] /* Cyber array=EXPAND, array_index=const */;
     app_ep_type_t app_ep_type;
+    bool          alive;
 };
 
 #endif // !ENDPOINT_HPP

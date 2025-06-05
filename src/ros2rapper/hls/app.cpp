@@ -14,7 +14,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
                 volatile const uint8_t app_data[MAX_APP_DATA_LEN],
-                uint32_t app_data_len, uint8_t buf[]) {
+                uint32_t app_data_len, uint8_t buf[], timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -25,9 +25,8 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     static const uint16_t rep_id = SP_ID_CDR_BE;
 #endif // SBM_ENDIAN_BIG
 
-    static const timestamp now = TIME_ZERO;
-    static const uint16_t  ext_flags = 0;
-    static const uint16_t  rep_opt = 0;
+    static const uint16_t ext_flags = 0;
+    static const uint16_t rep_opt = 0;
 
     const uint16_t tot_len = APP_TOT_LEN(app_data_len);
     const uint16_t octets_to_next_header

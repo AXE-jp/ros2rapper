@@ -40,7 +40,7 @@ void process_ip_packet(const uint8_t *packet, size_t packet_size) {
     while (1) {
         hls_uint<9> x = packet[i];
         if (i == packet_size - 1) {
-            x |= 0x100;
+            x |= hls_uint<9>(0x100);
         }
 
         if (i < packet_size && in.write_nb(x))
@@ -80,7 +80,7 @@ void process_ip_packet(const uint8_t *packet, size_t packet_size) {
     printf("--- --- ---\n");
 }
 
-int main() {
+int test_udp() {
     process_ip_packet(ip_packet, sizeof(ip_packet));
     process_ip_packet(ip_packet, sizeof(ip_packet));
 
