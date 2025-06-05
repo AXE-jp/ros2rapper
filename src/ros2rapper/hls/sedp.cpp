@@ -134,20 +134,20 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     }
 
     // Find an unused point in app_reader_tbl.
-    app_reader_id_t app_reader_cnt;
+    app_reader_id_t unused_app_reader_id;
     /* Cyber unroll_times=all */
-    for (app_reader_cnt = 0; app_reader_cnt < APP_READER_MAX;
-         app_reader_cnt++) {
+    for (unused_app_reader_id = 0; unused_app_reader_id < APP_READER_MAX;
+         unused_app_reader_id++) {
 #pragma HLS unroll
-        if (!app_reader_tbl[app_reader_cnt].alive) {
+        if (!app_reader_tbl[unused_app_reader_id].alive) {
             break;
         }
     }
-    if (app_reader_cnt == APP_READER_MAX) {
+    if (unused_app_reader_id == APP_READER_MAX) {
         return;
     }
 
-    app_endpoint &reader = app_reader_tbl[app_reader_cnt];
+    app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
     uint8_t sedp_matched_idx
         = get_matched_index(sedp_unmatched, sedp_reader_tbl);
@@ -361,10 +361,10 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         reader.app_ep_type = (ep_type & BUILTIN_EP_PUB)
                                                  ? APP_EP_SUB
                                                  : APP_EP_PUB;
-                        // Validate app_reader_tbl[app_reader_cnt]
-                        participant.children
-                            |= hls_uint<APP_READER_MAX>(1 << app_reader_cnt);
-                        app_reader_tbl[app_reader_cnt].alive = true;
+                        // Validate app_reader_tbl[unused_app_reader_id]
+                        participant.children |= hls_uint<APP_READER_MAX>(
+                            1 << unused_app_reader_id);
+                        app_reader_tbl[unused_app_reader_id].alive = true;
                     }
                 }
                 app_unmatched = 0;

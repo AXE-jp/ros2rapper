@@ -69,19 +69,20 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     }
 
     // Find an unused point in reader_tbl.
-    sedp_reader_id_t reader_cnt;
+    sedp_reader_id_t unused_reader_id;
     /* Cyber unroll_times=all */
-    for (reader_cnt = 0; reader_cnt < SEDP_READER_MAX; reader_cnt++) {
+    for (unused_reader_id = 0; unused_reader_id < SEDP_READER_MAX;
+         unused_reader_id++) {
 #pragma HLS unroll
-        if (!reader_tbl[reader_cnt].alive) {
+        if (!reader_tbl[unused_reader_id].alive) {
             break;
         }
     }
-    if (reader_cnt == SEDP_READER_MAX) {
+    if (unused_reader_id == SEDP_READER_MAX) {
         return;
     }
 
-    sedp_endpoint &reader = reader_tbl[reader_cnt];
+    sedp_endpoint &reader = reader_tbl[unused_reader_id];
     uint8_t        data = in & 0xff;
     bool           end = in & 0x100;
 
