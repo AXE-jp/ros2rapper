@@ -666,6 +666,8 @@ ros2 (
   .udp_txbuf_rel_wd(),
   .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
 
+  .timestamp_i64(local_timestamp),
+
   .xout_i(9'h0),
   .xout_o()
 );
