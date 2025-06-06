@@ -207,7 +207,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(1'b0),
-        .ros2sub_en(1'b0),
+        .ros2sub_en(4'd0),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -240,6 +240,21 @@ module top (
         .ros2_sub_topic_name_len(0),
         .ros2_sub_topic_type_name(0),
         .ros2_sub_topic_type_name_len(0),
+
+        .ros2_sub_topic_name_1(0),
+        .ros2_sub_topic_name_len_1(0),
+        .ros2_sub_topic_type_name_1(0),
+        .ros2_sub_topic_type_name_len_1(0),
+
+        .ros2_sub_topic_name_2(0),
+        .ros2_sub_topic_name_len_2(0),
+        .ros2_sub_topic_type_name_2(0),
+        .ros2_sub_topic_type_name_len_2(0),
+
+        .ros2_sub_topic_name_3(0),
+        .ros2_sub_topic_name_len_3(0),
+        .ros2_sub_topic_type_name_3(0),
+        .ros2_sub_topic_type_name_len_3(0),
 
         .ros2_pub_app_data(),
         .ros2_pub_app_data_len(),

@@ -10,6 +10,8 @@
 #define SEDP_READER_MAX 4
 #define APP_READER_MAX  4
 
+#define SUB_TOPICS_MAX 4
+
 typedef hls_uint<3> sedp_reader_id_t;
 typedef hls_uint<3> app_reader_id_t;
 
@@ -23,6 +25,7 @@ struct sedp_endpoint {
     uint8_t     builtin_subrd_wr_seqnum;
     uint8_t     builtin_subrd_rd_seqnum;
     bool        builtin_subrd_acknack_req;
+    int64_t     builtin_subwr_lastsn;
     hls_uint<2> initial_send_counter;
     uint32_t    pub_heartbeat_cnt;
     uint32_t    sub_heartbeat_cnt;

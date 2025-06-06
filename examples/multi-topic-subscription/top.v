@@ -8,15 +8,15 @@
 `include "ros2_ether_config.vh"
 
 module top (
-    input  wire       clk,
-    input  wire       rst_n,
+    input wire        clk,
+    input wire        rst_n,
 
     output wire       phy_ref_clk,
-    input  wire       phy_rx_clk,
-    input  wire [3:0] phy_rxd,
-    input  wire       phy_rx_dv,
-    input  wire       phy_rx_er,
-    input  wire       phy_tx_clk,
+    input wire        phy_rx_clk,
+    input wire [3:0]  phy_rxd,
+    input wire        phy_rx_dv,
+    input wire        phy_rx_er,
+    input wire        phy_tx_clk,
     output wire [3:0] phy_txd,
     output wire       phy_tx_en,
     output wire       phy_rst_n,
@@ -24,7 +24,27 @@ module top (
     output wire       led4,
     output wire       led5,
     output wire       led6,
-    output wire       led7
+    output wire       led7,
+
+    input wire        sw0,
+    input wire        sw1,
+    input wire        sw2,
+    input wire        sw3,
+
+    output wire       led0_b,
+    output wire       led1_b,
+    output wire       led2_b,
+    output wire       led3_b,
+
+    output wire       led0_g,
+    output wire       led1_g,
+    output wire       led2_g,
+    output wire       led3_g,
+
+    output wire       led0_r,
+    output wire       led1_r,
+    output wire       led2_r,
+    output wire       led3_r
 );
 
     // --- Clock & Reset
@@ -156,10 +176,31 @@ module top (
     end
 
     // --- ROS2 Subscriber Configuration
+    wire [3:0] ros2sub_en;
+    assign ros2sub_en[0] = sw0;
+    assign ros2sub_en[1] = sw1;
+    assign ros2sub_en[2] = sw2;
+    assign ros2sub_en[3] = sw3;
+
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
     wire [7:0] ros2_sub_topic_name_len = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
+
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_1 = "ccc/tr";
+    wire [7:0] ros2_sub_topic_name_len_1 = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_1 = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_sub_topic_type_name_len_1 = 8'd29;
+
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_2 = "ddd/tr";
+    wire [7:0] ros2_sub_topic_name_len_2 = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_2 = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_sub_topic_type_name_len_2 = 8'd29;
+
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_3 = "eee/tr";
+    wire [7:0] ros2_sub_topic_name_len_3 = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3 = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_sub_topic_type_name_len_3 = 8'd29;
 
     // --- ROS2 Subscriber Received Message
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
@@ -167,16 +208,46 @@ module top (
     wire ros2_sub_app_data_we;
     wire [7:0] ros2_sub_app_data_wdata;
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
+
+    wire [3:0] ros2_sub_app_data_recv;
+    reg [3:0] sub_recvd_reg_0;
+    reg [3:0] sub_recvd_reg_1;
+    reg [3:0] sub_recvd_reg_2;
+    reg [3:0] sub_recvd_reg_3;
     always @(posedge clk_int) begin
         if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
+        if (ros2_sub_app_data_recv[0])
+            sub_recvd_reg_0 <= rx_msg_reg[0][3:0];
+        if (ros2_sub_app_data_recv[1])
+            sub_recvd_reg_1 <= rx_msg_reg[0][3:0];
+        if (ros2_sub_app_data_recv[2])
+            sub_recvd_reg_2 <= rx_msg_reg[0][3:0];
+        if (ros2_sub_app_data_recv[3])
+            sub_recvd_reg_3 <= rx_msg_reg[0][3:0];
     end
     wire [7:0] ros2_sub_app_data_len;
     wire [15:0] ros2_sub_app_data_rep_id;
-    assign led4 = rx_msg_reg[0][0];
-    assign led5 = rx_msg_reg[0][1];
-    assign led6 = rx_msg_reg[0][2];
-    assign led7 = rx_msg_reg[0][3];
+
+    assign led4 = sub_recvd_reg_0[0];
+    assign led5 = sub_recvd_reg_0[1];
+    assign led6 = sub_recvd_reg_0[2];
+    assign led7 = sub_recvd_reg_0[3];
+
+    assign led0_b = sub_recvd_reg_1[0];
+    assign led1_b = sub_recvd_reg_1[1];
+    assign led2_b = sub_recvd_reg_1[2];
+    assign led3_b = sub_recvd_reg_1[3];
+
+    assign led0_g = sub_recvd_reg_2[0];
+    assign led1_g = sub_recvd_reg_2[1];
+    assign led2_g = sub_recvd_reg_2[2];
+    assign led3_g = sub_recvd_reg_2[3];
+
+    assign led0_r = sub_recvd_reg_3[0];
+    assign led1_r = sub_recvd_reg_3[1];
+    assign led2_r = sub_recvd_reg_3[2];
+    assign led3_r = sub_recvd_reg_3[3];
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -218,7 +289,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(1'b1),
-        .ros2sub_en(4'b0001),
+        .ros2sub_en(ros2sub_en),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -252,20 +323,20 @@ module top (
         .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
         .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
 
-        .ros2_sub_topic_name_1(),
-        .ros2_sub_topic_name_len_1(),
-        .ros2_sub_topic_type_name_1(),
-        .ros2_sub_topic_type_name_len_1(),
+        .ros2_sub_topic_name_1(ros2_sub_topic_name_1),
+        .ros2_sub_topic_name_len_1(ros2_sub_topic_name_len_1),
+        .ros2_sub_topic_type_name_1(ros2_sub_topic_type_name_1),
+        .ros2_sub_topic_type_name_len_1(ros2_sub_topic_type_name_len_1),
 
-        .ros2_sub_topic_name_2(),
-        .ros2_sub_topic_name_len_2(),
-        .ros2_sub_topic_type_name_2(),
-        .ros2_sub_topic_type_name_len_2(),
+        .ros2_sub_topic_name_2(ros2_sub_topic_name_2),
+        .ros2_sub_topic_name_len_2(ros2_sub_topic_name_len_2),
+        .ros2_sub_topic_type_name_2(ros2_sub_topic_type_name_2),
+        .ros2_sub_topic_type_name_len_2(ros2_sub_topic_type_name_len_2),
 
-        .ros2_sub_topic_name_3(),
-        .ros2_sub_topic_name_len_3(),
-        .ros2_sub_topic_type_name_3(),
-        .ros2_sub_topic_type_name_len_3(),
+        .ros2_sub_topic_name_3(ros2_sub_topic_name_3),
+        .ros2_sub_topic_name_len_3(ros2_sub_topic_name_len_3),
+        .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
+        .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
         .ros2_pub_app_data(ros2_pub_app_data),
         .ros2_pub_app_data_len(ROS2_PUB_APP_DATA_LEN),
@@ -282,7 +353,7 @@ module top (
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),
         .ros2_sub_app_data_grant(),
-        .ros2_sub_app_data_recv(),
+        .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
         .udp_rxbuf_rel(1'b1),
         .udp_rxbuf_grant(),

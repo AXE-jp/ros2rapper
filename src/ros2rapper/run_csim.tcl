@@ -14,6 +14,7 @@ add_files hls/slip.cpp
 add_files hls/spdp.cpp
 add_files hls/udp.cpp
 add_files -tb -cflags "-Ihls" test/test.cpp
+add_files -tb -cflags "-Ihls" test/test_multi_topic_subscription.cpp
 add_files -tb -cflags "-Ihls" test/test_remove_endpoints.cpp
 add_files -tb -cflags "-Ihls" test/test_sedp_reader_2.cpp
 add_files -tb -cflags "-Ihls" test/test_sedp_reader_heartbeat.cpp
