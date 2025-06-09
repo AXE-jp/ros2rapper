@@ -18,7 +18,7 @@ $ make create-proj
 $ make synth
 ```
 
-Then write generated bitstream (ros2rapper-multi-topic-sub/ros2rapper--multi-topic-sub.runs/impl\_1/top.bit) to FPGA.
+Then write generated bitstream (ros2rapper-multi-topic-sub/ros2rapper-multi-topic-sub.runs/impl\_1/top.bit) to FPGA.
 
 ## Run
 ### Prepare
