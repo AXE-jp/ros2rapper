@@ -180,8 +180,8 @@ call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  const uint8_t guid_prefix[GUID_PREFIX_SIZE],
                  const uint8_t pub_topic_name[], uint8_t pub_topic_name_len,
                  const uint8_t pub_type_name[], uint8_t pub_type_name_len,
-                 const uint8_t sub_topic_name[], uint8_t sub_topic_name_len,
-                 const uint8_t sub_type_name[], uint8_t sub_type_name_len,
+                 const uint8_t sub_topic_name_0[], uint8_t sub_topic_name_len_0,
+                 const uint8_t sub_type_name_0[], uint8_t sub_type_name_len_0,
                  const uint8_t sub_topic_name_1[], uint8_t sub_topic_name_len_1,
                  const uint8_t sub_type_name_1[], uint8_t sub_type_name_len_1,
                  const uint8_t sub_topic_name_2[], uint8_t sub_topic_name_len_2,
@@ -197,8 +197,8 @@ call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         sedp_reader(x, sedp_reader_tbl, app_reader_tbl, 1, ip_addr, subnet_mask,
                     port_num_seed, guid_prefix, pub_topic_name,
                     pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name, sub_topic_name_len, sub_type_name,
-                    sub_type_name_len, sub_topic_name_1, sub_topic_name_len_1,
+                    sub_topic_name_0, sub_topic_name_len_0, sub_type_name_0,
+                    sub_type_name_len_0, sub_topic_name_1, sub_topic_name_len_1,
                     sub_type_name_1, sub_type_name_len_1, sub_topic_name_2,
                     sub_topic_name_len_2, sub_type_name_2, sub_type_name_len_2,
                     sub_topic_name_3, sub_topic_name_len_3, sub_type_name_3,
@@ -228,15 +228,15 @@ static void setup_test_multi_topic_subscription(
     }
 }
 
-#define CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,        \
-                         sub_type_name, sub_topic_name_1, sub_type_name_1,     \
+#define CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name_0,      \
+                         sub_type_name_0, sub_topic_name_1, sub_type_name_1,   \
                          sub_topic_name_2, sub_type_name_2, sub_topic_name_3,  \
                          sub_type_name_3, test_data)                           \
     call_sedp_reader(                                                          \
         sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask, port_num_seed,  \
         guid_prefix, pub_topic_name, sizeof(pub_topic_name), pub_type_name,    \
-        sizeof(pub_type_name), sub_topic_name, sizeof(sub_topic_name),         \
-        sub_type_name, sizeof(sub_type_name), sub_topic_name_1,                \
+        sizeof(pub_type_name), sub_topic_name_0, sizeof(sub_topic_name_0),     \
+        sub_type_name_0, sizeof(sub_type_name_0), sub_topic_name_1,            \
         sizeof(sub_topic_name_1), sub_type_name_1, sizeof(sub_type_name_1),    \
         sub_topic_name_2, sizeof(sub_topic_name_2), sub_type_name_2,           \
         sizeof(sub_type_name_2), sub_topic_name_3, sizeof(sub_topic_name_3),   \

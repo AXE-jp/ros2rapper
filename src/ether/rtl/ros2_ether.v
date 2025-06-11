@@ -54,10 +54,10 @@ module ros2_ether #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name,
     input  wire [7:0] ros2_pub_topic_type_name_len,
 
-    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name,
-    input  wire [7:0] ros2_sub_topic_name_len,
-    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name,
-    input  wire [7:0] ros2_sub_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_0,
+    input  wire [7:0] ros2_sub_topic_name_len_0,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_0,
+    input  wire [7:0] ros2_sub_topic_type_name_len_0,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_1,
     input  wire [7:0] ros2_sub_topic_name_len_1,
@@ -300,10 +300,10 @@ ros2rapper (
     .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
     .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
 
-    .ros2_sub_topic_name(ros2_sub_topic_name),
-    .ros2_sub_topic_name_len(ros2_sub_topic_name_len),
-    .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
-    .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
+    .ros2_sub_topic_name_0(ros2_sub_topic_name_0),
+    .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len_0),
+    .ros2_sub_topic_type_name_0(ros2_sub_topic_type_name_0),
+    .ros2_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len_0),
 
     .ros2_sub_topic_name_1(ros2_sub_topic_name_1),
     .ros2_sub_topic_name_len_1(ros2_sub_topic_name_len_1),

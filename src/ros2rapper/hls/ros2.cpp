@@ -148,8 +148,8 @@ static void ros2_in(
                 conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
                 conf->pub_topic_name, conf->pub_topic_name_len,
                 conf->pub_topic_type_name, conf->pub_topic_type_name_len,
-                conf->sub_topic_name, conf->sub_topic_name_len,
-                conf->sub_topic_type_name, conf->sub_topic_type_name_len,
+                conf->sub_topic_name_0, conf->sub_topic_name_len_0,
+                conf->sub_topic_type_name_0, conf->sub_topic_type_name_len_0,
                 conf->sub_topic_name_1, conf->sub_topic_name_len_1,
                 conf->sub_topic_type_name_1, conf->sub_topic_type_name_len_1,
                 conf->sub_topic_name_2, conf->sub_topic_name_len_2,
@@ -788,10 +788,10 @@ static void ros2_out(
                         switch (tx_topic_progress) {
                         case 0:
                             SEDP_SUB_WRITER_OUT_TOPIC(
-                                0, tx_progress, conf->sub_topic_name,
-                                conf->sub_topic_name_len,
-                                conf->sub_topic_type_name,
-                                conf->sub_topic_type_name_len);
+                                0, tx_progress, conf->sub_topic_name_0,
+                                conf->sub_topic_name_len_0,
+                                conf->sub_topic_type_name_0,
+                                conf->sub_topic_type_name_len_0);
                             break;
                         case 1:
                             SEDP_SUB_WRITER_OUT_TOPIC(
@@ -1154,14 +1154,14 @@ void ros2(
     = complete                                                 dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len
-#pragma HLS array_reshape variable = conf->sub_topic_name type = complete dim  \
-    = 0
-#pragma HLS interface mode = ap_none port = conf->sub_topic_name
-#pragma HLS interface mode = ap_none port = conf->sub_topic_name_len
-#pragma HLS array_reshape variable = conf->sub_topic_type_name type            \
-    = complete                                                 dim = 0
-#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name
-#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
+#pragma HLS array_reshape variable = conf->sub_topic_name_0 type               \
+    = complete                                              dim = 0
+#pragma HLS interface mode = ap_none port = conf->sub_topic_name_0
+#pragma HLS interface mode = ap_none port = conf->sub_topic_name_len_0
+#pragma HLS array_reshape variable = conf->sub_topic_type_name_0 type          \
+    = complete                                                   dim = 0
+#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_0
+#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len_0
 #pragma HLS array_reshape variable = conf->sub_topic_name_1 type               \
     = complete                                              dim = 0
 #pragma HLS interface mode = ap_none port = conf->sub_topic_name_1

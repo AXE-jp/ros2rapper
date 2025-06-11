@@ -247,10 +247,10 @@ module top (
         .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
         .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
 
-        .ros2_sub_topic_name(ros2_sub_topic_name),
-        .ros2_sub_topic_name_len(ros2_sub_topic_name_len),
-        .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
-        .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
+        .ros2_sub_topic_name_0(ros2_sub_topic_name),
+        .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len),
+        .ros2_sub_topic_type_name_0(ros2_sub_topic_type_name),
+        .ros2_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len),
 
         .ros2_sub_topic_name_1(),
         .ros2_sub_topic_name_len_1(),

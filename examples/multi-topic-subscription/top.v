@@ -182,10 +182,10 @@ module top (
     assign ros2sub_en[2] = sw2;
     assign ros2sub_en[3] = sw3;
 
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
-    wire [7:0] ros2_sub_topic_name_len = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_0 = "aaa/tr";
+    wire [7:0] ros2_sub_topic_name_len_0 = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_0 = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_sub_topic_type_name_len_0 = 8'd29;
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_1 = "ccc/tr";
     wire [7:0] ros2_sub_topic_name_len_1 = 8'd7;
@@ -318,10 +318,10 @@ module top (
         .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
         .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
 
-        .ros2_sub_topic_name(ros2_sub_topic_name),
-        .ros2_sub_topic_name_len(ros2_sub_topic_name_len),
-        .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
-        .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
+        .ros2_sub_topic_name_0(ros2_sub_topic_name_0),
+        .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len_0),
+        .ros2_sub_topic_type_name_0(ros2_sub_topic_type_name_0),
+        .ros2_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len_0),
 
         .ros2_sub_topic_name_1(ros2_sub_topic_name_1),
         .ros2_sub_topic_name_len_1(ros2_sub_topic_name_len_1),
