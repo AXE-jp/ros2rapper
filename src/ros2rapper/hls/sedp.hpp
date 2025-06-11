@@ -51,16 +51,22 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  uint16_t port_num_seed, const uint8_t guid_prefix[12],
                  const uint8_t pub_topic_name[], uint8_t pub_topic_name_len,
                  const uint8_t pub_type_name[], uint8_t pub_type_name_len,
-                 const uint8_t sub_topic_name[], uint8_t sub_topic_name_len,
-                 const uint8_t sub_type_name[], uint8_t sub_type_name_len);
+                 const uint8_t sub_topic_name_0[], uint8_t sub_topic_name_len_0,
+                 const uint8_t sub_type_name_0[], uint8_t sub_type_name_len_0,
+                 const uint8_t sub_topic_name_1[], uint8_t sub_topic_name_len_1,
+                 const uint8_t sub_type_name_1[], uint8_t sub_type_name_len_1,
+                 const uint8_t sub_topic_name_2[], uint8_t sub_topic_name_len_2,
+                 const uint8_t sub_type_name_2[], uint8_t sub_type_name_len_2,
+                 const uint8_t sub_topic_name_3[], uint8_t sub_topic_name_len_3,
+                 const uint8_t sub_type_name_3[], uint8_t sub_type_name_len_3);
 
 void sedp_writer(
     const uint8_t writer_guid_prefix[12], const uint8_t writer_entity_id[4],
     const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
-    const uint8_t usertraffic_addr[4], const uint8_t usertraffic_port[2],
-    const uint8_t app_entity_id[4], uint8_t buf[], const uint8_t topic_name[],
-    uint8_t topic_name_len, const uint8_t type_name[], uint8_t type_name_len,
-    timestamp now);
+    int64_t seqnum, const uint8_t usertraffic_addr[4],
+    const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
+    uint8_t buf[], const uint8_t topic_name[], uint8_t topic_name_len,
+    const uint8_t type_name[], uint8_t type_name_len, timestamp now);
 
 void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
                     const uint8_t writer_entity_id[4],

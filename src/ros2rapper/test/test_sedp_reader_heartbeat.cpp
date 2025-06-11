@@ -112,10 +112,25 @@ int test_sedp_reader_heartbeat() {
     const uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
     const uint8_t pub_type_name_len = sizeof(pub_type_name);
 
-    const uint8_t sub_topic_name[] = "rt/fpgapubtest";
-    const uint8_t sub_topic_name_len = sizeof(sub_topic_name);
-    const uint8_t sub_type_name[] = "std_msgs::msg::dds_::String_";
-    const uint8_t sub_type_name_len = sizeof(sub_type_name);
+    const uint8_t sub_topic_name_0[] = "rt/fpgapubtest";
+    const uint8_t sub_topic_name_len_0 = sizeof(sub_topic_name_0);
+    const uint8_t sub_type_name_0[] = "std_msgs::msg::dds_::String_";
+    const uint8_t sub_type_name_len_0 = sizeof(sub_type_name_0);
+
+    const uint8_t sub_topic_name_1[] = {};
+    const uint8_t sub_topic_name_len_1 = 0;
+    const uint8_t sub_type_name_1[] = {};
+    const uint8_t sub_type_name_len_1 = 0;
+
+    const uint8_t sub_topic_name_2[] = {};
+    const uint8_t sub_topic_name_len_2 = 0;
+    const uint8_t sub_type_name_2[] = {};
+    const uint8_t sub_type_name_len_2 = 0;
+
+    const uint8_t sub_topic_name_3[] = {};
+    const uint8_t sub_topic_name_len_3 = 0;
+    const uint8_t sub_type_name_3[] = {};
+    const uint8_t sub_type_name_len_3 = 0;
 
     /*****************************************************/
 
@@ -129,8 +144,12 @@ int test_sedp_reader_heartbeat() {
         sedp_reader(in, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
                     subnet_mask, port_num_seed, own_guid_prefix, pub_topic_name,
                     pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name, sub_topic_name_len, sub_type_name,
-                    sub_type_name_len);
+                    sub_topic_name_0, sub_topic_name_len_0, sub_type_name_0,
+                    sub_type_name_len_0, sub_topic_name_1, sub_topic_name_len_1,
+                    sub_type_name_1, sub_type_name_len_1, sub_topic_name_2,
+                    sub_topic_name_len_2, sub_type_name_2, sub_type_name_len_2,
+                    sub_topic_name_3, sub_topic_name_len_3, sub_type_name_3,
+                    sub_type_name_len_3);
     }
 
     unsigned int sedp_reader_cnt = 0;

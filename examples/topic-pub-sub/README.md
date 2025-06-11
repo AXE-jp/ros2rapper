@@ -38,5 +38,5 @@ Then write generated bitstream (ros2rapper-pubsub/ros2rapper-pubsub.runs/impl\_1
   * `./run-publisher.sh`
   * This script runs publisher on Docker container. This docker container uses a host network.
 * Publisher on Linux machine sends following string messages with a period of 1 sec.
-  *  "0", "1", "2", ..., "9", "0", "1", ...
+  *  "A", "AA", "AAA", ..., "AAAAAAAAAA", "A", "AA", ...
 * When ROS2rapper receives message, LED 4-7 is changed according to lower 4 bits of first character of message.

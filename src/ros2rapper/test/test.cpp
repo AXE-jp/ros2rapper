@@ -8,6 +8,7 @@ int test_sedp_reader_heartbeat();
 int test_spdp_reader();
 int test_sedp_reader_2();
 int test_remove_endpoints();
+int test_multi_topic_subscription();
 
 int main() {
     assert(test_udp() == 0);
@@ -15,5 +16,6 @@ int main() {
     assert(test_spdp_reader() == 0);
     assert(test_sedp_reader_2() == 0);
     assert(test_remove_endpoints() == 0);
+    assert(test_multi_topic_subscription() == 0);
     return 0;
 }

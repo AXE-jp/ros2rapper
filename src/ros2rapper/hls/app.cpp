@@ -139,11 +139,12 @@ enum {
 
 /* Cyber func=inline */
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
-                const uint8_t      reader_entity_id[4],
-                volatile uint8_t  *sub_app_data_recv,
-                volatile uint8_t  *sub_app_data_req,
-                volatile uint8_t  *sub_app_data_rel,
-                volatile uint8_t  *sub_app_data_grant,
+                const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
+                hls_uint<SUB_TOPICS_MAX>           sub_enabled,
+                volatile hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
+                volatile uint8_t                  *sub_app_data_req,
+                volatile uint8_t                  *sub_app_data_rel,
+                volatile uint8_t                  *sub_app_data_grant,
                 uint8_t            sub_app_data[MAX_APP_DATA_LEN],
                 volatile uint8_t  *sub_app_data_len,
                 volatile uint16_t *sub_app_data_rep_id) {
@@ -155,6 +156,8 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
     static bool        sbm_le;
     static uint16_t    sbm_len;
     static uint16_t    rep_id;
+
+    static hls_uint<SUB_TOPICS_MAX> topics_unmatched;
 
     uint8_t data;
     bool    end;
@@ -213,16 +216,25 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         }
         break;
     case STATE_PARSE_DATA: // parse/check sub-message : DATA
-        if (!rtps_compare_data_hdr_reader_id(offset, data, reader_entity_id)) {
-            state = STATE_WAIT_END;
-            break;
+        /* Cyber unroll_times=all */
+        for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+#pragma HLS unroll
+            if (!sub_enabled[j]
+                || !rtps_compare_data_hdr_reader_id(offset, data,
+                                                    reader_entity_id_list[j])) {
+                topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(1 << j);
+            }
         }
         offset++;
         if (offset == SBM_DATA_HDR_SIZE) {
-            sbm_len -= SBM_DATA_HDR_SIZE;
-            offset = 0;
-            *sub_app_data_req = 0;
-            state = STATE_PARSE_PAYLOAD_HDR;
+            if (~topics_unmatched == 0) {
+                state = STATE_WAIT_END;
+            } else {
+                sbm_len -= SBM_DATA_HDR_SIZE;
+                offset = 0;
+                *sub_app_data_req = 0;
+                state = STATE_PARSE_PAYLOAD_HDR;
+            }
         }
         break;
     case STATE_PARSE_PAYLOAD_HDR: // parse/check serialized_payload
@@ -249,7 +261,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
             *sub_app_data_len = sbm_len;
             *sub_app_data_rep_id = rep_id;
-            *sub_app_data_recv = 0;
+            *sub_app_data_recv = ~topics_unmatched;
             *sub_app_data_rel = 0;
             state = STATE_WAIT_END;
         }
@@ -265,6 +277,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
     }
 
     if (end) {
+        topics_unmatched = 0;
         offset = 0;
         state = STATE_PARSE_RTPS_HDR;
     }

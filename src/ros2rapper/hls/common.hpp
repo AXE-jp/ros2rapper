@@ -34,8 +34,13 @@
 
 #define ENTITYID_APP_WRITER                                                    \
     { 0x00, 0x00, 0x10, 0x03 }
-#define ENTITYID_APP_READER                                                    \
-    { 0x00, 0x00, 0x10, 0x04 }
+#define ENTITYID_APP_READER_LIST                                               \
+    {                                                                          \
+        {0x00, 0x00, 0x10, 0x04}, {0x00, 0x00, 0x11, 0x04},                    \
+            {0x00, 0x00, 0x12, 0x04}, {                                        \
+            0x00, 0x00, 0x13, 0x04                                             \
+        }                                                                      \
+    }
 
 #define SBM_ENDIAN_LITTLE
 // #define SBM_ENDIAN_BIG

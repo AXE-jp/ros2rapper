@@ -25,7 +25,7 @@ module ros2_ether #(
 
     input  wire       ether_en,
     input  wire       ros2pub_en,
-    input  wire       ros2sub_en,
+    input  wire [3:0] ros2sub_en,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -54,10 +54,25 @@ module ros2_ether #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name,
     input  wire [7:0] ros2_pub_topic_type_name_len,
 
-    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name,
-    input  wire [7:0] ros2_sub_topic_name_len,
-    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name,
-    input  wire [7:0] ros2_sub_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_0,
+    input  wire [7:0] ros2_sub_topic_name_len_0,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_0,
+    input  wire [7:0] ros2_sub_topic_type_name_len_0,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_1,
+    input  wire [7:0] ros2_sub_topic_name_len_1,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_1,
+    input  wire [7:0] ros2_sub_topic_type_name_len_1,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_2,
+    input  wire [7:0] ros2_sub_topic_name_len_2,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_2,
+    input  wire [7:0] ros2_sub_topic_type_name_len_2,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_3,
+    input  wire [7:0] ros2_sub_topic_name_len_3,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
+    input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
     input  wire [7:0] ros2_pub_app_data_len,
@@ -74,7 +89,7 @@ module ros2_ether #(
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
-    output wire ros2_sub_app_data_recv,
+    output wire [3:0] ros2_sub_app_data_recv,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
@@ -285,10 +300,25 @@ ros2rapper (
     .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
     .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
 
-    .ros2_sub_topic_name(ros2_sub_topic_name),
-    .ros2_sub_topic_name_len(ros2_sub_topic_name_len),
-    .ros2_sub_topic_type_name(ros2_sub_topic_type_name),
-    .ros2_sub_topic_type_name_len(ros2_sub_topic_type_name_len),
+    .ros2_sub_topic_name_0(ros2_sub_topic_name_0),
+    .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len_0),
+    .ros2_sub_topic_type_name_0(ros2_sub_topic_type_name_0),
+    .ros2_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len_0),
+
+    .ros2_sub_topic_name_1(ros2_sub_topic_name_1),
+    .ros2_sub_topic_name_len_1(ros2_sub_topic_name_len_1),
+    .ros2_sub_topic_type_name_1(ros2_sub_topic_type_name_1),
+    .ros2_sub_topic_type_name_len_1(ros2_sub_topic_type_name_len_1),
+
+    .ros2_sub_topic_name_2(ros2_sub_topic_name_2),
+    .ros2_sub_topic_name_len_2(ros2_sub_topic_name_len_2),
+    .ros2_sub_topic_type_name_2(ros2_sub_topic_type_name_2),
+    .ros2_sub_topic_type_name_len_2(ros2_sub_topic_type_name_len_2),
+
+    .ros2_sub_topic_name_3(ros2_sub_topic_name_3),
+    .ros2_sub_topic_name_len_3(ros2_sub_topic_name_len_3),
+    .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
+    .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
     .ros2_pub_app_data(ros2_pub_app_data),
     .ros2_pub_app_data_len(ros2_pub_app_data_len),

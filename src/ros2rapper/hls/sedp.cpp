@@ -99,10 +99,22 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  uint8_t       pub_topic_name_len,
                  const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
                  uint8_t       pub_type_name_len,
-                 const uint8_t sub_topic_name[MAX_TOPIC_NAME_LEN],
-                 uint8_t       sub_topic_name_len,
-                 const uint8_t sub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       sub_type_name_len) {
+                 const uint8_t sub_topic_name_0[MAX_TOPIC_NAME_LEN],
+                 uint8_t       sub_topic_name_len_0,
+                 const uint8_t sub_type_name_0[MAX_TOPIC_TYPE_NAME_LEN],
+                 uint8_t       sub_type_name_len_0,
+                 const uint8_t sub_topic_name_1[MAX_TOPIC_NAME_LEN],
+                 uint8_t       sub_topic_name_len_1,
+                 const uint8_t sub_type_name_1[MAX_TOPIC_TYPE_NAME_LEN],
+                 uint8_t       sub_type_name_len_1,
+                 const uint8_t sub_topic_name_2[MAX_TOPIC_NAME_LEN],
+                 uint8_t       sub_topic_name_len_2,
+                 const uint8_t sub_type_name_2[MAX_TOPIC_TYPE_NAME_LEN],
+                 uint8_t       sub_type_name_len_2,
+                 const uint8_t sub_topic_name_3[MAX_TOPIC_NAME_LEN],
+                 uint8_t       sub_topic_name_len_3,
+                 const uint8_t sub_type_name_3[MAX_TOPIC_TYPE_NAME_LEN],
+                 uint8_t       sub_type_name_len_3) {
 #pragma HLS inline
     static const uint8_t pub_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_READER;
@@ -117,6 +129,9 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     static hls_uint<APP_READER_MAX>  app_unmatched;
     static hls_uint<SEDP_READER_MAX> sedp_unmatched;
     static builtin_ep_type_t         ep_type;
+
+    static hls_uint<SUB_TOPICS_MAX> sub_topics_unmatched;
+    static hls_uint<SUB_TOPICS_MAX> sub_types_unmatched;
 
     static uint8_t  sbm_id;
     static bool     sbm_le;
@@ -369,6 +384,8 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                 }
                 app_unmatched = 0;
                 flags = 0;
+                sub_topics_unmatched = 0;
+                sub_types_unmatched = 0;
                 offset = 0;
                 state = SEDP_READ_SBM_HDR;
             } else {
@@ -438,25 +455,44 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         sp_len |= data;
                 }
             } else {
-                if (offset == 4) {
-                    uint8_t topic_name_len = (ep_type & BUILTIN_EP_SUB)
-                                                 ? pub_topic_name_len
-                                                 : sub_topic_name_len;
-
-                    if (sp_len != topic_name_len) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TOPIC;
-                        break;
-                    }
-                }
                 if (ep_type & BUILTIN_EP_SUB) {
-                    if (offset < sp_len + 4
-                        && pub_topic_name[offset - 4] != data) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TOPIC;
+                    if (sp_len != pub_topic_name_len) {
+                        flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
+                    }
+                    if (offset < sp_len + 4) {
+                        if (pub_topic_name[offset - 4] != data) {
+                            flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
+                        }
                     }
                 } else {
-                    if (offset < sp_len + 4
-                        && sub_topic_name[offset - 4] != data) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TOPIC;
+                    if (sp_len != sub_topic_name_len_0) {
+                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
+                    }
+                    if (sp_len != sub_topic_name_len_1) {
+                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
+                    }
+                    if (sp_len != sub_topic_name_len_2) {
+                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
+                    }
+                    if (sp_len != sub_topic_name_len_3) {
+                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                    }
+                    if (offset < sp_len + 4) {
+                        if (sub_topic_name_0[offset - 4] != data) {
+                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
+                        }
+                        if (sub_topic_name_1[offset - 4] != data) {
+                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
+                        }
+                        if (sub_topic_name_2[offset - 4] != data) {
+                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
+                        }
+                        if (sub_topic_name_3[offset - 4] != data) {
+                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                        }
+                    }
+                    if (~sub_topics_unmatched == 0) {
+                        flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
                     }
                 }
             }
@@ -483,24 +519,44 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         sp_len |= data;
                 }
             } else {
-                if (offset == 4) {
-                    uint8_t type_name_len = (ep_type & BUILTIN_EP_SUB)
-                                                ? pub_type_name_len
-                                                : sub_type_name_len;
-                    if (sp_len != type_name_len) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TYPE;
-                        break;
-                    }
-                }
                 if (ep_type & BUILTIN_EP_SUB) {
-                    if (offset < sp_len + 4
-                        && pub_type_name[offset - 4] != data) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TYPE;
+                    if (sp_len != pub_type_name_len) {
+                        flags |= hls_uint<5>(FLAGS_UNMATCH_TYPE);
+                    }
+                    if (offset < sp_len + 4) {
+                        if (pub_type_name[offset - 4] != data) {
+                            flags |= hls_uint<5>(FLAGS_UNMATCH_TYPE);
+                        }
                     }
                 } else {
-                    if (offset < sp_len + 4
-                        && sub_type_name[offset - 4] != data) {
-                        flags |= (hls_uint<5>)FLAGS_UNMATCH_TYPE;
+                    if (sp_len != sub_type_name_len_0) {
+                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
+                    }
+                    if (sp_len != sub_type_name_len_1) {
+                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
+                    }
+                    if (sp_len != sub_type_name_len_2) {
+                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
+                    }
+                    if (sp_len != sub_type_name_len_3) {
+                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                    }
+                    if (offset < sp_len + 4) {
+                        if (sub_type_name_0[offset - 4] != data) {
+                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
+                        }
+                        if (sub_type_name_1[offset - 4] != data) {
+                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
+                        }
+                        if (sub_type_name_2[offset - 4] != data) {
+                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
+                        }
+                        if (sub_type_name_3[offset - 4] != data) {
+                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                        }
+                    }
+                    if (~sub_types_unmatched == 0) {
+                        flags |= hls_uint<5>(FLAGS_UNMATCH_TYPE);
                     }
                 }
             }
@@ -548,6 +604,8 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         app_unmatched = 0;
         sedp_unmatched = 0;
         flags = 0;
+        sub_topics_unmatched = 0;
+        sub_types_unmatched = 0;
         offset = 0;
         state = SEDP_READ_HDR_PROTOCOL;
     }
@@ -557,8 +615,9 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
 void sedp_writer(
     const uint8_t writer_guid_prefix[12], const uint8_t writer_entity_id[4],
     const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
-    const uint8_t usertraffic_addr[4], const uint8_t usertraffic_port[2],
-    const uint8_t app_entity_id[4], uint8_t buf[SEDP_WRITER_TOT_LEN],
+    int64_t seqnum, const uint8_t usertraffic_addr[4],
+    const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
+    uint8_t       buf[SEDP_WRITER_TOT_LEN],
     const uint8_t topic_name[MAX_TOPIC_NAME_LEN], uint8_t topic_name_len,
     const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len,
     timestamp now) {
@@ -599,8 +658,6 @@ void sedp_writer(
     static const uint32_t ownership = 0;
     static const uint32_t ownership_strength = 0;
     static const uint32_t destination_order = 0;
-
-    static const int64_t seqnum = 1;
 
     int32_t  seqnum_h = seqnum >> 32;
     uint32_t seqnum_l = seqnum & 0xffffffff;

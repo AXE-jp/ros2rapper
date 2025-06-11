@@ -74,7 +74,8 @@
 #define ROUND_UP(x, size)     (((x) + ((size) - 1)) & ~((size) - 1))
 #define SP_STR_DATA_SIZE(len) (SP_DATA_LEN_SIZE + ROUND_UP(len, 4))
 
-#define GUID_PREFIX_SIZE 12
+#define GUID_PREFIX_SIZE   12
+#define GUID_ENTITYID_SIZE 4
 
 #define GUID_PREFIX_UNKNOWN                                                    \
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
