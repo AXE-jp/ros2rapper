@@ -203,7 +203,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                 sbm_len -= sizeof(param_len);
                 param_len = ROUND_UP(param_len, 4);
                 offset = 0;
-                state = 6;
+                state = (param_len == 0) ? 4 : 6;
             }
         }
         break;

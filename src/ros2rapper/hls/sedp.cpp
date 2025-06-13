@@ -392,7 +392,7 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                 sbm_len -= sizeof(param_len);
                 param_len = ROUND_UP(param_len, 4);
                 offset = 0;
-                state = SEDP_READ_PARAM;
+                state = (param_len == 0) ? SEDP_READ_PARAM_ID : SEDP_READ_PARAM;
             }
         }
         break;
