@@ -204,6 +204,8 @@ void update_liveliness(hls_uint<9>   in,
                 }
             } else if (param_id == PID_STATUS_INFO) {
                 state = STATE_READ_STATUS_INFO;
+            } else if (param_len == 0) {
+                state = STATE_READ_PARAM_ID;
             } else {
                 state = STATE_SKIP_TO_NEXT_PARAM;
             }

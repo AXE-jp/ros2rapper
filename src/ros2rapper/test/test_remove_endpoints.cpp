@@ -58,7 +58,7 @@ constexpr uint8_t test_update_liveliness_alive_data_3[] = {
     // PID_SENTINEL
     0x01, 0x00, 0x00, 0x00};
 
-// Inline QoS with dead status info without INFO_DST to another endpoint
+// Inline QoS with dead status info with INFO_DST to another endpoint
 constexpr uint8_t test_update_liveliness_alive_data_4[] = {
     // RTPS Header
     0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
@@ -152,6 +152,56 @@ constexpr uint8_t test_update_liveliness_dead_data_3[] = {
     0x0e, 0x01, 0x0c, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
     0x00, 0x00, 0x00, 0x00};
 
+// Inline QoS with dead status info with padding
+constexpr uint8_t test_update_liveliness_dead_data_4[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x54, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0xc7,
+    0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // PID_PAD
+    0x00, 0x00, 0x00, 0x00,
+    // UNKNOWN
+    0x0f, 0x80, 0x18, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
+// Inline QoS with dead status info with non-zero padding
+constexpr uint8_t test_update_liveliness_dead_data_5[] = {
+    // RTPS Header
+    0x52, 0x54, 0x50, 0x53, 0x02, 0x03, 0x01, 0x0f, 0x01, 0x0f, 0x9c, 0x9d,
+    0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00,
+    // Submessage (INFO_TS)
+    0x09, 0x01, 0x08, 0x00, 0xc5, 0xd2, 0x26, 0x68, 0x4f, 0xfc, 0xb3, 0xa9,
+    // Submessage (DATA)
+    0x15, 0x03, 0x58, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x00, 0xc7,
+    0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    // Parameter List
+    // PID_PAD
+    0x00, 0x00, 0x04, 0x00, 0xff, 0xff, 0xff, 0xff,
+    // UNKNOWN
+    0x0f, 0x80, 0x18, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc2, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    // PID_KEY_HASH
+    0x70, 0x00, 0x10, 0x00, 0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc1,
+    // PID_STATUS_INFO
+    0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x03,
+    // PID_SENTINEL
+    0x01, 0x00, 0x00, 0x00};
+
 constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00};
 
@@ -185,12 +235,14 @@ check_sedp_reader_tbl_liveliness(unsigned int  mask,
             // tbl[j] shoud be alive.
             if (tbl[j].alive != true) {
                 printf("check_sedp_reader_tbl_alive: %d is not alive.\n", j);
+                fflush(stdout);
                 return 1;
             }
         } else {
             // tbl[j] should be dead.
             if (tbl[j].alive != false) {
                 printf("check_sedp_reader_tbl_alive: %d is not dead.\n", j);
+                fflush(stdout);
                 return 1;
             }
         }
@@ -215,18 +267,21 @@ static int call_update_liveliness(
             if (reading_rtps_message != false) {
                 puts("reading_rtps_message becomes true before the message "
                      "reaches the GUID prefix.");
+                fflush(stdout);
                 return 1;
             }
         } else if (j < (length - 1)) {
             if (reading_rtps_message != true) {
                 puts("reading_rtps_message becomes false while reading RTPS "
                      "message.");
+                fflush(stdout);
                 return 1;
             }
         } else {
             if (reading_rtps_message != false) {
                 puts("reading_rtps_message does not become false at the end of "
                      "the RTPS message.");
+                fflush(stdout);
                 return 1;
             }
         }
@@ -256,15 +311,19 @@ static int test_update_liveliness_1(const config_t *conf,
     if (result == 0) {
         return 0;
     } else {
-        printf("%s: %x %x\n", test_data_name, sedp_set_mask, sedp_check_mask);
+        printf("%s: the message from - %x, endpoints expected alive - %x\n",
+               test_data_name, sedp_set_mask, sedp_check_mask);
+        fflush(stdout);
         return 1;
     }
 }
 
 #define TEST_UPDATE_LIVELINESS(conf, sedp_set_mask, sedp_check_mask,           \
                                test_data)                                      \
-    test_update_liveliness_1(conf, sedp_set_mask, sedp_check_mask, test_data,  \
-                             sizeof(test_data), #test_data)
+    assert(test_update_liveliness_1(conf, sedp_set_mask,                       \
+                                    (sedp_check_mask) & (n_sedp_patterns - 1), \
+                                    test_data, sizeof(test_data), #test_data)  \
+           == 0)
 
 static int test_update_liveliness() {
     config_t conf;
@@ -287,6 +346,10 @@ static int test_update_liveliness() {
                                test_update_liveliness_dead_data_2);
         TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
                                test_update_liveliness_dead_data_3);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
+                               test_update_liveliness_dead_data_4);
+        TEST_UPDATE_LIVELINESS(&conf, sedp_mask, ~sedp_mask,
+                               test_update_liveliness_dead_data_5);
     }
     return 0;
 }
