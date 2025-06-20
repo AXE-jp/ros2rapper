@@ -596,9 +596,9 @@ static void ros2_out(
         }                                                                      \
     } while (0)
 
-    timestamp now
-        = {.seconds = static_cast<int32_t>(timestamp_i64 >> 32),
-           .fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff)};
+    timestamp now;
+    now.seconds = static_cast<int32_t>(timestamp_i64 >> 32);
+    now.fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff);
 
     if (!tx_buf.empty()) {
 #ifdef USE_FIFOIF_ETHERNET
