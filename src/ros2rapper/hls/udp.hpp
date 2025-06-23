@@ -27,8 +27,8 @@
 
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
             hls_uint<1> &enable, const uint8_t rx_udp_port[2],
-            uint32_t udp_rxbuf[], volatile uint8_t *udp_rxbuf_rel,
-            volatile uint8_t *udp_rxbuf_grant, bool &parity_error);
+            uint32_t udp_rxbuf[], VOLATILE uint8_t *udp_rxbuf_rel,
+            VOLATILE uint8_t *udp_rxbuf_grant, bool &parity_error);
 
 void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
              const uint8_t dst_addr[4], const uint8_t dst_port[2],
