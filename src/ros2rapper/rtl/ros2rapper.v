@@ -87,11 +87,29 @@ module ros2rapper #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
-    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
-    input  wire [7:0] ros2_pub_app_data_len,
-    input  wire ros2_pub_app_data_req,
-    input  wire ros2_pub_app_data_rel,
-    output wire ros2_pub_app_data_grant,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0,
+    input  wire [7:0] ros2_pub_app_data_len_0,
+    input  wire ros2_pub_app_data_req_0,
+    input  wire ros2_pub_app_data_rel_0,
+    output wire ros2_pub_app_data_grant_0,
+
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1,
+    input  wire [7:0] ros2_pub_app_data_len_1,
+    input  wire ros2_pub_app_data_req_1,
+    input  wire ros2_pub_app_data_rel_1,
+    output wire ros2_pub_app_data_grant_1,
+
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2,
+    input  wire [7:0] ros2_pub_app_data_len_2,
+    input  wire ros2_pub_app_data_req_2,
+    input  wire ros2_pub_app_data_rel_2,
+    output wire ros2_pub_app_data_grant_2,
+
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3,
+    input  wire [7:0] ros2_pub_app_data_len_3,
+    input  wire ros2_pub_app_data_req_3,
+    input  wire ros2_pub_app_data_rel_3,
+    output wire ros2_pub_app_data_grant_3,
 
     output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
     output wire ros2_sub_app_data_ce,
@@ -124,68 +142,60 @@ module ros2rapper #(
     input  wire [7:0] ip_payloadsmem_rdata
 );
 
-// arbiter for sharing publisher app_data between user and IP
-localparam [1:0]
-    APP_DATA_GRANT_NONE = 2'b00,
-    APP_DATA_GRANT_IP   = 2'b01,
-    APP_DATA_GRANT_USER = 2'b10;
+wire ros2_pub_app_data_ip_req_0, ros2_pub_app_data_ip_rel_0, ros2_pub_app_data_ip_grant_0;
+app_data_arbiter pub_app_data_arbiter_0(
+    .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
+    .i_app_data_ip_req(ros2_pub_app_data_ip_req_0),
+    .i_app_data_ip_rel(ros2_pub_app_data_ip_rel_0),
+    .o_app_data_ip_grant(ros2_pub_app_data_ip_grant_0),
+    .i_app_data_user_req(ros2_pub_app_data_req_0),
+    .i_app_data_user_rel(ros2_pub_app_data_rel_0),
+    .o_app_data_user_grant(ros2_pub_app_data_grant_0)
+);
 
-reg [1:0] r_ros2_pub_app_data_grant;
-wire ros2_pub_app_data_ip_req, ros2_pub_app_data_ip_rel, ros2_pub_app_data_ip_grant;
-assign ros2_pub_app_data_ip_grant = en & r_ros2_pub_app_data_grant[0];
-assign ros2_pub_app_data_grant = en & r_ros2_pub_app_data_grant[1];
+wire ros2_pub_app_data_ip_req_1, ros2_pub_app_data_ip_rel_1, ros2_pub_app_data_ip_grant_1;
+app_data_arbiter pub_app_data_arbiter_1(
+    .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
+    .i_app_data_ip_req(ros2_pub_app_data_ip_req_1),
+    .i_app_data_ip_rel(ros2_pub_app_data_ip_rel_1),
+    .o_app_data_ip_grant(ros2_pub_app_data_ip_grant_1),
+    .i_app_data_user_req(ros2_pub_app_data_req_1),
+    .i_app_data_user_rel(ros2_pub_app_data_rel_1),
+    .o_app_data_user_grant(ros2_pub_app_data_grant_1)
+);
 
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
-    end else begin
-        case (r_ros2_pub_app_data_grant)
-            APP_DATA_GRANT_NONE: begin
-                case ({ros2_pub_app_data_ip_req, ros2_pub_app_data_req})
-                    2'b00: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
-                    2'b01: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_USER;
-                    2'b10: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_IP;
-                    2'b11: r_ros2_pub_app_data_grant <= APP_DATA_GRANT_IP;
-                endcase
-            end
-            APP_DATA_GRANT_IP:
-                if (ros2_pub_app_data_ip_rel) r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
-            APP_DATA_GRANT_USER:
-                if (ros2_pub_app_data_rel) r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
-            default:
-                r_ros2_pub_app_data_grant <= APP_DATA_GRANT_NONE;
-        endcase
-    end
-end
+wire ros2_pub_app_data_ip_req_2, ros2_pub_app_data_ip_rel_2, ros2_pub_app_data_ip_grant_2;
+app_data_arbiter pub_app_data_arbiter_2(
+    .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
+    .i_app_data_ip_req(ros2_pub_app_data_ip_req_2),
+    .i_app_data_ip_rel(ros2_pub_app_data_ip_rel_2),
+    .o_app_data_ip_grant(ros2_pub_app_data_ip_grant_2),
+    .i_app_data_user_req(ros2_pub_app_data_req_2),
+    .i_app_data_user_rel(ros2_pub_app_data_rel_2),
+    .o_app_data_user_grant(ros2_pub_app_data_grant_2)
+);
 
-// arbiter for sharing subscriber app_data buffer between user and IP
-reg [1:0] r_ros2_sub_app_data_grant;
+wire ros2_pub_app_data_ip_req_3, ros2_pub_app_data_ip_rel_3, ros2_pub_app_data_ip_grant_3;
+app_data_arbiter pub_app_data_arbiter_3(
+    .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
+    .i_app_data_ip_req(ros2_pub_app_data_ip_req_3),
+    .i_app_data_ip_rel(ros2_pub_app_data_ip_rel_3),
+    .o_app_data_ip_grant(ros2_pub_app_data_ip_grant_3),
+    .i_app_data_user_req(ros2_pub_app_data_req_3),
+    .i_app_data_user_rel(ros2_pub_app_data_rel_3),
+    .o_app_data_user_grant(ros2_pub_app_data_grant_3)
+);
+
 wire ros2_sub_app_data_ip_req, ros2_sub_app_data_ip_rel, ros2_sub_app_data_ip_grant;
-assign ros2_sub_app_data_ip_grant = (en && (ros2sub_en != 0)) & r_ros2_sub_app_data_grant[0];
-assign ros2_sub_app_data_grant = (en && (ros2sub_en != 0)) & r_ros2_sub_app_data_grant[1];
-
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
-    end else begin
-        case (r_ros2_sub_app_data_grant)
-            APP_DATA_GRANT_NONE: begin
-                case ({ros2_sub_app_data_ip_req, ros2_sub_app_data_req})
-                    2'b00: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
-                    2'b01: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_USER;
-                    2'b10: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_IP;
-                    2'b11: r_ros2_sub_app_data_grant <= APP_DATA_GRANT_IP;
-                endcase
-            end
-            APP_DATA_GRANT_IP:
-                if (ros2_sub_app_data_ip_rel) r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
-            APP_DATA_GRANT_USER:
-                if (ros2_sub_app_data_rel) r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
-            default:
-                r_ros2_sub_app_data_grant <= APP_DATA_GRANT_NONE;
-        endcase
-    end
-end
+app_data_arbiter sub_app_data_arbiter(
+    .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
+    .i_app_data_ip_req(ros2_sub_app_data_ip_req),
+    .i_app_data_ip_rel(ros2_sub_app_data_ip_rel),
+    .o_app_data_ip_grant(ros2_sub_app_data_ip_grant),
+    .i_app_data_user_req(ros2_sub_app_data_req),
+    .i_app_data_user_rel(ros2_sub_app_data_rel),
+    .o_app_data_user_grant(ros2_sub_app_data_grant)
+);
 
 // arbiter for sharing UDP RX buffer between user and ROS2rapper IP
 localparam UDP_RXBUF_GRANT_IP   = 1'b0;
@@ -386,18 +396,57 @@ ros2 (
     .conf_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
     .conf_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
-    .pub_app_data_dout(ros2_pub_app_data),
-    .pub_app_data_empty_n(1'b1),
-    .pub_app_data_read(),
-    .pub_app_data_len_dout(ros2_pub_app_data_len),
-    .pub_app_data_len_empty_n(1'b1),
-    .pub_app_data_len_read(),
-    .pub_app_data_req_ap_vld(ros2_pub_app_data_ip_req),
-    .pub_app_data_req(),
-    .pub_app_data_rel_ap_vld(ros2_pub_app_data_ip_rel),
-    .pub_app_data_rel(),
-    .pub_app_data_grant({7'b0, ros2_pub_app_data_ip_grant}),
-    .pub_app_data_grant_ap_ack(),
+    .pub_app_data_0_dout(ros2_pub_app_data_0),
+    .pub_app_data_0_empty_n(1'b1),
+    .pub_app_data_0_read(),
+    .pub_app_data_len_0_dout(ros2_pub_app_data_len_0),
+    .pub_app_data_len_0_empty_n(1'b1),
+    .pub_app_data_len_0_read(),
+    .pub_app_data_req_0_ap_vld(ros2_pub_app_data_ip_req_0),
+    .pub_app_data_req_0(),
+    .pub_app_data_rel_0_ap_vld(ros2_pub_app_data_ip_rel_0),
+    .pub_app_data_rel_0(),
+    .pub_app_data_grant_0({7'b0, ros2_pub_app_data_ip_grant_0}),
+    .pub_app_data_grant_0_ap_ack(),
+
+    .pub_app_data_1_dout(ros2_pub_app_data_1),
+    .pub_app_data_1_empty_n(1'b1),
+    .pub_app_data_1_read(),
+    .pub_app_data_len_1_dout(ros2_pub_app_data_len_1),
+    .pub_app_data_len_1_empty_n(1'b1),
+    .pub_app_data_len_1_read(),
+    .pub_app_data_req_1_ap_vld(ros2_pub_app_data_ip_req_1),
+    .pub_app_data_req_1(),
+    .pub_app_data_rel_1_ap_vld(ros2_pub_app_data_ip_rel_1),
+    .pub_app_data_rel_1(),
+    .pub_app_data_grant_1({7'b0, ros2_pub_app_data_ip_grant_1}),
+    .pub_app_data_grant_1_ap_ack(),
+
+    .pub_app_data_2_dout(ros2_pub_app_data_2),
+    .pub_app_data_2_empty_n(1'b1),
+    .pub_app_data_2_read(),
+    .pub_app_data_len_2_dout(ros2_pub_app_data_len_2),
+    .pub_app_data_len_2_empty_n(1'b1),
+    .pub_app_data_len_2_read(),
+    .pub_app_data_req_2_ap_vld(ros2_pub_app_data_ip_req_2),
+    .pub_app_data_req_2(),
+    .pub_app_data_rel_2_ap_vld(ros2_pub_app_data_ip_rel_2),
+    .pub_app_data_rel_2(),
+    .pub_app_data_grant_2({7'b0, ros2_pub_app_data_ip_grant_2}),
+    .pub_app_data_grant_2_ap_ack(),
+
+    .pub_app_data_3_dout(ros2_pub_app_data_3),
+    .pub_app_data_3_empty_n(1'b1),
+    .pub_app_data_3_read(),
+    .pub_app_data_len_3_dout(ros2_pub_app_data_len_3),
+    .pub_app_data_len_3_empty_n(1'b1),
+    .pub_app_data_len_3_read(),
+    .pub_app_data_req_3_ap_vld(ros2_pub_app_data_ip_req_3),
+    .pub_app_data_req_3(),
+    .pub_app_data_rel_3_ap_vld(ros2_pub_app_data_ip_rel_3),
+    .pub_app_data_rel_3(),
+    .pub_app_data_grant_3({7'b0, ros2_pub_app_data_ip_grant_3}),
+    .pub_app_data_grant_3_ap_ack(),
 
     .sub_app_data_recv_ap_vld(sub_app_data_recv_ap_vld),
     .sub_app_data_recv(sub_app_data_recv),
@@ -941,46 +990,169 @@ ros2 (
   .conf_sub_topic_type_name_3_62(ros2_sub_topic_type_name_3[503:496]), .conf_sub_topic_type_name_3_63(ros2_sub_topic_type_name_3[511:504]),
   .conf_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
-  .pub_app_data_00_rd(ros2_pub_app_data[7:0]),     .pub_app_data_01_rd(ros2_pub_app_data[15:8]),
-  .pub_app_data_02_rd(ros2_pub_app_data[23:16]),   .pub_app_data_03_rd(ros2_pub_app_data[31:24]),
-  .pub_app_data_04_rd(ros2_pub_app_data[39:32]),   .pub_app_data_05_rd(ros2_pub_app_data[47:40]),
-  .pub_app_data_06_rd(ros2_pub_app_data[55:48]),   .pub_app_data_07_rd(ros2_pub_app_data[63:56]),
-  .pub_app_data_08_rd(ros2_pub_app_data[71:64]),   .pub_app_data_09_rd(ros2_pub_app_data[79:72]),
-  .pub_app_data_10_rd(ros2_pub_app_data[87:80]),   .pub_app_data_11_rd(ros2_pub_app_data[95:88]),
-  .pub_app_data_12_rd(ros2_pub_app_data[103:96]),  .pub_app_data_13_rd(ros2_pub_app_data[111:104]),
-  .pub_app_data_14_rd(ros2_pub_app_data[119:112]), .pub_app_data_15_rd(ros2_pub_app_data[127:120]),
-  .pub_app_data_16_rd(ros2_pub_app_data[135:128]), .pub_app_data_17_rd(ros2_pub_app_data[143:136]),
-  .pub_app_data_18_rd(ros2_pub_app_data[151:144]), .pub_app_data_19_rd(ros2_pub_app_data[159:152]),
-  .pub_app_data_20_rd(ros2_pub_app_data[167:160]), .pub_app_data_21_rd(ros2_pub_app_data[175:168]),
-  .pub_app_data_22_rd(ros2_pub_app_data[183:176]), .pub_app_data_23_rd(ros2_pub_app_data[191:184]),
-  .pub_app_data_24_rd(ros2_pub_app_data[199:192]), .pub_app_data_25_rd(ros2_pub_app_data[207:200]),
-  .pub_app_data_26_rd(ros2_pub_app_data[215:208]), .pub_app_data_27_rd(ros2_pub_app_data[223:216]),
-  .pub_app_data_28_rd(ros2_pub_app_data[231:224]), .pub_app_data_29_rd(ros2_pub_app_data[239:232]),
-  .pub_app_data_30_rd(ros2_pub_app_data[247:240]), .pub_app_data_31_rd(ros2_pub_app_data[255:248]),
-  .pub_app_data_32_rd(ros2_pub_app_data[263:256]), .pub_app_data_33_rd(ros2_pub_app_data[271:264]),
-  .pub_app_data_34_rd(ros2_pub_app_data[279:272]), .pub_app_data_35_rd(ros2_pub_app_data[287:280]),
-  .pub_app_data_36_rd(ros2_pub_app_data[295:288]), .pub_app_data_37_rd(ros2_pub_app_data[303:296]),
-  .pub_app_data_38_rd(ros2_pub_app_data[311:304]), .pub_app_data_39_rd(ros2_pub_app_data[319:312]),
-  .pub_app_data_40_rd(ros2_pub_app_data[327:320]), .pub_app_data_41_rd(ros2_pub_app_data[335:328]),
-  .pub_app_data_42_rd(ros2_pub_app_data[343:336]), .pub_app_data_43_rd(ros2_pub_app_data[351:344]),
-  .pub_app_data_44_rd(ros2_pub_app_data[359:352]), .pub_app_data_45_rd(ros2_pub_app_data[367:360]),
-  .pub_app_data_46_rd(ros2_pub_app_data[375:368]), .pub_app_data_47_rd(ros2_pub_app_data[383:376]),
-  .pub_app_data_48_rd(ros2_pub_app_data[391:384]), .pub_app_data_49_rd(ros2_pub_app_data[399:392]),
-  .pub_app_data_50_rd(ros2_pub_app_data[407:400]), .pub_app_data_51_rd(ros2_pub_app_data[415:408]),
-  .pub_app_data_52_rd(ros2_pub_app_data[423:416]), .pub_app_data_53_rd(ros2_pub_app_data[431:424]),
-  .pub_app_data_54_rd(ros2_pub_app_data[439:432]), .pub_app_data_55_rd(ros2_pub_app_data[447:440]),
-  .pub_app_data_56_rd(ros2_pub_app_data[455:448]), .pub_app_data_57_rd(ros2_pub_app_data[463:456]),
-  .pub_app_data_58_rd(ros2_pub_app_data[471:464]), .pub_app_data_59_rd(ros2_pub_app_data[479:472]),
-  .pub_app_data_60_rd(ros2_pub_app_data[487:480]), .pub_app_data_61_rd(ros2_pub_app_data[495:488]),
-  .pub_app_data_62_rd(ros2_pub_app_data[503:496]), .pub_app_data_63_rd(ros2_pub_app_data[511:504]),
-  .pub_app_data_len_rreq(),
-  .pub_app_data_len_empty(1'b0),
-  .pub_app_data_len_dout(ros2_pub_app_data_len),
-  .pub_app_data_req_we(ros2_pub_app_data_ip_req),
-  .pub_app_data_req_wd(),
-  .pub_app_data_rel_we(ros2_pub_app_data_ip_rel),
-  .pub_app_data_rel_wd(),
-  .pub_app_data_grant_rd({7'b0, ros2_pub_app_data_ip_grant}),
+  .pub_app_data_0_00_rd(ros2_pub_app_data_0[7:0]),     .pub_app_data_0_01_rd(ros2_pub_app_data_0[15:8]),
+  .pub_app_data_0_02_rd(ros2_pub_app_data_0[23:16]),   .pub_app_data_0_03_rd(ros2_pub_app_data_0[31:24]),
+  .pub_app_data_0_04_rd(ros2_pub_app_data_0[39:32]),   .pub_app_data_0_05_rd(ros2_pub_app_data_0[47:40]),
+  .pub_app_data_0_06_rd(ros2_pub_app_data_0[55:48]),   .pub_app_data_0_07_rd(ros2_pub_app_data_0[63:56]),
+  .pub_app_data_0_08_rd(ros2_pub_app_data_0[71:64]),   .pub_app_data_0_09_rd(ros2_pub_app_data_0[79:72]),
+  .pub_app_data_0_10_rd(ros2_pub_app_data_0[87:80]),   .pub_app_data_0_11_rd(ros2_pub_app_data_0[95:88]),
+  .pub_app_data_0_12_rd(ros2_pub_app_data_0[103:96]),  .pub_app_data_0_13_rd(ros2_pub_app_data_0[111:104]),
+  .pub_app_data_0_14_rd(ros2_pub_app_data_0[119:112]), .pub_app_data_0_15_rd(ros2_pub_app_data_0[127:120]),
+  .pub_app_data_0_16_rd(ros2_pub_app_data_0[135:128]), .pub_app_data_0_17_rd(ros2_pub_app_data_0[143:136]),
+  .pub_app_data_0_18_rd(ros2_pub_app_data_0[151:144]), .pub_app_data_0_19_rd(ros2_pub_app_data_0[159:152]),
+  .pub_app_data_0_20_rd(ros2_pub_app_data_0[167:160]), .pub_app_data_0_21_rd(ros2_pub_app_data_0[175:168]),
+  .pub_app_data_0_22_rd(ros2_pub_app_data_0[183:176]), .pub_app_data_0_23_rd(ros2_pub_app_data_0[191:184]),
+  .pub_app_data_0_24_rd(ros2_pub_app_data_0[199:192]), .pub_app_data_0_25_rd(ros2_pub_app_data_0[207:200]),
+  .pub_app_data_0_26_rd(ros2_pub_app_data_0[215:208]), .pub_app_data_0_27_rd(ros2_pub_app_data_0[223:216]),
+  .pub_app_data_0_28_rd(ros2_pub_app_data_0[231:224]), .pub_app_data_0_29_rd(ros2_pub_app_data_0[239:232]),
+  .pub_app_data_0_30_rd(ros2_pub_app_data_0[247:240]), .pub_app_data_0_31_rd(ros2_pub_app_data_0[255:248]),
+  .pub_app_data_0_32_rd(ros2_pub_app_data_0[263:256]), .pub_app_data_0_33_rd(ros2_pub_app_data_0[271:264]),
+  .pub_app_data_0_34_rd(ros2_pub_app_data_0[279:272]), .pub_app_data_0_35_rd(ros2_pub_app_data_0[287:280]),
+  .pub_app_data_0_36_rd(ros2_pub_app_data_0[295:288]), .pub_app_data_0_37_rd(ros2_pub_app_data_0[303:296]),
+  .pub_app_data_0_38_rd(ros2_pub_app_data_0[311:304]), .pub_app_data_0_39_rd(ros2_pub_app_data_0[319:312]),
+  .pub_app_data_0_40_rd(ros2_pub_app_data_0[327:320]), .pub_app_data_0_41_rd(ros2_pub_app_data_0[335:328]),
+  .pub_app_data_0_42_rd(ros2_pub_app_data_0[343:336]), .pub_app_data_0_43_rd(ros2_pub_app_data_0[351:344]),
+  .pub_app_data_0_44_rd(ros2_pub_app_data_0[359:352]), .pub_app_data_0_45_rd(ros2_pub_app_data_0[367:360]),
+  .pub_app_data_0_46_rd(ros2_pub_app_data_0[375:368]), .pub_app_data_0_47_rd(ros2_pub_app_data_0[383:376]),
+  .pub_app_data_0_48_rd(ros2_pub_app_data_0[391:384]), .pub_app_data_0_49_rd(ros2_pub_app_data_0[399:392]),
+  .pub_app_data_0_50_rd(ros2_pub_app_data_0[407:400]), .pub_app_data_0_51_rd(ros2_pub_app_data_0[415:408]),
+  .pub_app_data_0_52_rd(ros2_pub_app_data_0[423:416]), .pub_app_data_0_53_rd(ros2_pub_app_data_0[431:424]),
+  .pub_app_data_0_54_rd(ros2_pub_app_data_0[439:432]), .pub_app_data_0_55_rd(ros2_pub_app_data_0[447:440]),
+  .pub_app_data_0_56_rd(ros2_pub_app_data_0[455:448]), .pub_app_data_0_57_rd(ros2_pub_app_data_0[463:456]),
+  .pub_app_data_0_58_rd(ros2_pub_app_data_0[471:464]), .pub_app_data_0_59_rd(ros2_pub_app_data_0[479:472]),
+  .pub_app_data_0_60_rd(ros2_pub_app_data_0[487:480]), .pub_app_data_0_61_rd(ros2_pub_app_data_0[495:488]),
+  .pub_app_data_0_62_rd(ros2_pub_app_data_0[503:496]), .pub_app_data_0_63_rd(ros2_pub_app_data_0[511:504]),
+  .pub_app_data_len_0_rreq(),
+  .pub_app_data_len_0_empty(1'b0),
+  .pub_app_data_len_0_dout(ros2_pub_app_data_len_0),
+  .pub_app_data_req_0_we(ros2_pub_app_data_ip_req_0),
+  .pub_app_data_req_0_wd(),
+  .pub_app_data_rel_0_we(ros2_pub_app_data_ip_rel_0),
+  .pub_app_data_rel_0_wd(),
+  .pub_app_data_grant_0_rd({7'b0, ros2_pub_app_data_ip_grant_0}),
+
+  .pub_app_data_1_00_rd(ros2_pub_app_data_1[7:0]),     .pub_app_data_1_01_rd(ros2_pub_app_data_1[15:8]),
+  .pub_app_data_1_02_rd(ros2_pub_app_data_1[23:16]),   .pub_app_data_1_03_rd(ros2_pub_app_data_1[31:24]),
+  .pub_app_data_1_04_rd(ros2_pub_app_data_1[39:32]),   .pub_app_data_1_05_rd(ros2_pub_app_data_1[47:40]),
+  .pub_app_data_1_06_rd(ros2_pub_app_data_1[55:48]),   .pub_app_data_1_07_rd(ros2_pub_app_data_1[63:56]),
+  .pub_app_data_1_08_rd(ros2_pub_app_data_1[71:64]),   .pub_app_data_1_09_rd(ros2_pub_app_data_1[79:72]),
+  .pub_app_data_1_10_rd(ros2_pub_app_data_1[87:80]),   .pub_app_data_1_11_rd(ros2_pub_app_data_1[95:88]),
+  .pub_app_data_1_12_rd(ros2_pub_app_data_1[103:96]),  .pub_app_data_1_13_rd(ros2_pub_app_data_1[111:104]),
+  .pub_app_data_1_14_rd(ros2_pub_app_data_1[119:112]), .pub_app_data_1_15_rd(ros2_pub_app_data_1[127:120]),
+  .pub_app_data_1_16_rd(ros2_pub_app_data_1[135:128]), .pub_app_data_1_17_rd(ros2_pub_app_data_1[143:136]),
+  .pub_app_data_1_18_rd(ros2_pub_app_data_1[151:144]), .pub_app_data_1_19_rd(ros2_pub_app_data_1[159:152]),
+  .pub_app_data_1_20_rd(ros2_pub_app_data_1[167:160]), .pub_app_data_1_21_rd(ros2_pub_app_data_1[175:168]),
+  .pub_app_data_1_22_rd(ros2_pub_app_data_1[183:176]), .pub_app_data_1_23_rd(ros2_pub_app_data_1[191:184]),
+  .pub_app_data_1_24_rd(ros2_pub_app_data_1[199:192]), .pub_app_data_1_25_rd(ros2_pub_app_data_1[207:200]),
+  .pub_app_data_1_26_rd(ros2_pub_app_data_1[215:208]), .pub_app_data_1_27_rd(ros2_pub_app_data_1[223:216]),
+  .pub_app_data_1_28_rd(ros2_pub_app_data_1[231:224]), .pub_app_data_1_29_rd(ros2_pub_app_data_1[239:232]),
+  .pub_app_data_1_30_rd(ros2_pub_app_data_1[247:240]), .pub_app_data_1_31_rd(ros2_pub_app_data_1[255:248]),
+  .pub_app_data_1_32_rd(ros2_pub_app_data_1[263:256]), .pub_app_data_1_33_rd(ros2_pub_app_data_1[271:264]),
+  .pub_app_data_1_34_rd(ros2_pub_app_data_1[279:272]), .pub_app_data_1_35_rd(ros2_pub_app_data_1[287:280]),
+  .pub_app_data_1_36_rd(ros2_pub_app_data_1[295:288]), .pub_app_data_1_37_rd(ros2_pub_app_data_1[303:296]),
+  .pub_app_data_1_38_rd(ros2_pub_app_data_1[311:304]), .pub_app_data_1_39_rd(ros2_pub_app_data_1[319:312]),
+  .pub_app_data_1_40_rd(ros2_pub_app_data_1[327:320]), .pub_app_data_1_41_rd(ros2_pub_app_data_1[335:328]),
+  .pub_app_data_1_42_rd(ros2_pub_app_data_1[343:336]), .pub_app_data_1_43_rd(ros2_pub_app_data_1[351:344]),
+  .pub_app_data_1_44_rd(ros2_pub_app_data_1[359:352]), .pub_app_data_1_45_rd(ros2_pub_app_data_1[367:360]),
+  .pub_app_data_1_46_rd(ros2_pub_app_data_1[375:368]), .pub_app_data_1_47_rd(ros2_pub_app_data_1[383:376]),
+  .pub_app_data_1_48_rd(ros2_pub_app_data_1[391:384]), .pub_app_data_1_49_rd(ros2_pub_app_data_1[399:392]),
+  .pub_app_data_1_50_rd(ros2_pub_app_data_1[407:400]), .pub_app_data_1_51_rd(ros2_pub_app_data_1[415:408]),
+  .pub_app_data_1_52_rd(ros2_pub_app_data_1[423:416]), .pub_app_data_1_53_rd(ros2_pub_app_data_1[431:424]),
+  .pub_app_data_1_54_rd(ros2_pub_app_data_1[439:432]), .pub_app_data_1_55_rd(ros2_pub_app_data_1[447:440]),
+  .pub_app_data_1_56_rd(ros2_pub_app_data_1[455:448]), .pub_app_data_1_57_rd(ros2_pub_app_data_1[463:456]),
+  .pub_app_data_1_58_rd(ros2_pub_app_data_1[471:464]), .pub_app_data_1_59_rd(ros2_pub_app_data_1[479:472]),
+  .pub_app_data_1_60_rd(ros2_pub_app_data_1[487:480]), .pub_app_data_1_61_rd(ros2_pub_app_data_1[495:488]),
+  .pub_app_data_1_62_rd(ros2_pub_app_data_1[503:496]), .pub_app_data_1_63_rd(ros2_pub_app_data_1[511:504]),
+  .pub_app_data_len_1_rreq(),
+  .pub_app_data_len_1_empty(1'b0),
+  .pub_app_data_len_1_dout(ros2_pub_app_data_len_1),
+  .pub_app_data_req_1_we(ros2_pub_app_data_ip_req_1),
+  .pub_app_data_req_1_wd(),
+  .pub_app_data_rel_1_we(ros2_pub_app_data_ip_rel_1),
+  .pub_app_data_rel_1_wd(),
+  .pub_app_data_grant_1_rd({7'b0, ros2_pub_app_data_ip_grant_1}),
+
+  .pub_app_data_2_00_rd(ros2_pub_app_data_2[7:0]),     .pub_app_data_2_01_rd(ros2_pub_app_data_2[15:8]),
+  .pub_app_data_2_02_rd(ros2_pub_app_data_2[23:16]),   .pub_app_data_2_03_rd(ros2_pub_app_data_2[31:24]),
+  .pub_app_data_2_04_rd(ros2_pub_app_data_2[39:32]),   .pub_app_data_2_05_rd(ros2_pub_app_data_2[47:40]),
+  .pub_app_data_2_06_rd(ros2_pub_app_data_2[55:48]),   .pub_app_data_2_07_rd(ros2_pub_app_data_2[63:56]),
+  .pub_app_data_2_08_rd(ros2_pub_app_data_2[71:64]),   .pub_app_data_2_09_rd(ros2_pub_app_data_2[79:72]),
+  .pub_app_data_2_10_rd(ros2_pub_app_data_2[87:80]),   .pub_app_data_2_11_rd(ros2_pub_app_data_2[95:88]),
+  .pub_app_data_2_12_rd(ros2_pub_app_data_2[103:96]),  .pub_app_data_2_13_rd(ros2_pub_app_data_2[111:104]),
+  .pub_app_data_2_14_rd(ros2_pub_app_data_2[119:112]), .pub_app_data_2_15_rd(ros2_pub_app_data_2[127:120]),
+  .pub_app_data_2_16_rd(ros2_pub_app_data_2[135:128]), .pub_app_data_2_17_rd(ros2_pub_app_data_2[143:136]),
+  .pub_app_data_2_18_rd(ros2_pub_app_data_2[151:144]), .pub_app_data_2_19_rd(ros2_pub_app_data_2[159:152]),
+  .pub_app_data_2_20_rd(ros2_pub_app_data_2[167:160]), .pub_app_data_2_21_rd(ros2_pub_app_data_2[175:168]),
+  .pub_app_data_2_22_rd(ros2_pub_app_data_2[183:176]), .pub_app_data_2_23_rd(ros2_pub_app_data_2[191:184]),
+  .pub_app_data_2_24_rd(ros2_pub_app_data_2[199:192]), .pub_app_data_2_25_rd(ros2_pub_app_data_2[207:200]),
+  .pub_app_data_2_26_rd(ros2_pub_app_data_2[215:208]), .pub_app_data_2_27_rd(ros2_pub_app_data_2[223:216]),
+  .pub_app_data_2_28_rd(ros2_pub_app_data_2[231:224]), .pub_app_data_2_29_rd(ros2_pub_app_data_2[239:232]),
+  .pub_app_data_2_30_rd(ros2_pub_app_data_2[247:240]), .pub_app_data_2_31_rd(ros2_pub_app_data_2[255:248]),
+  .pub_app_data_2_32_rd(ros2_pub_app_data_2[263:256]), .pub_app_data_2_33_rd(ros2_pub_app_data_2[271:264]),
+  .pub_app_data_2_34_rd(ros2_pub_app_data_2[279:272]), .pub_app_data_2_35_rd(ros2_pub_app_data_2[287:280]),
+  .pub_app_data_2_36_rd(ros2_pub_app_data_2[295:288]), .pub_app_data_2_37_rd(ros2_pub_app_data_2[303:296]),
+  .pub_app_data_2_38_rd(ros2_pub_app_data_2[311:304]), .pub_app_data_2_39_rd(ros2_pub_app_data_2[319:312]),
+  .pub_app_data_2_40_rd(ros2_pub_app_data_2[327:320]), .pub_app_data_2_41_rd(ros2_pub_app_data_2[335:328]),
+  .pub_app_data_2_42_rd(ros2_pub_app_data_2[343:336]), .pub_app_data_2_43_rd(ros2_pub_app_data_2[351:344]),
+  .pub_app_data_2_44_rd(ros2_pub_app_data_2[359:352]), .pub_app_data_2_45_rd(ros2_pub_app_data_2[367:360]),
+  .pub_app_data_2_46_rd(ros2_pub_app_data_2[375:368]), .pub_app_data_2_47_rd(ros2_pub_app_data_2[383:376]),
+  .pub_app_data_2_48_rd(ros2_pub_app_data_2[391:384]), .pub_app_data_2_49_rd(ros2_pub_app_data_2[399:392]),
+  .pub_app_data_2_50_rd(ros2_pub_app_data_2[407:400]), .pub_app_data_2_51_rd(ros2_pub_app_data_2[415:408]),
+  .pub_app_data_2_52_rd(ros2_pub_app_data_2[423:416]), .pub_app_data_2_53_rd(ros2_pub_app_data_2[431:424]),
+  .pub_app_data_2_54_rd(ros2_pub_app_data_2[439:432]), .pub_app_data_2_55_rd(ros2_pub_app_data_2[447:440]),
+  .pub_app_data_2_56_rd(ros2_pub_app_data_2[455:448]), .pub_app_data_2_57_rd(ros2_pub_app_data_2[463:456]),
+  .pub_app_data_2_58_rd(ros2_pub_app_data_2[471:464]), .pub_app_data_2_59_rd(ros2_pub_app_data_2[479:472]),
+  .pub_app_data_2_60_rd(ros2_pub_app_data_2[487:480]), .pub_app_data_2_61_rd(ros2_pub_app_data_2[495:488]),
+  .pub_app_data_2_62_rd(ros2_pub_app_data_2[503:496]), .pub_app_data_2_63_rd(ros2_pub_app_data_2[511:504]),
+  .pub_app_data_len_2_rreq(),
+  .pub_app_data_len_2_empty(1'b0),
+  .pub_app_data_len_2_dout(ros2_pub_app_data_len_2),
+  .pub_app_data_req_2_we(ros2_pub_app_data_ip_req_2),
+  .pub_app_data_req_2_wd(),
+  .pub_app_data_rel_2_we(ros2_pub_app_data_ip_rel_2),
+  .pub_app_data_rel_2_wd(),
+  .pub_app_data_grant_2_rd({7'b0, ros2_pub_app_data_ip_grant_2}),
+
+  .pub_app_data_3_00_rd(ros2_pub_app_data_3[7:0]),     .pub_app_data_3_01_rd(ros2_pub_app_data_3[15:8]),
+  .pub_app_data_3_02_rd(ros2_pub_app_data_3[23:16]),   .pub_app_data_3_03_rd(ros2_pub_app_data_3[31:24]),
+  .pub_app_data_3_04_rd(ros2_pub_app_data_3[39:32]),   .pub_app_data_3_05_rd(ros2_pub_app_data_3[47:40]),
+  .pub_app_data_3_06_rd(ros2_pub_app_data_3[55:48]),   .pub_app_data_3_07_rd(ros2_pub_app_data_3[63:56]),
+  .pub_app_data_3_08_rd(ros2_pub_app_data_3[71:64]),   .pub_app_data_3_09_rd(ros2_pub_app_data_3[79:72]),
+  .pub_app_data_3_10_rd(ros2_pub_app_data_3[87:80]),   .pub_app_data_3_11_rd(ros2_pub_app_data_3[95:88]),
+  .pub_app_data_3_12_rd(ros2_pub_app_data_3[103:96]),  .pub_app_data_3_13_rd(ros2_pub_app_data_3[111:104]),
+  .pub_app_data_3_14_rd(ros2_pub_app_data_3[119:112]), .pub_app_data_3_15_rd(ros2_pub_app_data_3[127:120]),
+  .pub_app_data_3_16_rd(ros2_pub_app_data_3[135:128]), .pub_app_data_3_17_rd(ros2_pub_app_data_3[143:136]),
+  .pub_app_data_3_18_rd(ros2_pub_app_data_3[151:144]), .pub_app_data_3_19_rd(ros2_pub_app_data_3[159:152]),
+  .pub_app_data_3_20_rd(ros2_pub_app_data_3[167:160]), .pub_app_data_3_21_rd(ros2_pub_app_data_3[175:168]),
+  .pub_app_data_3_22_rd(ros2_pub_app_data_3[183:176]), .pub_app_data_3_23_rd(ros2_pub_app_data_3[191:184]),
+  .pub_app_data_3_24_rd(ros2_pub_app_data_3[199:192]), .pub_app_data_3_25_rd(ros2_pub_app_data_3[207:200]),
+  .pub_app_data_3_26_rd(ros2_pub_app_data_3[215:208]), .pub_app_data_3_27_rd(ros2_pub_app_data_3[223:216]),
+  .pub_app_data_3_28_rd(ros2_pub_app_data_3[231:224]), .pub_app_data_3_29_rd(ros2_pub_app_data_3[239:232]),
+  .pub_app_data_3_30_rd(ros2_pub_app_data_3[247:240]), .pub_app_data_3_31_rd(ros2_pub_app_data_3[255:248]),
+  .pub_app_data_3_32_rd(ros2_pub_app_data_3[263:256]), .pub_app_data_3_33_rd(ros2_pub_app_data_3[271:264]),
+  .pub_app_data_3_34_rd(ros2_pub_app_data_3[279:272]), .pub_app_data_3_35_rd(ros2_pub_app_data_3[287:280]),
+  .pub_app_data_3_36_rd(ros2_pub_app_data_3[295:288]), .pub_app_data_3_37_rd(ros2_pub_app_data_3[303:296]),
+  .pub_app_data_3_38_rd(ros2_pub_app_data_3[311:304]), .pub_app_data_3_39_rd(ros2_pub_app_data_3[319:312]),
+  .pub_app_data_3_40_rd(ros2_pub_app_data_3[327:320]), .pub_app_data_3_41_rd(ros2_pub_app_data_3[335:328]),
+  .pub_app_data_3_42_rd(ros2_pub_app_data_3[343:336]), .pub_app_data_3_43_rd(ros2_pub_app_data_3[351:344]),
+  .pub_app_data_3_44_rd(ros2_pub_app_data_3[359:352]), .pub_app_data_3_45_rd(ros2_pub_app_data_3[367:360]),
+  .pub_app_data_3_46_rd(ros2_pub_app_data_3[375:368]), .pub_app_data_3_47_rd(ros2_pub_app_data_3[383:376]),
+  .pub_app_data_3_48_rd(ros2_pub_app_data_3[391:384]), .pub_app_data_3_49_rd(ros2_pub_app_data_3[399:392]),
+  .pub_app_data_3_50_rd(ros2_pub_app_data_3[407:400]), .pub_app_data_3_51_rd(ros2_pub_app_data_3[415:408]),
+  .pub_app_data_3_52_rd(ros2_pub_app_data_3[423:416]), .pub_app_data_3_53_rd(ros2_pub_app_data_3[431:424]),
+  .pub_app_data_3_54_rd(ros2_pub_app_data_3[439:432]), .pub_app_data_3_55_rd(ros2_pub_app_data_3[447:440]),
+  .pub_app_data_3_56_rd(ros2_pub_app_data_3[455:448]), .pub_app_data_3_57_rd(ros2_pub_app_data_3[463:456]),
+  .pub_app_data_3_58_rd(ros2_pub_app_data_3[471:464]), .pub_app_data_3_59_rd(ros2_pub_app_data_3[479:472]),
+  .pub_app_data_3_60_rd(ros2_pub_app_data_3[487:480]), .pub_app_data_3_61_rd(ros2_pub_app_data_3[495:488]),
+  .pub_app_data_3_62_rd(ros2_pub_app_data_3[503:496]), .pub_app_data_3_63_rd(ros2_pub_app_data_3[511:504]),
+  .pub_app_data_len_3_rreq(),
+  .pub_app_data_len_3_empty(1'b0),
+  .pub_app_data_len_3_dout(ros2_pub_app_data_len_3),
+  .pub_app_data_req_3_we(ros2_pub_app_data_ip_req_3),
+  .pub_app_data_req_3_wd(),
+  .pub_app_data_rel_3_we(ros2_pub_app_data_ip_rel_3),
+  .pub_app_data_rel_3_wd(),
+  .pub_app_data_grant_3_rd({7'b0, ros2_pub_app_data_ip_grant_3}),
 
   .sub_app_data_CS1(ros2_sub_app_data_ce),
   .sub_app_data_AD1(ros2_sub_app_data_addr),
@@ -1041,6 +1213,56 @@ ros2 (
 `endif
 
 endmodule
+
+
+// arbiter for sharing app_data between user and IP
+module app_data_arbiter (
+    input wire i_clk,
+    input wire i_rst_n,
+
+    input wire i_en,
+
+    input  wire i_app_data_ip_req,
+    input  wire i_app_data_ip_rel,
+    output wire o_app_data_ip_grant,
+
+    input  wire i_app_data_user_req,
+    input  wire i_app_data_user_rel,
+    output wire o_app_data_user_grant
+);
+    localparam [1:0]
+        APP_DATA_GRANT_NONE = 2'b00,
+        APP_DATA_GRANT_IP   = 2'b01,
+        APP_DATA_GRANT_USER = 2'b10;
+
+    reg [1:0] r_app_data_grant;
+    assign o_app_data_ip_grant = i_en & r_app_data_grant[0];
+    assign o_app_data_user_grant = i_en & r_app_data_grant[1];
+
+    always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            r_app_data_grant <= APP_DATA_GRANT_NONE;
+        end else begin
+            case (r_app_data_grant)
+                APP_DATA_GRANT_NONE: begin
+                    case ({i_app_data_ip_req, i_app_data_user_req})
+                        2'b00: r_app_data_grant <= APP_DATA_GRANT_NONE;
+                        2'b01: r_app_data_grant <= APP_DATA_GRANT_USER;
+                        2'b10: r_app_data_grant <= APP_DATA_GRANT_IP;
+                        2'b11: r_app_data_grant <= APP_DATA_GRANT_IP;
+                    endcase
+                end
+                APP_DATA_GRANT_IP:
+                    if (i_app_data_ip_rel) r_app_data_grant <= APP_DATA_GRANT_NONE;
+                APP_DATA_GRANT_USER:
+                    if (i_app_data_user_rel) r_app_data_grant <= APP_DATA_GRANT_NONE;
+                default:
+                    r_app_data_grant <= APP_DATA_GRANT_NONE;
+            endcase
+        end
+    end
+endmodule
+
 
 module ros2rapper_tx_counters #
 (

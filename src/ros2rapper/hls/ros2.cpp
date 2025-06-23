@@ -1083,15 +1083,33 @@ void ros2(
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    volatile const uint8_t   pub_app_data
+    volatile const uint8_t   pub_app_data_0
         [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
-    volatile const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo */,
+    volatile const uint8_t *pub_app_data_len_0 /* Cyber port_mode=cw_fifo */,
+    volatile const uint8_t  pub_app_data_1
+        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+    volatile const uint8_t *pub_app_data_len_1 /* Cyber port_mode=cw_fifo */,
+    volatile const uint8_t  pub_app_data_2
+        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+    volatile const uint8_t *pub_app_data_len_2 /* Cyber port_mode=cw_fifo */,
+    volatile const uint8_t  pub_app_data_3
+        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared */,
+    volatile const uint8_t *pub_app_data_len_3 /* Cyber port_mode=cw_fifo */,
     uint8_t                 sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     volatile uint8_t *sub_app_data_len, volatile uint16_t *sub_app_data_rep_id,
-    volatile uint8_t *pub_app_data_req /* Cyber port_mode=shared */,
-    volatile uint8_t *pub_app_data_rel /* Cyber port_mode=shared */,
-    volatile uint8_t *pub_app_data_grant /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_req_0 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_rel_0 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_grant_0 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_req_1 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_rel_1 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_grant_1 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_req_2 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_rel_2 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_grant_2 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_req_3 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_rel_3 /* Cyber port_mode=shared */,
+    volatile uint8_t *pub_app_data_grant_3 /* Cyber port_mode=shared */,
     volatile hls_uint<SUB_TOPICS_MAX>
                      *sub_app_data_recv /* Cyber port_mode=shared */,
     volatile uint8_t *sub_app_data_req /* Cyber port_mode=shared */,
@@ -1212,15 +1230,33 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_3
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len_3
 #pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
-#pragma HLS interface mode = ap_fifo port = pub_app_data
-#pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len
+#pragma HLS interface mode = ap_fifo port = pub_app_data_0
+#pragma HLS array_reshape variable = pub_app_data_0 type = complete dim = 0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_1
+#pragma HLS array_reshape variable = pub_app_data_1 type = complete dim = 0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_1
+#pragma HLS interface mode = ap_fifo port = pub_app_data_2
+#pragma HLS array_reshape variable = pub_app_data_2 type = complete dim = 0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
+#pragma HLS interface mode = ap_fifo port = pub_app_data_3
+#pragma HLS array_reshape variable = pub_app_data_3 type = complete dim = 0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_3
 #pragma HLS interface mode = ap_memory port = sub_app_data
 #pragma HLS interface mode = ap_none port = sub_app_data_len
 #pragma HLS interface mode = ap_none port = sub_app_data_rep_id
-#pragma HLS interface mode = ap_vld port = pub_app_data_req
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_0
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_0
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_0
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_1
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_1
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_1
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_2
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_2
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_2
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_3
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_3
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_3
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
@@ -1270,15 +1306,15 @@ void ros2(
             udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
             timestamp_i64, xout);
 
-    ros2_out(out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable[0],
-             sub_enable, conf, pub_app_data, pub_app_data_len, pub_app_data_req,
-             pub_app_data_rel, pub_app_data_grant, udp_txbuf_rel,
-             udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
-             cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
-             cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
-             cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
-             cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-             cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
-             cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, reading_rtps_message, timestamp_i64);
+    ros2_out(
+        out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable[0],
+        sub_enable, conf, pub_app_data_0, pub_app_data_len_0,
+        pub_app_data_req_0, pub_app_data_rel_0, pub_app_data_grant_0,
+        udp_txbuf_rel, udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
+        cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
+        cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
+        cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed,
+        cnt_sedp_sub_hb_set, cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
+        cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
+        cnt_app_wr_set, reading_rtps_message, timestamp_i64);
 }
