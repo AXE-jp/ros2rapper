@@ -242,10 +242,25 @@ module top (
         .ros2_fragment_expiration(ros2_fragment_expiration),
         .ros2_guid_prefix(ros2_guid_prefix),
 
-        .ros2_pub_topic_name(ros2_pub_topic_name),
-        .ros2_pub_topic_name_len(ros2_pub_topic_name_len),
-        .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
-        .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
+        .ros2_pub_topic_name_0(ros2_pub_topic_name),
+        .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len),
+        .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name),
+        .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len),
+
+        .ros2_pub_topic_name_1(),
+        .ros2_pub_topic_name_len_1(),
+        .ros2_pub_topic_type_name_1(),
+        .ros2_pub_topic_type_name_len_1(),
+
+        .ros2_pub_topic_name_2(),
+        .ros2_pub_topic_name_len_2(),
+        .ros2_pub_topic_type_name_2(),
+        .ros2_pub_topic_type_name_len_2(),
+
+        .ros2_pub_topic_name_3(),
+        .ros2_pub_topic_name_len_3(),
+        .ros2_pub_topic_type_name_3(),
+        .ros2_pub_topic_type_name_len_3(),
 
         .ros2_sub_topic_name_0(ros2_sub_topic_name),
         .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len),

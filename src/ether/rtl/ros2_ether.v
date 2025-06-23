@@ -49,10 +49,25 @@ module ros2_ether #(
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
 
-    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
-    input  wire [7:0] ros2_pub_topic_name_len,
-    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name,
-    input  wire [7:0] ros2_pub_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0,
+    input  wire [7:0] ros2_pub_topic_name_len_0,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_0,
+    input  wire [7:0] ros2_pub_topic_type_name_len_0,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_1,
+    input  wire [7:0] ros2_pub_topic_name_len_1,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_1,
+    input  wire [7:0] ros2_pub_topic_type_name_len_1,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_2,
+    input  wire [7:0] ros2_pub_topic_name_len_2,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_2,
+    input  wire [7:0] ros2_pub_topic_type_name_len_2,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_3,
+    input  wire [7:0] ros2_pub_topic_name_len_3,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3,
+    input  wire [7:0] ros2_pub_topic_type_name_len_3,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_0,
     input  wire [7:0] ros2_sub_topic_name_len_0,
@@ -295,10 +310,25 @@ ros2rapper (
     .ros2_guid_prefix(ros2_guid_prefix),
     .ros2_ignore_ip_checksum(1'b0),
 
-    .ros2_pub_topic_name(ros2_pub_topic_name),
-    .ros2_pub_topic_name_len(ros2_pub_topic_name_len),
-    .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
-    .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
+    .ros2_pub_topic_name_0(ros2_pub_topic_name_0),
+    .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len_0),
+    .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name_0),
+    .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len_0),
+
+    .ros2_pub_topic_name_1(ros2_pub_topic_name_1),
+    .ros2_pub_topic_name_len_1(ros2_pub_topic_name_len_1),
+    .ros2_pub_topic_type_name_1(ros2_pub_topic_type_name_1),
+    .ros2_pub_topic_type_name_len_1(ros2_pub_topic_type_name_len_1),
+
+    .ros2_pub_topic_name_2(ros2_pub_topic_name_2),
+    .ros2_pub_topic_name_len_2(ros2_pub_topic_name_len_2),
+    .ros2_pub_topic_type_name_2(ros2_pub_topic_type_name_2),
+    .ros2_pub_topic_type_name_len_2(ros2_pub_topic_type_name_len_2),
+
+    .ros2_pub_topic_name_3(ros2_pub_topic_name_3),
+    .ros2_pub_topic_name_len_3(ros2_pub_topic_name_len_3),
+    .ros2_pub_topic_type_name_3(ros2_pub_topic_type_name_3),
+    .ros2_pub_topic_type_name_len_3(ros2_pub_topic_type_name_len_3),
 
     .ros2_sub_topic_name_0(ros2_sub_topic_name_0),
     .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len_0),

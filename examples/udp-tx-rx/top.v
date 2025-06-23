@@ -231,10 +231,25 @@ module top (
         .ros2_fragment_expiration(0),
         .ros2_guid_prefix(0),
 
-        .ros2_pub_topic_name(0),
-        .ros2_pub_topic_name_len(0),
-        .ros2_pub_topic_type_name(0),
-        .ros2_pub_topic_type_name_len(0),
+        .ros2_pub_topic_name_0(0),
+        .ros2_pub_topic_name_len_0(0),
+        .ros2_pub_topic_type_name_0(0),
+        .ros2_pub_topic_type_name_len_0(0),
+
+        .ros2_pub_topic_name_1(0),
+        .ros2_pub_topic_name_len_1(0),
+        .ros2_pub_topic_type_name_1(0),
+        .ros2_pub_topic_type_name_len_1(0),
+
+        .ros2_pub_topic_name_2(0),
+        .ros2_pub_topic_name_len_2(0),
+        .ros2_pub_topic_type_name_2(0),
+        .ros2_pub_topic_type_name_len_2(0),
+
+        .ros2_pub_topic_name_3(0),
+        .ros2_pub_topic_name_len_3(0),
+        .ros2_pub_topic_type_name_3(0),
+        .ros2_pub_topic_type_name_len_3(0),
 
         .ros2_sub_topic_name_0(0),
         .ros2_sub_topic_name_len_0(0),
