@@ -23,7 +23,7 @@ module ros2rapper #(
     input  wire       rst_n,
 
     input  wire       en,
-    input  wire       ros2pub_en,
+    input  wire [3:0] ros2pub_en,
     input  wire [3:0] ros2sub_en,
 
     input  wire [7:0] rx_fifo_dout,
@@ -315,7 +315,7 @@ ros2 (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
 
-    .pub_enable(en & ros2pub_en),
+    .pub_enable(en ? ros2pub_en : 4'd0),
     .sub_enable(en ? ros2sub_en : 4'd0),
 
     .in_r_dout(rx_fifo_dout),
@@ -473,7 +473,7 @@ ros2 (
   .clk(clk),
   .rst_n(rst_n),
 
-  .pub_enable(en & ros2pub_en),
+  .pub_enable(en ? ros2pub_en : 4'd0),
   .sub_enable(en ? ros2sub_en : 4'd0),
 
   .in_dout(rx_fifo_dout),

@@ -10,6 +10,7 @@
 #define SEDP_READER_MAX 4
 #define APP_READER_MAX  4
 
+#define PUB_TOPICS_MAX 4
 #define SUB_TOPICS_MAX 4
 
 typedef hls_uint<3> sedp_reader_id_t;

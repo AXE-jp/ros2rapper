@@ -24,7 +24,7 @@ module ros2_ether #(
     input  wire       rst_n,
 
     input  wire       ether_en,
-    input  wire       ros2pub_en,
+    input  wire [3:0] ros2pub_en,
     input  wire [3:0] ros2sub_en,
 
     input  wire       phy_rx_clk,

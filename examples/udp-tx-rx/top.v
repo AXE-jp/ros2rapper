@@ -206,7 +206,7 @@ module top (
         .rst_n(rst_n_int),
 
         .ether_en(1'b1),
-        .ros2pub_en(1'b0),
+        .ros2pub_en(4'd0),
         .ros2sub_en(4'd0),
 
         .phy_rx_clk(phy_rx_clk),

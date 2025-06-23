@@ -214,7 +214,8 @@ static void sedp_pub_writer_out(const uint8_t writer_entity_id[4],
                 reader_entity_id, 1, conf->ip_addr, usertraffic_port,
                 app_entity_id, tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
                 conf->pub_topic_name_0, conf->pub_topic_name_len_0,
-                conf->pub_topic_type_name_0, conf->pub_topic_type_name_len_0, now);
+                conf->pub_topic_type_name_0, conf->pub_topic_type_name_len_0,
+                now);
 
     tx_buf.head = 0;
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -1079,7 +1080,7 @@ void ros2(
     uint32_t             udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint32_t             udp_txbuf[RAWUDP_TXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    hls_uint<1>              pub_enable /* Cyber port_mode=in */,
+    hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
     volatile const uint8_t   pub_app_data
@@ -1146,36 +1147,36 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
-#pragma HLS array_reshape variable = conf->pub_topic_name_0 type = complete dim  \
-    = 0
+#pragma HLS array_reshape variable = conf->pub_topic_name_0 type               \
+    = complete                                              dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_len_0
-#pragma HLS array_reshape variable = conf->pub_topic_type_name_0 type            \
-    = complete                                                 dim = 0
+#pragma HLS array_reshape variable = conf->pub_topic_type_name_0 type          \
+    = complete                                                   dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len_0
-#pragma HLS array_reshape variable = conf->pub_topic_name_1 type = complete dim  \
-    = 0
+#pragma HLS array_reshape variable = conf->pub_topic_name_1 type               \
+    = complete                                              dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_1
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_len_1
-#pragma HLS array_reshape variable = conf->pub_topic_type_name_1 type            \
-    = complete                                                 dim = 0
+#pragma HLS array_reshape variable = conf->pub_topic_type_name_1 type          \
+    = complete                                                   dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_1
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len_1
-#pragma HLS array_reshape variable = conf->pub_topic_name_2 type = complete dim  \
-    = 0
+#pragma HLS array_reshape variable = conf->pub_topic_name_2 type               \
+    = complete                                              dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_2
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_len_2
-#pragma HLS array_reshape variable = conf->pub_topic_type_name_2 type            \
-    = complete                                                 dim = 0
+#pragma HLS array_reshape variable = conf->pub_topic_type_name_2 type          \
+    = complete                                                   dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_2
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len_2
-#pragma HLS array_reshape variable = conf->pub_topic_name_3 type = complete dim  \
-    = 0
+#pragma HLS array_reshape variable = conf->pub_topic_name_3 type               \
+    = complete                                              dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_3
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name_len_3
-#pragma HLS array_reshape variable = conf->pub_topic_type_name_3 type            \
-    = complete                                                 dim = 0
+#pragma HLS array_reshape variable = conf->pub_topic_type_name_3 type          \
+    = complete                                                   dim = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_3
 #pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len_3
 #pragma HLS array_reshape variable = conf->sub_topic_name_0 type               \
@@ -1263,13 +1264,13 @@ void ros2(
     static bool reading_rtps_message;
 
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
-            pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
-            sub_app_data_rel, sub_app_data_grant, sub_app_data,
-            sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
+            pub_enable[0], sub_enable, conf, sub_app_data_recv,
+            sub_app_data_req, sub_app_data_rel, sub_app_data_grant,
+            sub_app_data, sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
             udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
             timestamp_i64, xout);
 
-    ros2_out(out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable,
+    ros2_out(out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable[0],
              sub_enable, conf, pub_app_data, pub_app_data_len, pub_app_data_req,
              pub_app_data_rel, pub_app_data_grant, udp_txbuf_rel,
              udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
