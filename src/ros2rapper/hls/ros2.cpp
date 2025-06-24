@@ -1112,11 +1112,29 @@ void ros2(
     VOLATILE uint8_t  *sub_app_data_len /* Cyber volatile=YES*/,
     VOLATILE uint16_t *sub_app_data_rep_id /* Cyber volatile=YES*/,
     VOLATILE uint8_t
-        *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
+        *pub_app_data_req_0 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
-        *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
+        *pub_app_data_rel_0 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
-            *pub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
+        *pub_app_data_grant_0 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_req_1 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_1 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_1 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_req_2 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_2 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_2 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_req_3 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_3 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+            *pub_app_data_grant_3 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
