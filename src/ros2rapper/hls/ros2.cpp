@@ -465,14 +465,17 @@ void APP_WRITER_OUT(
     if ((id < APP_READER_MAX) && app_reader_tbl[id].alive
         && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
+        uint8_t grant;
         /* Cyber scheduling_block = non-transparent */
-    app_data_request_section: {
+        app_data_request_section: {
 #pragma HLS protocol fixed
-        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
-        CLOCK_BOUNDARY;
-        CLOCK_BOUNDARY;
+            *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
+            CLOCK_BOUNDARY;
+            CLOCK_BOUNDARY;
+            grant = *pub_app_data_grant;
+        }
 
-        if (*pub_app_data_grant == 1) {
+        if (grant) {
             app_writer_out(
                 app_writer_entity_id, app_reader_tbl[id].ip_addr,
                 app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
@@ -480,13 +483,16 @@ void APP_WRITER_OUT(
                 conf->node_udp_port, conf->guid_prefix, pub_app_data,
                 pub_app_data_len, now);
 
-            CLOCK_BOUNDARY;
-            *pub_app_data_rel
-                = 0 /* write dummy value to assert valid signal */;
-            CLOCK_BOUNDARY;
-            CLOCK_BOUNDARY;
+            /* Cyber scheduling_block = non-transparent */
+            app_data_release_section: {
+#pragma HLS protocol fixed
+                CLOCK_BOUNDARY;
+                *pub_app_data_rel
+                    = 0 /* write dummy value to assert valid signal */;
+                CLOCK_BOUNDARY;
+                CLOCK_BOUNDARY;
+            }
         }
-    }
     }
 }
 
