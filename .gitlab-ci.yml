@@ -1,0 +1,23 @@
+default:
+  before_script:
+    - . ~/.bashrc
+  interruptible: true
+
+stages:
+  - build
+  - test
+
+hsynth:
+  stage: build
+  script:
+    - make -C src/ros2rapper -f Makefile.vitis synth
+
+synth-examples:
+  stage: build
+  script:
+    - cd examples && ./synth-all.sh
+
+csim:
+  stage: test
+  script:
+    - make -C src/ros2rapper -f Makefile.vitis csim
