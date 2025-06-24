@@ -21,6 +21,7 @@ template <int W> using hls_uint = ap_uint<W>;
 #else
 #define CLOCK_BOUNDARY
 #endif
+#define VOLATILE volatile
 #endif // VITIS_HLS
 
 #ifdef CWB_HLS
@@ -34,6 +35,11 @@ template <int W> using hls_int = sc_int<W>;
 template <int W> using hls_uint = sc_uint<W>;
 #define __SYNTHESIS__
 #define CLOCK_BOUNDARY cwb::cwb_clk()
+
+// Use volatile=YES attribute instead of volatile qualifier.
+// volatile qualifier with SystemC types is not allowed.
+#define VOLATILE
+
 #endif // CWB_HLS
 
 #endif // !HLS_HPP

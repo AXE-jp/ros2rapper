@@ -42,8 +42,8 @@
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
             hls_uint<1> &enable, const uint8_t rx_udp_port[2],
             uint32_t          rawudp_rxbuf[RAWUDP_RXBUF_LEN / 4],
-            volatile uint8_t *rawudp_rxbuf_rel,
-            volatile uint8_t *rawudp_rxbuf_grant, bool &parity_error) {
+            VOLATILE uint8_t *rawudp_rxbuf_rel,
+            VOLATILE uint8_t *rawudp_rxbuf_grant, bool &parity_error) {
 #pragma HLS inline
     static hls_uint<2> state;
     static uint16_t    offset;

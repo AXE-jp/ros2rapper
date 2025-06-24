@@ -13,7 +13,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
-                volatile const uint8_t app_data[MAX_APP_DATA_LEN],
+                VOLATILE const uint8_t app_data[MAX_APP_DATA_LEN],
                 uint32_t app_data_len, uint8_t buf[], timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
@@ -141,13 +141,13 @@ enum {
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
                 hls_uint<SUB_TOPICS_MAX>           sub_enabled,
-                volatile hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-                volatile uint8_t                  *sub_app_data_req,
-                volatile uint8_t                  *sub_app_data_rel,
-                volatile uint8_t                  *sub_app_data_grant,
+                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
+                VOLATILE uint8_t                  *sub_app_data_req,
+                VOLATILE uint8_t                  *sub_app_data_rel,
+                VOLATILE uint8_t                  *sub_app_data_grant,
                 uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                volatile uint8_t  *sub_app_data_len,
-                volatile uint16_t *sub_app_data_rep_id) {
+                VOLATILE uint8_t  *sub_app_data_len,
+                VOLATILE uint16_t *sub_app_data_rep_id) {
 #pragma HLS inline
 
     static hls_uint<3> state;
