@@ -47,31 +47,17 @@ typedef struct {
     uint8_t pub_topic_type_name_3
         [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
     uint8_t pub_topic_type_name_len_3;
-    uint8_t sub_topic_name_0
+    uint8_t sub_topic_name
+        [SUB_TOPICS_MAX]
         [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_name_len_0;
-    uint8_t sub_topic_type_name_0
+    uint8_t sub_topic_name_len
+        [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t sub_topic_type_name
+        [SUB_TOPICS_MAX]
         [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_type_name_len_0;
-    uint8_t sub_topic_name_1
-        [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_name_len_1;
-    uint8_t sub_topic_type_name_1
-        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_type_name_len_1;
-    uint8_t sub_topic_name_2
-        [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_name_len_2;
-    uint8_t sub_topic_type_name_2
-        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_type_name_len_2;
-    uint8_t sub_topic_name_3
-        [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_name_len_3;
-    uint8_t sub_topic_type_name_3
-        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_type_name_len_3;
-    bool    ignore_ip_checksum;
+    uint8_t sub_topic_type_name_len
+        [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
+    bool ignore_ip_checksum;
 } config_t;
 
 #endif // !ROS2_HPP
