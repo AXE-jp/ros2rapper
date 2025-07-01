@@ -799,35 +799,17 @@ static void ros2_out(
                     // Send subscribed topic data
                     if ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
                         || cnt_sedp_sub_wr_elapsed) {
-                        switch (tx_topic_progress) {
-                        case 0:
-                            SEDP_SUB_WRITER_OUT_TOPIC(
-                                0, tx_progress, conf->sub_topic_name[0],
-                                conf->sub_topic_name_len[0],
-                                conf->sub_topic_type_name[0],
-                                conf->sub_topic_type_name_len[0]);
-                            break;
-                        case 1:
-                            SEDP_SUB_WRITER_OUT_TOPIC(
-                                1, tx_progress, conf->sub_topic_name[1],
-                                conf->sub_topic_name_len[1],
-                                conf->sub_topic_type_name[1],
-                                conf->sub_topic_type_name_len[1]);
-                            break;
-                        case 2:
-                            SEDP_SUB_WRITER_OUT_TOPIC(
-                                2, tx_progress, conf->sub_topic_name[2],
-                                conf->sub_topic_name_len[2],
-                                conf->sub_topic_type_name[2],
-                                conf->sub_topic_type_name_len[2]);
-                            break;
-                        case 3:
-                            SEDP_SUB_WRITER_OUT_TOPIC(
-                                3, tx_progress, conf->sub_topic_name[3],
-                                conf->sub_topic_name_len[3],
-                                conf->sub_topic_type_name[3],
-                                conf->sub_topic_type_name_len[3]);
-                            break;
+                        /* Cyber unroll_times=all */
+                        for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+#pragma HLS unroll
+                            if (tx_topic_progress == j) {
+                                SEDP_SUB_WRITER_OUT_TOPIC(
+                                    j, tx_progress, conf->sub_topic_name[j],
+                                    conf->sub_topic_name_len[j],
+                                    conf->sub_topic_type_name[j],
+                                    conf->sub_topic_type_name_len[j]);
+                                break;
+                            }
                         }
                     }
 
