@@ -2,7 +2,33 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sedp.hpp"
+#include "test_sedp_reader.hpp"
 #include <cassert>
+
+void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
+                      uint8_t topic_name_len[],
+                      uint8_t type_name[][MAX_TOPIC_TYPE_NAME_LEN],
+                      uint8_t type_name_len[], const uint8_t topic_name_1[],
+                      uint8_t topic_name_len_1, const uint8_t type_name_1[],
+                      uint8_t type_name_len_1) {
+    for (auto j = 0; j < topic_name_len_1; j++) {
+        topic_name[id][j] = topic_name_1[j];
+    }
+    for (auto j = topic_name_len_1; j < MAX_TOPIC_NAME_LEN; j++) {
+        topic_name[id][j] = 0;
+    }
+
+    topic_name_len[id] = topic_name_len_1;
+
+    for (auto j = 0; j < type_name_len_1; j++) {
+        type_name[id][j] = type_name_1[j];
+    }
+    for (auto j = type_name_len_1; j < MAX_TOPIC_TYPE_NAME_LEN; j++) {
+        type_name[id][j] = 0;
+    }
+
+    type_name_len[id] = type_name_len_1;
+}
 
 // Message from a publisher
 constexpr uint8_t test_sedp_reader_pub_data[] = {
@@ -315,30 +341,6 @@ constexpr uint8_t test_sedp_reader_sub_data_with_nonzero_padding[] = {
     0x25, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00,
     // PID_SENTINEL
     0x01, 0x00, 0x00, 0x00};
-
-static void setup_topic_data(
-    int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN], uint8_t topic_name_len[],
-    uint8_t type_name[][MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len[],
-    const uint8_t topic_name_1[], uint8_t topic_name_len_1,
-    const uint8_t type_name_1[], uint8_t type_name_len_1) {
-    for (auto j = 0; j < topic_name_len_1; j++) {
-        topic_name[id][j] = topic_name_1[j];
-    }
-    for (auto j = topic_name_len_1; j < MAX_TOPIC_NAME_LEN; j++) {
-        topic_name[id][j] = 0;
-    }
-
-    topic_name_len[id] = topic_name_len_1;
-
-    for (auto j = 0; j < type_name_len_1; j++) {
-        type_name[id][j] = type_name_1[j];
-    }
-    for (auto j = type_name_len_1; j < MAX_TOPIC_TYPE_NAME_LEN; j++) {
-        type_name[id][j] = 0;
-    }
-
-    type_name_len[id] = type_name_len_1;
-}
 
 static void
 call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],

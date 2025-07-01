@@ -10,6 +10,7 @@
 #include "hls.hpp"
 // #include "ros2.hpp"
 #include "sedp.hpp"
+#include "test_sedp_reader.hpp"
 
 /*
 HEARTBEAT Message Content:
@@ -113,31 +114,21 @@ int test_sedp_reader_heartbeat() {
     const uint8_t pub_type_name_len = sizeof(pub_type_name);
 
     const uint8_t sub_topic_name_0[] = "rt/fpgapubtest";
-    const uint8_t sub_topic_name_len_0 = sizeof(sub_topic_name_0);
     const uint8_t sub_type_name_0[] = "std_msgs::msg::dds_::String_";
-    const uint8_t sub_type_name_len_0 = sizeof(sub_type_name_0);
 
     uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
     uint8_t sub_topic_name_len[SUB_TOPICS_MAX];
     uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
     uint8_t sub_type_name_len[SUB_TOPICS_MAX];
 
-    for (auto j = 0; j < sub_topic_name_len_0; j++) {
-        sub_topic_name[0][j] = sub_topic_name_0[j];
-    }
+    setup_topic_data(0, sub_topic_name, sub_topic_name_len, sub_type_name,
+                     sub_type_name_len, sub_topic_name_0,
+                     sizeof(sub_topic_name_0), sub_type_name_0,
+                     sizeof(sub_type_name_0));
 
-    sub_topic_name_len[0] = sub_topic_name_len_0;
-    for (auto k = 1; k < SUB_TOPICS_MAX; k++) {
-        sub_topic_name_len[k] = 0;
-    }
-
-    for (auto j = 0; j < sub_type_name_len_0; j++) {
-        sub_type_name[0][j] = sub_type_name_0[j];
-    }
-
-    sub_type_name_len[0] = sub_type_name_len_0;
-    for (auto k = 1; k < SUB_TOPICS_MAX; k++) {
-        sub_type_name_len[k] = 0;
+    for (auto id = 1; id < SUB_TOPICS_MAX; id++) {
+        setup_topic_data(1, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, NULL, 0, NULL, 0);
     }
 
     /*****************************************************/
