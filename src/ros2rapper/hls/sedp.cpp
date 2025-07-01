@@ -90,31 +90,19 @@ enum {
 };
 
 /* Cyber func=inline */
-void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                 app_endpoint app_reader_tbl[APP_READER_MAX],
-                 hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
-                 const uint8_t guid_prefix[12],
-                 const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
-                 uint8_t       pub_topic_name_len,
-                 const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       pub_type_name_len,
-                 const uint8_t sub_topic_name_0[MAX_TOPIC_NAME_LEN],
-                 uint8_t       sub_topic_name_len_0,
-                 const uint8_t sub_type_name_0[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       sub_type_name_len_0,
-                 const uint8_t sub_topic_name_1[MAX_TOPIC_NAME_LEN],
-                 uint8_t       sub_topic_name_len_1,
-                 const uint8_t sub_type_name_1[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       sub_type_name_len_1,
-                 const uint8_t sub_topic_name_2[MAX_TOPIC_NAME_LEN],
-                 uint8_t       sub_topic_name_len_2,
-                 const uint8_t sub_type_name_2[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       sub_type_name_len_2,
-                 const uint8_t sub_topic_name_3[MAX_TOPIC_NAME_LEN],
-                 uint8_t       sub_topic_name_len_3,
-                 const uint8_t sub_type_name_3[MAX_TOPIC_TYPE_NAME_LEN],
-                 uint8_t       sub_type_name_len_3) {
+void sedp_reader(
+    hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+    app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> enable,
+    const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
+    uint16_t port_num_seed, const uint8_t guid_prefix[12],
+    const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
+    uint8_t       pub_topic_name_len,
+    const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
+    uint8_t       pub_type_name_len,
+    const uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t sub_topic_name_len[SUB_TOPICS_MAX],
+    const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t sub_type_name_len[SUB_TOPICS_MAX]) {
 #pragma HLS inline
     static const uint8_t pub_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_READER;
@@ -465,30 +453,14 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         }
                     }
                 } else {
-                    if (sp_len != sub_topic_name_len_0) {
-                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
-                    }
-                    if (sp_len != sub_topic_name_len_1) {
-                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
-                    }
-                    if (sp_len != sub_topic_name_len_2) {
-                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
-                    }
-                    if (sp_len != sub_topic_name_len_3) {
-                        sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
-                    }
-                    if (offset < sp_len + 4) {
-                        if (sub_topic_name_0[offset - 4] != data) {
-                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
-                        }
-                        if (sub_topic_name_1[offset - 4] != data) {
-                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
-                        }
-                        if (sub_topic_name_2[offset - 4] != data) {
-                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
-                        }
-                        if (sub_topic_name_3[offset - 4] != data) {
-                            sub_topics_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+#pragma HLS unroll
+                        if ((sp_len != sub_topic_name_len[j])
+                            || ((offset < sp_len + 4)
+                                && (sub_topic_name[j][offset - 4] != data))) {
+                            sub_topics_unmatched
+                                |= hls_uint<SUB_TOPICS_MAX>(1 << j);
                         }
                     }
                     if (~sub_topics_unmatched == 0) {
@@ -529,30 +501,14 @@ void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                         }
                     }
                 } else {
-                    if (sp_len != sub_type_name_len_0) {
-                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
-                    }
-                    if (sp_len != sub_type_name_len_1) {
-                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
-                    }
-                    if (sp_len != sub_type_name_len_2) {
-                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
-                    }
-                    if (sp_len != sub_type_name_len_3) {
-                        sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
-                    }
-                    if (offset < sp_len + 4) {
-                        if (sub_type_name_0[offset - 4] != data) {
-                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(1);
-                        }
-                        if (sub_type_name_1[offset - 4] != data) {
-                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(2);
-                        }
-                        if (sub_type_name_2[offset - 4] != data) {
-                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(4);
-                        }
-                        if (sub_type_name_3[offset - 4] != data) {
-                            sub_types_unmatched |= hls_uint<SUB_TOPICS_MAX>(8);
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+#pragma HLS unroll
+                        if ((sp_len != sub_type_name_len[j])
+                            || ((offset < sp_len + 4)
+                                && (sub_type_name[j][offset - 4] != data))) {
+                            sub_types_unmatched
+                                |= hls_uint<SUB_TOPICS_MAX>(1 << j);
                         }
                     }
                     if (~sub_types_unmatched == 0) {

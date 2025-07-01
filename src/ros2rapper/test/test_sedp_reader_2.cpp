@@ -316,6 +316,30 @@ constexpr uint8_t test_sedp_reader_sub_data_with_nonzero_padding[] = {
     // PID_SENTINEL
     0x01, 0x00, 0x00, 0x00};
 
+static void setup_topic_data(
+    int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN], uint8_t topic_name_len[],
+    uint8_t type_name[][MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len[],
+    const uint8_t topic_name_1[], uint8_t topic_name_len_1,
+    const uint8_t type_name_1[], uint8_t type_name_len_1) {
+    for (auto j = 0; j < topic_name_len_1; j++) {
+        topic_name[id][j] = topic_name_1[j];
+    }
+    for (auto j = topic_name_len_1; j < MAX_TOPIC_NAME_LEN; j++) {
+        topic_name[id][j] = 0;
+    }
+
+    topic_name_len[id] = topic_name_len_1;
+
+    for (auto j = 0; j < type_name_len_1; j++) {
+        type_name[id][j] = type_name_1[j];
+    }
+    for (auto j = type_name_len_1; j < MAX_TOPIC_TYPE_NAME_LEN; j++) {
+        type_name[id][j] = 0;
+    }
+
+    type_name_len[id] = type_name_len_1;
+}
+
 static void
 call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  app_endpoint  app_reader_tbl[APP_READER_MAX],
@@ -333,6 +357,40 @@ call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                  const uint8_t sub_topic_name_3[], uint8_t sub_topic_name_len_3,
                  const uint8_t sub_type_name_3[], uint8_t sub_type_name_len_3,
                  const uint8_t test_data[], size_t test_data_len) {
+    uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
+    uint8_t sub_topic_name_len[SUB_TOPICS_MAX];
+    uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
+    uint8_t sub_type_name_len[SUB_TOPICS_MAX];
+
+    if (SUB_TOPICS_MAX >= 1) {
+        setup_topic_data(0, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, sub_topic_name_0,
+                         sub_topic_name_len_0, sub_type_name_0,
+                         sub_type_name_len_0);
+    }
+    if (SUB_TOPICS_MAX >= 2) {
+        setup_topic_data(1, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, sub_topic_name_1,
+                         sub_topic_name_len_1, sub_type_name_1,
+                         sub_type_name_len_1);
+    }
+    if (SUB_TOPICS_MAX >= 3) {
+        setup_topic_data(2, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, sub_topic_name_2,
+                         sub_topic_name_len_2, sub_type_name_2,
+                         sub_type_name_len_2);
+    }
+    if (SUB_TOPICS_MAX >= 4) {
+        setup_topic_data(3, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, sub_topic_name_3,
+                         sub_topic_name_len_3, sub_type_name_3,
+                         sub_type_name_len_3);
+    }
+    for (auto id = 4; id < SUB_TOPICS_MAX; id++) {
+        setup_topic_data(id, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, NULL, 0, NULL, 0);
+    }
+
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
@@ -341,12 +399,8 @@ call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
         sedp_reader(x, sedp_reader_tbl, app_reader_tbl, 1, ip_addr, subnet_mask,
                     port_num_seed, guid_prefix, pub_topic_name,
                     pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name_0, sub_topic_name_len_0, sub_type_name_0,
-                    sub_type_name_len_0, sub_topic_name_1, sub_topic_name_len_1,
-                    sub_type_name_1, sub_type_name_len_1, sub_topic_name_2,
-                    sub_topic_name_len_2, sub_type_name_2, sub_type_name_len_2,
-                    sub_topic_name_3, sub_topic_name_len_3, sub_type_name_3,
-                    sub_type_name_len_3);
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
 }
 

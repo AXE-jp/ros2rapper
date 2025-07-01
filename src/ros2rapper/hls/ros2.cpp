@@ -155,14 +155,8 @@ static void ros2_in(
                 conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
                 conf->pub_topic_name_0, conf->pub_topic_name_len_0,
                 conf->pub_topic_type_name_0, conf->pub_topic_type_name_len_0,
-                conf->sub_topic_name[0], conf->sub_topic_name_len[0],
-                conf->sub_topic_type_name[0], conf->sub_topic_type_name_len[0],
-                conf->sub_topic_name[1], conf->sub_topic_name_len[1],
-                conf->sub_topic_type_name[1], conf->sub_topic_type_name_len[1],
-                conf->sub_topic_name[2], conf->sub_topic_name_len[2],
-                conf->sub_topic_type_name[2], conf->sub_topic_type_name_len[2],
-                conf->sub_topic_name[3], conf->sub_topic_name_len[3],
-                conf->sub_topic_type_name[3], conf->sub_topic_type_name_len[3]);
+                conf->sub_topic_name, conf->sub_topic_name_len,
+                conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
     if (sub_enable != 0) {
         app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,

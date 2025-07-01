@@ -4,14 +4,14 @@
 #ifndef ROS2_HPP
 #define ROS2_HPP
 
-#include "common.hpp"
-#include "hls.hpp"
-#include <cstdint>
-
 #define MAX_NODE_NAME_LEN       32
 #define MAX_TOPIC_NAME_LEN      32
 #define MAX_TOPIC_TYPE_NAME_LEN 64
 #define MAX_APP_DATA_LEN        64
+
+#include "common.hpp"
+#include "hls.hpp"
+#include <cstdint>
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;
