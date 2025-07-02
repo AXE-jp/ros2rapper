@@ -302,23 +302,23 @@ app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
                const uint8_t reader_entity_id[4], tx_buf &tx_buf,
                int64_t &seqnum, const uint8_t src_addr[4],
                const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
-               VOLATILE const uint8_t         pub_app_data[MAX_APP_DATA_LEN],
-               VOLATILE const app_data_len_t *pub_app_data_len, timestamp now) {
+               VOLATILE const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+               app_data_len_t pub_app_data_len, timestamp now) {
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  APP_WRITER_UDP_PKT_LEN(*pub_app_data_len), tx_buf.buf);
+                  APP_WRITER_UDP_PKT_LEN(pub_app_data_len), tx_buf.buf);
 
     udp_set_header(src_port, dst_port,
-                   APP_WRITER_RTPS_PKT_LEN(*pub_app_data_len),
+                   APP_WRITER_RTPS_PKT_LEN(pub_app_data_len),
                    tx_buf.buf + IP_HDR_SIZE);
 
     app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
-               reader_entity_id, seqnum, pub_app_data, *pub_app_data_len,
+               reader_entity_id, seqnum, pub_app_data, pub_app_data_len,
                tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), now);
 
     tx_buf.head = 0;
-    tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
+    tx_buf.len = APP_WRITER_IP_PKT_LEN(pub_app_data_len);
 }
 
 /* Cyber func=inline */
@@ -481,7 +481,7 @@ void APP_WRITER_OUT(
                 app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
                 app_reader_tbl[id].entity_id, tx_buf, app_seqnum, conf->ip_addr,
                 conf->node_udp_port, conf->guid_prefix, pub_app_data,
-                pub_app_data_len, now);
+                *pub_app_data_len, now);
 
         /* Cyber scheduling_block = non-transparent */
         app_data_release_section: {
