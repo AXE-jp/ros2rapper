@@ -126,7 +126,7 @@ module top (
     reg [7:0] msg_number;
 
     localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
+    localparam [`ROS2_APP_DATA_LEN_WIDTH-1:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
 
     // --- ROS2 Publisher Message Control
@@ -171,7 +171,7 @@ module top (
         if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
     end
-    wire [7:0] ros2_sub_app_data_len;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
     wire [15:0] ros2_sub_app_data_rep_id;
     assign led4 = rx_msg_reg[0][0];
     assign led5 = rx_msg_reg[0][1];
