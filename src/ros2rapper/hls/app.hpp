@@ -31,13 +31,13 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
-                hls_uint<SUB_TOPICS_MAX>           sub_enabled,
+                hls_uint<SUB_TOPICS_MAX> sub_enabled,
                 VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
                 VOLATILE uint8_t                  *sub_app_data_req,
                 VOLATILE uint8_t                  *sub_app_data_rel,
                 VOLATILE uint8_t                  *sub_app_data_grant,
-                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                VOLATILE uint8_t  *sub_app_data_len,
-                VOLATILE uint16_t *sub_app_data_rep_id);
+                uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
+                VOLATILE app_data_len_t *sub_app_data_len,
+                VOLATILE uint16_t       *sub_app_data_rep_id);
 
 #endif // !APP_HPP

@@ -75,7 +75,7 @@ module ros2_ether #(
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
-    input  wire [7:0] ros2_pub_app_data_len,
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len,
     input  wire ros2_pub_app_data_req,
     input  wire ros2_pub_app_data_rel,
     output wire ros2_pub_app_data_grant,
@@ -84,7 +84,7 @@ module ros2_ether #(
     output wire ros2_sub_app_data_ce,
     output wire ros2_sub_app_data_we,
     output wire [7:0] ros2_sub_app_data_wdata,
-    output wire [7:0] ros2_sub_app_data_len,
+    output wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len,
     output wire [15:0] ros2_sub_app_data_rep_id,
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,

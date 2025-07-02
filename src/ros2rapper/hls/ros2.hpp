@@ -11,7 +11,11 @@
 #define MAX_NODE_NAME_LEN       32
 #define MAX_TOPIC_NAME_LEN      32
 #define MAX_TOPIC_TYPE_NAME_LEN 64
-#define MAX_APP_DATA_LEN        64
+#define MAX_APP_DATA_LEN        1024
+
+typedef uint16_t app_data_len_t;
+static_assert(MAX_APP_DATA_LEN <= 65535,
+              "app_data_len_t should be able to represent MAX_APP_DATA_LEN.");
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;

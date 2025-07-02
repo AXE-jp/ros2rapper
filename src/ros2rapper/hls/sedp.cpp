@@ -645,7 +645,7 @@ void sedp_writer(
 
     uint16_t pid_type_name_size = SP_STR_DATA_SIZE(type_name_len);
 
-    static const uint32_t type_max_size_serialized = 84;
+    static const uint32_t type_max_size_serialized = 4 + MAX_APP_DATA_LEN;
     static const uint32_t durability_qos = 0;
     static const duration deadline = DURATION_INFINITE;
     static const duration latency_budget = DURATION_ZERO;
