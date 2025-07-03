@@ -45,7 +45,7 @@ module ros2_module (
     // --- Ethernet Configuration
     wire [47:0] mac_addr         = 48'h00_00_00_00_00_02;
     wire [31:0] ip_addr          = {8'd100, 8'd1, 8'd168, 8'd192};
-    wire [31:0] gateway_ip_addr  = {8'd1, 8'd100, 8'd168, 8'd192};
+    wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
     wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
 
     // --- ARP Configuration
