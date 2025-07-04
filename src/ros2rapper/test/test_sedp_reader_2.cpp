@@ -1,33 +1,35 @@
 // Copyright (c) 2021-2025 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <cassert>
+
+#include "ros2.hpp"
 #include "sedp.hpp"
 #include "test_sedp_reader.hpp"
-#include <cassert>
 
 void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
                       uint8_t topic_name_len[],
                       uint8_t type_name[][MAX_TOPIC_TYPE_NAME_LEN],
-                      uint8_t type_name_len[], const uint8_t topic_name_1[],
-                      uint8_t topic_name_len_1, const uint8_t type_name_1[],
-                      uint8_t type_name_len_1) {
-    for (auto j = 0; j < topic_name_len_1; j++) {
-        topic_name[id][j] = topic_name_1[j];
+                      uint8_t type_name_len[], const uint8_t topic_name_0[],
+                      uint8_t topic_name_len_0, const uint8_t type_name_0[],
+                      uint8_t type_name_len_0) {
+    for (auto j = 0; j < topic_name_len_0; j++) {
+        topic_name[id][j] = topic_name_0[j];
     }
-    for (auto j = topic_name_len_1; j < MAX_TOPIC_NAME_LEN; j++) {
+    for (auto j = topic_name_len_0; j < MAX_TOPIC_NAME_LEN; j++) {
         topic_name[id][j] = 0;
     }
 
-    topic_name_len[id] = topic_name_len_1;
+    topic_name_len[id] = topic_name_len_0;
 
-    for (auto j = 0; j < type_name_len_1; j++) {
-        type_name[id][j] = type_name_1[j];
+    for (auto j = 0; j < type_name_len_0; j++) {
+        type_name[id][j] = type_name_0[j];
     }
-    for (auto j = type_name_len_1; j < MAX_TOPIC_TYPE_NAME_LEN; j++) {
+    for (auto j = type_name_len_0; j < MAX_TOPIC_TYPE_NAME_LEN; j++) {
         type_name[id][j] = 0;
     }
 
-    type_name_len[id] = type_name_len_1;
+    type_name_len[id] = type_name_len_0;
 }
 
 // Message from a publisher
@@ -342,71 +344,76 @@ constexpr uint8_t test_sedp_reader_sub_data_with_nonzero_padding[] = {
     // PID_SENTINEL
     0x01, 0x00, 0x00, 0x00};
 
-static void
-call_sedp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                 app_endpoint  app_reader_tbl[APP_READER_MAX],
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t      port_num_seed,
-                 const uint8_t guid_prefix[GUID_PREFIX_SIZE],
-                 const uint8_t pub_topic_name[], uint8_t pub_topic_name_len,
-                 const uint8_t pub_type_name[], uint8_t pub_type_name_len,
-                 const uint8_t sub_topic_name_0[], uint8_t sub_topic_name_len_0,
-                 const uint8_t sub_type_name_0[], uint8_t sub_type_name_len_0,
-                 const uint8_t sub_topic_name_1[], uint8_t sub_topic_name_len_1,
-                 const uint8_t sub_type_name_1[], uint8_t sub_type_name_len_1,
-                 const uint8_t sub_topic_name_2[], uint8_t sub_topic_name_len_2,
-                 const uint8_t sub_type_name_2[], uint8_t sub_type_name_len_2,
-                 const uint8_t sub_topic_name_3[], uint8_t sub_topic_name_len_3,
-                 const uint8_t sub_type_name_3[], uint8_t sub_type_name_len_3,
-                 const uint8_t test_data[], size_t test_data_len) {
-    uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
-    uint8_t sub_topic_name_len[SUB_TOPICS_MAX];
-    uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
-    uint8_t sub_type_name_len[SUB_TOPICS_MAX];
-
-    if (SUB_TOPICS_MAX >= 1) {
-        setup_topic_data(0, sub_topic_name, sub_topic_name_len, sub_type_name,
-                         sub_type_name_len, sub_topic_name_0,
-                         sub_topic_name_len_0, sub_type_name_0,
-                         sub_type_name_len_0);
-    }
-    if (SUB_TOPICS_MAX >= 2) {
-        setup_topic_data(1, sub_topic_name, sub_topic_name_len, sub_type_name,
-                         sub_type_name_len, sub_topic_name_1,
-                         sub_topic_name_len_1, sub_type_name_1,
-                         sub_type_name_len_1);
-    }
-    if (SUB_TOPICS_MAX >= 3) {
-        setup_topic_data(2, sub_topic_name, sub_topic_name_len, sub_type_name,
-                         sub_type_name_len, sub_topic_name_2,
-                         sub_topic_name_len_2, sub_type_name_2,
-                         sub_type_name_len_2);
-    }
-    if (SUB_TOPICS_MAX >= 4) {
-        setup_topic_data(3, sub_topic_name, sub_topic_name_len, sub_type_name,
-                         sub_type_name_len, sub_topic_name_3,
-                         sub_topic_name_len_3, sub_type_name_3,
-                         sub_type_name_len_3);
-    }
-    for (auto id = 4; id < SUB_TOPICS_MAX; id++) {
-        setup_topic_data(id, sub_topic_name, sub_topic_name_len, sub_type_name,
-                         sub_type_name_len, NULL, 0, NULL, 0);
-    }
-
+static void call_sedp_reader(
+    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+    app_endpoint app_reader_tbl[APP_READER_MAX], const uint8_t ip_addr[4],
+    const uint8_t subnet_mask[4], uint16_t port_num_seed,
+    const uint8_t guid_prefix[GUID_PREFIX_SIZE],
+    const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t pub_topic_name_len[PUB_TOPICS_MAX],
+    const uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t pub_type_name_len[PUB_TOPICS_MAX],
+    const uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t sub_topic_name_len[SUB_TOPICS_MAX],
+    const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t sub_type_name_len[SUB_TOPICS_MAX], const uint8_t test_data[],
+    size_t test_data_len) {
+    hls_uint<1> enable = 1;
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
             x |= hls_uint<9>(0x100);
         }
-        sedp_reader(x, sedp_reader_tbl, app_reader_tbl, 1, ip_addr, subnet_mask,
-                    port_num_seed, guid_prefix, pub_topic_name,
-                    pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name, sub_topic_name_len, sub_type_name,
-                    sub_type_name_len);
+        sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
+                    subnet_mask, port_num_seed, guid_prefix, pub_topic_name[0],
+                    pub_topic_name_len[0], pub_type_name[0],
+                    pub_type_name_len[0], sub_topic_name, sub_topic_name_len,
+                    sub_type_name, sub_type_name_len);
     }
 }
 
-static void setup_test_multi_topic_subscription(
+static void setup_topic_data_all(
+    config_t *conf, int pub_id, const uint8_t pub_topic_name_0[],
+    uint8_t pub_topic_name_len_0, const uint8_t pub_type_name_0[],
+    uint8_t pub_type_name_len_0, int sub_id, const uint8_t sub_topic_name_0[],
+    uint8_t sub_topic_name_len_0, const uint8_t sub_type_name_0[],
+    uint8_t sub_type_name_len_0) {
+    for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
+        if (j == pub_id) {
+            setup_topic_data(j, conf->pub_topic_name, conf->pub_topic_name_len,
+                             conf->pub_topic_type_name,
+                             conf->pub_topic_type_name_len, pub_topic_name_0,
+                             pub_topic_name_len_0, pub_type_name_0,
+                             pub_type_name_len_0);
+        } else {
+            setup_topic_data(j, conf->pub_topic_name, conf->pub_topic_name_len,
+                             conf->pub_topic_type_name,
+                             conf->pub_topic_type_name_len, NULL, 0, NULL, 0);
+        }
+    }
+    for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+        if (j == sub_id) {
+            setup_topic_data(j, conf->sub_topic_name, conf->sub_topic_name_len,
+                             conf->sub_topic_type_name,
+                             conf->sub_topic_type_name_len, sub_topic_name_0,
+                             sub_topic_name_len_0, sub_type_name_0,
+                             sub_type_name_len_0);
+        } else {
+            setup_topic_data(j, conf->sub_topic_name, conf->sub_topic_name_len,
+                             conf->sub_topic_type_name,
+                             conf->sub_topic_type_name_len, NULL, 0, NULL, 0);
+        }
+    }
+}
+
+#define SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0,        \
+                             sub_id, sub_topic_name_0, sub_type_name_0)        \
+    setup_topic_data_all(                                                      \
+        &conf, pub_id, pub_topic_name_0, sizeof(pub_topic_name_0),             \
+        pub_type_name_0, sizeof(pub_type_name_0), sub_id, sub_topic_name_0,    \
+        sizeof(sub_topic_name_0), sub_type_name_0, sizeof(sub_type_name_0))
+
+static void setup_reader_tables_with_default_value(
     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint  app_reader_tbl[APP_READER_MAX]) {
     // Setup sedp_reader_tbl[0].
@@ -428,42 +435,39 @@ static void setup_test_multi_topic_subscription(
     }
 }
 
-#define CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name_0,      \
-                         sub_type_name_0, sub_topic_name_1, sub_type_name_1,   \
-                         sub_topic_name_2, sub_type_name_2, sub_topic_name_3,  \
-                         sub_type_name_3, test_data)                           \
-    call_sedp_reader(                                                          \
-        sedp_reader_tbl, app_reader_tbl, ip_addr, subnet_mask, port_num_seed,  \
-        guid_prefix, pub_topic_name, sizeof(pub_topic_name), pub_type_name,    \
-        sizeof(pub_type_name), sub_topic_name_0, sizeof(sub_topic_name_0),     \
-        sub_type_name_0, sizeof(sub_type_name_0), sub_topic_name_1,            \
-        sizeof(sub_topic_name_1), sub_type_name_1, sizeof(sub_type_name_1),    \
-        sub_topic_name_2, sizeof(sub_topic_name_2), sub_type_name_2,           \
-        sizeof(sub_type_name_2), sub_topic_name_3, sizeof(sub_topic_name_3),   \
-        sub_type_name_3, sizeof(sub_type_name_3), test_data,                   \
-        sizeof(test_data))
+#define CALL_SEDP_READER(test_data)                                            \
+    call_sedp_reader(sedp_reader_tbl, app_reader_tbl, conf.ip_addr,            \
+                     conf.subnet_mask, conf.port_num_seed, conf.guid_prefix,   \
+                     conf.pub_topic_name, conf.pub_topic_name_len,             \
+                     conf.pub_topic_type_name, conf.pub_topic_type_name_len,   \
+                     conf.sub_topic_name, conf.sub_topic_name_len,             \
+                     conf.sub_topic_type_name, conf.sub_topic_type_name_len,   \
+                     test_data, sizeof(test_data))
 
 #define CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_data)                          \
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,            \
-                     sub_type_name, empty_topic_name, empty_type_name,         \
-                     empty_topic_name, empty_type_name, empty_topic_name,      \
-                     empty_type_name, test_data)
+    do {                                                                       \
+        SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,          \
+                             sub_topic_name_0, sub_type_name_0);               \
+        CALL_SEDP_READER(test_data);                                           \
+    } while (0)
 
 int test_sedp_reader_2() {
     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
     app_endpoint  app_reader_tbl[APP_READER_MAX];
 
-    constexpr uint8_t  ip_addr[4] = {192, 168, 0, 4};
-    constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
-    constexpr uint16_t port_num_seed = 7400;
-    constexpr uint8_t  guid_prefix[GUID_PREFIX_SIZE] = {
-        0x01, 0x0f, 0x37, 0xad, 0xde, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
+    config_t conf = {
+        .ip_addr = {192, 168, 0, 4},
+        .subnet_mask = {255, 255, 255, 0},
+        .port_num_seed = 7400,
+        .guid_prefix = {0x01, 0x0f, 0x37, 0xad, 0xde, 0x09, 0x00, 0x00, 0x01,
+                    0x00, 0x00, 0x00}
+    };
 
-    constexpr uint8_t pub_topic_name[] = "rt/bbb";
-    constexpr uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
+    constexpr uint8_t pub_topic_name_0[] = "rt/bbb";
+    constexpr uint8_t pub_type_name_0[] = "std_msgs::msg::dds_::String_";
 
-    constexpr uint8_t sub_topic_name[] = "rt/aaa";
-    constexpr uint8_t sub_type_name[] = "std_msgs::msg::dds_::String_";
+    constexpr uint8_t sub_topic_name_0[] = "rt/aaa";
+    constexpr uint8_t sub_type_name_0[] = "std_msgs::msg::dds_::String_";
 
     constexpr uint8_t empty_topic_name[] = {};
     constexpr uint8_t empty_type_name[] = {};
@@ -646,222 +650,110 @@ int test_sedp_reader_2() {
     assert(sedp_reader_tbl[1].children == 1);
     assert(app_reader_tbl[0].alive);
 
-    // Test whether ROS2rapper finds a new subscriber (case 1).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    // Topic name and its length are different from the topic name of the
-    // message.
-    CALL_SEDP_READER(wrong_topic_name_1, pub_type_name, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_sub_data);
-    // ROS2rapper should not find a subscriber.
-    assert(!app_reader_tbl[0].alive);
-
-    // Test whether ROS2rapper finds a new subscriber (case 2).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    // Topic name is different from the topic name of the message, but their
-    // lengths are the same.
-    CALL_SEDP_READER(wrong_topic_name_2, pub_type_name, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_sub_data);
-    // ROS2rapper should not find a subscriber.
-    assert(!app_reader_tbl[0].alive);
-
-    // Test whether ROS2rapper finds a new subscriber (case 3).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    // Topic type name and its length are different from the topic type name of
-    // the message.
-    CALL_SEDP_READER(pub_topic_name, wrong_type_name_1, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_sub_data);
-    // ROS2rapper should not find a subscriber.
-    assert(!app_reader_tbl[0].alive);
-
-    // Test whether ROS2rapper finds a new subscriber (case 4).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    // Topic type name is different from the topic type name of the message, but
-    // their lengths are the same.
-    CALL_SEDP_READER(pub_topic_name, wrong_type_name_2, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_sub_data);
-    // ROS2rapper shoud not find a subscriber.
-    assert(!app_reader_tbl[0].alive);
-
-    // Test whether ROS2rapper finds a new subscriber (case 5).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    // Topic name and topic type name is matched.
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_sub_data);
-    // ROS2rapper should find a subscriber.
-    assert(app_reader_tbl[0].alive);
-    assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
-
-    // Test whether ros2rapper finds a new publisher of sub_topic_name (case 1).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, wrong_topic_name_1,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 2.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, wrong_topic_name_2,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 3.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,
-                     wrong_type_name_1, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 4.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,
-                     wrong_type_name_2, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 5.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, sub_topic_name,
-                     sub_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(app_reader_tbl[0].alive);
-    assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
-
-    // Test whether ros2rapper finds a new publisher of sub_topic_name_1 (case
-    // 1).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, wrong_topic_name_1, sub_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 2.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, wrong_topic_name_2, sub_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 3.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, sub_topic_name, wrong_type_name_1,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 4.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, sub_topic_name, wrong_type_name_2,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 5.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, sub_topic_name, sub_type_name,
-                     empty_topic_name, empty_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(app_reader_tbl[0].alive);
-    assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
-
-    // Test whether ros2rapper finds a new publisher of sub_topic_name_2 (case
-    // 1).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     wrong_topic_name_1, sub_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 2.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     wrong_topic_name_2, sub_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 3.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     sub_topic_name, wrong_type_name_1, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 4.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     sub_topic_name, wrong_type_name_2, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 5.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     sub_topic_name, sub_type_name, empty_topic_name,
-                     empty_type_name, test_sedp_reader_pub_data);
-    assert(app_reader_tbl[0].alive);
-    assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
-
-    // Test whether ros2rapper finds a new publisher of sub_topic_name_3 (case
-    // 1).
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, wrong_topic_name_1,
-                     sub_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 2.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, wrong_topic_name_2,
-                     sub_type_name, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 3.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, sub_topic_name,
-                     wrong_type_name_1, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 4.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, sub_topic_name,
-                     wrong_type_name_2, test_sedp_reader_pub_data);
-    assert(!app_reader_tbl[0].alive);
-    // Case 5.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
-    CALL_SEDP_READER(pub_topic_name, pub_type_name, empty_topic_name,
-                     empty_type_name, empty_topic_name, empty_type_name,
-                     empty_topic_name, empty_type_name, sub_topic_name,
-                     sub_type_name, test_sedp_reader_pub_data);
-    assert(app_reader_tbl[0].alive);
-    assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
-
     // Test whether sedp_reader finds a new subscriber when ROS2rapper gets a
     // message with padding.
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_sub_data_with_padding);
     assert(app_reader_tbl[0].alive);
 
-    setup_test_multi_topic_subscription(sedp_reader_tbl, app_reader_tbl);
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(
         test_sedp_reader_sub_data_with_nonzero_padding);
     assert(app_reader_tbl[0].alive);
+
+    // Test multi-topic publication
+    for (auto pub_id = 0; pub_id < 1; pub_id++) {
+        int sub_id = 0;
+        // Test whether ROS2rapper finds a new subscriber (case 1).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        // Topic name and its length are different from the topic name of the
+        // message.
+        SETUP_TOPIC_DATA_ALL(pub_id, wrong_topic_name_1, pub_type_name_0,
+                             sub_id, sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_sub_data);
+        // ROS2rapper should not find a subscriber.
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new subscriber (case 2).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        // Topic name is different from the topic name of the message, but their
+        // lengths are the same.
+        SETUP_TOPIC_DATA_ALL(pub_id, wrong_topic_name_2, pub_type_name_0,
+                             sub_id, sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_sub_data);
+        // ROS2rapper should not find a subscriber.
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new subscriber (case 3).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        // Topic type name and its length are different from the topic type name
+        // of the message.
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, wrong_type_name_1,
+                             sub_id, sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_sub_data);
+        // ROS2rapper should not find a subscriber.
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new subscriber (case 4).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        // Topic type name is different from the topic type name of the message,
+        // but their lengths are the same.
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, wrong_type_name_2,
+                             sub_id, sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_sub_data);
+        // ROS2rapper should not find a subscriber.
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new subscriber (case 5).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        // Topic name and topic type name is matched.
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_sub_data);
+        // ROS2rapper should find a subscriber.
+        assert(app_reader_tbl[0].alive);
+        assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
+    }
+
+    // Test multi-topic subscription
+    for (auto sub_id = 0; sub_id < SUB_TOPICS_MAX; sub_id++) {
+        int pub_id = 0;
+        // Test whether ROS2rapper finds a new publisher (case 1).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             wrong_topic_name_1, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_pub_data);
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new publisher (case 2).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             wrong_topic_name_2, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_pub_data);
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new publisher (case 3).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             sub_topic_name_0, wrong_type_name_1);
+        CALL_SEDP_READER(test_sedp_reader_pub_data);
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new publisher (case 4).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             sub_topic_name_0, wrong_type_name_2);
+        CALL_SEDP_READER(test_sedp_reader_pub_data);
+        assert(!app_reader_tbl[0].alive);
+
+        // Test whether ROS2rapper finds a new publisher (case 5).
+        setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+        SETUP_TOPIC_DATA_ALL(pub_id, pub_topic_name_0, pub_type_name_0, sub_id,
+                             sub_topic_name_0, sub_type_name_0);
+        CALL_SEDP_READER(test_sedp_reader_pub_data);
+        assert(app_reader_tbl[0].alive);
+        assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
+    }
 
     return 0;
 }
