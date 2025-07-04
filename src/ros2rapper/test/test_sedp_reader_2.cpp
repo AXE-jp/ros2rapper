@@ -662,7 +662,7 @@ int test_sedp_reader_2() {
     assert(app_reader_tbl[0].alive);
 
     // Test multi-topic publication
-    for (auto pub_id = 0; pub_id < 1; pub_id++) {
+    for (auto pub_id = 0; pub_id < PUB_TOPICS_MAX; pub_id++) {
         int sub_id = 0;
         // Test whether ROS2rapper finds a new subscriber (case 1).
         setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
@@ -713,6 +713,7 @@ int test_sedp_reader_2() {
         // ROS2rapper should find a subscriber.
         assert(app_reader_tbl[0].alive);
         assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
+        assert(app_reader_tbl[0].pub_topic_id == pub_id);
     }
 
     // Test multi-topic subscription
@@ -754,6 +755,42 @@ int test_sedp_reader_2() {
         assert(app_reader_tbl[0].alive);
         assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
     }
+
+    // Test whether ROS2rapper ignores a subscriber
+    // - whose topic name is the same as pub_topic_name[0] and different from
+    //   pub_topic_name[1],
+    // - and whose type name is the same as pub_topic_type_name[1] and different
+    //   from pub_topic_type_name[0].
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+    // setup topic data
+    SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
+                         wrong_topic_name_1, sub_type_name_0);
+    setup_topic_data(0, conf.pub_topic_name, conf.pub_topic_name_len,
+                     conf.pub_topic_type_name, conf.pub_topic_type_name_len,
+                     pub_topic_name_0, sizeof(pub_topic_name_0), NULL, 0);
+    setup_topic_data(1, conf.pub_topic_name, conf.pub_topic_name_len,
+                     conf.pub_topic_type_name, conf.pub_topic_type_name_len,
+                     NULL, 0, pub_type_name_0, sizeof(pub_type_name_0));
+    CALL_SEDP_READER(test_sedp_reader_sub_data);
+    assert(!app_reader_tbl[0].alive);
+
+    // Test whether ROS2rapper ignores a publisher
+    // - whose topic name is the same as sub_topic_name[0] and different from
+    //   sub_topic_name[1],
+    // - and whose type name is the same as sub_topic_type_name[1] and different
+    //   from sub_topic_type_name[0].
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
+    // setup topic data
+    SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
+                         wrong_topic_name_1, sub_type_name_0);
+    setup_topic_data(0, conf.sub_topic_name, conf.sub_topic_name_len,
+                     conf.sub_topic_type_name, conf.sub_topic_type_name_len,
+                     sub_topic_name_0, sizeof(sub_topic_name_0), NULL, 0);
+    setup_topic_data(1, conf.sub_topic_name, conf.sub_topic_name_len,
+                     conf.sub_topic_type_name, conf.sub_topic_type_name_len,
+                     NULL, 0, sub_type_name_0, sizeof(sub_type_name_0));
+    CALL_SEDP_READER(test_sedp_reader_pub_data);
+    assert(!app_reader_tbl[0].alive);
 
     return 0;
 }

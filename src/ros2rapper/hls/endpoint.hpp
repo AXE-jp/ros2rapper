@@ -15,6 +15,14 @@
 
 typedef hls_uint<3> sedp_reader_id_t;
 typedef hls_uint<3> app_reader_id_t;
+typedef hls_uint<2> pub_topic_id_t;
+
+static_assert(SEDP_READER_MAX <= 7,
+              "sedp_reader_id_t should be able to represent SEDP_READER_MAX.");
+static_assert(APP_READER_MAX <= 7,
+              "app_reader_id_t should be able to represent APP_READER_MAX.");
+static_assert(PUB_TOPICS_MAX <= 4,
+              "pub_topic_id_t should be able to represent PUB_TOPICS_MAX - 1.");
 
 struct sedp_endpoint {
     uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
@@ -49,12 +57,13 @@ const app_ep_type_t APP_EP_SUB
     = 0x02; // Application-defined Reader (ROS2rapper is subscriber)
 
 struct app_endpoint {
-    uint8_t       ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t       udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t       guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t       entity_id[4] /* Cyber array=EXPAND, array_index=const */;
-    app_ep_type_t app_ep_type;
-    bool          alive;
+    uint8_t        ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t        udp_port[2] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t        guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t        entity_id[4] /* Cyber array=EXPAND, array_index=const */;
+    app_ep_type_t  app_ep_type;
+    pub_topic_id_t pub_topic_id;
+    bool           alive;
 };
 
 #endif // !ENDPOINT_HPP
