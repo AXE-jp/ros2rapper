@@ -104,7 +104,8 @@ int test_sedp_reader_heartbeat() {
 
     app_endpoint app_reader_tbl[APP_READER_MAX];
 
-    hls_uint<1> enable = 1;
+    hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
 
     const uint16_t port_num_seed = 7400;
 
@@ -153,11 +154,11 @@ int test_sedp_reader_heartbeat() {
         }
         in.write(x);
 
-        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
-                    subnet_mask, port_num_seed, own_guid_prefix, pub_topic_name,
-                    pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name, sub_topic_name_len, sub_type_name,
-                    sub_type_name_len);
+        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+                    ip_addr, subnet_mask, port_num_seed, own_guid_prefix,
+                    pub_topic_name, pub_topic_name_len, pub_type_name,
+                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
+                    sub_type_name, sub_type_name_len);
     }
 
     unsigned int sedp_reader_cnt = 0;

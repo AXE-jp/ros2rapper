@@ -106,7 +106,8 @@ enum {
 /* Cyber func=inline */
 void sedp_reader(
     hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> enable,
+    app_endpoint             app_reader_tbl[APP_READER_MAX],
+    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
     uint16_t port_num_seed, const uint8_t guid_prefix[12],
     const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
@@ -149,7 +150,7 @@ void sedp_reader(
     static uint16_t udp_port;
     static uint32_t sp_len;
 
-    if (!enable) {
+    if ((pub_enable == 0) && (sub_enable == 0)) {
         return;
     }
 
@@ -470,7 +471,7 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
-                        if ((sp_len != pub_topic_name_len[j])
+                        if (!pub_enable[j] || (sp_len != pub_topic_name_len[j])
                             || ((offset < sp_len + 4)
                                 && (pub_topic_name[j][offset - 4] != data))) {
                             pub_topics_unmatched
@@ -484,7 +485,7 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
-                        if ((sp_len != sub_topic_name_len[j])
+                        if (!sub_enable[j] || (sp_len != sub_topic_name_len[j])
                             || ((offset < sp_len + 4)
                                 && (sub_topic_name[j][offset - 4] != data))) {
                             sub_topics_unmatched
@@ -523,7 +524,7 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
-                        if ((sp_len != pub_type_name_len[j])
+                        if (!pub_enable[j] || (sp_len != pub_type_name_len[j])
                             || ((offset < sp_len + 4)
                                 && (pub_type_name[j][offset - 4] != data))) {
                             pub_types_unmatched
@@ -537,7 +538,7 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
-                        if ((sp_len != sub_type_name_len[j])
+                        if (!sub_enable[j] || (sp_len != sub_type_name_len[j])
                             || ((offset < sp_len + 4)
                                 && (sub_type_name[j][offset - 4] != data))) {
                             sub_types_unmatched

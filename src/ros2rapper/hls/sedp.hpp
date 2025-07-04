@@ -47,7 +47,8 @@ find_living_app_endpoints(const app_endpoint tbl[APP_READER_MAX]);
 
 void sedp_reader(
     hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
+    app_endpoint             reader_tbl[APP_READER_MAX],
+    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
     uint16_t port_num_seed, const uint8_t guid_prefix[12],
     const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],

@@ -94,10 +94,10 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 static void ros2_in(
     hls_stream<uint8_t> &in, uint32_t rawudp_rxbuf[],
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
-    hls_uint<SUB_TOPICS_MAX> sub_enable, const config_t *conf,
-    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
+    sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+    app_endpoint             app_reader_tbl[APP_READER_MAX],
+    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
+    const config_t *conf, VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
     VOLATILE uint8_t *sub_app_data_req, VOLATILE uint8_t *sub_app_data_rel,
     VOLATILE uint8_t *sub_app_data_grant,
     uint8_t sub_app_data[MAX_APP_DATA_LEN], VOLATILE uint8_t *sub_app_data_len,
@@ -122,7 +122,7 @@ static void ros2_in(
 #pragma HLS stream variable = s2 depth = 2
 #pragma HLS stream variable = s3 depth = 2
 
-    hls_uint<1> enable = pub_enable | (sub_enable != 0);
+    hls_uint<1> enable = (pub_enable != 0) || (sub_enable != 0);
 
     hls_uint<9> x;
 
@@ -145,12 +145,13 @@ static void ros2_in(
     spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
                 conf->port_num_seed, timestamp_i64);
 
-    sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, conf->ip_addr,
-                conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
-                conf->pub_topic_name, conf->pub_topic_name_len,
-                conf->pub_topic_type_name, conf->pub_topic_type_name_len,
-                conf->sub_topic_name, conf->sub_topic_name_len,
-                conf->sub_topic_type_name, conf->sub_topic_type_name_len);
+    sedp_reader(x, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+                conf->ip_addr, conf->subnet_mask, conf->port_num_seed,
+                conf->guid_prefix, conf->pub_topic_name,
+                conf->pub_topic_name_len, conf->pub_topic_type_name,
+                conf->pub_topic_type_name_len, conf->sub_topic_name,
+                conf->sub_topic_name_len, conf->sub_topic_type_name,
+                conf->sub_topic_type_name_len);
 
     if (sub_enable != 0) {
         app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,
@@ -1295,9 +1296,9 @@ void ros2(
     static bool reading_rtps_message;
 
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
-            pub_enable[0], sub_enable, conf, sub_app_data_recv,
-            sub_app_data_req, sub_app_data_rel, sub_app_data_grant,
-            sub_app_data, sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
+            pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
+            sub_app_data_rel, sub_app_data_grant, sub_app_data,
+            sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
             udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
             timestamp_i64, xout);
 
