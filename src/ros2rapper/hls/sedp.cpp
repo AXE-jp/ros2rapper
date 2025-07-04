@@ -95,10 +95,10 @@ void sedp_reader(
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> enable,
     const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
     uint16_t port_num_seed, const uint8_t guid_prefix[12],
-    const uint8_t pub_topic_name[MAX_TOPIC_NAME_LEN],
-    uint8_t       pub_topic_name_len,
-    const uint8_t pub_type_name[MAX_TOPIC_TYPE_NAME_LEN],
-    uint8_t       pub_type_name_len,
+    const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t pub_topic_name_len[PUB_TOPICS_MAX],
+    const uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t pub_type_name_len[PUB_TOPICS_MAX],
     const uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
     const uint8_t sub_topic_name_len[SUB_TOPICS_MAX],
     const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
@@ -444,11 +444,11 @@ void sedp_reader(
                 }
             } else {
                 if (ep_type & BUILTIN_EP_SUB) {
-                    if (sp_len != pub_topic_name_len) {
+                    if (sp_len != pub_topic_name_len[0]) {
                         flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
                     }
                     if (offset < sp_len + 4) {
-                        if (pub_topic_name[offset - 4] != data) {
+                        if (pub_topic_name[0][offset - 4] != data) {
                             flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
                         }
                     }
@@ -492,11 +492,11 @@ void sedp_reader(
                 }
             } else {
                 if (ep_type & BUILTIN_EP_SUB) {
-                    if (sp_len != pub_type_name_len) {
+                    if (sp_len != pub_type_name_len[0]) {
                         flags |= hls_uint<5>(FLAGS_UNMATCH_TYPE);
                     }
                     if (offset < sp_len + 4) {
-                        if (pub_type_name[offset - 4] != data) {
+                        if (pub_type_name[0][offset - 4] != data) {
                             flags |= hls_uint<5>(FLAGS_UNMATCH_TYPE);
                         }
                     }

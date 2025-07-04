@@ -108,18 +108,31 @@ int test_sedp_reader_heartbeat() {
 
     const uint16_t port_num_seed = 7400;
 
-    const uint8_t pub_topic_name[] = "rt/fpgapubtest";
-    const uint8_t pub_topic_name_len = sizeof(pub_topic_name);
-    const uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
-    const uint8_t pub_type_name_len = sizeof(pub_type_name);
+    const uint8_t pub_topic_name_0[] = "rt/fpgapubtest";
+    const uint8_t pub_type_name_0[] = "std_msgs::msg::dds_::String_";
 
     const uint8_t sub_topic_name_0[] = "rt/fpgapubtest";
     const uint8_t sub_type_name_0[] = "std_msgs::msg::dds_::String_";
+
+    uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
+    uint8_t pub_topic_name_len[PUB_TOPICS_MAX];
+    uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
+    uint8_t pub_type_name_len[PUB_TOPICS_MAX];
 
     uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
     uint8_t sub_topic_name_len[SUB_TOPICS_MAX];
     uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
     uint8_t sub_type_name_len[SUB_TOPICS_MAX];
+
+    setup_topic_data(0, pub_topic_name, pub_topic_name_len, pub_type_name,
+                     pub_type_name_len, pub_topic_name_0,
+                     sizeof(pub_topic_name_0), pub_type_name_0,
+                     sizeof(pub_type_name_0));
+
+    for (auto id = 1; id < PUB_TOPICS_MAX; id++) {
+        setup_topic_data(1, pub_topic_name, pub_topic_name_len, pub_type_name,
+                         pub_type_name_len, NULL, 0, NULL, 0);
+    }
 
     setup_topic_data(0, sub_topic_name, sub_topic_name_len, sub_type_name,
                      sub_type_name_len, sub_topic_name_0,

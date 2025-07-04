@@ -365,10 +365,10 @@ static void call_sedp_reader(
             x |= hls_uint<9>(0x100);
         }
         sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
-                    subnet_mask, port_num_seed, guid_prefix, pub_topic_name[0],
-                    pub_topic_name_len[0], pub_type_name[0],
-                    pub_type_name_len[0], sub_topic_name, sub_topic_name_len,
-                    sub_type_name, sub_type_name_len);
+                    subnet_mask, port_num_seed, guid_prefix, pub_topic_name,
+                    pub_topic_name_len, pub_type_name, pub_type_name_len,
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
 }
 

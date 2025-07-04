@@ -104,12 +104,6 @@ static void ros2_in(
     VOLATILE uint16_t *sub_app_data_rep_id, VOLATILE uint8_t *rawudp_rxbuf_rel,
     VOLATILE uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
     bool *reading_rtps_message, int64_t timestamp_i64, hls_uint<9> *xout) {
-#pragma HLS array_partition complete variable = conf->sub_topic_name dim = 1
-#pragma HLS array_partition complete variable = conf->sub_topic_name_len dim = 1
-#pragma HLS array_partition complete variable = conf->sub_topic_type_name dim  \
-    = 1
-#pragma HLS array_partition complete variable                                  \
-    = conf->sub_topic_type_name_len  dim = 1
 
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
@@ -153,8 +147,8 @@ static void ros2_in(
 
     sedp_reader(x, sedp_reader_tbl, app_reader_tbl, enable, conf->ip_addr,
                 conf->subnet_mask, conf->port_num_seed, conf->guid_prefix,
-                conf->pub_topic_name[0], conf->pub_topic_name_len[0],
-                conf->pub_topic_type_name[0], conf->pub_topic_type_name_len[0],
+                conf->pub_topic_name, conf->pub_topic_name_len,
+                conf->pub_topic_type_name, conf->pub_topic_type_name_len,
                 conf->sub_topic_name, conf->sub_topic_name_len,
                 conf->sub_topic_type_name, conf->sub_topic_type_name_len);
 
