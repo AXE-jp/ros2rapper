@@ -34,6 +34,7 @@ struct sedp_endpoint {
     uint8_t     builtin_subrd_wr_seqnum;
     uint8_t     builtin_subrd_rd_seqnum;
     bool        builtin_subrd_acknack_req;
+    int64_t     builtin_pubwr_lastsn;
     int64_t     builtin_subwr_lastsn;
     hls_uint<2> initial_send_counter;
     uint32_t    pub_heartbeat_cnt;
