@@ -21,7 +21,10 @@ setup(
     entry_points={
         'console_scripts': [
             'pub = py_pubsub.pub:main',
-            'sub = py_pubsub.sub:main',
+            'sub_0 = py_pubsub.sub_0:main',
+            'sub_1 = py_pubsub.sub_1:main',
+            'sub_2 = py_pubsub.sub_2:main',
+            'sub_3 = py_pubsub.sub_3:main',
         ],
     },
 )
