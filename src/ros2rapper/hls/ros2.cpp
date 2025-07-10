@@ -1128,7 +1128,7 @@ static void ros2_out(
                         app_writer_entity_id_list[3], tx_buf, app_seqnum, now);
                     break;
                 }
-                if (tx_progress == (SEDP_READER_MAX - 1)) {
+                if (tx_progress == (APP_READER_MAX - 1)) {
                     if (tx_topic_progress < (PUB_TOPICS_MAX - 1)) {
                         tx_topic_progress++;
                     } else {
