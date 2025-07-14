@@ -471,7 +471,11 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
-                        if (!pub_enable[j] || (sp_len != pub_topic_name_len[j])
+                        if ( // This topic is disabled,
+                            !pub_enable[j]
+                            // or the topic name length is different,
+                            || (sp_len != pub_topic_name_len[j])
+                            // or the topic name has a different letter
                             || ((offset < sp_len + 4)
                                 && (pub_topic_name[j][offset - 4] != data))) {
                             pub_topics_unmatched
@@ -479,6 +483,8 @@ void sedp_reader(
                         }
                     }
                     if ((~pub_topics_unmatched & ~pub_types_unmatched) == 0) {
+                        // Every topic has an unmatched topic name or an
+                        // unmached type name.
                         flags |= hls_uint<5>(FLAGS_UNMATCH_TOPIC);
                     }
                 } else {
