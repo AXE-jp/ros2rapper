@@ -145,9 +145,9 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 VOLATILE uint8_t                  *sub_app_data_req,
                 VOLATILE uint8_t                  *sub_app_data_rel,
                 VOLATILE uint8_t                  *sub_app_data_grant,
-                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                VOLATILE uint8_t  *sub_app_data_len,
-                VOLATILE uint16_t *sub_app_data_rep_id) {
+                uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
+                VOLATILE app_data_len_t *sub_app_data_len,
+                VOLATILE uint16_t       *sub_app_data_rep_id) {
 #pragma HLS inline
 
     static hls_uint<3> state;

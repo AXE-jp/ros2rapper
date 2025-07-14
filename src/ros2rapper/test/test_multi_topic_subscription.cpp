@@ -1,6 +1,8 @@
-#include "app.hpp"
 #include <cassert>
 #include <iostream>
+
+#include "app.hpp"
+#include "ros2.hpp"
 
 // The recipient's reader entity ID: {0x00, 0x00, 0x10, 0x04}.
 constexpr uint8_t app_reader_test_data_0[] = {
@@ -99,7 +101,7 @@ static void call_app_reader(
     const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][GUID_ENTITYID_SIZE],
     hls_uint<SUB_TOPICS_MAX>  sub_enable,
     hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-    uint8_t sub_app_data[MAX_APP_DATA_LEN], uint8_t *sub_app_data_len,
+    uint8_t sub_app_data[MAX_APP_DATA_LEN], app_data_len_t *sub_app_data_len,
     uint16_t *sub_app_data_rep_id, const uint8_t test_data[],
     size_t test_data_len) {
     uint8_t sub_app_data_req, sub_app_data_rel;
@@ -118,8 +120,8 @@ static void call_app_reader(
 
 static int check_app_reader(hls_uint<SUB_TOPICS_MAX> sub_enable,
                             hls_uint<SUB_TOPICS_MAX> sub_app_data_recv,
-                            const uint8_t sub_app_data[MAX_APP_DATA_LEN],
-                            uint8_t       sub_app_data_len,
+                            const uint8_t  sub_app_data[MAX_APP_DATA_LEN],
+                            app_data_len_t sub_app_data_len,
                             hls_uint<SUB_TOPICS_MAX> flag,
                             const uint8_t            test_data[],
                             uint8_t                  test_data_payload_len,
@@ -184,9 +186,9 @@ static int test_app_reader() {
     hls_uint<SUB_TOPICS_MAX> sub_enable;
     hls_uint<SUB_TOPICS_MAX> sub_app_data_recv;
 
-    uint8_t  sub_app_data[MAX_APP_DATA_LEN];
-    uint8_t  sub_app_data_len;
-    uint16_t sub_app_data_rep_id;
+    uint8_t        sub_app_data[MAX_APP_DATA_LEN];
+    app_data_len_t sub_app_data_len;
+    uint16_t       sub_app_data_rep_id;
 
     unsigned int n_sub_enable_patterns = (1 << SUB_TOPICS_MAX);
     for (unsigned int sub_enable_pattern = 0;

@@ -7,9 +7,10 @@
 `include "ros2_config.vh"
 `include "ros2_ether_config.vh"
 
-module top (
+module ros2_module (
     input  wire       clk,
     input  wire       rst_n,
+    input  wire       clk_25mhz,
 
     output wire       phy_ref_clk,
     input  wire       phy_rx_clk,
@@ -21,83 +22,25 @@ module top (
     output wire       phy_tx_en,
     output wire       phy_rst_n,
 
-    output wire       led4,
-    output wire       led5,
-    output wire       led6,
-    output wire       led7
+    output reg        led4,
+    output reg        led5,
+
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
+    input  wire ros2_pub_app_data_ap_vld,
+    output wire ros2_pub_app_data_ap_ack,
+    output reg  [15:0] pub_data_seed,
+
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
+    output wire ros2_sub_app_data_ce,
+    output wire ros2_sub_app_data_we,
+    output wire [7:0] ros2_sub_app_data_wdata,
+
+    input  wire sub_data_result,
+    input  wire sub_data_result_ap_vld,
+    output wire sub_data_result_ap_ack
 );
 
-    // --- Clock & Reset
-    wire clk_int;
-    wire clk_25mhz_int;
-    wire rst_n_int;
-    wire mmcm_locked;
-    wire mmcm_clkfb;
-
-    assign phy_ref_clk = clk_25mhz_int;
-
-    MMCME2_BASE #(
-        .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
-        .CLKOUT0_DUTY_CYCLE(0.5),
-        .CLKOUT0_PHASE(0),
-        .CLKOUT1_DIVIDE(40),
-        .CLKOUT1_DUTY_CYCLE(0.5),
-        .CLKOUT1_PHASE(0),
-        .CLKOUT2_DIVIDE(1),
-        .CLKOUT2_DUTY_CYCLE(0.5),
-        .CLKOUT2_PHASE(0),
-        .CLKOUT3_DIVIDE(1),
-        .CLKOUT3_DUTY_CYCLE(0.5),
-        .CLKOUT3_PHASE(0),
-        .CLKOUT4_DIVIDE(1),
-        .CLKOUT4_DUTY_CYCLE(0.5),
-        .CLKOUT4_PHASE(0),
-        .CLKOUT5_DIVIDE(1),
-        .CLKOUT5_DUTY_CYCLE(0.5),
-        .CLKOUT5_PHASE(0),
-        .CLKOUT6_DIVIDE(1),
-        .CLKOUT6_DUTY_CYCLE(0.5),
-        .CLKOUT6_PHASE(0),
-        .CLKFBOUT_MULT_F(10),
-        .CLKFBOUT_PHASE(0),
-        .DIVCLK_DIVIDE(1),
-        .REF_JITTER1(0.010),
-        .CLKIN1_PERIOD(10.0),
-        .STARTUP_WAIT("FALSE"),
-        .CLKOUT4_CASCADE("FALSE")
-    )
-    clk_mmcm_inst (
-        .CLKIN1(clk),
-        .CLKFBIN(mmcm_clkfb),
-        .RST(~rst_n),
-        .PWRDWN(1'b0),
-        .CLKOUT0(clk_int),
-        .CLKOUT0B(),
-        .CLKOUT1(clk_25mhz_int),
-        .CLKOUT1B(),
-        .CLKOUT2(),
-        .CLKOUT2B(),
-        .CLKOUT3(),
-        .CLKOUT3B(),
-        .CLKOUT4(),
-        .CLKOUT5(),
-        .CLKOUT6(),
-        .CLKFBOUT(mmcm_clkfb),
-        .CLKFBOUTB(),
-        .LOCKED(mmcm_locked)
-    );
-
-    reg [3:0] sync_rst_reg;
-    assign rst_n_int = sync_rst_reg[3];
-
-    always @(posedge clk_int or negedge rst_n) begin
-        if (!rst_n) begin
-            sync_rst_reg <= 0;
-        end else begin
-            sync_rst_reg <= {sync_rst_reg[2:0], mmcm_locked};
-        end
-    end
+    assign phy_ref_clk = clk_25mhz;
 
     // --- Ethernet Configuration
     wire [47:0] mac_addr         = 48'h00_00_00_00_00_02;
@@ -111,72 +54,116 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- ROS2 Node Configuration
-    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
-    wire [7:0] ros2_node_name_len = 8'd19;
+    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor/";
+    wire [7:0] ros2_node_name_len = 8'd22;
     wire [15:0] ros2_node_udp_port = 16'd52000;
     wire [15:0] ros2_port_num_seed = 16'd7400;
     wire [31:0] ros2_fragment_expiration = 32'd3333333333;
     wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
 
     // --- ROS2 Pubisher Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "bbb/tr";
-    wire [7:0] ros2_pub_topic_name_len = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
-    reg [7:0] msg_number;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "cipot_elpmas/tr";
+    wire [7:0] ros2_pub_topic_name_len = 8'd16;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_215x61tniU::_sdd::gsm::sgsm_elpmas";
+    wire [7:0] ros2_pub_topic_type_name_len = 8'd36;
 
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
-    localparam [`ROS2_APP_DATA_LEN_WIDTH-1:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
+    localparam [`ROS2_APP_DATA_LEN_WIDTH:0] ROS2_PUB_APP_DATA_LEN = 16'd1024;
+
+    // --- ROS2 Subscriber Configuration
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "cipot_elpmas/tr";
+    wire [7:0] ros2_sub_topic_name_len = 8'd16;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_215x61tniU::_sdd::gsm::sgsm_elpmas";
+    wire [7:0] ros2_sub_topic_type_name_len = 8'd36;
+
+    localparam STATE_IDLE       = 0;
+    localparam STATE_WAIT_GRANT = 1;
+    localparam STATE_WAIT_VALID = 2;
+    reg [$clog2(STATE_WAIT_VALID+1)-1:0] pub_state;
+    reg [$clog2(STATE_WAIT_VALID+1)-1:0] sub_state;
 
     // --- ROS2 Publisher Message Control
-    reg ros2_pub_app_data_req;
-    reg ros2_pub_app_data_rel;
-    wire ros2_pub_app_data_grant;
-    reg [27:0] msg_change_counter;
-    always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n_int) begin
-            msg_number <= 8'd48; // '0'
-            ros2_pub_app_data_req <= 0;
-            ros2_pub_app_data_rel <= 0;
-            msg_change_counter <= 0;
-        end else begin
-            msg_change_counter <= msg_change_counter + 1;
-            ros2_pub_app_data_rel <= 0;
+    localparam COUNT_MAX = `ROS2CLK_HZ - 1;
+    reg [$clog2(COUNT_MAX+1)-1:0] count;
 
-            if (ros2_pub_app_data_req && ros2_pub_app_data_grant) begin
-                msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
-                ros2_pub_app_data_rel <= 1;
-                ros2_pub_app_data_req <= 0;
-                msg_change_counter <= 0;
-            end else if (msg_change_counter[27]) begin
-                ros2_pub_app_data_req <= 1;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            count <= COUNT_MAX;
+            pub_data_seed <= 16'd0;
+        end else begin
+            if (count == 0) begin
+                count <= COUNT_MAX;
+                pub_data_seed <= pub_data_seed + 1'b1;
+            end else begin
+                count <= count - 1'b1;
             end
         end
     end
 
-    // --- ROS2 Subscriber Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
-    wire [7:0] ros2_sub_topic_name_len = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
+    reg  ros2_pub_app_data_req;
+    wire ros2_pub_app_data_rel;
+    wire ros2_pub_app_data_grant;
 
-    // --- ROS2 Subscriber Received Message
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
-    wire ros2_sub_app_data_ce;
-    wire ros2_sub_app_data_we;
-    wire [7:0] ros2_sub_app_data_wdata;
-    reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
-    always @(posedge clk_int) begin
-        if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
-            rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
+    assign ros2_pub_app_data_ap_ack = (pub_state == STATE_WAIT_GRANT) & ros2_pub_app_data_grant;
+    assign ros2_pub_app_data_rel = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_vld;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            pub_state <= STATE_IDLE;
+            ros2_pub_app_data_req <= 1'b0;
+        end else begin
+            if (pub_state == STATE_WAIT_GRANT) begin
+                if (ros2_pub_app_data_grant) begin
+                    pub_state <= STATE_WAIT_VALID;
+                end
+            end else if (pub_state == STATE_WAIT_VALID) begin
+                if (ros2_pub_app_data_ap_vld) begin
+                    pub_state <= STATE_IDLE;
+                    ros2_pub_app_data_req <= 1'b0;
+                end
+            end else begin  // pub_state == STATE_IDLE
+                if (count == 0) begin
+                    pub_state <= STATE_WAIT_GRANT;
+                    ros2_pub_app_data_req <= 1'b1;
+                end
+            end
+        end
     end
-    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
-    wire [15:0] ros2_sub_app_data_rep_id;
-    assign led4 = rx_msg_reg[0][0];
-    assign led5 = rx_msg_reg[0][1];
-    assign led6 = rx_msg_reg[0][2];
-    assign led7 = rx_msg_reg[0][3];
+
+    // --- ROS2 Subscriber message control
+    reg  ros2_sub_app_data_req;
+    wire ros2_sub_app_data_rel;
+    wire ros2_sub_app_data_grant;
+    wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv;
+
+    assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant;
+    assign ros2_sub_app_data_rel = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sub_state <= STATE_IDLE;
+            ros2_sub_app_data_req <= 1'b0;
+            led4 <= 1'b0;
+            led5 <= 1'b0;
+        end else begin
+            if (sub_state == STATE_WAIT_GRANT) begin
+                if (ros2_sub_app_data_grant) begin
+                    sub_state <= STATE_WAIT_VALID;
+                end
+            end else if (sub_state == STATE_WAIT_VALID) begin
+                if (sub_data_result_ap_vld) begin
+                    sub_state <= STATE_IDLE;
+                    ros2_sub_app_data_req <= 1'b0;
+                    led4 <= sub_data_result;
+                    led5 <= ~sub_data_result;
+                end
+            end else begin  // sub_state == STATE_IDLE
+                if (ros2_sub_app_data_recv != 0) begin
+                    sub_state <= STATE_WAIT_GRANT;
+                    ros2_sub_app_data_req <= 1'b1;
+                end
+            end
+        end
+    end
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -188,8 +175,8 @@ module top (
         .DWIDTH(8)
     )
     payloadsmem (
-        .i_clk(clk_int),
-        .i_rst_n(rst_n_int),
+        .i_clk(clk),
+        .i_rst_n(rst_n),
         .i_cs_n(~payloadsmem_cs),
         .i_we_n(~payloadsmem_we),
         .i_wmask(4'b1111),
@@ -213,12 +200,12 @@ module top (
         .TX_PERIOD_APP_WR_COUNT     ((`ROS2CLK_HZ / PRESCALER_DIV) * 3)
     )
     ros2 (
-        .clk(clk_int),
-        .rst_n(rst_n_int),
+        .clk(clk),
+        .rst_n(rst_n),
 
         .ether_en(1'b1),
-        .ros2pub_en(4'b0001),
-        .ros2sub_en(4'b0001),
+        .ros2pub_en(1),
+        .ros2sub_en(1),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -310,12 +297,12 @@ module top (
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
         .ros2_sub_app_data_we(ros2_sub_app_data_we),
         .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len(ros2_sub_app_data_len),
-        .ros2_sub_app_data_rep_id(ros2_sub_app_data_rep_id),
-        .ros2_sub_app_data_req(1'b0),
-        .ros2_sub_app_data_rel(1'b0),
-        .ros2_sub_app_data_grant(),
-        .ros2_sub_app_data_recv(),
+        .ros2_sub_app_data_len(),
+        .ros2_sub_app_data_rep_id(),
+        .ros2_sub_app_data_req(ros2_sub_app_data_req),
+        .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
+        .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
+        .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
         .udp_rxbuf_rel(1'b1),
         .udp_rxbuf_grant(),

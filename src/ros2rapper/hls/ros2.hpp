@@ -4,14 +4,19 @@
 #ifndef ROS2_HPP
 #define ROS2_HPP
 
+#include "hls.hpp"
+#include <cstdint>
+
 #define MAX_NODE_NAME_LEN       32
 #define MAX_TOPIC_NAME_LEN      32
 #define MAX_TOPIC_TYPE_NAME_LEN 64
-#define MAX_APP_DATA_LEN        64
+#define MAX_APP_DATA_LEN        1024
+
+typedef hls_uint<11> app_data_len_t;
+static_assert(MAX_APP_DATA_LEN <= 2047,
+              "app_data_len_t should be able to represent MAX_APP_DATA_LEN.");
 
 #include "common.hpp"
-#include "hls.hpp"
-#include <cstdint>
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;
