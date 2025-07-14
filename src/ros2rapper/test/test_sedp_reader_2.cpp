@@ -793,7 +793,7 @@ int test_sedp_reader_2() {
     setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     // setup topic data
     SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
-                         wrong_topic_name_1, sub_type_name_0);
+                         sub_topic_name_0, sub_type_name_0);
     setup_topic_data(0, conf.pub_topic_name, conf.pub_topic_name_len,
                      conf.pub_topic_type_name, conf.pub_topic_type_name_len,
                      pub_topic_name_0, sizeof(pub_topic_name_0), NULL, 0);
@@ -811,7 +811,7 @@ int test_sedp_reader_2() {
     setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     // setup topic data
     SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
-                         wrong_topic_name_1, sub_type_name_0);
+                         sub_topic_name_0, sub_type_name_0);
     setup_topic_data(0, conf.sub_topic_name, conf.sub_topic_name_len,
                      conf.sub_topic_type_name, conf.sub_topic_type_name_len,
                      sub_topic_name_0, sizeof(sub_topic_name_0), NULL, 0);
