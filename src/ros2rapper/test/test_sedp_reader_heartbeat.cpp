@@ -131,7 +131,7 @@ int test_sedp_reader_heartbeat() {
                      sizeof(pub_type_name_0));
 
     for (auto id = 1; id < PUB_TOPICS_MAX; id++) {
-        setup_topic_data(1, pub_topic_name, pub_topic_name_len, pub_type_name,
+        setup_topic_data(id, pub_topic_name, pub_topic_name_len, pub_type_name,
                          pub_type_name_len, NULL, 0, NULL, 0);
     }
 
@@ -141,7 +141,7 @@ int test_sedp_reader_heartbeat() {
                      sizeof(sub_type_name_0));
 
     for (auto id = 1; id < SUB_TOPICS_MAX; id++) {
-        setup_topic_data(1, sub_topic_name, sub_topic_name_len, sub_type_name,
+        setup_topic_data(id, sub_topic_name, sub_topic_name_len, sub_type_name,
                          sub_type_name_len, NULL, 0, NULL, 0);
     }
 
