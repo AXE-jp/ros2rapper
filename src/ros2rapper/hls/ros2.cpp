@@ -399,7 +399,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         }                                                                      \
     } while (0)
 
-#define SEDP_PUB_HEARTBEAT_OUT(id, pub_enable)                                 \
+#define SEDP_PUB_HEARTBEAT_OUT(id)                                             \
     do {                                                                       \
         if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_heartbeat_out(                                                \
@@ -413,7 +413,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         }                                                                      \
     } while (0)
 
-#define SEDP_SUB_HEARTBEAT_OUT(id, sub_enable)                                 \
+#define SEDP_SUB_HEARTBEAT_OUT(id)                                             \
     do {                                                                       \
         if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_heartbeat_out(                                                \
@@ -915,16 +915,16 @@ static void ros2_out(
                 } else {
                     switch (tx_progress) {
                     case 0:
-                        SEDP_PUB_HEARTBEAT_OUT(0, pub_enable != 0);
+                        SEDP_PUB_HEARTBEAT_OUT(0);
                         break;
                     case 1:
-                        SEDP_PUB_HEARTBEAT_OUT(1, pub_enable != 0);
+                        SEDP_PUB_HEARTBEAT_OUT(1);
                         break;
                     case 2:
-                        SEDP_PUB_HEARTBEAT_OUT(2, pub_enable != 0);
+                        SEDP_PUB_HEARTBEAT_OUT(2);
                         break;
                     case 3:
-                        SEDP_PUB_HEARTBEAT_OUT(3, pub_enable != 0);
+                        SEDP_PUB_HEARTBEAT_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
                         cnt_reset_3: {
@@ -953,16 +953,16 @@ static void ros2_out(
                 } else {
                     switch (tx_progress) {
                     case 0:
-                        SEDP_SUB_HEARTBEAT_OUT(0, sub_enable != 0);
+                        SEDP_SUB_HEARTBEAT_OUT(0);
                         break;
                     case 1:
-                        SEDP_SUB_HEARTBEAT_OUT(1, sub_enable != 0);
+                        SEDP_SUB_HEARTBEAT_OUT(1);
                         break;
                     case 2:
-                        SEDP_SUB_HEARTBEAT_OUT(2, sub_enable != 0);
+                        SEDP_SUB_HEARTBEAT_OUT(2);
                         break;
                     case 3:
-                        SEDP_SUB_HEARTBEAT_OUT(3, sub_enable != 0);
+                        SEDP_SUB_HEARTBEAT_OUT(3);
                         if (tx_cnt_elapsed == 4) {
                             /* Cyber scheduling_block = non-transparent */
                         cnt_reset_4: {
