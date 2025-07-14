@@ -380,12 +380,14 @@ static void setup_topic_data_all(
     uint8_t sub_type_name_len_0) {
     for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
         if (j == pub_id) {
+            // Set designated data.
             setup_topic_data(j, conf->pub_topic_name, conf->pub_topic_name_len,
                              conf->pub_topic_type_name,
                              conf->pub_topic_type_name_len, pub_topic_name_0,
                              pub_topic_name_len_0, pub_type_name_0,
                              pub_type_name_len_0);
         } else {
+            // Set empty data.
             setup_topic_data(j, conf->pub_topic_name, conf->pub_topic_name_len,
                              conf->pub_topic_type_name,
                              conf->pub_topic_type_name_len, NULL, 0, NULL, 0);
@@ -393,12 +395,14 @@ static void setup_topic_data_all(
     }
     for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
         if (j == sub_id) {
+            // Set designated data.
             setup_topic_data(j, conf->sub_topic_name, conf->sub_topic_name_len,
                              conf->sub_topic_type_name,
                              conf->sub_topic_type_name_len, sub_topic_name_0,
                              sub_topic_name_len_0, sub_type_name_0,
                              sub_type_name_len_0);
         } else {
+            // Set empty data.
             setup_topic_data(j, conf->sub_topic_name, conf->sub_topic_name_len,
                              conf->sub_topic_type_name,
                              conf->sub_topic_type_name_len, NULL, 0, NULL, 0);
@@ -726,7 +730,7 @@ int test_sedp_reader_2() {
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
                 assert(app_reader_tbl[0].pub_topic_id == pub_id);
             } else {
-                // ROS2rapper should ignore disabled topic.
+                // ROS2rapper should ignore disabled topics.
                 assert(!app_reader_tbl[0].alive);
             }
         }
@@ -791,7 +795,6 @@ int test_sedp_reader_2() {
     // - and whose type name is the same as pub_topic_type_name[1] and different
     //   from pub_topic_type_name[0].
     setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
-    // setup topic data
     SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
                          sub_topic_name_0, sub_type_name_0);
     setup_topic_data(0, conf.pub_topic_name, conf.pub_topic_name_len,
@@ -809,7 +812,6 @@ int test_sedp_reader_2() {
     // - and whose type name is the same as sub_topic_type_name[1] and different
     //   from sub_topic_type_name[0].
     setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
-    // setup topic data
     SETUP_TOPIC_DATA_ALL(0, pub_topic_name_0, pub_type_name_0, 0,
                          sub_topic_name_0, sub_type_name_0);
     setup_topic_data(0, conf.sub_topic_name, conf.sub_topic_name_len,
