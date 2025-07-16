@@ -16,8 +16,6 @@
   //`define XILINX_CLKIN_STYLE_BUFIO2
 `endif
 
-`define UDP_RXBUF_AWIDTH 6
-`define UDP_TXBUF_AWIDTH 6
 
 `define MAC_TX_FIFO_DEPTH  2048
 `define MAC_RX_FIFO_DEPTH  2048
