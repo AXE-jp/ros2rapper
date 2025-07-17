@@ -133,7 +133,7 @@ module ros2_module (
     reg  ros2_sub_app_data_req;
     wire ros2_sub_app_data_rel;
     wire ros2_sub_app_data_grant;
-    wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv;
+    wire [3:0] ros2_sub_app_data_recv;
 
     assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant;
     assign ros2_sub_app_data_rel = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
