@@ -7,7 +7,7 @@
 `define ROS2_MAX_TOPIC_NAME_LEN       32
 `define ROS2_MAX_TOPIC_TYPE_NAME_LEN  64
 `define ROS2_MAX_APP_DATA_LEN         1024
-`define ROS2_APP_DATA_LEN_WIDTH       11
+`define ROS2_APP_DATA_LEN_WIDTH       ($clog2(`ROS2_MAX_APP_DATA_LEN+1))
 
 // `define ROS2_PUB_DATA_FF
 `define ROS2_PUB_DATA_RAM
