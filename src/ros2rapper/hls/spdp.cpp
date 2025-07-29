@@ -6,6 +6,7 @@
 #include "duration.hpp"
 #include "ip.hpp"
 #include "spdp.hpp"
+#include "util.hpp"
 
 /* Cyber func=inline */
 void compare_guid_prefix_of_sedp_endpoint(
@@ -641,9 +642,5 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 #error "not implemented!"
 #endif
 
-    /* Cyber unroll_times=all */
-    for (int i = SPDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SPDP_WRITER_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }

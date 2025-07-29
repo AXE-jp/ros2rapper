@@ -38,7 +38,7 @@ module top (
 
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
+        .CLKOUT0_DIVIDE_F(12.5),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -256,7 +256,14 @@ module top (
         .ros2_sub_topic_type_name_3(0),
         .ros2_sub_topic_type_name_len_3(0),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data(),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_addr(),
+        .ros2_pub_app_data_ce(),
+        .ros2_pub_app_data_rdata(0),
+`endif
         .ros2_pub_app_data_len(),
         .ros2_pub_app_data_req(1'b0),
         .ros2_pub_app_data_rel(1'b0),

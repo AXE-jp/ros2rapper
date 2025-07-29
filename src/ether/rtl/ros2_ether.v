@@ -74,7 +74,14 @@ module ros2_ether #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
+`ifdef ROS2_PUB_DATA_FF
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr,
+    output wire ros2_pub_app_data_ce,
+    input  wire [31:0] ros2_pub_app_data_rdata,
+`endif
     input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len,
     input  wire ros2_pub_app_data_req,
     input  wire ros2_pub_app_data_rel,
@@ -320,7 +327,14 @@ ros2rapper (
     .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
     .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
+`ifdef ROS2_PUB_DATA_FF
     .ros2_pub_app_data(ros2_pub_app_data),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    .ros2_pub_app_data_addr(ros2_pub_app_data_addr),
+    .ros2_pub_app_data_ce(ros2_pub_app_data_ce),
+    .ros2_pub_app_data_rdata(ros2_pub_app_data_rdata),
+`endif
     .ros2_pub_app_data_len(ros2_pub_app_data_len),
     .ros2_pub_app_data_req(ros2_pub_app_data_req),
     .ros2_pub_app_data_rel(ros2_pub_app_data_rel),

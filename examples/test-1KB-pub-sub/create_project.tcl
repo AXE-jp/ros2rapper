@@ -85,12 +85,16 @@ if {[string equal [get_ips -quiet blk_mem_gen_0] ""]} {
 if {[string equal [get_ips -quiet clk_wiz_0] ""]} {
     create_ip -name clk_wiz -vendor xilinx.com -library ip -version 6.0 -module_name clk_wiz_0
     set_property -dict [list \
+        CONFIG.CLKOUT1_JITTER {137.143} \
+        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {80.000} \
+        CONFIG.CLKOUT1_USED {true} \
         CONFIG.CLKOUT2_JITTER {175.402} \
         CONFIG.CLKOUT2_PHASE_ERROR {98.575} \
         CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {25.000} \
         CONFIG.CLKOUT2_USED {true} \
-        CONFIG.CLK_OUT1_PORT {clk_100MHz} \
+        CONFIG.CLK_OUT1_PORT {ros2_clk} \
         CONFIG.CLK_OUT2_PORT {clk_25MHz} \
+        CONFIG.MMCM_CLKOUT0_DIVIDE_F {12.500} \
         CONFIG.MMCM_CLKOUT1_DIVIDE {40} \
         CONFIG.NUM_OUT_CLKS {2} \
         CONFIG.PRIM_SOURCE {Global_buffer} \

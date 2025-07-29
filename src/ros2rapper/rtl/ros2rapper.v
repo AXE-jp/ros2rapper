@@ -72,7 +72,14 @@ module ros2rapper #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
+`ifdef ROS2_PUB_DATA_FF
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr,
+    output wire ros2_pub_app_data_ce,
+    input  wire [31:0] ros2_pub_app_data_rdata,
+`endif
     input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len,
     input  wire ros2_pub_app_data_req,
     input  wire ros2_pub_app_data_rel,
@@ -359,9 +366,16 @@ ros2 (
     .conf_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
     .conf_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
+`ifdef ROS2_PUB_DATA_FF
     .pub_app_data_dout(ros2_pub_app_data),
     .pub_app_data_empty_n(1'b1),
     .pub_app_data_read(),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    .pub_app_data_address0(ros2_pub_app_data_addr),
+    .pub_app_data_ce0(ros2_pub_app_data_ce),
+    .pub_app_data_q0(ros2_pub_app_data_rdata),
+`endif
     .pub_app_data_len_dout(ros2_pub_app_data_len),
     .pub_app_data_len_empty_n(1'b1),
     .pub_app_data_len_read(),
@@ -761,6 +775,7 @@ ros2 (
   .conf_sub_topic_type_name_3_62(ros2_sub_topic_type_name_3[503:496]), .conf_sub_topic_type_name_3_63(ros2_sub_topic_type_name_3[511:504]),
   .conf_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
+`ifdef ROS2_PUB_DATA_FF
   .pub_app_data_0000_rd(ros2_pub_app_data[7:0]),       .pub_app_data_0001_rd(ros2_pub_app_data[15:8]),
   .pub_app_data_0002_rd(ros2_pub_app_data[23:16]),     .pub_app_data_0003_rd(ros2_pub_app_data[31:24]),
   .pub_app_data_0004_rd(ros2_pub_app_data[39:32]),     .pub_app_data_0005_rd(ros2_pub_app_data[47:40]),
@@ -1273,6 +1288,12 @@ ros2 (
   .pub_app_data_1018_rd(ros2_pub_app_data[8151:8144]), .pub_app_data_1019_rd(ros2_pub_app_data[8159:8152]),
   .pub_app_data_1020_rd(ros2_pub_app_data[8167:8160]), .pub_app_data_1021_rd(ros2_pub_app_data[8175:8168]),
   .pub_app_data_1022_rd(ros2_pub_app_data[8183:8176]), .pub_app_data_1023_rd(ros2_pub_app_data[8191:8184]),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+  .pub_app_data_CS1(ros2_pub_app_data_ce),
+  .pub_app_data_AD1(ros2_pub_app_data_addr),
+  .pub_app_data_RD1(ros2_pub_app_data_rdata),
+`endif
   .pub_app_data_len_rreq(),
   .pub_app_data_len_empty(1'b0),
   .pub_app_data_len_dout(ros2_pub_app_data_len),

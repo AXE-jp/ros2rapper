@@ -9,6 +9,7 @@
 #include "rtps.hpp"
 #include "sedp.hpp"
 #include "spdp.hpp"
+#include "util.hpp"
 
 /* Cyber func=inline */
 void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
@@ -1079,11 +1080,7 @@ void sedp_writer(
 #error "not implemented!"
 #endif
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_WRITER_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 /* Cyber func=inline */
@@ -1175,11 +1172,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     buf[66] = L_BYTE2(cnt);
     buf[67] = L_BYTE3(cnt);
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_HEARTBEAT_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_HEARTBEAT_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 /* Cyber func=inline */
@@ -1269,9 +1262,5 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[66] = L_BYTE2(cnt);
     buf[67] = L_BYTE3(cnt);
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_ACKNACK_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_ACKNACK_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }

@@ -43,5 +43,5 @@ set_false_path -to [get_ports {phy_ref_clk phy_rst_n}]
 set_output_delay 0.000 [get_ports {phy_ref_clk phy_rst_n}]
 
 set_clock_groups -asynchronous \
-    -group {clk clk_100MHz_clk_wiz_0 clk_25MHz_clk_wiz_0} \
+    -group {clk ros2_clk_clk_wiz_0 clk_25MHz_clk_wiz_0} \
     -group {phy_rx_clk} -group {phy_tx_clk}

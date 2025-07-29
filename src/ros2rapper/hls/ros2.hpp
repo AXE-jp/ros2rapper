@@ -4,7 +4,6 @@
 #ifndef ROS2_HPP
 #define ROS2_HPP
 
-#include "common.hpp"
 #include "hls.hpp"
 #include <cstdint>
 
@@ -16,6 +15,9 @@
 typedef hls_uint<11> app_data_len_t;
 static_assert(MAX_APP_DATA_LEN <= 2047,
               "app_data_len_t should be able to represent MAX_APP_DATA_LEN.");
+
+// #define PUB_DATA_FF
+#define PUB_DATA_RAM
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;

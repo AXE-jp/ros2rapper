@@ -69,6 +69,20 @@ module ros2_module (
 
     localparam [`ROS2_APP_DATA_LEN_WIDTH:0] ROS2_PUB_APP_DATA_LEN = 16'd1024;
 
+`ifdef ROS2_PUB_DATA_RAM
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr;
+    wire ros2_pub_app_data_ce;
+    reg  [31:0] ros2_pub_app_data_rdata;
+    integer i;
+    always @(posedge clk) begin
+        if (ros2_pub_app_data_ce) begin
+            for (i = 0; i < 32; i = i + 1) begin
+                ros2_pub_app_data_rdata[i] <= ros2_pub_app_data[32*ros2_pub_app_data_addr + i];
+            end
+        end
+    end
+`endif
+
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "cipot_elpmas/tr";
     wire [7:0] ros2_sub_topic_name_len = 8'd16;
@@ -254,7 +268,14 @@ module ros2_module (
         .ros2_sub_topic_type_name_3(0),
         .ros2_sub_topic_type_name_len_3(0),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data(ros2_pub_app_data),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_addr(ros2_pub_app_data_addr),
+        .ros2_pub_app_data_ce(ros2_pub_app_data_ce),
+        .ros2_pub_app_data_rdata(ros2_pub_app_data_rdata),
+`endif
         .ros2_pub_app_data_len(ROS2_PUB_APP_DATA_LEN),
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),

@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2025 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include <cstdint>
 
 void hls_sub(uint16_t sub_app_data[512], bool *sub_data_result)
