@@ -906,16 +906,16 @@ module ros2rapper_tx_counters #
     output wire o_cnt_app_wr_elapsed
 );
     // Counters for ROS2rapper TX scheduler
-    reg [$clog2(PRESCALER_DIV              )-1:0] cnt_prescaler;
-    reg [$clog2(TX_INTERVAL_COUNT          )-1:0] cnt_interval;
-    reg [$clog2(TX_PERIOD_SPDP_WR_COUNT    )-1:0] cnt_spdp_wr;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_WR_COUNT)-1:0] cnt_sedp_pub_wr;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_WR_COUNT)-1:0] cnt_sedp_sub_wr;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_HB_COUNT)-1:0] cnt_sedp_pub_hb;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_HB_COUNT)-1:0] cnt_sedp_sub_hb;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_AN_COUNT)-1:0] cnt_sedp_pub_an;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_AN_COUNT)-1:0] cnt_sedp_sub_an;
-    reg [$clog2(TX_PERIOD_APP_WR_COUNT     )-1:0] cnt_app_wr;
+    reg [$clog2(PRESCALER_DIV                )-1:0] cnt_prescaler;
+    reg [$clog2(TX_INTERVAL_COUNT          +1)-1:0] cnt_interval;
+    reg [$clog2(TX_PERIOD_SPDP_WR_COUNT    +1)-1:0] cnt_spdp_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_WR_COUNT+1)-1:0] cnt_sedp_pub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_WR_COUNT+1)-1:0] cnt_sedp_sub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_HB_COUNT+1)-1:0] cnt_sedp_pub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_HB_COUNT+1)-1:0] cnt_sedp_sub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_AN_COUNT+1)-1:0] cnt_sedp_pub_an;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_AN_COUNT+1)-1:0] cnt_sedp_sub_an;
+    reg [$clog2(TX_PERIOD_APP_WR_COUNT     +1)-1:0] cnt_app_wr;
 
     assign o_cnt_interval_elapsed    = (cnt_interval == 0);
     assign o_cnt_spdp_wr_elapsed     = (cnt_spdp_wr == 0);
