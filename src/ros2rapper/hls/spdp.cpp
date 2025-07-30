@@ -317,7 +317,8 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
-                 uint8_t buf[], const uint8_t entity_name[MAX_NODE_NAME_LEN],
+                 duration lease_duration, uint8_t buf[],
+                 const uint8_t entity_name[MAX_NODE_NAME_LEN],
                  uint8_t entity_name_len, timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
@@ -344,8 +345,6 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
 #pragma HLS array_partition variable = writer_entity_id complete dim = 0
 #pragma HLS array_partition variable = reader_entity_id complete dim = 0
 #pragma HLS array_partition variable = participant_entity_id complete dim = 0
-
-    static const duration lease_duration = {20, 0};
 
     static const uint32_t endpoint_set
         = ENDPOINT_PARTICIPANT_ANNOUNCER | ENDPOINT_PARTICIPANT_DETECTOR

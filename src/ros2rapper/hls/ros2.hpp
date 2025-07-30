@@ -5,6 +5,7 @@
 #define ROS2_HPP
 
 #include "common.hpp"
+#include "duration.hpp"
 #include "hls.hpp"
 #include <cstdint>
 
@@ -23,6 +24,7 @@ typedef struct {
     uint16_t port_num_seed;
     uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    duration participant_lease_duration;
     uint8_t  pub_topic_name
         [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
     uint8_t pub_topic_name_len;
