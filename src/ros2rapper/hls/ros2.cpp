@@ -465,14 +465,14 @@ void APP_WRITER_OUT(
         && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)) {
 
         uint8_t grant;
-        /* Cyber scheduling_block = non-transparent */
-        app_data_request_section: {
+    /* Cyber scheduling_block = non-transparent */
+    app_data_request_section: {
 #pragma HLS protocol fixed
-            *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
-            CLOCK_BOUNDARY;
-            CLOCK_BOUNDARY;
-            grant = *pub_app_data_grant;
-        }
+        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
+        CLOCK_BOUNDARY;
+        CLOCK_BOUNDARY;
+        grant = *pub_app_data_grant;
+    }
 
         if (grant) {
             app_writer_out(
@@ -482,15 +482,15 @@ void APP_WRITER_OUT(
                 conf->node_udp_port, conf->guid_prefix, pub_app_data,
                 pub_app_data_len, now);
 
-            /* Cyber scheduling_block = non-transparent */
-            app_data_release_section: {
+        /* Cyber scheduling_block = non-transparent */
+        app_data_release_section: {
 #pragma HLS protocol fixed
-                CLOCK_BOUNDARY;
-                *pub_app_data_rel
-                    = 0 /* write dummy value to assert valid signal */;
-                CLOCK_BOUNDARY;
-                CLOCK_BOUNDARY;
-            }
+            CLOCK_BOUNDARY;
+            *pub_app_data_rel
+                = 0 /* write dummy value to assert valid signal */;
+            CLOCK_BOUNDARY;
+            CLOCK_BOUNDARY;
+        }
         }
     }
 }
@@ -1088,24 +1088,36 @@ void ros2(
     hls_uint<1>              pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    VOLATILE const uint8_t   pub_app_data
-        [MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared, volatile=YES */,
-    VOLATILE const uint8_t *pub_app_data_len /* Cyber port_mode=cw_fifo, volatile=YES */,
-    uint8_t                 sub_app_data
+    VOLATILE const uint8_t
+        pub_app_data[MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared,
+                                          volatile=YES */
+    ,
+    VOLATILE const uint8_t
+           *pub_app_data_len /* Cyber port_mode=cw_fifo, volatile=YES */,
+    uint8_t sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE uint8_t *sub_app_data_len /* Cyber volatile=YES*/, VOLATILE uint16_t *sub_app_data_rep_id /* Cyber volatile=YES*/,
-    VOLATILE uint8_t *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *pub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t  *sub_app_data_len /* Cyber volatile=YES*/,
+    VOLATILE uint16_t *sub_app_data_rep_id /* Cyber volatile=YES*/,
+    VOLATILE uint8_t
+        *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+            *pub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
-                     *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *sub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
+            *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *sub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *udp_rxbuf_grant /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *udp_rxbuf_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *udp_txbuf_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *udp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *udp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
 
     hls_uint<1> cnt_interval_elapsed /* Cyber port_mode=in */,
     hls_uint<1> cnt_spdp_wr_elapsed /* Cyber port_mode=in */,
@@ -1117,14 +1129,22 @@ void ros2(
     hls_uint<1> cnt_sedp_sub_an_elapsed /* Cyber port_mode=in */,
     hls_uint<1> cnt_app_wr_elapsed /* Cyber port_mode=in */,
 
-    VOLATILE uint8_t *cnt_interval_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_spdp_wr_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_pub_wr_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_sub_wr_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_pub_hb_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_sub_hb_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_pub_an_set /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *cnt_sedp_sub_an_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_interval_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_spdp_wr_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_pub_wr_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_sub_wr_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_pub_hb_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_sub_hb_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_pub_an_set /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_sedp_sub_an_set /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *cnt_app_wr_set /* Cyber port_mode=shared, volatile=YES */,
 
     int64_t timestamp_i64 /* Cyber port_mode=in */, hls_uint<9> *xout) {
