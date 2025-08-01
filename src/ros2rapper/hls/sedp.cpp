@@ -1140,7 +1140,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     buf[34] = reader_guid_prefix[10];
     buf[35] = reader_guid_prefix[11];
     buf[36] = SBM_ID_HEARTBEAT;
-    buf[37] = sbm_flags;
+    buf[37] = sbm_flags | SBM_FLAGS_FINAL;
     buf[38] = S_BYTE0(SBM_HEARTBEAT_DATA_SIZE);
     buf[39] = S_BYTE1(SBM_HEARTBEAT_DATA_SIZE);
     buf[40] = reader_entity_id[0];
@@ -1227,7 +1227,7 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[34] = reader_guid_prefix[10];
     buf[35] = reader_guid_prefix[11];
     buf[36] = SBM_ID_ACKNACK;
-    buf[37] = sbm_flags;
+    buf[37] = sbm_flags | SBM_FLAGS_FINAL;
     buf[38] = S_BYTE0(SBM_ACKNACK_DATA_SIZE);
     buf[39] = S_BYTE1(SBM_ACKNACK_DATA_SIZE);
     buf[40] = reader_entity_id[0];

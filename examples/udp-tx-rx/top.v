@@ -230,6 +230,8 @@ module top (
         .ros2_port_num_seed(0),
         .ros2_fragment_expiration(0),
         .ros2_guid_prefix(0),
+        .ros2_participant_lease_duration_seconds(0),
+        .ros2_participant_lease_duration_fraction(0),
 
         .ros2_pub_topic_name(0),
         .ros2_pub_topic_name_len(0),

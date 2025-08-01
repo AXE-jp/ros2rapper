@@ -198,7 +198,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
                    tx_buf.buf + IP_HDR_SIZE);
 
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
-                conf->ip_addr, default_port,
+                conf->ip_addr, default_port, conf->participant_lease_duration,
                 tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
                 conf->node_name_len, now);
 
@@ -1176,6 +1176,11 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
+#pragma HLS disaggregate             variable = conf->participant_lease_duration
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.seconds
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.fraction
 #pragma HLS array_reshape variable = conf->pub_topic_name type = complete dim  \
     = 0
 #pragma HLS interface mode = ap_none port = conf->pub_topic_name
