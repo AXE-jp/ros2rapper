@@ -117,6 +117,8 @@ module top (
     wire [15:0] ros2_port_num_seed = 16'd7400;
     wire [31:0] ros2_fragment_expiration = 32'd3333333333;
     wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
+    wire [31:0] ros2_participant_lease_duration_seconds = 32'd20;
+    wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
 
     // --- ROS2 Pubisher Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "bbb/tr";
@@ -241,6 +243,8 @@ module top (
         .ros2_port_num_seed(ros2_port_num_seed),
         .ros2_fragment_expiration(ros2_fragment_expiration),
         .ros2_guid_prefix(ros2_guid_prefix),
+        .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+        .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
 
         .ros2_pub_topic_name(ros2_pub_topic_name),
         .ros2_pub_topic_name_len(ros2_pub_topic_name_len),

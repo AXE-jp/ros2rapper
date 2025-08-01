@@ -48,6 +48,8 @@ module ros2_ether #(
     input  wire [15:0] ros2_port_num_seed,
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
+    input  wire [31:0] ros2_participant_lease_duration_seconds,
+    input  wire [31:0] ros2_participant_lease_duration_fraction,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
     input  wire [7:0] ros2_pub_topic_name_len,
@@ -293,6 +295,8 @@ ros2rapper (
     .ros2_port_num_seed(ros2_port_num_seed),
     .ros2_fragment_expiration(ros2_fragment_expiration),
     .ros2_guid_prefix(ros2_guid_prefix),
+    .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+    .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
     .ros2_ignore_ip_checksum(1'b0),
 
     .ros2_pub_topic_name(ros2_pub_topic_name),

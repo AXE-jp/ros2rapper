@@ -45,6 +45,8 @@ module ros2rapper #(
 
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
+    input  wire [31:0] ros2_participant_lease_duration_seconds,
+    input  wire [31:0] ros2_participant_lease_duration_fraction,
     input  wire        ros2_ignore_ip_checksum,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
@@ -336,6 +338,8 @@ ros2 (
 
     .conf_fragment_expiration(ros2_fragment_expiration),
     .conf_guid_prefix(ros2_guid_prefix),
+    .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+    .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
     .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
 
     .conf_pub_topic_name(ros2_pub_topic_name),
@@ -504,6 +508,8 @@ ros2 (
   .conf_guid_prefix_06(ros2_guid_prefix[55:48]), .conf_guid_prefix_07(ros2_guid_prefix[63:56]),
   .conf_guid_prefix_08(ros2_guid_prefix[71:64]), .conf_guid_prefix_09(ros2_guid_prefix[79:72]),
   .conf_guid_prefix_10(ros2_guid_prefix[87:80]), .conf_guid_prefix_11(ros2_guid_prefix[95:88]),
+  .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+  .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
   .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
 
   .conf_pub_topic_name_00(ros2_pub_topic_name[7:0]), .conf_pub_topic_name_01(ros2_pub_topic_name[15:8]),
@@ -900,16 +906,16 @@ module ros2rapper_tx_counters #
     output wire o_cnt_app_wr_elapsed
 );
     // Counters for ROS2rapper TX scheduler
-    reg [$clog2(PRESCALER_DIV              )-1:0] cnt_prescaler;
-    reg [$clog2(TX_INTERVAL_COUNT          )-1:0] cnt_interval;
-    reg [$clog2(TX_PERIOD_SPDP_WR_COUNT    )-1:0] cnt_spdp_wr;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_WR_COUNT)-1:0] cnt_sedp_pub_wr;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_WR_COUNT)-1:0] cnt_sedp_sub_wr;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_HB_COUNT)-1:0] cnt_sedp_pub_hb;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_HB_COUNT)-1:0] cnt_sedp_sub_hb;
-    reg [$clog2(TX_PERIOD_SEDP_PUB_AN_COUNT)-1:0] cnt_sedp_pub_an;
-    reg [$clog2(TX_PERIOD_SEDP_SUB_AN_COUNT)-1:0] cnt_sedp_sub_an;
-    reg [$clog2(TX_PERIOD_APP_WR_COUNT     )-1:0] cnt_app_wr;
+    reg [$clog2(PRESCALER_DIV                )-1:0] cnt_prescaler;
+    reg [$clog2(TX_INTERVAL_COUNT          +1)-1:0] cnt_interval;
+    reg [$clog2(TX_PERIOD_SPDP_WR_COUNT    +1)-1:0] cnt_spdp_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_WR_COUNT+1)-1:0] cnt_sedp_pub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_WR_COUNT+1)-1:0] cnt_sedp_sub_wr;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_HB_COUNT+1)-1:0] cnt_sedp_pub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_HB_COUNT+1)-1:0] cnt_sedp_sub_hb;
+    reg [$clog2(TX_PERIOD_SEDP_PUB_AN_COUNT+1)-1:0] cnt_sedp_pub_an;
+    reg [$clog2(TX_PERIOD_SEDP_SUB_AN_COUNT+1)-1:0] cnt_sedp_sub_an;
+    reg [$clog2(TX_PERIOD_APP_WR_COUNT     +1)-1:0] cnt_app_wr;
 
     assign o_cnt_interval_elapsed    = (cnt_interval == 0);
     assign o_cnt_spdp_wr_elapsed     = (cnt_spdp_wr == 0);
