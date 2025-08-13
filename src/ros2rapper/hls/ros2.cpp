@@ -724,11 +724,6 @@ static void ros2_out(
                 }
                 if (send) {
                     SPDP_WRITER_OUT();
-                }
-
-                ROTATE_NEXT_PACKET_TYPE;
-
-                if (cnt_spdp_wr_elapsed) {
                     /* Cyber scheduling_block = non-transparent */
                 cnt_reset_0: {
 #pragma HLS protocol fixed
@@ -737,7 +732,7 @@ static void ros2_out(
                     CLOCK_BOUNDARY;
                 }
                 }
-
+                ROTATE_NEXT_PACKET_TYPE;
             } else if (pub_enable && next_packet_type == 1) {
                 if (cnt_sedp_pub_wr_elapsed)
                     tx_cnt_elapsed++;
