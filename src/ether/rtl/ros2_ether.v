@@ -91,27 +91,19 @@ module ros2_ether #(
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0,
     input  wire [7:0] ros2_pub_app_data_len_0,
-    input  wire ros2_pub_app_data_req_0,
-    input  wire ros2_pub_app_data_rel_0,
-    output wire ros2_pub_app_data_grant_0,
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1,
     input  wire [7:0] ros2_pub_app_data_len_1,
-    input  wire ros2_pub_app_data_req_1,
-    input  wire ros2_pub_app_data_rel_1,
-    output wire ros2_pub_app_data_grant_1,
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2,
     input  wire [7:0] ros2_pub_app_data_len_2,
-    input  wire ros2_pub_app_data_req_2,
-    input  wire ros2_pub_app_data_rel_2,
-    output wire ros2_pub_app_data_grant_2,
 
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3,
     input  wire [7:0] ros2_pub_app_data_len_3,
-    input  wire ros2_pub_app_data_req_3,
-    input  wire ros2_pub_app_data_rel_3,
-    output wire ros2_pub_app_data_grant_3,
+
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_req,
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_rel,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_grant,
 
     output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
     output wire ros2_sub_app_data_ce,
@@ -370,27 +362,19 @@ ros2rapper (
 
     .ros2_pub_app_data_0(ros2_pub_app_data_0),
     .ros2_pub_app_data_len_0(ros2_pub_app_data_len_0),
-    .ros2_pub_app_data_req_0(ros2_pub_app_data_req_0),
-    .ros2_pub_app_data_rel_0(ros2_pub_app_data_rel_0),
-    .ros2_pub_app_data_grant_0(ros2_pub_app_data_grant_0),
 
     .ros2_pub_app_data_1(ros2_pub_app_data_1),
     .ros2_pub_app_data_len_1(ros2_pub_app_data_len_1),
-    .ros2_pub_app_data_req_1(ros2_pub_app_data_req_1),
-    .ros2_pub_app_data_rel_1(ros2_pub_app_data_rel_1),
-    .ros2_pub_app_data_grant_1(ros2_pub_app_data_grant_1),
 
     .ros2_pub_app_data_2(ros2_pub_app_data_2),
     .ros2_pub_app_data_len_2(ros2_pub_app_data_len_2),
-    .ros2_pub_app_data_req_2(ros2_pub_app_data_req_2),
-    .ros2_pub_app_data_rel_2(ros2_pub_app_data_rel_2),
-    .ros2_pub_app_data_grant_2(ros2_pub_app_data_grant_2),
 
     .ros2_pub_app_data_3(ros2_pub_app_data_3),
     .ros2_pub_app_data_len_3(ros2_pub_app_data_len_3),
-    .ros2_pub_app_data_req_3(ros2_pub_app_data_req_3),
-    .ros2_pub_app_data_rel_3(ros2_pub_app_data_rel_3),
-    .ros2_pub_app_data_grant_3(ros2_pub_app_data_grant_3),
+
+    .ros2_pub_app_data_req(ros2_pub_app_data_req),
+    .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+    .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
     .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
     .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
