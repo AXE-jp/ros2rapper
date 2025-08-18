@@ -273,27 +273,19 @@ module top (
 
         .ros2_pub_app_data_0(0),
         .ros2_pub_app_data_len_0(0),
-        .ros2_pub_app_data_req_0(1'b0),
-        .ros2_pub_app_data_rel_0(1'b0),
-        .ros2_pub_app_data_grant_0(),
 
         .ros2_pub_app_data_1(0),
         .ros2_pub_app_data_len_1(0),
-        .ros2_pub_app_data_req_1(1'b0),
-        .ros2_pub_app_data_rel_1(1'b0),
-        .ros2_pub_app_data_grant_1(),
 
         .ros2_pub_app_data_2(0),
         .ros2_pub_app_data_len_2(0),
-        .ros2_pub_app_data_req_2(1'b0),
-        .ros2_pub_app_data_rel_2(1'b0),
-        .ros2_pub_app_data_grant_2(),
 
         .ros2_pub_app_data_3(0),
         .ros2_pub_app_data_len_3(0),
-        .ros2_pub_app_data_req_3(1'b0),
-        .ros2_pub_app_data_rel_3(1'b0),
-        .ros2_pub_app_data_grant_3(),
+
+        .ros2_pub_app_data_req(0),
+        .ros2_pub_app_data_rel(0),
+        .ros2_pub_app_data_grant(),
 
         .ros2_sub_app_data_addr(),
         .ros2_sub_app_data_ce(),

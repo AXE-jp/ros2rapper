@@ -99,35 +99,43 @@ module ros2_module (
         end
     end
 
-    reg  ros2_pub_app_data_req;
-    wire ros2_pub_app_data_rel;
-    wire ros2_pub_app_data_grant;
+    reg  ros2_pub_app_data_req_0;
+    wire ros2_pub_app_data_rel_0;
+    wire ros2_pub_app_data_grant_0;
 
-    assign ros2_pub_app_data_ap_ack = (pub_state == STATE_WAIT_GRANT) & ros2_pub_app_data_grant;
-    assign ros2_pub_app_data_rel = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_vld;
+    assign ros2_pub_app_data_ap_ack = (pub_state == STATE_WAIT_GRANT) & ros2_pub_app_data_grant_0;
+    assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_vld;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             pub_state <= STATE_IDLE;
-            ros2_pub_app_data_req <= 1'b0;
+            ros2_pub_app_data_req_0 <= 1'b0;
         end else begin
             if (pub_state == STATE_WAIT_GRANT) begin
-                if (ros2_pub_app_data_grant) begin
+                if (ros2_pub_app_data_grant_0) begin
                     pub_state <= STATE_WAIT_VALID;
                 end
             end else if (pub_state == STATE_WAIT_VALID) begin
                 if (ros2_pub_app_data_ap_vld) begin
                     pub_state <= STATE_IDLE;
-                    ros2_pub_app_data_req <= 1'b0;
+                    ros2_pub_app_data_req_0 <= 1'b0;
                 end
             end else begin  // pub_state == STATE_IDLE
                 if (count == 0) begin
                     pub_state <= STATE_WAIT_GRANT;
-                    ros2_pub_app_data_req <= 1'b1;
+                    ros2_pub_app_data_req_0 <= 1'b1;
                 end
             end
         end
     end
+
+    wire [3:0] ros2_pub_app_data_req;
+    wire [3:0] ros2_pub_app_data_rel;
+    wire [3:0] ros2_pub_app_data_grant;
+
+    assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
+    assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
+    assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
 
     // --- ROS2 Subscriber message control
     reg  ros2_sub_app_data_req;
@@ -271,27 +279,19 @@ module ros2_module (
 
         .ros2_pub_app_data_0(ros2_pub_app_data),
         .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
-        .ros2_pub_app_data_req_0(ros2_pub_app_data_req),
-        .ros2_pub_app_data_rel_0(ros2_pub_app_data_rel),
-        .ros2_pub_app_data_grant_0(ros2_pub_app_data_grant),
 
         .ros2_pub_app_data_1(0),
         .ros2_pub_app_data_len_1(0),
-        .ros2_pub_app_data_req_1(1'b0),
-        .ros2_pub_app_data_rel_1(1'b0),
-        .ros2_pub_app_data_grant_1(),
 
         .ros2_pub_app_data_2(0),
         .ros2_pub_app_data_len_2(0),
-        .ros2_pub_app_data_req_2(1'b0),
-        .ros2_pub_app_data_rel_2(1'b0),
-        .ros2_pub_app_data_grant_2(),
 
         .ros2_pub_app_data_3(0),
         .ros2_pub_app_data_len_3(0),
-        .ros2_pub_app_data_req_3(1'b0),
-        .ros2_pub_app_data_rel_3(1'b0),
-        .ros2_pub_app_data_grant_3(),
+
+        .ros2_pub_app_data_req(ros2_pub_app_data_req),
+        .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
         .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),

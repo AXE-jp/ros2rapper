@@ -130,33 +130,24 @@ module top (
     wire [7:0] ros2_pub_topic_name_len_0 = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_0 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_0 = 8'd29;
-    wire [7:0] msg_number_0;
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_1 = "ccc/tr";
     wire [7:0] ros2_pub_topic_name_len_1 = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_1 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_1 = 8'd29;
-    wire [7:0] msg_number_1;
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_2 = "ddd/tr";
     wire [7:0] ros2_pub_topic_name_len_2 = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_2 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_2 = 8'd29;
-    wire [7:0] msg_number_2;
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_3 = "eee/tr";
     wire [7:0] ros2_pub_topic_name_len_3 = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_3 = 8'd29;
-    wire [7:0] msg_number_3;
 
     localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd23;
     localparam [7:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
-
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number_0, "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number_1, "C - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number_2, "D - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number_3, "E - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
 
     // --- ROS2 Publisher Message Control
     reg [29:0] msg_change_counter;
@@ -174,57 +165,31 @@ module top (
     // Rising edge of msg_change_counter[29:26]
     wire [3:0] change_msg = (~prev_msg_change_counter) & msg_change_counter[29:26];
 
-    wire ros2_pub_app_data_req_0;
-    wire ros2_pub_app_data_rel_0;
-    wire ros2_pub_app_data_grant_0;
-    pub_msg_ctrl pub_msg_ctrl_0(
-        .clk(clk_int),
-        .rst_n(rst_n_int),
-        .msg_number(msg_number_0),
-        .change_msg(change_msg[0]),
-        .ros2_pub_app_data_req(ros2_pub_app_data_req_0),
-        .ros2_pub_app_data_rel(ros2_pub_app_data_rel_0),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant_0)
-    );
+    wire [3:0] ros2_pub_app_data_req;
+    wire [3:0] ros2_pub_app_data_rel;
+    wire [3:0] ros2_pub_app_data_grant;
 
-    wire ros2_pub_app_data_req_1;
-    wire ros2_pub_app_data_rel_1;
-    wire ros2_pub_app_data_grant_1;
-    pub_msg_ctrl pub_msg_ctrl_1(
-        .clk(clk_int),
-        .rst_n(rst_n_int),
-        .msg_number(msg_number_1),
-        .change_msg(change_msg[1]),
-        .ros2_pub_app_data_req(ros2_pub_app_data_req_1),
-        .ros2_pub_app_data_rel(ros2_pub_app_data_rel_1),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant_1)
-    );
+    // Published messages
+    wire [7:0] msg_number[0:3];
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number[0], "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number[1], "C - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number[2], "D - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number[3], "E - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
 
-    wire ros2_pub_app_data_req_2;
-    wire ros2_pub_app_data_rel_2;
-    wire ros2_pub_app_data_grant_2;
-    pub_msg_ctrl pub_msg_ctrl_2(
-        .clk(clk_int),
-        .rst_n(rst_n_int),
-        .msg_number(msg_number_2),
-        .change_msg(change_msg[2]),
-        .ros2_pub_app_data_req(ros2_pub_app_data_req_2),
-        .ros2_pub_app_data_rel(ros2_pub_app_data_rel_2),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant_2)
-    );
-
-    wire ros2_pub_app_data_req_3;
-    wire ros2_pub_app_data_rel_3;
-    wire ros2_pub_app_data_grant_3;
-    pub_msg_ctrl pub_msg_ctrl_3(
-        .clk(clk_int),
-        .rst_n(rst_n_int),
-        .msg_number(msg_number_3),
-        .change_msg(change_msg[3]),
-        .ros2_pub_app_data_req(ros2_pub_app_data_req_3),
-        .ros2_pub_app_data_rel(ros2_pub_app_data_rel_3),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant_3)
-    );
+    generate
+        genvar iter;
+        for (iter = 0; iter < 4; iter = iter + 1) begin : PUB_MSG_CTRL
+            pub_msg_ctrl pub_msg_ctrl_inst(
+                .clk(clk_int),
+                .rst_n(rst_n_int),
+                .msg_number(msg_number[iter]),
+                .change_msg(change_msg[iter]),
+                .ros2_pub_app_data_req(ros2_pub_app_data_req[iter]),
+                .ros2_pub_app_data_rel(ros2_pub_app_data_rel[iter]),
+                .ros2_pub_app_data_grant(ros2_pub_app_data_grant[iter])
+            );
+        end
+    endgenerate
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
@@ -355,27 +320,19 @@ module top (
 
         .ros2_pub_app_data_0(ros2_pub_app_data_0),
         .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
-        .ros2_pub_app_data_req_0(ros2_pub_app_data_req_0),
-        .ros2_pub_app_data_rel_0(ros2_pub_app_data_rel_0),
-        .ros2_pub_app_data_grant_0(ros2_pub_app_data_grant_0),
 
         .ros2_pub_app_data_1(ros2_pub_app_data_1),
         .ros2_pub_app_data_len_1(ROS2_PUB_APP_DATA_LEN),
-        .ros2_pub_app_data_req_1(ros2_pub_app_data_req_1),
-        .ros2_pub_app_data_rel_1(ros2_pub_app_data_rel_1),
-        .ros2_pub_app_data_grant_1(ros2_pub_app_data_grant_1),
 
         .ros2_pub_app_data_2(ros2_pub_app_data_2),
         .ros2_pub_app_data_len_2(ROS2_PUB_APP_DATA_LEN),
-        .ros2_pub_app_data_req_2(ros2_pub_app_data_req_2),
-        .ros2_pub_app_data_rel_2(ros2_pub_app_data_rel_2),
-        .ros2_pub_app_data_grant_2(ros2_pub_app_data_grant_2),
 
         .ros2_pub_app_data_3(ros2_pub_app_data_3),
         .ros2_pub_app_data_len_3(ROS2_PUB_APP_DATA_LEN),
-        .ros2_pub_app_data_req_3(ros2_pub_app_data_req_3),
-        .ros2_pub_app_data_rel_3(ros2_pub_app_data_rel_3),
-        .ros2_pub_app_data_grant_3(ros2_pub_app_data_grant_3),
+
+        .ros2_pub_app_data_req(ros2_pub_app_data_req),
+        .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
         .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),

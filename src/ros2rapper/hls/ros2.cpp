@@ -464,9 +464,9 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
                     const config_t        *conf,
                     VOLATILE const uint8_t pub_app_data[MAX_APP_DATA_LEN],
                     VOLATILE const app_data_len_t *pub_app_data_len,
-                    VOLATILE uint8_t              *pub_app_data_req,
-                    VOLATILE uint8_t              *pub_app_data_rel,
-                    VOLATILE uint8_t              *pub_app_data_grant,
+                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
+                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
+                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_grant,
                     const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
@@ -475,14 +475,15 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
         && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)
         && (app_reader_tbl[id].pub_topic_id == topic_id)) {
 
-        uint8_t grant;
+        bool grant;
     /* Cyber scheduling_block = non-transparent */
     app_data_request_section: {
 #pragma HLS protocol fixed
-        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
+        *pub_app_data_req = (1 << topic_id);
         CLOCK_BOUNDARY;
         CLOCK_BOUNDARY;
-        grant = *pub_app_data_grant;
+        grant = hls_uint<PUB_TOPICS_MAX>(*pub_app_data_grant)
+                & hls_uint<PUB_TOPICS_MAX>(1 << topic_id);
     }
 
         if (grant) {
@@ -497,8 +498,7 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
         app_data_release_section: {
 #pragma HLS protocol fixed
             CLOCK_BOUNDARY;
-            *pub_app_data_rel
-                = 0 /* write dummy value to assert valid signal */;
+            *pub_app_data_rel = (1 << topic_id);
             CLOCK_BOUNDARY;
             CLOCK_BOUNDARY;
         }
@@ -507,8 +507,7 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
 }
 
 #define APP_WRITER_OUT_TOPIC(topic_id, tx_progress, app_reader_tbl, conf,      \
-                             pub_app_data, pub_app_data_len, pub_app_data_req, \
-                             pub_app_data_rel, pub_app_data_grant,             \
+                             pub_app_data, pub_app_data_len,                   \
                              app_writer_entity_id, tx_buf, app_seqnum, now)    \
     do {                                                                       \
         if (pub_enable[(topic_id)]) {                                          \
@@ -560,31 +559,26 @@ static void ros2_out(
     const config_t                *conf,
     VOLATILE const uint8_t         pub_app_data_0[MAX_APP_DATA_LEN],
     VOLATILE const app_data_len_t *pub_app_data_len_0,
-    VOLATILE uint8_t *pub_app_data_req_0, VOLATILE uint8_t *pub_app_data_rel_0,
-    VOLATILE uint8_t              *pub_app_data_grant_0,
     VOLATILE const uint8_t         pub_app_data_1[MAX_APP_DATA_LEN],
     VOLATILE const app_data_len_t *pub_app_data_len_1,
-    VOLATILE uint8_t *pub_app_data_req_1, VOLATILE uint8_t *pub_app_data_rel_1,
-    VOLATILE uint8_t              *pub_app_data_grant_1,
     VOLATILE const uint8_t         pub_app_data_2[MAX_APP_DATA_LEN],
     VOLATILE const app_data_len_t *pub_app_data_len_2,
-    VOLATILE uint8_t *pub_app_data_req_2, VOLATILE uint8_t *pub_app_data_rel_2,
-    VOLATILE uint8_t              *pub_app_data_grant_2,
     VOLATILE const uint8_t         pub_app_data_3[MAX_APP_DATA_LEN],
     VOLATILE const app_data_len_t *pub_app_data_len_3,
-    VOLATILE uint8_t *pub_app_data_req_3, VOLATILE uint8_t *pub_app_data_rel_3,
-    VOLATILE uint8_t *pub_app_data_grant_3, VOLATILE uint8_t *rawudp_txbuf_rel,
-    VOLATILE uint8_t *rawudp_txbuf_grant, hls_uint<1> cnt_interval_elapsed,
-    VOLATILE uint8_t *cnt_interval_set, hls_uint<1> cnt_spdp_wr_elapsed,
-    VOLATILE uint8_t *cnt_spdp_wr_set, hls_uint<1> cnt_sedp_pub_wr_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_wr_set, hls_uint<1> cnt_sedp_sub_wr_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_wr_set, hls_uint<1> cnt_sedp_pub_hb_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_hb_set, hls_uint<1> cnt_sedp_sub_hb_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
-    VOLATILE uint8_t *cnt_app_wr_set, bool reading_rtps_message,
-    int64_t timestamp_i64) {
+    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
+    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
+    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_grant,
+    VOLATILE uint8_t *rawudp_txbuf_rel, VOLATILE uint8_t *rawudp_txbuf_grant,
+    hls_uint<1> cnt_interval_elapsed, VOLATILE uint8_t *cnt_interval_set,
+    hls_uint<1> cnt_spdp_wr_elapsed, VOLATILE uint8_t *cnt_spdp_wr_set,
+    hls_uint<1> cnt_sedp_pub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_pub_wr_set,
+    hls_uint<1> cnt_sedp_sub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_sub_wr_set,
+    hls_uint<1> cnt_sedp_pub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_pub_hb_set,
+    hls_uint<1> cnt_sedp_sub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_sub_hb_set,
+    hls_uint<1> cnt_sedp_pub_an_elapsed, VOLATILE uint8_t *cnt_sedp_pub_an_set,
+    hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
+    hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
+    bool reading_rtps_message, int64_t timestamp_i64) {
 #pragma HLS array_partition complete variable = conf->pub_topic_name dim = 1
 #pragma HLS array_partition complete variable = conf->pub_topic_name_len dim = 1
 #pragma HLS array_partition complete variable = conf->pub_topic_type_name dim  \
@@ -1077,32 +1071,28 @@ static void ros2_out(
                        && next_packet_type == 7) {
                 switch (tx_topic_progress) {
                 case 0:
-                    APP_WRITER_OUT_TOPIC(
-                        0, tx_progress, app_reader_tbl, conf, pub_app_data_0,
-                        pub_app_data_len_0, pub_app_data_req_0,
-                        pub_app_data_rel_0, pub_app_data_grant_0,
-                        app_writer_entity_id_list[0], tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT_TOPIC(0, tx_progress, app_reader_tbl, conf,
+                                         pub_app_data_0, pub_app_data_len_0,
+                                         app_writer_entity_id_list[0], tx_buf,
+                                         app_seqnum, now);
                     break;
                 case 1:
-                    APP_WRITER_OUT_TOPIC(
-                        1, tx_progress, app_reader_tbl, conf, pub_app_data_1,
-                        pub_app_data_len_1, pub_app_data_req_1,
-                        pub_app_data_rel_1, pub_app_data_grant_1,
-                        app_writer_entity_id_list[1], tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT_TOPIC(1, tx_progress, app_reader_tbl, conf,
+                                         pub_app_data_1, pub_app_data_len_1,
+                                         app_writer_entity_id_list[1], tx_buf,
+                                         app_seqnum, now);
                     break;
                 case 2:
-                    APP_WRITER_OUT_TOPIC(
-                        2, tx_progress, app_reader_tbl, conf, pub_app_data_2,
-                        pub_app_data_len_2, pub_app_data_req_2,
-                        pub_app_data_rel_2, pub_app_data_grant_2,
-                        app_writer_entity_id_list[2], tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT_TOPIC(2, tx_progress, app_reader_tbl, conf,
+                                         pub_app_data_2, pub_app_data_len_2,
+                                         app_writer_entity_id_list[2], tx_buf,
+                                         app_seqnum, now);
                     break;
                 case 3:
-                    APP_WRITER_OUT_TOPIC(
-                        3, tx_progress, app_reader_tbl, conf, pub_app_data_3,
-                        pub_app_data_len_3, pub_app_data_req_3,
-                        pub_app_data_rel_3, pub_app_data_grant_3,
-                        app_writer_entity_id_list[3], tx_buf, app_seqnum, now);
+                    APP_WRITER_OUT_TOPIC(3, tx_progress, app_reader_tbl, conf,
+                                         pub_app_data_3, pub_app_data_len_3,
+                                         app_writer_entity_id_list[3], tx_buf,
+                                         app_seqnum, now);
                     break;
                 }
                 if (tx_progress == (APP_READER_MAX - 1)) {
@@ -1201,30 +1191,12 @@ void ros2(
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     VOLATILE app_data_len_t *sub_app_data_len /* Cyber volatile=YES*/,
     VOLATILE uint16_t       *sub_app_data_rep_id /* Cyber volatile=YES*/,
-    VOLATILE uint8_t
-        *pub_app_data_req_0 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_rel_0 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_grant_0 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_req_1 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_rel_1 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_grant_1 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_req_2 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_rel_2 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_grant_2 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_req_3 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *pub_app_data_rel_3 /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-            *pub_app_data_grant_3 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE                 hls_uint<PUB_TOPICS_MAX>
+            *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<PUB_TOPICS_MAX>
+            *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<PUB_TOPICS_MAX>
+            *pub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
@@ -1341,18 +1313,9 @@ void ros2(
 #pragma HLS interface mode = ap_memory port = sub_app_data
 #pragma HLS interface mode = ap_none port = sub_app_data_len
 #pragma HLS interface mode = ap_none port = sub_app_data_rep_id
-#pragma HLS interface mode = ap_vld port = pub_app_data_req_0
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel_0
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant_0
-#pragma HLS interface mode = ap_vld port = pub_app_data_req_1
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel_1
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant_1
-#pragma HLS interface mode = ap_vld port = pub_app_data_req_2
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel_2
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant_2
-#pragma HLS interface mode = ap_vld port = pub_app_data_req_3
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel_3
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant_3
+#pragma HLS interface mode = ap_vld port = pub_app_data_req
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
@@ -1404,18 +1367,15 @@ void ros2(
 
     ros2_out(
         out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-        conf, pub_app_data_0, pub_app_data_len_0, pub_app_data_req_0,
-        pub_app_data_rel_0, pub_app_data_grant_0, pub_app_data_1,
-        pub_app_data_len_1, pub_app_data_req_1, pub_app_data_rel_1,
-        pub_app_data_grant_1, pub_app_data_2, pub_app_data_len_2,
-        pub_app_data_req_2, pub_app_data_rel_2, pub_app_data_grant_2,
-        pub_app_data_3, pub_app_data_len_3, pub_app_data_req_3,
-        pub_app_data_rel_3, pub_app_data_grant_3, udp_txbuf_rel,
-        udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
-        cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
-        cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
-        cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed,
-        cnt_sedp_sub_hb_set, cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
-        cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-        cnt_app_wr_set, reading_rtps_message, timestamp_i64);
+        conf, pub_app_data_0, pub_app_data_len_0, pub_app_data_1,
+        pub_app_data_len_1, pub_app_data_2, pub_app_data_len_2, pub_app_data_3,
+        pub_app_data_len_3, pub_app_data_req, pub_app_data_rel,
+        pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
+        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
+        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
+        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
+        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
+        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set,
+        reading_rtps_message, timestamp_i64);
 }
