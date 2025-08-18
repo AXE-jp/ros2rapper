@@ -112,7 +112,7 @@ module ros2rapper #(
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
-    output wire [3:0] ros2_sub_app_data_recv,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
@@ -143,15 +143,12 @@ wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_req;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_rel;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_grant;
 
+assign ros2_pub_app_data_ip_req = pub_app_data_ip_req_ap_vld ? pub_app_data_ip_req : 0;
+assign ros2_pub_app_data_ip_rel = pub_app_data_ip_rel_ap_vld ? pub_app_data_ip_rel : 0;
+
 generate
     genvar iter;
     for (iter = 0; iter < `ROS2_PUB_TOPICS_MAX; iter = iter+1) begin : PUB_APP_DATA_HS
-        assign ros2_pub_app_data_ip_req[iter]
-            = pub_app_data_ip_req[iter] & pub_app_data_ip_req_ap_vld;
-
-        assign ros2_pub_app_data_ip_rel[iter]
-            = pub_app_data_ip_rel[iter] & pub_app_data_ip_rel_ap_vld;
-
         app_data_arbiter pub_app_data_arbiter(
             .i_clk(clk), .i_rst_n(rst_n), .i_en(en),
             .i_app_data_ip_req(ros2_pub_app_data_ip_req[iter]),
@@ -233,12 +230,9 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-wire [3:0] sub_app_data_recv;
-wire       sub_app_data_recv_ap_vld;
-assign ros2_sub_app_data_recv[0] = sub_app_data_recv_ap_vld & sub_app_data_recv[0];
-assign ros2_sub_app_data_recv[1] = sub_app_data_recv_ap_vld & sub_app_data_recv[1];
-assign ros2_sub_app_data_recv[2] = sub_app_data_recv_ap_vld & sub_app_data_recv[2];
-assign ros2_sub_app_data_recv[3] = sub_app_data_recv_ap_vld & sub_app_data_recv[3];
+wire [`ROS2_SUB_TOPICS_MAX-1:0] sub_app_data_recv;
+wire sub_app_data_recv_ap_vld;
+assign ros2_sub_app_data_recv = sub_app_data_recv_ap_vld ? sub_app_data_recv : 0;
 
 wire ros2_cnt_interval_set;
 wire ros2_cnt_spdp_wr_set;

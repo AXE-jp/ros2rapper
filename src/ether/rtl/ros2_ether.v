@@ -114,7 +114,7 @@ module ros2_ether #(
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
     output wire ros2_sub_app_data_grant,
-    output wire [3:0] ros2_sub_app_data_recv,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
     input  wire udp_rxbuf_rel,
     output wire udp_rxbuf_grant,
