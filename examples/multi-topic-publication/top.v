@@ -211,7 +211,7 @@ module top (
     reg  [31:0] ros2_pub_app_data_3_rdata;
 
     integer i;
-    always @(posedge clk) begin
+    always @(posedge clk_int) begin
         for (i = 0; i < 32; i = i + 1) begin
             if (ros2_pub_app_data_0_ce)
                 ros2_pub_app_data_0_rdata[i] <= ros2_pub_app_data_0[32*ros2_pub_app_data_0_addr + i];
