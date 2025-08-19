@@ -108,9 +108,9 @@ module ros2rapper #(
     output wire ros2_pub_app_data_2_ce,
     input  wire [31:0] ros2_pub_app_data_2_rdata,
 
-    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_2_addr,
-    output wire ros2_pub_app_data_2_ce,
-    input  wire [31:0] ros2_pub_app_data_2_rdata,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_3_addr,
+    output wire ros2_pub_app_data_3_ce,
+    input  wire [31:0] ros2_pub_app_data_3_rdata,
 `endif
 
     input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len_0,
