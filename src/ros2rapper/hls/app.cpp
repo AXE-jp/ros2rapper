@@ -142,12 +142,15 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
                 hls_uint<SUB_TOPICS_MAX> sub_enabled,
                 VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-                VOLATILE uint8_t                  *sub_app_data_req,
-                VOLATILE uint8_t                  *sub_app_data_rel,
-                VOLATILE uint8_t                  *sub_app_data_grant,
-                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                VOLATILE uint8_t  *sub_app_data_len,
-                VOLATILE uint16_t *sub_app_data_rep_id) {
+                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
+                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
+                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_grant,
+                uint8_t           sub_app_data_0[MAX_APP_DATA_LEN],
+                uint8_t           sub_app_data_1[MAX_APP_DATA_LEN],
+                uint8_t           sub_app_data_2[MAX_APP_DATA_LEN],
+                uint8_t           sub_app_data_3[MAX_APP_DATA_LEN],
+                VOLATILE uint8_t  sub_app_data_len[SUB_TOPICS_MAX],
+                VOLATILE uint16_t sub_app_data_rep_id[SUB_TOPICS_MAX]) {
 #pragma HLS inline
 
     static hls_uint<3> state;
@@ -232,7 +235,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
             } else {
                 sbm_len -= SBM_DATA_HDR_SIZE;
                 offset = 0;
-                *sub_app_data_req = 0;
+                *sub_app_data_req = ~topics_unmatched;
                 state = STATE_PARSE_PAYLOAD_HDR;
             }
         }
@@ -249,20 +252,38 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         if (offset == SP_HDR_SIZE) {
             sbm_len -= SP_HDR_SIZE;
             offset = 0;
-            if (sbm_len != 0 && *sub_app_data_grant == 1)
+            topics_unmatched |= ~hls_uint<SUB_TOPICS_MAX>(*sub_app_data_grant);
+            if (sbm_len != 0 && ~topics_unmatched != 0)
                 state = STATE_PARSE_PAYLOAD_DATA;
             else
                 state = STATE_WAIT_END;
         }
         break;
     case STATE_PARSE_PAYLOAD_DATA:
-        sub_app_data[offset] = data;
+        if (!topics_unmatched[0]) {
+            sub_app_data_0[offset] = data;
+        }
+        if (!topics_unmatched[1]) {
+            sub_app_data_1[offset] = data;
+        }
+        if (!topics_unmatched[2]) {
+            sub_app_data_2[offset] = data;
+        }
+        if (!topics_unmatched[3]) {
+            sub_app_data_3[offset] = data;
+        }
         offset++;
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
-            *sub_app_data_len = sbm_len;
-            *sub_app_data_rep_id = rep_id;
+            /* Cyber unroll times=all */
+            for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+#pragma HLS unroll
+                if (!topics_unmatched[j]) {
+                    sub_app_data_len[j] = sbm_len;
+                    sub_app_data_rep_id[j] = rep_id;
+                }
+            }
             *sub_app_data_recv = ~topics_unmatched;
-            *sub_app_data_rel = 0;
+            *sub_app_data_rel = ~topics_unmatched;
             state = STATE_WAIT_END;
         }
         break;
