@@ -262,9 +262,13 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
     udp_hdr[6] = sum_n >> 8;
     udp_hdr[7] = sum_n & 0xff;
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#endif // PUB_DATA_FF
     for (int i = 0; i < tot_process_len; i++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
+#endif // PUB_DATA_FF
         if (i < UDP_HDR_SIZE)
             buf[i] = udp_hdr[i];
         else
@@ -319,9 +323,16 @@ void udp_set_checksum(uint8_t buf[]) {
             sum += pseudo_hdr[i] << 8;
     }
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#endif // PUB_DATA_FF
     for (int i = IP_HDR_SIZE; i < TX_BUF_LEN; i++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS unroll factor = 2
+#endif // PUB_DATA_RAM
         if (i & 0x1)
             sum += buf[i];
         else

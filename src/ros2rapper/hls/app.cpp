@@ -5,6 +5,7 @@
 
 #include "app.hpp"
 #include "ros2.hpp"
+#include "util.hpp"
 
 #define APP_HDR_SIZE APP_TOT_LEN(0)
 
@@ -13,7 +14,10 @@ void app_writer(const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
-                VOLATILE const uint8_t app_data[MAX_APP_DATA_LEN],
+#ifdef PUB_DATA_FF
+                VOLATILE
+#endif // PUB_DATA_FF
+                const uint32_t app_data[MAX_APP_DATA_LEN / 4],
                 uint32_t app_data_len, uint8_t buf[], timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
@@ -112,18 +116,24 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     buf[74] = rep_opt >> 8;
     buf[75] = rep_opt & 0xff;
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
-    for (int i = APP_HDR_SIZE; i < APP_HDR_SIZE + MAX_APP_DATA_LEN; i++) {
+#endif // PUB_DATA_FF
+    for (auto j = 0; j < (MAX_APP_DATA_LEN / 4); j++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
-        buf[i] = app_data[i - APP_HDR_SIZE];
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS pipeline II = 2
+#endif // PUB_DATA_RAM
+        uint32_t data = app_data[j];
+        buf[APP_HDR_SIZE + (4 * j)] = (data & 0xff);
+        buf[APP_HDR_SIZE + (4 * j) + 1] = ((data >> 8) & 0xff);
+        buf[APP_HDR_SIZE + (4 * j) + 2] = ((data >> 16) & 0xff);
+        buf[APP_HDR_SIZE + (4 * j) + 3] = (data >> 24);
     }
 
-    /* Cyber unroll_times=all */
-    for (int i = APP_HDR_SIZE + MAX_APP_DATA_LEN; i < MAX_TX_UDP_PAYLOAD_LEN;
-         i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, APP_HDR_SIZE + MAX_APP_DATA_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 enum {

@@ -38,7 +38,7 @@ module top (
 
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
+        .CLKOUT0_DIVIDE_F(12.5),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -230,6 +230,8 @@ module top (
         .ros2_port_num_seed(0),
         .ros2_fragment_expiration(0),
         .ros2_guid_prefix(0),
+        .ros2_participant_lease_duration_seconds(0),
+        .ros2_participant_lease_duration_fraction(0),
 
         .ros2_pub_topic_name_0(0),
         .ros2_pub_topic_name_len_0(0),
@@ -271,16 +273,32 @@ module top (
         .ros2_sub_topic_type_name_3(0),
         .ros2_sub_topic_type_name_len_3(0),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data_0(0),
-        .ros2_pub_app_data_len_0(0),
-
         .ros2_pub_app_data_1(0),
-        .ros2_pub_app_data_len_1(0),
-
         .ros2_pub_app_data_2(0),
-        .ros2_pub_app_data_len_2(0),
-
         .ros2_pub_app_data_3(0),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_0_addr(),
+        .ros2_pub_app_data_0_ce(),
+        .ros2_pub_app_data_0_rdata(0),
+
+        .ros2_pub_app_data_1_addr(),
+        .ros2_pub_app_data_1_ce(),
+        .ros2_pub_app_data_1_rdata(0),
+
+        .ros2_pub_app_data_2_addr(),
+        .ros2_pub_app_data_2_ce(),
+        .ros2_pub_app_data_2_rdata(0),
+
+        .ros2_pub_app_data_3_addr(),
+        .ros2_pub_app_data_3_ce(),
+        .ros2_pub_app_data_3_rdata(0),
+`endif
+        .ros2_pub_app_data_len_0(0),
+        .ros2_pub_app_data_len_1(0),
+        .ros2_pub_app_data_len_2(0),
         .ros2_pub_app_data_len_3(0),
 
         .ros2_pub_app_data_req(0),

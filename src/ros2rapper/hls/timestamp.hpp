@@ -20,13 +20,4 @@ struct timestamp {
 #define TIME_INFINITE                                                          \
     { 0xffffffff, 0xfffffffe }
 
-const timestamp DURATION_INFINITE
-    = {.seconds = 0x7fffffff, .fraction = 0xffffffff};
-const timestamp DEFAULT_PID_PARTICIPANT_LEASE_DURATION
-    = {.seconds = 100, .fraction = 0};
-const int64_t SPDP_LEASE_DURATION_DEFAULT
-    = (static_cast<int64_t>(DEFAULT_PID_PARTICIPANT_LEASE_DURATION.seconds)
-       << 32)
-      | DEFAULT_PID_PARTICIPANT_LEASE_DURATION.fraction;
-
 #endif // !TIMESTAMP_HPP

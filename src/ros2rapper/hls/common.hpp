@@ -13,7 +13,7 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) > (y) ? (y) : (x))
 
-#define TARGET_CLOCK_FREQ     100000000 // Arty A7-100T: 100 MHz
+#define TARGET_CLOCK_FREQ     80000000 // Arty A7-100T: 80 MHz
 #define TARGET_PARTICIPANT_ID 1
 
 #define RAWUDP_RXBUF_LEN 256

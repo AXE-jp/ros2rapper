@@ -1,6 +1,7 @@
 // Copyright (c) 2021-2025 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "duration.hpp"
 #include "remove_endpoints.hpp"
 #include <cassert>
 #include <cstdio>

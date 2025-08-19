@@ -647,9 +647,16 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
     ip_hdr[10] = sum_n >> 8;
     ip_hdr[11] = sum_n & 0xff;
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#endif // PUB_DATA_FF
     for (int i = 0; i < tot_process_len; i++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS unroll factor = 2
+#endif // PUB_DATA_RAM
         if (i < IP_HDR_SIZE)
             buf[i] = ip_hdr[i];
         else

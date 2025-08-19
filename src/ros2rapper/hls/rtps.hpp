@@ -30,6 +30,7 @@
 #define SBM_ID_DATA      0x15
 
 #define SBM_FLAGS_ENDIANNESS 0x01
+#define SBM_FLAGS_FINAL      0x02
 #define SBM_FLAGS_INLINE_QOS 0x02
 #define SBM_FLAGS_DATA       0x04
 

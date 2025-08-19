@@ -13,6 +13,7 @@
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
+#include "util.hpp"
 
 #define USE_FIFOIF_ETHERNET
 
@@ -20,12 +21,21 @@ class tx_buf {
   public:
     uint16_t head;
     uint16_t len;
-    uint8_t  buf[TX_BUF_LEN] /* Cyber array=EXPAND,array_index=const */;
+    uint8_t  buf[TX_BUF_LEN]
+#ifdef PUB_DATA_FF
+    /* Cyber array=EXPAND,array_index=const */
+#endif // PUB_DATA_FF
+        ;
 
     /* Cyber func=inline */
     uint8_t deque() {
 #pragma HLS inline
+#ifdef PUB_DATA_FF
 #pragma HLS array_partition variable = buf complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS bind_storage variable = buf type = ram_t2p
+#endif // PUB_DATA_RAM
         return buf[head++];
     }
 
@@ -184,7 +194,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
                    tx_buf.buf + IP_HDR_SIZE);
 
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
-                conf->ip_addr, default_port,
+                conf->ip_addr, default_port, conf->participant_lease_duration,
                 tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
                 conf->node_name_len, now);
 
@@ -268,14 +278,18 @@ sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
 }
 
 /* Cyber func=inline */
-static void
-app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-               const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-               const uint8_t reader_entity_id[4], tx_buf &tx_buf,
-               int64_t &seqnum, const uint8_t src_addr[4],
-               const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
-               VOLATILE const uint8_t pub_app_data[MAX_APP_DATA_LEN],
-               app_data_len_t pub_app_data_len, timestamp now) {
+static void app_writer_out(const uint8_t writer_entity_id[4],
+                           const uint8_t dst_addr[4], const uint8_t dst_port[2],
+                           const uint8_t reader_guid_prefix[12],
+                           const uint8_t reader_entity_id[4], tx_buf &tx_buf,
+                           int64_t &seqnum, const uint8_t src_addr[4],
+                           const uint8_t src_port[2],
+                           const uint8_t writer_guid_prefix[12],
+#ifdef PUB_DATA_FF
+                           VOLATILE
+#endif // PUB_DATA_FF
+                           const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
+                           app_data_len_t pub_app_data_len, timestamp now) {
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
@@ -460,9 +474,12 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 
 /* Cyber func=inline */
 void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
-                    app_endpoint           app_reader_tbl[APP_READER_MAX],
-                    const config_t        *conf,
-                    VOLATILE const uint8_t pub_app_data[MAX_APP_DATA_LEN],
+                    app_endpoint    app_reader_tbl[APP_READER_MAX],
+                    const config_t *conf,
+#ifdef PUB_DATA_FF
+                    VOLATILE
+#endif // PUB_DATA_FF
+                    const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
                     VOLATILE const app_data_len_t *pub_app_data_len,
                     VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
                     VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
@@ -556,14 +573,26 @@ static void ros2_out(
     sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint             app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
-    const config_t                *conf,
-    VOLATILE const uint8_t         pub_app_data_0[MAX_APP_DATA_LEN],
+    const config_t *conf,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_0[MAX_APP_DATA_LEN / 4],
     VOLATILE const app_data_len_t *pub_app_data_len_0,
-    VOLATILE const uint8_t         pub_app_data_1[MAX_APP_DATA_LEN],
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_1[MAX_APP_DATA_LEN / 4],
     VOLATILE const app_data_len_t *pub_app_data_len_1,
-    VOLATILE const uint8_t         pub_app_data_2[MAX_APP_DATA_LEN],
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_2[MAX_APP_DATA_LEN / 4],
     VOLATILE const app_data_len_t *pub_app_data_len_2,
-    VOLATILE const uint8_t         pub_app_data_3[MAX_APP_DATA_LEN],
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_3[MAX_APP_DATA_LEN / 4],
     VOLATILE const app_data_len_t *pub_app_data_len_3,
     VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
     VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
@@ -708,12 +737,7 @@ static void ros2_out(
 
                 // Clear tx buffer before constructing packet to prevent
                 // variable length zero clear.
-
-                /* Cyber unroll_times=all */
-                for (int i = 0; i < TX_BUF_LEN; i++) {
-#pragma HLS unroll
-                    tx_buf.buf[i] = 0;
-                }
+                clear_txbuf(tx_buf.buf, 0, TX_BUF_LEN);
                 break;
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
@@ -1163,27 +1187,46 @@ void ros2(
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    VOLATILE const uint8_t
-        pub_app_data_0[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_0[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
         *pub_app_data_len_0 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_1[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_1[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
         *pub_app_data_len_1 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_2[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_2[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
         *pub_app_data_len_2 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_3[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_3[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
            *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES */,
@@ -1265,6 +1308,11 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
+#pragma HLS disaggregate             variable = conf->participant_lease_duration
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.seconds
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.fraction
 #pragma HLS array_reshape variable = conf->pub_topic_name type = complete dim  \
     = 2
 #pragma HLS array_partition variable = conf->pub_topic_name type               \
@@ -1298,17 +1346,31 @@ void ros2(
     = complete                                                       dim = 1
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
 #pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
+
+#ifdef PUB_DATA_FF
 #pragma HLS interface mode = ap_fifo port = pub_app_data_0
-#pragma HLS array_reshape variable = pub_app_data_0 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_0
 #pragma HLS interface mode = ap_fifo port = pub_app_data_1
-#pragma HLS array_reshape variable = pub_app_data_1 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_1
 #pragma HLS interface mode = ap_fifo port = pub_app_data_2
-#pragma HLS array_reshape variable = pub_app_data_2 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
 #pragma HLS interface mode = ap_fifo port = pub_app_data_3
+#pragma HLS array_reshape variable = pub_app_data_0 type = complete dim = 0
+#pragma HLS array_reshape variable = pub_app_data_1 type = complete dim = 0
+#pragma HLS array_reshape variable = pub_app_data_2 type = complete dim = 0
 #pragma HLS array_reshape variable = pub_app_data_3 type = complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS interface mode = ap_memory port = pub_app_data_0 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_1 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_2 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_3 storage_type      \
+    = rom_1p                                                 latency = 1
+#endif // PUB_DATA_RAM
+
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_1
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len_3
 #pragma HLS interface mode = ap_memory port = sub_app_data
 #pragma HLS interface mode = ap_none port = sub_app_data_len
