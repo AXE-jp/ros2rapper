@@ -274,7 +274,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         }
         offset++;
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
-            /* Cyber unroll times=all */
+            /* Cyber unroll_times=all */
             for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
                 if (!topics_unmatched[j]) {
