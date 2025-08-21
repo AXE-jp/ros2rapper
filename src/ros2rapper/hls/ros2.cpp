@@ -714,7 +714,7 @@ static void ros2_out(
                 //   2. there exists a living sedp_endpoint whose
                 //      initial_send_counter is less than three.
                 bool send = cnt_spdp_wr_elapsed;
-                /* Cyber untoll_times=all */
+                /* Cyber unroll_times=all */
                 for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
                     if (sedp_reader_tbl[j].alive
