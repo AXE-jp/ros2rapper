@@ -259,10 +259,17 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         sub_app_data[offset] = data;
         offset++;
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
+            /* Cyber scheduling_block=non-transparent */
+        sub_app_data_section: {
+#pragma HLS protocol fixed
             *sub_app_data_len = sbm_len;
             *sub_app_data_rep_id = rep_id;
-            *sub_app_data_recv = ~topics_unmatched;
             *sub_app_data_rel = 0;
+            CLOCK_BOUNDARY;
+            // Delay the asserting sub_app_data_recv by one clock cycle to wait
+            // for the recieved data to be stored.
+            *sub_app_data_recv = ~topics_unmatched;
+        }
             state = STATE_WAIT_END;
         }
         break;
