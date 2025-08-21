@@ -389,7 +389,7 @@ ros2 (
     .sub_app_data_d0(ros2_sub_app_data_wdata),
     .sub_app_data_len_ap_vld(ros2_sub_app_data_len_we),
     .sub_app_data_len(ros2_sub_app_data_len),
-    .sub_app_data_rep_id_ap_vld(ros2_sub_app_rep_id_we),
+    .sub_app_data_rep_id_ap_vld(ros2_sub_app_data_rep_id_we),
     .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
 
     .cnt_interval_set(),
