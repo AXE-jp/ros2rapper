@@ -235,11 +235,8 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 wire [3:0] sub_app_data_recv;
-wire       sub_app_data_recv_ap_vld;
-assign ros2_sub_app_data_recv[0] = sub_app_data_recv_ap_vld & sub_app_data_recv[0];
-assign ros2_sub_app_data_recv[1] = sub_app_data_recv_ap_vld & sub_app_data_recv[1];
-assign ros2_sub_app_data_recv[2] = sub_app_data_recv_ap_vld & sub_app_data_recv[2];
-assign ros2_sub_app_data_recv[3] = sub_app_data_recv_ap_vld & sub_app_data_recv[3];
+wire       sub_app_data_recv_we;
+assign ros2_sub_app_data_recv = sub_app_data_recv_we ? sub_app_data_recv : 0;
 
 wire ros2_cnt_interval_set;
 wire ros2_cnt_spdp_wr_set;
@@ -378,7 +375,7 @@ ros2 (
     .pub_app_data_grant({7'b0, ros2_pub_app_data_ip_grant}),
     .pub_app_data_grant_ap_ack(),
 
-    .sub_app_data_recv_ap_vld(sub_app_data_recv_ap_vld),
+    .sub_app_data_recv_ap_vld(sub_app_data_recv_we),
     .sub_app_data_recv(sub_app_data_recv),
     .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req),
     .sub_app_data_req(),
@@ -820,7 +817,7 @@ ros2 (
   .sub_app_data_len_wd(ros2_sub_app_data_len),
   .sub_app_data_rep_id_we(ros2_sub_app_data_rep_id_we),
   .sub_app_data_rep_id_wd(ros2_sub_app_data_rep_id),
-  .sub_app_data_recv_we(sub_app_data_recv_ap_vld),
+  .sub_app_data_recv_we(sub_app_data_recv_we),
   .sub_app_data_recv_wd(sub_app_data_recv),
   .sub_app_data_req_we(ros2_sub_app_data_ip_req),
   .sub_app_data_req_wd(),
