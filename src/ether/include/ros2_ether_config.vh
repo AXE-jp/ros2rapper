@@ -16,7 +16,7 @@
   //`define XILINX_CLKIN_STYLE_BUFIO2
 `endif
 
-`define MAC_TX_FIFO_DEPTH  512
+`define MAC_TX_FIFO_DEPTH  2048
 `define MAC_RX_FIFO_DEPTH  2048
 `define EXT_TX_FIFO_DEPTH  2
 `define EXT_RX_FIFO_DEPTH  2048

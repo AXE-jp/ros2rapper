@@ -13,6 +13,7 @@ add_files hls/sedp.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
 add_files hls/udp.cpp
+add_files hls/util.cpp
 
 set_top ros2
 
@@ -20,7 +21,7 @@ open_solution -reset solution1
 
 set_part xc7a100tcsg324-1
 config_rtl -reset all -reset_level low -reset_async
-create_clock -period 100MHz
+create_clock -period 80MHz
 
 csynth_design
 #export_design -format ip_catalog

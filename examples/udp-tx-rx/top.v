@@ -36,10 +36,10 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
-    localparam ROS2CLK_HZ = 100_000_000;
+    localparam ROS2CLK_HZ = 80_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
+        .CLKOUT0_DIVIDE_F(12.5),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -192,6 +192,7 @@ module top (
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
         .PRESCALER_DIV              (PRESCALER_DIV),
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
         .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
         .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
@@ -259,7 +260,14 @@ module top (
         .ros2_sub_topic_type_name_3(0),
         .ros2_sub_topic_type_name_len_3(0),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data(),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_addr(),
+        .ros2_pub_app_data_ce(),
+        .ros2_pub_app_data_rdata(0),
+`endif
         .ros2_pub_app_data_len(),
         .ros2_pub_app_data_req(1'b0),
         .ros2_pub_app_data_rel(1'b0),

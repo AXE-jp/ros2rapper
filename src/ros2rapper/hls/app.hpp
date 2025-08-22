@@ -26,7 +26,10 @@ void app_writer(const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
-                VOLATILE const uint8_t app_data[MAX_APP_DATA_LEN],
+#ifdef PUB_DATA_FF
+                VOLATILE
+#endif // PUB_DATA_FF
+                const uint32_t app_data[MAX_APP_DATA_LEN / 4],
                 uint32_t app_data_len, uint8_t buf[], timestamp now);
 
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
@@ -36,8 +39,8 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 VOLATILE uint8_t                  *sub_app_data_req,
                 VOLATILE uint8_t                  *sub_app_data_rel,
                 VOLATILE uint8_t                  *sub_app_data_grant,
-                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                VOLATILE uint8_t  *sub_app_data_len,
-                VOLATILE uint16_t *sub_app_data_rep_id);
+                uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
+                VOLATILE app_data_len_t *sub_app_data_len,
+                VOLATILE uint16_t       *sub_app_data_rep_id);
 
 #endif // !APP_HPP
