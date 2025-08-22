@@ -706,19 +706,31 @@ static void ros2_out(
                 break;
             }
         } else if (cnt_interval_elapsed) {
-            if ((pub_enable || (sub_enable != 0)) && cnt_spdp_wr_elapsed
-                && next_packet_type == 0) {
-                SPDP_WRITER_OUT();
-                ROTATE_NEXT_PACKET_TYPE;
-
-                /* Cyber scheduling_block = non-transparent */
-            cnt_reset_0: {
+            if ((pub_enable || (sub_enable != 0)) && next_packet_type == 0) {
+                // Send a SPDP message if
+                //   1. cnt_spdp_wr_elapsed is asserted.
+                //   2. there exists a living sedp_endpoint whose
+                //      initial_send_counter is less than three.
+                bool send = cnt_spdp_wr_elapsed;
+                /* Cyber untoll_times=all */
+                for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+                    if (sedp_reader_tbl[j].alive
+                        && (sedp_reader_tbl[j].initial_send_counter < 3)) {
+                        send = true;
+                    }
+                }
+                if (send) {
+                    SPDP_WRITER_OUT();
+                    /* Cyber scheduling_block = non-transparent */
+                cnt_reset_0: {
 #pragma HLS protocol fixed
-                *cnt_spdp_wr_set = 1;
-                CLOCK_BOUNDARY;
-                CLOCK_BOUNDARY;
-            }
-
+                    *cnt_spdp_wr_set = 1;
+                    CLOCK_BOUNDARY;
+                    CLOCK_BOUNDARY;
+                }
+                }
+                ROTATE_NEXT_PACKET_TYPE;
             } else if (pub_enable && next_packet_type == 1) {
                 if (cnt_sedp_pub_wr_elapsed)
                     tx_cnt_elapsed++;
