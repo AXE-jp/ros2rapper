@@ -9,6 +9,7 @@
 
 module ros2_ether #(
     parameter PRESCALER_DIV               = 64,
+    parameter ROS2CLK_HZ                  = 100_000_000,
     parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
     parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
     parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
@@ -266,6 +267,7 @@ rx_fifo (
 
 ros2rapper #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .ROS2CLK_HZ                 (ROS2CLK_HZ                 ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
     .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
     .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
