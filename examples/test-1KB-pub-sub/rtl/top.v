@@ -70,7 +70,10 @@ module top(
     wire ros2_sub_app_data_ce;
     wire ros2_sub_app_data_we;
     wire [7:0] ros2_sub_app_data_wdata;
-    ros2_module ros2_inst (
+    ros2_module #(
+        .ROS2CLK_HZ(80_000_000)
+    )
+    ros2_inst (
         .clk(ros2_clk),
         .rst_n(rst_n),
         .clk_25mhz(clk_25MHz),

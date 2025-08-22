@@ -8,15 +8,16 @@
 
 module ros2rapper #(
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter ROS2CLK_HZ                  = 100_000_000,
+    parameter TX_INTERVAL_COUNT           = (ROS2CLK_HZ / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (ROS2CLK_HZ / PRESCALER_DIV) * 3
 )
 (
     input  wire       clk,
@@ -126,7 +127,9 @@ module ros2rapper #(
     output wire ros2_sub_app_data_ce,
     output wire ros2_sub_app_data_we,
     output wire [7:0] ros2_sub_app_data_wdata,
+    output wire ros2_sub_app_data_len_we,
     output wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len,
+    output wire ros2_sub_app_data_rep_id_we,
     output wire [15:0] ros2_sub_app_data_rep_id,
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
@@ -240,7 +243,7 @@ reg [63:0] local_timestamp;
 // Designate the bit length to prevent overflow.
 localparam [33:0] TWO_SECONDS = 2 * (2 ** 32);
 // How much local_timestamp increases in each cycle.
-localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + `ROS2CLK_HZ) / (2 * `ROS2CLK_HZ);
+localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + ROS2CLK_HZ) / (2 * ROS2CLK_HZ);
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         local_timestamp <= 64'd0;
@@ -250,8 +253,8 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 wire [`ROS2_SUB_TOPICS_MAX-1:0] sub_app_data_recv;
-wire sub_app_data_recv_ap_vld;
-assign ros2_sub_app_data_recv = sub_app_data_recv_ap_vld ? sub_app_data_recv : 0;
+wire sub_app_data_recv_we;
+assign ros2_sub_app_data_recv = sub_app_data_recv_we ? sub_app_data_recv : 0;
 
 wire ros2_cnt_interval_set;
 wire ros2_cnt_spdp_wr_set;
@@ -447,7 +450,7 @@ ros2 (
     .pub_app_data_grant(ros2_pub_app_data_ip_grant),
     .pub_app_data_grant_ap_ack(),
 
-    .sub_app_data_recv_ap_vld(sub_app_data_recv_ap_vld),
+    .sub_app_data_recv_ap_vld(sub_app_data_recv_we),
     .sub_app_data_recv(sub_app_data_recv),
     .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req),
     .sub_app_data_req(),
@@ -459,7 +462,9 @@ ros2 (
     .sub_app_data_ce0(ros2_sub_app_data_ce),
     .sub_app_data_we0(ros2_sub_app_data_we),
     .sub_app_data_d0(ros2_sub_app_data_wdata),
+    .sub_app_data_len_ap_vld(ros2_sub_app_data_len_we),
     .sub_app_data_len(ros2_sub_app_data_len),
+    .sub_app_data_rep_id_ap_vld(ros2_sub_app_data_rep_id_we),
     .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
 
     .cnt_interval_set(),
@@ -3088,9 +3093,11 @@ ros2 (
   .sub_app_data_AD1(ros2_sub_app_data_addr),
   .sub_app_data_WE1(ros2_sub_app_data_we),
   .sub_app_data_WD1(ros2_sub_app_data_wdata),
-  .sub_app_data_len(ros2_sub_app_data_len),
-  .sub_app_data_rep_id(ros2_sub_app_data_rep_id),
-  .sub_app_data_recv_we(sub_app_data_recv_ap_vld),
+  .sub_app_data_len_we(ros2_sub_app_data_len_we),
+  .sub_app_data_len_wd(ros2_sub_app_data_len),
+  .sub_app_data_rep_id_we(ros2_sub_app_data_rep_id_we),
+  .sub_app_data_rep_id_wd(ros2_sub_app_data_rep_id),
+  .sub_app_data_recv_we(sub_app_data_recv_we),
   .sub_app_data_recv_wd(sub_app_data_recv),
   .sub_app_data_req_we(ros2_sub_app_data_ip_req),
   .sub_app_data_req_wd(),
@@ -3197,15 +3204,15 @@ endmodule
 module ros2rapper_tx_counters #
 (
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (100_000_000 / PRESCALER_DIV) * 3
 )
 (
     input wire i_clk,

@@ -9,15 +9,16 @@
 
 module ros2_ether #(
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter ROS2CLK_HZ                  = 100_000_000,
+    parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (100_000_000 / PRESCALER_DIV) * 3
 )
 (
     input  wire       clk,
@@ -128,7 +129,9 @@ module ros2_ether #(
     output wire ros2_sub_app_data_ce,
     output wire ros2_sub_app_data_we,
     output wire [7:0] ros2_sub_app_data_wdata,
+    output wire ros2_sub_app_data_len_we,
     output wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len,
+    output wire ros2_sub_app_data_rep_id_we,
     output wire [15:0] ros2_sub_app_data_rep_id,
     input  wire ros2_sub_app_data_req,
     input  wire ros2_sub_app_data_rel,
@@ -301,6 +304,7 @@ rx_fifo (
 
 ros2rapper #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .ROS2CLK_HZ                 (ROS2CLK_HZ                 ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
     .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
     .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
@@ -418,7 +422,9 @@ ros2rapper (
     .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
     .ros2_sub_app_data_we(ros2_sub_app_data_we),
     .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
+    .ros2_sub_app_data_len_we(ros2_sub_app_data_len_we),
     .ros2_sub_app_data_len(ros2_sub_app_data_len),
+    .ros2_sub_app_data_rep_id_we(ros2_sub_app_data_rep_id_we),
     .ros2_sub_app_data_rep_id(ros2_sub_app_data_rep_id),
     .ros2_sub_app_data_req(ros2_sub_app_data_req),
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),

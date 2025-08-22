@@ -806,20 +806,32 @@ static void ros2_out(
                 break;
             }
         } else if (cnt_interval_elapsed) {
-            if (((pub_enable != 0) || (sub_enable != 0)) && cnt_spdp_wr_elapsed
-                && next_packet_type == 0) {
-                SPDP_WRITER_OUT();
-                ROTATE_NEXT_PACKET_TYPE;
-
-                /* Cyber scheduling_block = non-transparent */
-            cnt_reset_0: {
+             if (((pub_enable != 0) || (sub_enable != 0)) && next_packet_type == 0) {
+                // Send a SPDP message if
+                //   1. cnt_spdp_wr_elapsed is asserted.
+                //   2. there exists a living sedp_endpoint whose
+                //      initial_send_counter is less than three.
+                bool send = cnt_spdp_wr_elapsed;
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+                    if (sedp_reader_tbl[j].alive
+                        && (sedp_reader_tbl[j].initial_send_counter < 3)) {
+                        send = true;
+                    }
+                }
+                if (send) {
+                    SPDP_WRITER_OUT();
+                    /* Cyber scheduling_block = non-transparent */
+                cnt_reset_0: {
 #pragma HLS protocol fixed
-                *cnt_spdp_wr_set = 1;
-                CLOCK_BOUNDARY;
-                CLOCK_BOUNDARY;
-            }
-
-            } else if ((pub_enable != 0) && (next_packet_type == 1)) {
+                    *cnt_spdp_wr_set = 1;
+                    CLOCK_BOUNDARY;
+                    CLOCK_BOUNDARY;
+                }
+                }
+                ROTATE_NEXT_PACKET_TYPE;
+            } else if (pub_enable && next_packet_type == 1) {
                 if (tx_topic_progress >= PUB_TOPICS_MAX) {
                     // Finish sending published topic data
                     if (tx_cnt_elapsed == PUB_TOPICS_MAX) {
@@ -1232,8 +1244,10 @@ void ros2(
            *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES */,
     uint8_t sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE app_data_len_t *sub_app_data_len /* Cyber volatile=YES*/,
-    VOLATILE uint16_t       *sub_app_data_rep_id /* Cyber volatile=YES*/,
+    VOLATILE app_data_len_t
+        *sub_app_data_len /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint16_t
+        *sub_app_data_rep_id /* Cyber port_mode=shared,  volatile=YES */,
     VOLATILE                 hls_uint<PUB_TOPICS_MAX>
             *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<PUB_TOPICS_MAX>
@@ -1373,8 +1387,8 @@ void ros2(
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len_3
 #pragma HLS interface mode = ap_memory port = sub_app_data
-#pragma HLS interface mode = ap_none port = sub_app_data_len
-#pragma HLS interface mode = ap_none port = sub_app_data_rep_id
+#pragma HLS interface mode = ap_vld port = sub_app_data_len
+#pragma HLS interface mode = ap_vld port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = pub_app_data_req
 #pragma HLS interface mode = ap_vld port = pub_app_data_rel
 #pragma HLS interface mode = ap_ack port = pub_app_data_grant

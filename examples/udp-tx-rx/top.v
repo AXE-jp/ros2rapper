@@ -36,6 +36,7 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
+    localparam ROS2CLK_HZ = 80_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
         .CLKOUT0_DIVIDE_F(12.5),
@@ -191,15 +192,16 @@ module top (
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
         .PRESCALER_DIV              (PRESCALER_DIV),
-        .TX_INTERVAL_COUNT          ((`ROS2CLK_HZ / PRESCALER_DIV) / 100),
-        .TX_PERIOD_SPDP_WR_COUNT    ((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_APP_WR_COUNT     ((`ROS2CLK_HZ / PRESCALER_DIV) * 3)
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
+        .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
+        .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_APP_WR_COUNT     ((ROS2CLK_HZ / PRESCALER_DIV) * 3)
     )
     ros2 (
         .clk(clk_int),
@@ -309,7 +311,9 @@ module top (
         .ros2_sub_app_data_ce(),
         .ros2_sub_app_data_we(),
         .ros2_sub_app_data_wdata(),
+        .ros2_sub_app_data_len_we(),
         .ros2_sub_app_data_len(),
+        .ros2_sub_app_data_rep_id_we(),
         .ros2_sub_app_data_rep_id(),
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),

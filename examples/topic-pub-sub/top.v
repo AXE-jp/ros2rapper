@@ -36,6 +36,7 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
+    localparam ROS2CLK_HZ = 80_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
         .CLKOUT0_DIVIDE_F(12.5),
@@ -197,17 +198,29 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
 
     // --- ROS2 Subscriber Received Message
+    wire w_ros2_sub_app_data_len_we;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
+
+    wire        w_ros2_sub_app_data_rep_id_we;
+    wire [15:0] w_ros2_sub_app_data_rep_id;
+    reg  [15:0] ros2_sub_app_data_rep_id;
+
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
     wire ros2_sub_app_data_ce;
     wire ros2_sub_app_data_we;
     wire [7:0] ros2_sub_app_data_wdata;
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
+
     always @(posedge clk_int) begin
+        if (w_ros2_sub_app_data_len_we)
+            ros2_sub_app_data_len <= w_ros2_sub_app_data_len;
+        if (w_ros2_sub_app_data_rep_id_we)
+            ros2_sub_app_data_rep_id <= w_ros2_sub_app_data_rep_id;
         if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
     end
-    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
-    wire [15:0] ros2_sub_app_data_rep_id;
+
     assign led4 = rx_msg_reg[0][0];
     assign led5 = rx_msg_reg[0][1];
     assign led6 = rx_msg_reg[0][2];
@@ -237,15 +250,16 @@ module top (
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
         .PRESCALER_DIV              (PRESCALER_DIV),
-        .TX_INTERVAL_COUNT          ((`ROS2CLK_HZ / PRESCALER_DIV) / 100),
-        .TX_PERIOD_SPDP_WR_COUNT    ((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_APP_WR_COUNT     ((`ROS2CLK_HZ / PRESCALER_DIV) * 3)
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
+        .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
+        .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_APP_WR_COUNT     ((ROS2CLK_HZ / PRESCALER_DIV) * 3)
     )
     ros2 (
         .clk(clk_int),
@@ -356,8 +370,10 @@ module top (
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
         .ros2_sub_app_data_we(ros2_sub_app_data_we),
         .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len(ros2_sub_app_data_len),
-        .ros2_sub_app_data_rep_id(ros2_sub_app_data_rep_id),
+        .ros2_sub_app_data_len_we(w_ros2_sub_app_data_len_we),
+        .ros2_sub_app_data_len(w_ros2_sub_app_data_len),
+        .ros2_sub_app_data_rep_id_we(w_ros2_sub_app_data_rep_id_we),
+        .ros2_sub_app_data_rep_id(w_ros2_sub_app_data_rep_id),
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),
         .ros2_sub_app_data_grant(),
