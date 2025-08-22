@@ -81,9 +81,7 @@ module ros2_module #(
     integer i;
     always @(posedge clk) begin
         if (ros2_pub_app_data_ce) begin
-            for (i = 0; i < 32; i = i + 1) begin
-                ros2_pub_app_data_rdata[i] <= ros2_pub_app_data[32*ros2_pub_app_data_addr + i];
-            end
+            ros2_pub_app_data_rdata <= ros2_pub_app_data[32*ros2_pub_app_data_addr +: 32];
         end
     end
 `endif
