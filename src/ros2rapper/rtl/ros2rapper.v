@@ -3058,9 +3058,9 @@ ros2 (
   .pub_app_data_1_AD1(ros2_pub_app_data_1_addr),
   .pub_app_data_1_RD1(ros2_pub_app_data_1_rdata),
 
-  .pub_app_data_2_CS1(ros2_pub_app_data_1_ce),
-  .pub_app_data_2_AD1(ros2_pub_app_data_1_addr),
-  .pub_app_data_2_RD1(ros2_pub_app_data_1_rdata),
+  .pub_app_data_2_CS1(ros2_pub_app_data_2_ce),
+  .pub_app_data_2_AD1(ros2_pub_app_data_2_addr),
+  .pub_app_data_2_RD1(ros2_pub_app_data_2_rdata),
 
   .pub_app_data_3_CS1(ros2_pub_app_data_3_ce),
   .pub_app_data_3_AD1(ros2_pub_app_data_3_addr),
