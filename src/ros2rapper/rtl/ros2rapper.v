@@ -158,15 +158,15 @@ module ros2rapper #(
 
 wire [`ROS2_PUB_TOPICS_MAX-1:0] pub_app_data_ip_req;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] pub_app_data_ip_rel;
-wire pub_app_data_ip_req_ap_vld;
-wire pub_app_data_ip_rel_ap_vld;
+wire pub_app_data_ip_req_we;
+wire pub_app_data_ip_rel_we;
 
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_req;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_rel;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_grant;
 
-assign ros2_pub_app_data_ip_req = pub_app_data_ip_req_ap_vld ? pub_app_data_ip_req : 0;
-assign ros2_pub_app_data_ip_rel = pub_app_data_ip_rel_ap_vld ? pub_app_data_ip_rel : 0;
+assign ros2_pub_app_data_ip_req = pub_app_data_ip_req_we ? pub_app_data_ip_req : 0;
+assign ros2_pub_app_data_ip_rel = pub_app_data_ip_rel_we ? pub_app_data_ip_rel : 0;
 
 generate
     genvar iter;
@@ -443,9 +443,9 @@ ros2 (
     .pub_app_data_len_3_empty_n(1'b1),
     .pub_app_data_len_3_read(),
 
-    .pub_app_data_req_ap_vld(pub_app_data_ip_req_ap_vld),
+    .pub_app_data_req_ap_vld(pub_app_data_ip_req_we),
     .pub_app_data_req(pub_app_data_ip_req),
-    .pub_app_data_rel_ap_vld(pub_app_data_ip_rel_ap_vld),
+    .pub_app_data_rel_ap_vld(pub_app_data_ip_rel_we),
     .pub_app_data_rel(pub_app_data_ip_rel),
     .pub_app_data_grant(ros2_pub_app_data_ip_grant),
     .pub_app_data_grant_ap_ack(),
@@ -3083,9 +3083,9 @@ ros2 (
   .pub_app_data_len_3_empty(1'b0),
   .pub_app_data_len_3_dout(ros2_pub_app_data_len_3),
 
-  .pub_app_data_req_we(pub_app_data_ip_req_ap_vld),
+  .pub_app_data_req_we(pub_app_data_ip_req_we),
   .pub_app_data_req_wd(pub_app_data_ip_req),
-  .pub_app_data_rel_we(pub_app_data_ip_rel_ap_vld),
+  .pub_app_data_rel_we(pub_app_data_ip_rel_we),
   .pub_app_data_rel_wd(pub_app_data_ip_rel),
   .pub_app_data_grant_rd(ros2_pub_app_data_ip_grant),
 
