@@ -806,7 +806,8 @@ static void ros2_out(
                 break;
             }
         } else if (cnt_interval_elapsed) {
-             if (((pub_enable != 0) || (sub_enable != 0)) && next_packet_type == 0) {
+            if (((pub_enable != 0) || (sub_enable != 0))
+                && next_packet_type == 0) {
                 // Send a SPDP message if
                 //   1. cnt_spdp_wr_elapsed is asserted.
                 //   2. there exists a living sedp_endpoint whose
@@ -1247,8 +1248,8 @@ void ros2(
     VOLATILE app_data_len_t
         *sub_app_data_len /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint16_t
-        *sub_app_data_rep_id /* Cyber port_mode=shared,  volatile=YES */,
-    VOLATILE                 hls_uint<PUB_TOPICS_MAX>
+            *sub_app_data_rep_id /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<PUB_TOPICS_MAX>
             *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<PUB_TOPICS_MAX>
             *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
