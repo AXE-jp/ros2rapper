@@ -13,6 +13,7 @@
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
+#include "util.hpp"
 
 #define USE_FIFOIF_ETHERNET
 
@@ -20,12 +21,21 @@ class tx_buf {
   public:
     uint16_t head;
     uint16_t len;
-    uint8_t  buf[TX_BUF_LEN] /* Cyber array=EXPAND,array_index=const */;
+    uint8_t  buf[TX_BUF_LEN]
+#ifdef PUB_DATA_FF
+    /* Cyber array=EXPAND,array_index=const */
+#endif // PUB_DATA_FF
+        ;
 
     /* Cyber func=inline */
     uint8_t deque() {
 #pragma HLS inline
+#ifdef PUB_DATA_FF
 #pragma HLS array_partition variable = buf complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS bind_storage variable = buf type = ram_t2p
+#endif // PUB_DATA_RAM
         return buf[head++];
     }
 
@@ -99,8 +109,9 @@ static void ros2_in(
     hls_uint<SUB_TOPICS_MAX> sub_enable, const config_t *conf,
     VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
     VOLATILE uint8_t *sub_app_data_req, VOLATILE uint8_t *sub_app_data_rel,
-    VOLATILE uint8_t *sub_app_data_grant,
-    uint8_t sub_app_data[MAX_APP_DATA_LEN], VOLATILE uint8_t *sub_app_data_len,
+    VOLATILE uint8_t        *sub_app_data_grant,
+    uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
+    VOLATILE app_data_len_t *sub_app_data_len,
     VOLATILE uint16_t *sub_app_data_rep_id, VOLATILE uint8_t *rawudp_rxbuf_rel,
     VOLATILE uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
     bool *reading_rtps_message, int64_t timestamp_i64, hls_uint<9> *xout) {
@@ -196,39 +207,15 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
 }
 
 /* Cyber func=inline */
-static void sedp_pub_writer_out(const uint8_t writer_entity_id[4],
-                                const uint8_t dst_addr[4],
-                                const uint8_t dst_port[2],
-                                const uint8_t reader_guid_prefix[12],
-                                const uint8_t reader_entity_id[4],
-                                const uint8_t usertraffic_port[2],
-                                const uint8_t app_entity_id[4], tx_buf &tx_buf,
-                                const config_t *conf, timestamp now) {
-    ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  SEDP_WRITER_UDP_PKT_LEN, tx_buf.buf);
-
-    udp_set_header(conf->node_udp_port, dst_port, SEDP_WRITER_RTPS_PKT_LEN,
-                   tx_buf.buf + IP_HDR_SIZE);
-
-    sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                reader_entity_id, 1, conf->ip_addr, usertraffic_port,
-                app_entity_id, tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
-                conf->pub_topic_name, conf->pub_topic_name_len,
-                conf->pub_topic_type_name, conf->pub_topic_type_name_len, now);
-
-    tx_buf.head = 0;
-    tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
-}
-
-/* Cyber func=inline */
-static void sedp_sub_writer_out(
-    const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-    const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-    const uint8_t reader_entity_id[4], int64_t seqnum,
-    const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
-    tx_buf &tx_buf, const uint8_t sub_topic_name[], uint8_t sub_topic_name_len,
-    const uint8_t sub_topic_type_name[], uint8_t sub_topic_type_name_len,
-    const config_t *conf, timestamp now) {
+static void
+sedp_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
+                const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
+                const uint8_t reader_entity_id[4], int64_t seqnum,
+                const uint8_t usertraffic_port[2],
+                const uint8_t app_entity_id[4], tx_buf &tx_buf,
+                const uint8_t topic_name[], uint8_t topic_name_len,
+                const uint8_t topic_type_name[], uint8_t topic_type_name_len,
+                const config_t *conf, timestamp now) {
     ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
                   SEDP_WRITER_UDP_PKT_LEN, tx_buf.buf);
 
@@ -238,8 +225,8 @@ static void sedp_sub_writer_out(
     sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
                 reader_entity_id, seqnum, conf->ip_addr, usertraffic_port,
                 app_entity_id, tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
-                sub_topic_name, sub_topic_name_len, sub_topic_type_name,
-                sub_topic_type_name_len, now);
+                topic_name, topic_name_len, topic_type_name,
+                topic_type_name_len, now);
 
     tx_buf.head = 0;
     tx_buf.len = SEDP_WRITER_IP_PKT_LEN;
@@ -295,29 +282,33 @@ sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
 }
 
 /* Cyber func=inline */
-static void
-app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-               const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-               const uint8_t reader_entity_id[4], tx_buf &tx_buf,
-               int64_t &seqnum, const uint8_t src_addr[4],
-               const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
-               VOLATILE const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-               VOLATILE const uint8_t *pub_app_data_len, timestamp now) {
+static void app_writer_out(const uint8_t writer_entity_id[4],
+                           const uint8_t dst_addr[4], const uint8_t dst_port[2],
+                           const uint8_t reader_guid_prefix[12],
+                           const uint8_t reader_entity_id[4], tx_buf &tx_buf,
+                           int64_t &seqnum, const uint8_t src_addr[4],
+                           const uint8_t src_port[2],
+                           const uint8_t writer_guid_prefix[12],
+#ifdef PUB_DATA_FF
+                           VOLATILE
+#endif // PUB_DATA_FF
+                           const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
+                           app_data_len_t pub_app_data_len, timestamp now) {
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  APP_WRITER_UDP_PKT_LEN(*pub_app_data_len), tx_buf.buf);
+                  APP_WRITER_UDP_PKT_LEN(pub_app_data_len), tx_buf.buf);
 
     udp_set_header(src_port, dst_port,
-                   APP_WRITER_RTPS_PKT_LEN(*pub_app_data_len),
+                   APP_WRITER_RTPS_PKT_LEN(pub_app_data_len),
                    tx_buf.buf + IP_HDR_SIZE);
 
     app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
-               reader_entity_id, seqnum, pub_app_data, *pub_app_data_len,
+               reader_entity_id, seqnum, pub_app_data, pub_app_data_len,
                tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), now);
 
     tx_buf.head = 0;
-    tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
+    tx_buf.len = APP_WRITER_IP_PKT_LEN(pub_app_data_len);
 }
 
 /* Cyber func=inline */
@@ -342,11 +333,14 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
 #define SEDP_PUB_WRITER_OUT(id)                                                \
     do {                                                                       \
         if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_pub_writer_out(                                               \
+            sedp_writer_out(                                                   \
                 pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id,       \
-                default_port, app_writer_entity_id, tx_buf, conf, now);        \
+                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id, 1,    \
+                default_port, app_writer_entity_id, tx_buf,                    \
+                conf->pub_topic_name, conf->pub_topic_name_len,                \
+                conf->pub_topic_type_name, conf->pub_topic_type_name_len,      \
+                conf, now);                                                    \
         }                                                                      \
     } while (0)
 
@@ -356,7 +350,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     do {                                                                       \
         if (sedp_reader_tbl[(id)].alive) {                                     \
             sedp_reader_tbl[(id)].builtin_subwr_lastsn++;                      \
-            sedp_sub_writer_out(                                               \
+            sedp_writer_out(                                                   \
                 sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
                 sedp_reader_tbl[(id)].udp_port,                                \
                 sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id,       \
@@ -452,13 +446,19 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     } while (0)
 
 /* Cyber func=inline */
-void APP_WRITER_OUT(
-    app_reader_id_t id, app_endpoint app_reader_tbl[APP_READER_MAX],
-    const config_t *conf, VOLATILE const uint8_t pub_app_data[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len,
-    VOLATILE uint8_t *pub_app_data_req, VOLATILE uint8_t *pub_app_data_rel,
-    VOLATILE uint8_t *pub_app_data_grant, const uint8_t app_writer_entity_id[4],
-    tx_buf &tx_buf, int64_t &app_seqnum, timestamp now) {
+void APP_WRITER_OUT(app_reader_id_t id,
+                    app_endpoint    app_reader_tbl[APP_READER_MAX],
+                    const config_t *conf,
+#ifdef PUB_DATA_FF
+                    VOLATILE
+#endif // PUB_DATA_FF
+                    const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
+                    VOLATILE const app_data_len_t *pub_app_data_len,
+                    VOLATILE uint8_t              *pub_app_data_req,
+                    VOLATILE uint8_t              *pub_app_data_rel,
+                    VOLATILE uint8_t              *pub_app_data_grant,
+                    const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
+                    int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
 
     if ((id < APP_READER_MAX) && app_reader_tbl[id].alive
@@ -480,7 +480,7 @@ void APP_WRITER_OUT(
                 app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
                 app_reader_tbl[id].entity_id, tx_buf, app_seqnum, conf->ip_addr,
                 conf->node_udp_port, conf->guid_prefix, pub_app_data,
-                pub_app_data_len, now);
+                *pub_app_data_len, now);
 
         /* Cyber scheduling_block = non-transparent */
         app_data_release_section: {
@@ -507,8 +507,11 @@ static void ros2_out(
     sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint app_reader_tbl[APP_READER_MAX], hls_uint<1> pub_enable,
     hls_uint<SUB_TOPICS_MAX> sub_enable, const config_t *conf,
-    VOLATILE const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data[MAX_APP_DATA_LEN / 4],
+    VOLATILE const app_data_len_t *pub_app_data_len,
     VOLATILE uint8_t *pub_app_data_req, VOLATILE uint8_t *pub_app_data_rel,
     VOLATILE uint8_t *pub_app_data_grant, VOLATILE uint8_t *rawudp_txbuf_rel,
     VOLATILE uint8_t *rawudp_txbuf_grant, hls_uint<1> cnt_interval_elapsed,
@@ -634,12 +637,7 @@ static void ros2_out(
 
                 // Clear tx buffer before constructing packet to prevent
                 // variable length zero clear.
-
-                /* Cyber unroll_times=all */
-                for (int i = 0; i < TX_BUF_LEN; i++) {
-#pragma HLS unroll
-                    tx_buf.buf[i] = 0;
-                }
+                clear_txbuf(tx_buf.buf, 0, TX_BUF_LEN);
                 break;
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
@@ -1100,15 +1098,21 @@ void ros2(
     hls_uint<1>              pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    VOLATILE const uint8_t
-        pub_app_data[MAX_APP_DATA_LEN] /* Cyber array=EXPAND, port_mode=shared,
-                                          volatile=YES */
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
-    VOLATILE const uint8_t
+
+    VOLATILE const app_data_len_t
            *pub_app_data_len /* Cyber port_mode=cw_fifo, volatile=YES */,
     uint8_t sub_app_data
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE uint8_t
+    VOLATILE app_data_len_t
         *sub_app_data_len /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint16_t
         *sub_app_data_rep_id /* Cyber port_mode=shared,  volatile=YES */,
@@ -1232,8 +1236,16 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_3
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len_3
 #pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
+
+#ifdef PUB_DATA_FF
 #pragma HLS interface mode = ap_fifo port = pub_app_data
 #pragma HLS array_reshape variable = pub_app_data type = complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS interface mode = ap_memory port = pub_app_data storage_type        \
+    = rom_1p                                               latency = 1
+#endif // PUB_DATA_RAM
+
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len
 #pragma HLS interface mode = ap_memory port = sub_app_data
 #pragma HLS interface mode = ap_vld port = sub_app_data_len

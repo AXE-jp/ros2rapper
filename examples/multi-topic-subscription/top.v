@@ -56,10 +56,10 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
-    localparam ROS2CLK_HZ = 100_000_000;
+    localparam ROS2CLK_HZ = 80_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
+        .CLKOUT0_DIVIDE_F(12.5),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -149,8 +149,34 @@ module top (
     reg [7:0] msg_number;
 
     localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
+    localparam [`ROS2_APP_DATA_LEN_WIDTH-1:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
+`ifdef ROS2_PUB_DATA_RAM
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr;
+    wire ros2_pub_app_data_ce;
+    reg  [31:0] ros2_pub_app_data_rdata;
+    always @(posedge clk_int) begin
+        if (ros2_pub_app_data_ce) begin
+            if (ros2_pub_app_data_addr == 0) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[31:0];
+            end else if (ros2_pub_app_data_addr == 1) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[63:32];
+            end else if (ros2_pub_app_data_addr == 2) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[95:64];
+            end else if (ros2_pub_app_data_addr == 3) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[127:96];
+            end else if (ros2_pub_app_data_addr == 4) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[159:128];
+            end else if (ros2_pub_app_data_addr == 5) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[191:160];
+            end else if (ros2_pub_app_data_addr == 6) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[223:192];
+            end else begin
+                ros2_pub_app_data_rdata <= 32'd0;
+            end
+        end
+    end
+`endif
 
     // --- ROS2 Publisher Message Control
     reg ros2_pub_app_data_req;
@@ -206,9 +232,9 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len_3 = 8'd29;
 
     // --- ROS2 Subscriber Received Message
-    wire       w_ros2_sub_app_data_len_we;
-    wire [7:0] w_ros2_sub_app_data_len;
-    reg  [7:0] ros2_sub_app_data_len;
+    wire w_ros2_sub_app_data_len_we;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
 
     wire        w_ros2_sub_app_data_rep_id_we;
     wire [15:0] w_ros2_sub_app_data_rep_id;
@@ -287,6 +313,7 @@ module top (
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
         .PRESCALER_DIV              (PRESCALER_DIV),
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
         .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
         .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
@@ -354,7 +381,14 @@ module top (
         .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
         .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data(ros2_pub_app_data),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_addr(ros2_pub_app_data_addr),
+        .ros2_pub_app_data_ce(ros2_pub_app_data_ce),
+        .ros2_pub_app_data_rdata(ros2_pub_app_data_rdata),
+`endif
         .ros2_pub_app_data_len(ROS2_PUB_APP_DATA_LEN),
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),

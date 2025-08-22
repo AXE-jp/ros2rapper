@@ -9,6 +9,7 @@
 
 module ros2_ether #(
     parameter PRESCALER_DIV               = 64,
+    parameter ROS2CLK_HZ                  = 100_000_000,
     parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
     parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
     parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
@@ -76,8 +77,15 @@ module ros2_ether #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
+`ifdef ROS2_PUB_DATA_FF
     input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
-    input  wire [7:0] ros2_pub_app_data_len,
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr,
+    output wire ros2_pub_app_data_ce,
+    input  wire [31:0] ros2_pub_app_data_rdata,
+`endif
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len,
     input  wire ros2_pub_app_data_req,
     input  wire ros2_pub_app_data_rel,
     output wire ros2_pub_app_data_grant,
@@ -87,7 +95,7 @@ module ros2_ether #(
     output wire ros2_sub_app_data_we,
     output wire [7:0] ros2_sub_app_data_wdata,
     output wire ros2_sub_app_data_len_we,
-    output wire [7:0] ros2_sub_app_data_len,
+    output wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len,
     output wire ros2_sub_app_data_rep_id_we,
     output wire [15:0] ros2_sub_app_data_rep_id,
     input  wire ros2_sub_app_data_req,
@@ -261,6 +269,7 @@ rx_fifo (
 
 ros2rapper #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .ROS2CLK_HZ                 (ROS2CLK_HZ                 ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
     .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
     .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
@@ -326,7 +335,14 @@ ros2rapper (
     .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
     .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
+`ifdef ROS2_PUB_DATA_FF
     .ros2_pub_app_data(ros2_pub_app_data),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    .ros2_pub_app_data_addr(ros2_pub_app_data_addr),
+    .ros2_pub_app_data_ce(ros2_pub_app_data_ce),
+    .ros2_pub_app_data_rdata(ros2_pub_app_data_rdata),
+`endif
     .ros2_pub_app_data_len(ros2_pub_app_data_len),
     .ros2_pub_app_data_req(ros2_pub_app_data_req),
     .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
