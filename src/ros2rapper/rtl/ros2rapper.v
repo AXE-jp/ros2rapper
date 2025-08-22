@@ -8,15 +8,16 @@
 
 module ros2rapper #(
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter ROS2CLK_HZ                  = 100_000_000,
+    parameter TX_INTERVAL_COUNT           = (ROS2CLK_HZ / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (ROS2CLK_HZ / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (ROS2CLK_HZ / PRESCALER_DIV) * 3
 )
 (
     input  wire       clk,
@@ -225,7 +226,7 @@ reg [63:0] local_timestamp;
 // Designate the bit length to prevent overflow.
 localparam [33:0] TWO_SECONDS = 2 * (2 ** 32);
 // How much local_timestamp increases in each cycle.
-localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + `ROS2CLK_HZ) / (2 * `ROS2CLK_HZ);
+localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + ROS2CLK_HZ) / (2 * ROS2CLK_HZ);
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         local_timestamp <= 64'd0;
@@ -874,15 +875,15 @@ endmodule
 module ros2rapper_tx_counters #
 (
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (100_000_000 / PRESCALER_DIV) * 3
 )
 (
     input wire i_clk,
