@@ -210,18 +210,15 @@ module top (
     wire ros2_pub_app_data_3_ce;
     reg  [31:0] ros2_pub_app_data_3_rdata;
 
-    integer i;
     always @(posedge clk_int) begin
-        for (i = 0; i < 32; i = i + 1) begin
-            if (ros2_pub_app_data_0_ce)
-                ros2_pub_app_data_0_rdata[i] <= ros2_pub_app_data_0[32*ros2_pub_app_data_0_addr + i];
-            if (ros2_pub_app_data_1_ce)
-                ros2_pub_app_data_1_rdata[i] <= ros2_pub_app_data_1[32*ros2_pub_app_data_1_addr + i];
-            if (ros2_pub_app_data_2_ce)
-                ros2_pub_app_data_2_rdata[i] <= ros2_pub_app_data_2[32*ros2_pub_app_data_2_addr + i];
-            if (ros2_pub_app_data_3_ce)
-                ros2_pub_app_data_3_rdata[i] <= ros2_pub_app_data_3[32*ros2_pub_app_data_3_addr + i];
-        end
+        if (ros2_pub_app_data_0_ce)
+            ros2_pub_app_data_0_rdata <= ros2_pub_app_data_0[32*ros2_pub_app_data_0_addr +: 32];
+        if (ros2_pub_app_data_1_ce)
+            ros2_pub_app_data_1_rdata <= ros2_pub_app_data_1[32*ros2_pub_app_data_1_addr +: 32];
+        if (ros2_pub_app_data_2_ce)
+            ros2_pub_app_data_2_rdata <= ros2_pub_app_data_2[32*ros2_pub_app_data_2_addr +: 32];
+        if (ros2_pub_app_data_3_ce)
+            ros2_pub_app_data_3_rdata <= ros2_pub_app_data_3[32*ros2_pub_app_data_3_addr +: 32];
     end
 `endif
 
