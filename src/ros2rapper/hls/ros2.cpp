@@ -470,7 +470,6 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
                 *pub_app_data_rel = (1 << topic_id);
                 CLOCK_BOUNDARY;
                 CLOCK_BOUNDARY;
-                grant = *pub_app_data_grant;
             }
             }
         }
