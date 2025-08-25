@@ -212,7 +212,7 @@ module top (
     assign pub_app_data_grant = ros2_pub_app_data_grant[0];
 
     // --- ROS2 Subscriber Configuration
-    wire [3:0] ros2sub_en;
+    wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2sub_en;
     assign ros2sub_en[0] = sw0;
     assign ros2sub_en[1] = sw1;
     assign ros2sub_en[2] = sw2;
@@ -253,7 +253,7 @@ module top (
     wire [7:0] ros2_sub_app_data_wdata;
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
 
-    wire [3:0] ros2_sub_app_data_recv;
+    wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv;
     reg [3:0] sub_recvd_reg_0;
     reg [3:0] sub_recvd_reg_1;
     reg [3:0] sub_recvd_reg_2;
@@ -336,7 +336,7 @@ module top (
         .rst_n(rst_n_int),
 
         .ether_en(1'b1),
-        .ros2pub_en(4'b0001),
+        .ros2pub_en(1),
         .ros2sub_en(ros2sub_en),
 
         .phy_rx_clk(phy_rx_clk),

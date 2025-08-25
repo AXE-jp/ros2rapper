@@ -127,7 +127,7 @@ module top (
     wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
 
     // --- ROS2 Pubisher Configuration
-    wire [3:0] ros2pub_en = {sw3, sw2, sw1, sw0};
+    wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2pub_en = {sw3, sw2, sw1, sw0};
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0 = "bbb/tr";
     wire [7:0] ros2_pub_topic_name_len_0 = 8'd7;
@@ -299,7 +299,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(ros2pub_en),
-        .ros2sub_en(4'b0001),
+        .ros2sub_en(1),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
