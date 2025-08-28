@@ -444,18 +444,17 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
             && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)
             && (app_reader_tbl[id].pub_topic_id == topic_id)) {
 
-            bool grant;
+            hls_uint<PUB_TOPICS_MAX> grant;
             /* Cyber scheduling_block = non-transparent */
         app_data_request_section: {
 #pragma HLS protocol fixed
             *pub_app_data_req = (1 << topic_id);
             CLOCK_BOUNDARY;
             CLOCK_BOUNDARY;
-            grant = hls_uint<PUB_TOPICS_MAX>(*pub_app_data_grant)
-                    & hls_uint<PUB_TOPICS_MAX>(1 << topic_id);
+            grant = *pub_app_data_grant;
         }
 
-            if (grant) {
+            if (grant & (1 << topic_id)) {
                 app_writer_out(
                     app_writer_entity_id, app_reader_tbl[id].ip_addr,
                     app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
