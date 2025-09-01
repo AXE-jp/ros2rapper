@@ -156,17 +156,9 @@ module ros2rapper #(
     input  wire [7:0] ip_payloadsmem_rdata
 );
 
-wire [`ROS2_PUB_TOPICS_MAX-1:0] pub_app_data_ip_req;
-wire [`ROS2_PUB_TOPICS_MAX-1:0] pub_app_data_ip_rel;
-wire pub_app_data_ip_req_we;
-wire pub_app_data_ip_rel_we;
-
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_req;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_rel;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_grant;
-
-assign ros2_pub_app_data_ip_req = pub_app_data_ip_req_we ? pub_app_data_ip_req : 0;
-assign ros2_pub_app_data_ip_rel = pub_app_data_ip_rel_we ? pub_app_data_ip_rel : 0;
 
 generate
     genvar iter;
@@ -430,25 +422,42 @@ ros2 (
     .pub_app_data_len_0_dout(ros2_pub_app_data_len_0),
     .pub_app_data_len_0_empty_n(1'b1),
     .pub_app_data_len_0_read(),
+    .pub_app_data_req_0_ap_vld(pub_app_data_ip_req[0]),
+    .pub_app_data_req_0(),
+    .pub_app_data_rel_0_ap_vld(pub_app_data_ip_rel[0]),
+    .pub_app_data_rel_0(),
+    .pub_app_data_grant_0({7'd0, pub_app_data_ip_grant[0]}),
+    .pub_app_data_grant_0_ap_ack(),
 
     .pub_app_data_len_1_dout(ros2_pub_app_data_len_1),
     .pub_app_data_len_1_empty_n(1'b1),
     .pub_app_data_len_1_read(),
+    .pub_app_data_req_1_ap_vld(pub_app_data_ip_req[1]),
+    .pub_app_data_req_1(),
+    .pub_app_data_rel_1_ap_vld(pub_app_data_ip_rel[1]),
+    .pub_app_data_rel_1(),
+    .pub_app_data_grant_1({7'd0, pub_app_data_ip_grant[1]}),
+    .pub_app_data_grant_1_ap_ack(),
 
     .pub_app_data_len_2_dout(ros2_pub_app_data_len_2),
     .pub_app_data_len_2_empty_n(1'b1),
     .pub_app_data_len_2_read(),
+    .pub_app_data_req_2_ap_vld(pub_app_data_ip_req[2]),
+    .pub_app_data_req_2(),
+    .pub_app_data_rel_2_ap_vld(pub_app_data_ip_rel[2]),
+    .pub_app_data_rel_2(),
+    .pub_app_data_grant_2({7'd0, pub_app_data_ip_grant[2]}),
+    .pub_app_data_grant_2_ap_ack(),
 
     .pub_app_data_len_3_dout(ros2_pub_app_data_len_3),
     .pub_app_data_len_3_empty_n(1'b1),
     .pub_app_data_len_3_read(),
-
-    .pub_app_data_req_ap_vld(pub_app_data_ip_req_we),
-    .pub_app_data_req(pub_app_data_ip_req),
-    .pub_app_data_rel_ap_vld(pub_app_data_ip_rel_we),
-    .pub_app_data_rel(pub_app_data_ip_rel),
-    .pub_app_data_grant(ros2_pub_app_data_ip_grant),
-    .pub_app_data_grant_ap_ack(),
+    .pub_app_data_req_3_ap_vld(pub_app_data_ip_req[3]),
+    .pub_app_data_req_3(),
+    .pub_app_data_rel_3_ap_vld(pub_app_data_ip_rel[3]),
+    .pub_app_data_rel_3(),
+    .pub_app_data_grant_3({7'd0, pub_app_data_ip_grant[3]}),
+    .pub_app_data_grant_3_ap_ack(),
 
     .sub_app_data_recv_ap_vld(sub_app_data_recv_we),
     .sub_app_data_recv(sub_app_data_recv),
