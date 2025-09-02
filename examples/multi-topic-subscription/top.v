@@ -179,27 +179,27 @@ module top (
 `endif
 
     // --- ROS2 Publisher Message Control
-    reg pub_app_data_req;
-    reg pub_app_data_rel;
-    wire pub_app_data_grant;
+    reg ros2_pub_app_data_req_0;
+    reg ros2_pub_app_data_rel_0;
+    wire ros2_pub_app_data_grant_0;
     reg [27:0] msg_change_counter;
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
             msg_number <= 8'd48; // '0'
-            pub_app_data_req <= 0;
-            pub_app_data_rel <= 0;
+            ros2_pub_app_data_req_0 <= 0;
+            ros2_pub_app_data_rel_0 <= 0;
             msg_change_counter <= 0;
         end else begin
             msg_change_counter <= msg_change_counter + 1;
-            pub_app_data_rel <= 0;
+            ros2_pub_app_data_rel_0 <= 0;
 
-            if (pub_app_data_req && pub_app_data_grant) begin
+            if (ros2_pub_app_data_req_0 && ros2_pub_app_data_grant_0) begin
                 msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
-                pub_app_data_rel <= 1;
-                pub_app_data_req <= 0;
+                ros2_pub_app_data_rel_0 <= 1;
+                ros2_pub_app_data_req_0 <= 0;
                 msg_change_counter <= 0;
             end else if (msg_change_counter[27]) begin
-                pub_app_data_req <= 1;
+                ros2_pub_app_data_req_0 <= 1;
             end
         end
     end
@@ -207,9 +207,9 @@ module top (
     wire [3:0] ros2_pub_app_data_req;
     wire [3:0] ros2_pub_app_data_rel;
     wire [3:0] ros2_pub_app_data_grant;
-    assign ros2_pub_app_data_req[0] = pub_app_data_req;
-    assign ros2_pub_app_data_rel[0] = pub_app_data_rel;
-    assign pub_app_data_grant = ros2_pub_app_data_grant[0];
+    assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
+    assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
+    assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2sub_en;
