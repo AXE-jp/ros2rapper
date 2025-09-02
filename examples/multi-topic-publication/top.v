@@ -149,15 +149,6 @@ module top (
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_3 = 8'd29;
 
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_0 = 8'd23;
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_1 = 8'd24;
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_2 = 8'd25;
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_3 = 8'd26;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_0 = ROS2_PUB_APP_DATA_STRLEN_0 + 8'd4;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_1 = ROS2_PUB_APP_DATA_STRLEN_1 + 8'd4;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_2 = ROS2_PUB_APP_DATA_STRLEN_2 + 8'd4;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_3 = ROS2_PUB_APP_DATA_STRLEN_3 + 8'd4;
-
     // --- ROS2 Publisher Message Control
     reg [29:0] msg_change_counter;
     reg [3:0] prev_msg_change_counter;
@@ -180,9 +171,21 @@ module top (
 
     // Published messages
     wire [7:0] msg_number[0:3];
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_0 = 8'd23;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_0 = ROS2_PUB_APP_DATA_STRLEN_0 + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number[0], "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_0};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_1 = 8'd24;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_1 = ROS2_PUB_APP_DATA_STRLEN_1 + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number[1], "CC - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_1};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_2 = 8'd25;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_2 = ROS2_PUB_APP_DATA_STRLEN_2 + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number[2], "DDD - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_2};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_3 = 8'd26;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_3 = ROS2_PUB_APP_DATA_STRLEN_3 + 8'd4;
     wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number[3], "EEEE - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_3};
 
     generate
