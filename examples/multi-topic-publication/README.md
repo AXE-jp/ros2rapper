@@ -30,7 +30,7 @@ Then write generated bitstream (ros2rapper-multi-topic-pub/ros2rapper-multi-topi
 * To subscribe this topic, run following command.
   * `./run-subscriber.sh`
   * This script runs subscriber on Docker container. This docker container uses a host network.
-* Message "Message from FPGA - Xn" will be shown periodically ('X' is 'B', 'C', 'D' or 'E' corresponding to the topic name and the last number 'n' changes from 0 to 9).
+* Message "Message from FPGA - Xn" will be shown periodically ('X' is 'B', 'CC', 'DDD' or 'EEEE' corresponding to the topic name and the last number 'n' changes from 0 to 9).
 
 ### Test ROS2rapper Subscriber feature
 * This example subscribes the "/aaa" topic.
