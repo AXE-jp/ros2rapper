@@ -906,16 +906,6 @@ static void ros2_out(
                              < 3)
                             || cnt_sedp_pub_hb_elapsed) {
                             SEDP_PUB_HEARTBEAT_OUT(sedp_reader_id);
-                            if ((sedp_reader_id == (SEDP_READER_MAX - 1))
-                                && (tx_cnt_elapsed == SEDP_READER_MAX)) {
-                                /* Cyber scheduling_block = non-transparent */
-                            cnt_reset_3: {
-#pragma HLS protocol fixed
-                                *cnt_sedp_pub_hb_set = 1;
-                                CLOCK_BOUNDARY;
-                                CLOCK_BOUNDARY;
-                            }
-                            }
                         }
                         break;
                     }
@@ -923,6 +913,15 @@ static void ros2_out(
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_3: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_pub_hb_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
                     tx_progress = 0;
                     tx_cnt_elapsed = 0;
                     ROTATE_NEXT_PACKET_TYPE;
@@ -941,16 +940,6 @@ static void ros2_out(
                              < 3)
                             || cnt_sedp_sub_hb_elapsed) {
                             SEDP_SUB_HEARTBEAT_OUT(sedp_reader_id);
-                            if ((sedp_reader_id == (SEDP_READER_MAX - 1))
-                                && (tx_cnt_elapsed == SEDP_READER_MAX)) {
-                                /* Cyber scheduling_block = non-transparent */
-                            cnt_reset_4: {
-#pragma HLS protocol fixed
-                                *cnt_sedp_sub_hb_set = 1;
-                                CLOCK_BOUNDARY;
-                                CLOCK_BOUNDARY;
-                            }
-                            }
                         }
                         break;
                     }
@@ -958,6 +947,15 @@ static void ros2_out(
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_4: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_sub_hb_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
                     tx_progress = 0;
                     tx_cnt_elapsed = 0;
                     ROTATE_NEXT_PACKET_TYPE;
@@ -982,16 +980,6 @@ static void ros2_out(
                         if (cnt_sedp_pub_an_elapsed
                             || (acknack_req && !snstate_is_empty)) {
                             SEDP_PUB_ACKNACK_OUT(sedp_reader_id);
-                            if ((sedp_reader_id == (SEDP_READER_MAX - 1))
-                                && (tx_cnt_elapsed == SEDP_READER_MAX)) {
-                                /* Cyber scheduling_block = non-transparent */
-                            cnt_reset_5: {
-#pragma HLS protocol fixed
-                                *cnt_sedp_pub_an_set = 1;
-                                CLOCK_BOUNDARY;
-                                CLOCK_BOUNDARY;
-                            }
-                            }
                         }
                         break;
                     }
@@ -999,6 +987,15 @@ static void ros2_out(
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_5: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_pub_an_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
                     tx_progress = 0;
                     tx_cnt_elapsed = 0;
                     ROTATE_NEXT_PACKET_TYPE;
@@ -1023,16 +1020,6 @@ static void ros2_out(
                         if (cnt_sedp_sub_an_elapsed
                             || (acknack_req && !snstate_is_empty)) {
                             SEDP_SUB_ACKNACK_OUT(sedp_reader_id);
-                            if ((sedp_reader_id == (SEDP_READER_MAX - 1))
-                                && (tx_cnt_elapsed == SEDP_READER_MAX)) {
-                                /* Cyber scheduling_block = non-transparent */
-                            cnt_reset_6: {
-#pragma HLS protocol fixed
-                                *cnt_sedp_sub_an_set = 1;
-                                CLOCK_BOUNDARY;
-                                CLOCK_BOUNDARY;
-                            }
-                            }
                         }
                         break;
                     }
@@ -1040,6 +1027,15 @@ static void ros2_out(
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_6: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_sub_an_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
                     tx_progress = 0;
                     tx_cnt_elapsed = 0;
                     ROTATE_NEXT_PACKET_TYPE;
