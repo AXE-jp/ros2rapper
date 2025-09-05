@@ -198,11 +198,11 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
 
     // --- ROS2 Subscriber Received Message
-    wire w_ros2_sub_app_data_len_we;
+    wire w_ros2_sub_app_data_len_valid;
     wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len;
     reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
 
-    wire        w_ros2_sub_app_data_rep_id_we;
+    wire        w_ros2_sub_app_data_rep_id_valid;
     wire [15:0] w_ros2_sub_app_data_rep_id;
     reg  [15:0] ros2_sub_app_data_rep_id;
 
@@ -213,9 +213,9 @@ module top (
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
 
     always @(posedge clk_int) begin
-        if (w_ros2_sub_app_data_len_we)
+        if (w_ros2_sub_app_data_len_valid)
             ros2_sub_app_data_len <= w_ros2_sub_app_data_len;
-        if (w_ros2_sub_app_data_rep_id_we)
+        if (w_ros2_sub_app_data_rep_id_valid)
             ros2_sub_app_data_rep_id <= w_ros2_sub_app_data_rep_id;
         if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
@@ -370,9 +370,9 @@ module top (
         .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
         .ros2_sub_app_data_we(ros2_sub_app_data_we),
         .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len_we(w_ros2_sub_app_data_len_we),
+        .ros2_sub_app_data_len_valid(w_ros2_sub_app_data_len_valid),
         .ros2_sub_app_data_len(w_ros2_sub_app_data_len),
-        .ros2_sub_app_data_rep_id_we(w_ros2_sub_app_data_rep_id_we),
+        .ros2_sub_app_data_rep_id_valid(w_ros2_sub_app_data_rep_id_valid),
         .ros2_sub_app_data_rep_id(w_ros2_sub_app_data_rep_id),
         .ros2_sub_app_data_req(1'b0),
         .ros2_sub_app_data_rel(1'b0),
