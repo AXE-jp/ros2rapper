@@ -4,14 +4,23 @@
 #ifndef ROS2_HPP
 #define ROS2_HPP
 
+#include "duration.hpp"
+#include "hls.hpp"
+#include <cstdint>
+
 #define MAX_NODE_NAME_LEN       32
 #define MAX_TOPIC_NAME_LEN      32
 #define MAX_TOPIC_TYPE_NAME_LEN 64
-#define MAX_APP_DATA_LEN        64
+#define MAX_APP_DATA_LEN        1024
+
+typedef hls_uint<11> app_data_len_t;
+static_assert(MAX_APP_DATA_LEN <= 2047,
+              "app_data_len_t should be able to represent MAX_APP_DATA_LEN.");
+
+// #define PUB_DATA_FF
+#define PUB_DATA_RAM
 
 #include "common.hpp"
-#include "hls.hpp"
-#include <cstdint>
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;
@@ -23,6 +32,7 @@ typedef struct {
     uint16_t port_num_seed;
     uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    duration participant_lease_duration;
     uint8_t  pub_topic_name
         [PUB_TOPICS_MAX]
         [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;

@@ -13,6 +13,7 @@
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
+#include "util.hpp"
 
 #define USE_FIFOIF_ETHERNET
 
@@ -20,12 +21,21 @@ class tx_buf {
   public:
     uint16_t head;
     uint16_t len;
-    uint8_t  buf[TX_BUF_LEN] /* Cyber array=EXPAND,array_index=const */;
+    uint8_t  buf[TX_BUF_LEN]
+#ifdef PUB_DATA_FF
+    /* Cyber array=EXPAND,array_index=const */
+#endif // PUB_DATA_FF
+        ;
 
     /* Cyber func=inline */
     uint8_t deque() {
 #pragma HLS inline
+#ifdef PUB_DATA_FF
 #pragma HLS array_partition variable = buf complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS bind_storage variable = buf type = ram_t2p
+#endif // PUB_DATA_RAM
         return buf[head++];
     }
 
@@ -105,7 +115,7 @@ static void ros2_in(
     uint8_t                            sub_app_data_1[MAX_APP_DATA_LEN],
     uint8_t                            sub_app_data_2[MAX_APP_DATA_LEN],
     uint8_t                            sub_app_data_3[MAX_APP_DATA_LEN],
-    VOLATILE uint8_t                   sub_app_data_len[SUB_TOPICS_MAX],
+    VOLATILE app_data_len_t            sub_app_data_len[SUB_TOPICS_MAX],
     VOLATILE uint16_t                  sub_app_data_rep_id[SUB_TOPICS_MAX],
     VOLATILE uint8_t *rawudp_rxbuf_rel, VOLATILE uint8_t *rawudp_rxbuf_grant,
     bool ignore_ip_checksum, bool *reading_rtps_message, int64_t timestamp_i64,
@@ -190,7 +200,7 @@ static void spdp_writer_out(const uint8_t metatraffic_port[2],
                    tx_buf.buf + IP_HDR_SIZE);
 
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
-                conf->ip_addr, default_port,
+                conf->ip_addr, default_port, conf->participant_lease_duration,
                 tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
                 conf->node_name_len, now);
 
@@ -274,29 +284,33 @@ sedp_acknack_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
 }
 
 /* Cyber func=inline */
-static void
-app_writer_out(const uint8_t writer_entity_id[4], const uint8_t dst_addr[4],
-               const uint8_t dst_port[2], const uint8_t reader_guid_prefix[12],
-               const uint8_t reader_entity_id[4], tx_buf &tx_buf,
-               int64_t &seqnum, const uint8_t src_addr[4],
-               const uint8_t src_port[2], const uint8_t writer_guid_prefix[12],
-               VOLATILE const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-               VOLATILE const uint8_t *pub_app_data_len, timestamp now) {
+static void app_writer_out(const uint8_t writer_entity_id[4],
+                           const uint8_t dst_addr[4], const uint8_t dst_port[2],
+                           const uint8_t reader_guid_prefix[12],
+                           const uint8_t reader_entity_id[4], tx_buf &tx_buf,
+                           int64_t &seqnum, const uint8_t src_addr[4],
+                           const uint8_t src_port[2],
+                           const uint8_t writer_guid_prefix[12],
+#ifdef PUB_DATA_FF
+                           VOLATILE
+#endif // PUB_DATA_FF
+                           const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
+                           app_data_len_t pub_app_data_len, timestamp now) {
     seqnum++;
 
     ip_set_header(src_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  APP_WRITER_UDP_PKT_LEN(*pub_app_data_len), tx_buf.buf);
+                  APP_WRITER_UDP_PKT_LEN(pub_app_data_len), tx_buf.buf);
 
     udp_set_header(src_port, dst_port,
-                   APP_WRITER_RTPS_PKT_LEN(*pub_app_data_len),
+                   APP_WRITER_RTPS_PKT_LEN(pub_app_data_len),
                    tx_buf.buf + IP_HDR_SIZE);
 
     app_writer(writer_guid_prefix, writer_entity_id, reader_guid_prefix,
-               reader_entity_id, seqnum, pub_app_data, *pub_app_data_len,
+               reader_entity_id, seqnum, pub_app_data, pub_app_data_len,
                tx_buf.buf + (IP_HDR_SIZE + UDP_HDR_SIZE), now);
 
     tx_buf.head = 0;
-    tx_buf.len = APP_WRITER_IP_PKT_LEN(*pub_app_data_len);
+    tx_buf.len = APP_WRITER_IP_PKT_LEN(pub_app_data_len);
 }
 
 /* Cyber func=inline */
@@ -318,91 +332,41 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
         spdp_writer_out(metatraffic_port, default_port, tx_buf, conf, now);    \
     } while (0)
 
-#define SEDP_PUB_WRITER_OUT(id, app_writer_entity_id, pub_topic_name,          \
-                            pub_topic_name_len, pub_type_name,                 \
-                            pub_type_name_len)                                 \
+#define SEDP_PUB_WRITER_OUT(topic_id, sedp_reader_id)                          \
     do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_reader_tbl[(id)].builtin_pubwr_lastsn++;                      \
+        if (sedp_reader_tbl[(sedp_reader_id)].alive) {                         \
+            sedp_reader_tbl[(sedp_reader_id)].builtin_pubwr_lastsn++;          \
             sedp_writer_out(                                                   \
-                pub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, pub_reader_entity_id,       \
-                sedp_reader_tbl[(id)].builtin_pubwr_lastsn, default_port,      \
-                app_writer_entity_id, tx_buf, pub_topic_name,                  \
-                pub_topic_name_len, pub_type_name, pub_type_name_len, conf,    \
-                now);                                                          \
+                pub_writer_entity_id,                                          \
+                sedp_reader_tbl[(sedp_reader_id)].ip_addr,                     \
+                sedp_reader_tbl[(sedp_reader_id)].udp_port,                    \
+                sedp_reader_tbl[(sedp_reader_id)].guid_prefix,                 \
+                pub_reader_entity_id,                                          \
+                sedp_reader_tbl[(sedp_reader_id)].builtin_pubwr_lastsn,        \
+                default_port, app_writer_entity_id_list[(topic_id)], tx_buf,   \
+                conf->pub_topic_name[(topic_id)],                              \
+                conf->pub_topic_name_len[(topic_id)],                          \
+                conf->pub_topic_type_name[(topic_id)],                         \
+                conf->pub_topic_type_name_len[(topic_id)], conf, now);         \
         }                                                                      \
     } while (0)
 
-#define SEDP_PUB_WRITER_OUT_TOPIC(topic_id, tx_progress, topic_name,           \
-                                  topic_name_len, type_name, type_name_len)    \
+#define SEDP_SUB_WRITER_OUT(topic_id, sedp_reader_id)                          \
     do {                                                                       \
-        switch (tx_progress) {                                                 \
-        case 0:                                                                \
-            SEDP_PUB_WRITER_OUT(0, app_writer_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 1:                                                                \
-            SEDP_PUB_WRITER_OUT(1, app_writer_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 2:                                                                \
-            SEDP_PUB_WRITER_OUT(2, app_writer_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 3:                                                                \
-            SEDP_PUB_WRITER_OUT(3, app_writer_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        }                                                                      \
-    } while (0)
-
-#define SEDP_SUB_WRITER_OUT(id, app_reader_entity_id, sub_topic_name,          \
-                            sub_topic_name_len, sub_type_name,                 \
-                            sub_type_name_len)                                 \
-    do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_reader_tbl[(id)].builtin_subwr_lastsn++;                      \
+        if (sedp_reader_tbl[(sedp_reader_id)].alive) {                         \
+            sedp_reader_tbl[(sedp_reader_id)].builtin_subwr_lastsn++;          \
             sedp_writer_out(                                                   \
-                sub_writer_entity_id, sedp_reader_tbl[(id)].ip_addr,           \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, sub_reader_entity_id,       \
-                sedp_reader_tbl[(id)].builtin_subwr_lastsn, default_port,      \
-                app_reader_entity_id, tx_buf, sub_topic_name,                  \
-                sub_topic_name_len, sub_type_name, sub_type_name_len, conf,    \
-                now);                                                          \
-        }                                                                      \
-    } while (0)
-
-#define SEDP_SUB_WRITER_OUT_TOPIC(topic_id, tx_progress, topic_name,           \
-                                  topic_name_len, type_name, type_name_len)    \
-    do {                                                                       \
-        switch (tx_progress) {                                                 \
-        case 0:                                                                \
-            SEDP_SUB_WRITER_OUT(0, app_reader_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 1:                                                                \
-            SEDP_SUB_WRITER_OUT(1, app_reader_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 2:                                                                \
-            SEDP_SUB_WRITER_OUT(2, app_reader_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
-        case 3:                                                                \
-            SEDP_SUB_WRITER_OUT(3, app_reader_entity_id_list[(topic_id)],      \
-                                topic_name, topic_name_len, type_name,         \
-                                type_name_len);                                \
-            break;                                                             \
+                sub_writer_entity_id,                                          \
+                sedp_reader_tbl[(sedp_reader_id)].ip_addr,                     \
+                sedp_reader_tbl[(sedp_reader_id)].udp_port,                    \
+                sedp_reader_tbl[(sedp_reader_id)].guid_prefix,                 \
+                sub_reader_entity_id,                                          \
+                sedp_reader_tbl[(sedp_reader_id)].builtin_subwr_lastsn,        \
+                default_port, app_reader_entity_id_list[(topic_id)], tx_buf,   \
+                conf->sub_topic_name[(topic_id)],                              \
+                conf->sub_topic_name_len[(topic_id)],                          \
+                conf->sub_topic_type_name[(topic_id)],                         \
+                conf->sub_topic_type_name_len[(topic_id)], conf, now);         \
         }                                                                      \
     } while (0)
 
@@ -465,90 +429,59 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     } while (0)
 
 /* Cyber func=inline */
-void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t id,
-                    app_endpoint            app_reader_tbl[APP_READER_MAX],
-                    const config_t         *conf,
-                    VOLATILE const uint8_t  pub_app_data[MAX_APP_DATA_LEN],
-                    VOLATILE const uint8_t *pub_app_data_len,
-                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
-                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
-                    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_grant,
+void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
+                    app_endpoint    app_reader_tbl[APP_READER_MAX],
+                    const config_t *conf,
+#ifdef PUB_DATA_FF
+                    VOLATILE
+#endif // PUB_DATA_FF
+                    const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
+                    VOLATILE const app_data_len_t *pub_app_data_len,
+                    VOLATILE uint8_t              *pub_app_data_req,
+                    VOLATILE uint8_t              *pub_app_data_rel,
+                    VOLATILE uint8_t              *pub_app_data_grant,
                     const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto id = 0; id < APP_READER_MAX; id++) {
+#pragma HLS unroll
+        if ((app_reader_id == id) && app_reader_tbl[id].alive
+            && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)
+            && (app_reader_tbl[id].pub_topic_id == topic_id)) {
 
-    if ((id < APP_READER_MAX) && app_reader_tbl[id].alive
-        && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)
-        && (app_reader_tbl[id].pub_topic_id == topic_id)) {
-
-        bool grant;
-    /* Cyber scheduling_block = non-transparent */
-    app_data_request_section: {
+            uint8_t grant;
+            /* Cyber scheduling_block = non-transparent */
+        app_data_request_section: {
 #pragma HLS protocol fixed
-        *pub_app_data_req = (1 << topic_id);
-        CLOCK_BOUNDARY;
-        CLOCK_BOUNDARY;
-        grant = hls_uint<PUB_TOPICS_MAX>(*pub_app_data_grant)
-                & hls_uint<PUB_TOPICS_MAX>(1 << topic_id);
-    }
-
-        if (grant) {
-            app_writer_out(
-                app_writer_entity_id, app_reader_tbl[id].ip_addr,
-                app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
-                app_reader_tbl[id].entity_id, tx_buf, app_seqnum, conf->ip_addr,
-                conf->node_udp_port, conf->guid_prefix, pub_app_data,
-                pub_app_data_len, now);
-
-        /* Cyber scheduling_block = non-transparent */
-        app_data_release_section: {
-#pragma HLS protocol fixed
-            CLOCK_BOUNDARY;
-            *pub_app_data_rel = (1 << topic_id);
+            *pub_app_data_req
+                = 0 /* write dummy value to assert valid signal */;
             CLOCK_BOUNDARY;
             CLOCK_BOUNDARY;
+            grant = *pub_app_data_grant;
         }
+
+            if (grant) {
+                app_writer_out(
+                    app_writer_entity_id, app_reader_tbl[id].ip_addr,
+                    app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
+                    app_reader_tbl[id].entity_id, tx_buf, app_seqnum,
+                    conf->ip_addr, conf->node_udp_port, conf->guid_prefix,
+                    pub_app_data, *pub_app_data_len, now);
+
+                /* Cyber scheduling_block = non-transparent */
+            app_data_release_section: {
+#pragma HLS protocol fixed
+                CLOCK_BOUNDARY;
+                *pub_app_data_rel
+                    = 0 /* write dummy value to assert valid signal */;
+                CLOCK_BOUNDARY;
+                CLOCK_BOUNDARY;
+            }
+            }
         }
     }
 }
-
-#define APP_WRITER_OUT_TOPIC(topic_id, tx_progress, app_reader_tbl, conf,      \
-                             pub_app_data, pub_app_data_len,                   \
-                             app_writer_entity_id, tx_buf, app_seqnum, now)    \
-    do {                                                                       \
-        if (pub_enable[(topic_id)]) {                                          \
-            switch (tx_progress) {                                             \
-            case 0:                                                            \
-                APP_WRITER_OUT(topic_id, 0, app_reader_tbl, conf,              \
-                               pub_app_data, pub_app_data_len,                 \
-                               pub_app_data_req, pub_app_data_rel,             \
-                               pub_app_data_grant, app_writer_entity_id,       \
-                               tx_buf, app_seqnum, now);                       \
-                break;                                                         \
-            case 1:                                                            \
-                APP_WRITER_OUT(topic_id, 1, app_reader_tbl, conf,              \
-                               pub_app_data, pub_app_data_len,                 \
-                               pub_app_data_req, pub_app_data_rel,             \
-                               pub_app_data_grant, app_writer_entity_id,       \
-                               tx_buf, app_seqnum, now);                       \
-                break;                                                         \
-            case 2:                                                            \
-                APP_WRITER_OUT(topic_id, 2, app_reader_tbl, conf,              \
-                               pub_app_data, pub_app_data_len,                 \
-                               pub_app_data_req, pub_app_data_rel,             \
-                               pub_app_data_grant, app_writer_entity_id,       \
-                               tx_buf, app_seqnum, now);                       \
-                break;                                                         \
-            case 3:                                                            \
-                APP_WRITER_OUT(topic_id, 3, app_reader_tbl, conf,              \
-                               pub_app_data, pub_app_data_len,                 \
-                               pub_app_data_req, pub_app_data_rel,             \
-                               pub_app_data_grant, app_writer_entity_id,       \
-                               tx_buf, app_seqnum, now);                       \
-                break;                                                         \
-            }                                                                  \
-        }                                                                      \
-    } while (0)
 
 #define RAWUDP_OUT()                                                           \
     do {                                                                       \
@@ -562,29 +495,46 @@ static void ros2_out(
     sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
     app_endpoint             app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
-    const config_t         *conf,
-    VOLATILE const uint8_t  pub_app_data_0[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len_0,
-    VOLATILE const uint8_t  pub_app_data_1[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len_1,
-    VOLATILE const uint8_t  pub_app_data_2[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len_2,
-    VOLATILE const uint8_t  pub_app_data_3[MAX_APP_DATA_LEN],
-    VOLATILE const uint8_t *pub_app_data_len_3,
-    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_req,
-    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_rel,
-    VOLATILE hls_uint<PUB_TOPICS_MAX> *pub_app_data_grant,
-    VOLATILE uint8_t *rawudp_txbuf_rel, VOLATILE uint8_t *rawudp_txbuf_grant,
-    hls_uint<1> cnt_interval_elapsed, VOLATILE uint8_t *cnt_interval_set,
-    hls_uint<1> cnt_spdp_wr_elapsed, VOLATILE uint8_t *cnt_spdp_wr_set,
-    hls_uint<1> cnt_sedp_pub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_pub_wr_set,
-    hls_uint<1> cnt_sedp_sub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_sub_wr_set,
-    hls_uint<1> cnt_sedp_pub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_pub_hb_set,
-    hls_uint<1> cnt_sedp_sub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_sub_hb_set,
-    hls_uint<1> cnt_sedp_pub_an_elapsed, VOLATILE uint8_t *cnt_sedp_pub_an_set,
-    hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
-    hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
-    bool reading_rtps_message, int64_t timestamp_i64) {
+    const config_t *conf,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_0[MAX_APP_DATA_LEN / 4],
+    VOLATILE const app_data_len_t *pub_app_data_len_0,
+    VOLATILE uint8_t *pub_app_data_req_0, VOLATILE uint8_t *pub_app_data_rel_0,
+    VOLATILE uint8_t *pub_app_data_grant_0,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_1[MAX_APP_DATA_LEN / 4],
+    VOLATILE const app_data_len_t *pub_app_data_len_1,
+    VOLATILE uint8_t *pub_app_data_req_1, VOLATILE uint8_t *pub_app_data_rel_1,
+    VOLATILE uint8_t *pub_app_data_grant_1,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_2[MAX_APP_DATA_LEN / 4],
+    VOLATILE const app_data_len_t *pub_app_data_len_2,
+    VOLATILE uint8_t *pub_app_data_req_2, VOLATILE uint8_t *pub_app_data_rel_2,
+    VOLATILE uint8_t *pub_app_data_grant_2,
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t                 pub_app_data_3[MAX_APP_DATA_LEN / 4],
+    VOLATILE const app_data_len_t *pub_app_data_len_3,
+    VOLATILE uint8_t *pub_app_data_req_3, VOLATILE uint8_t *pub_app_data_rel_3,
+    VOLATILE uint8_t *pub_app_data_grant_3, VOLATILE uint8_t *rawudp_txbuf_rel,
+    VOLATILE uint8_t *rawudp_txbuf_grant, hls_uint<1> cnt_interval_elapsed,
+    VOLATILE uint8_t *cnt_interval_set, hls_uint<1> cnt_spdp_wr_elapsed,
+    VOLATILE uint8_t *cnt_spdp_wr_set, hls_uint<1> cnt_sedp_pub_wr_elapsed,
+    VOLATILE uint8_t *cnt_sedp_pub_wr_set, hls_uint<1> cnt_sedp_sub_wr_elapsed,
+    VOLATILE uint8_t *cnt_sedp_sub_wr_set, hls_uint<1> cnt_sedp_pub_hb_elapsed,
+    VOLATILE uint8_t *cnt_sedp_pub_hb_set, hls_uint<1> cnt_sedp_sub_hb_elapsed,
+    VOLATILE uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
+    VOLATILE uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
+    VOLATILE uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
+    VOLATILE uint8_t *cnt_app_wr_set, bool reading_rtps_message,
+    int64_t timestamp_i64) {
 #pragma HLS array_partition complete variable = conf->pub_topic_name dim = 1
 #pragma HLS array_partition complete variable = conf->pub_topic_name_len dim = 1
 #pragma HLS array_partition complete variable = conf->pub_topic_type_name dim  \
@@ -663,14 +613,31 @@ static void ros2_out(
     static uint16_t    rawudp_txpayload_wr_off;
 
     static hls_uint<2> tx_progress;
+    static_assert(
+        SEDP_READER_MAX <= 4,
+        "'tx_progress' must be able to represent SEDP_READER_MAX - 1.");
+    static_assert(
+        APP_READER_MAX <= 4,
+        "'tx_progress' must be able to represent APP_READER_MAX - 1.");
+
     static hls_uint<3> tx_cnt_elapsed;
+    static_assert(
+        SEDP_READER_MAX <= 7,
+        "'tx_cnt_elapsed' should be able to represent SEDP_READER_MAX.");
+    static_assert(
+        PUB_TOPICS_MAX <= 7,
+        "'tx_cnt_elapsed' should be able to represent PUB_TOPICS_MAX.");
+    static_assert(
+        SUB_TOPICS_MAX <= 7,
+        "'tx_cnt_elapsed' should be able to represent SUB_TOPICS_MAX.");
+
     static hls_uint<3> tx_topic_progress;
-    static_assert(PUB_TOPICS_MAX <= 7,
-                  "'tx_cnt_elapsed' and 'tx_topic_progress' must be able to "
-                  "represent PUB_TOPICS_MAX.");
-    static_assert(SUB_TOPICS_MAX <= 7,
-                  "'tx_cnt_elapsed' and 'tx_topic_progress' must be able to "
-                  "represent SUB_TOPICS_MAX.");
+    static_assert(
+        PUB_TOPICS_MAX <= 7,
+        "'tx_topic_progress' must be able to represent PUB_TOPICS_MAX.");
+    static_assert(
+        SUB_TOPICS_MAX <= 7,
+        "'tx_topic_progress' must be able to represent SUB_TOPICS_MAX.");
 
     static hls_uint<4> next_packet_type = 0;
 #define ROTATE_NEXT_PACKET_TYPE                                                \
@@ -714,12 +681,7 @@ static void ros2_out(
 
                 // Clear tx buffer before constructing packet to prevent
                 // variable length zero clear.
-
-                /* Cyber unroll_times=all */
-                for (int i = 0; i < TX_BUF_LEN; i++) {
-#pragma HLS unroll
-                    tx_buf.buf[i] = 0;
-                }
+                clear_txbuf(tx_buf.buf, 0, TX_BUF_LEN);
                 break;
             case RAWUDP_TXBUF_COPY_RUNNING:
                 switch (rawudp_txbuf_rd_off) {
@@ -788,20 +750,33 @@ static void ros2_out(
                 break;
             }
         } else if (cnt_interval_elapsed) {
-            if (((pub_enable != 0) || (sub_enable != 0)) && cnt_spdp_wr_elapsed
+            if (((pub_enable != 0) || (sub_enable != 0))
                 && next_packet_type == 0) {
-                SPDP_WRITER_OUT();
-                ROTATE_NEXT_PACKET_TYPE;
-
-                /* Cyber scheduling_block = non-transparent */
-            cnt_reset_0: {
+                // Send a SPDP message if
+                //   1. cnt_spdp_wr_elapsed is asserted.
+                //   2. there exists a living sedp_endpoint whose
+                //      initial_send_counter is less than three.
+                bool send = cnt_spdp_wr_elapsed;
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+                    if (sedp_reader_tbl[j].alive
+                        && (sedp_reader_tbl[j].initial_send_counter < 3)) {
+                        send = true;
+                    }
+                }
+                if (send) {
+                    SPDP_WRITER_OUT();
+                    /* Cyber scheduling_block = non-transparent */
+                cnt_reset_0: {
 #pragma HLS protocol fixed
-                *cnt_spdp_wr_set = 1;
-                CLOCK_BOUNDARY;
-                CLOCK_BOUNDARY;
-            }
-
-            } else if ((pub_enable != 0) && (next_packet_type == 1)) {
+                    *cnt_spdp_wr_set = 1;
+                    CLOCK_BOUNDARY;
+                    CLOCK_BOUNDARY;
+                }
+                }
+                ROTATE_NEXT_PACKET_TYPE;
+            } else if ((pub_enable != 0) && next_packet_type == 1) {
                 if (tx_topic_progress >= PUB_TOPICS_MAX) {
                     // Finish sending published topic data
                     if (tx_cnt_elapsed == PUB_TOPICS_MAX) {
@@ -831,26 +806,36 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send published topic data
-                    if ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
-                        || cnt_sedp_pub_wr_elapsed) {
-                        /* Cyber unroll_times=all */
-                        for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
+                    /* Cyber unroll_times=all */
+                    for (auto sedp_reader_id = 0;
+                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
 #pragma HLS unroll
-                            if (tx_topic_progress == j) {
-                                SEDP_PUB_WRITER_OUT_TOPIC(
-                                    j, tx_progress, conf->pub_topic_name[j],
-                                    conf->pub_topic_name_len[j],
-                                    conf->pub_topic_type_name[j],
-                                    conf->pub_topic_type_name_len[j]);
-                                break;
+                        if (tx_progress == sedp_reader_id) {
+                            if ((sedp_reader_tbl[sedp_reader_id]
+                                     .initial_send_counter
+                                 < 3)
+                                || cnt_sedp_pub_wr_elapsed) {
+                                /* Cyber unroll_times=all */
+                                for (auto topic_id = 0;
+                                     topic_id < PUB_TOPICS_MAX; topic_id++) {
+#pragma HLS unroll
+                                    if (tx_topic_progress == topic_id) {
+                                        SEDP_PUB_WRITER_OUT(topic_id,
+                                                            sedp_reader_id);
+                                        break;
+                                    }
+                                }
                             }
+                            break;
                         }
                     }
 
-                    if (tx_progress == 3) {
+                    if (tx_progress < (SEDP_READER_MAX - 1)) {
+                        tx_progress++;
+                    } else {
+                        tx_progress = 0;
                         tx_topic_progress++;
                     }
-                    tx_progress++;
                 }
             } else if ((sub_enable != 0) && next_packet_type == 2) {
                 if (tx_topic_progress >= SUB_TOPICS_MAX) {
@@ -882,226 +867,221 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send subscribed topic data
-                    if ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
-                        || cnt_sedp_sub_wr_elapsed) {
-                        /* Cyber unroll_times=all */
-                        for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
+                    /* Cyber unroll_times=all */
+                    for (auto sedp_reader_id = 0;
+                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
 #pragma HLS unroll
-                            if (tx_topic_progress == j) {
-                                SEDP_SUB_WRITER_OUT_TOPIC(
-                                    j, tx_progress, conf->sub_topic_name[j],
-                                    conf->sub_topic_name_len[j],
-                                    conf->sub_topic_type_name[j],
-                                    conf->sub_topic_type_name_len[j]);
-                                break;
+                        if (tx_progress == sedp_reader_id) {
+                            if ((sedp_reader_tbl[sedp_reader_id]
+                                     .initial_send_counter
+                                 < 3)
+                                || cnt_sedp_sub_wr_elapsed) {
+                                /* Cyber unroll_times=all */
+                                for (auto topic_id = 0;
+                                     topic_id < SUB_TOPICS_MAX; topic_id++) {
+#pragma HLS unroll
+                                    if (tx_topic_progress == topic_id) {
+                                        SEDP_SUB_WRITER_OUT(topic_id,
+                                                            sedp_reader_id);
+                                        break;
+                                    }
+                                }
                             }
+                            break;
                         }
                     }
 
-                    if (tx_progress == 3) {
+                    if (tx_progress < (SEDP_READER_MAX - 1)) {
+                        tx_progress++;
+                    } else {
+                        tx_progress = 0;
                         tx_topic_progress++;
                     }
-                    tx_progress++;
                 }
             } else if (next_packet_type == 3) {
                 if (cnt_sedp_pub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                    && !cnt_sedp_pub_hb_elapsed) {
-                    if (tx_progress == 3) {
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
-                    }
-                } else {
-                    switch (tx_progress) {
-                    case 0:
-                        SEDP_PUB_HEARTBEAT_OUT(0);
-                        break;
-                    case 1:
-                        SEDP_PUB_HEARTBEAT_OUT(1);
-                        break;
-                    case 2:
-                        SEDP_PUB_HEARTBEAT_OUT(2);
-                        break;
-                    case 3:
-                        SEDP_PUB_HEARTBEAT_OUT(3);
-                        if (tx_cnt_elapsed == 4) {
-                            /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_3: {
-#pragma HLS protocol fixed
-                            *cnt_sedp_pub_hb_set = 1;
-                            CLOCK_BOUNDARY;
-                            CLOCK_BOUNDARY;
+                /* Cyber unroll_times=all */
+                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
+                     sedp_reader_id++) {
+#pragma HLS unroll
+                    if (tx_progress == sedp_reader_id) {
+                        if ((sedp_reader_tbl[sedp_reader_id]
+                                 .initial_send_counter
+                             < 3)
+                            || cnt_sedp_pub_hb_elapsed) {
+                            SEDP_PUB_HEARTBEAT_OUT(sedp_reader_id);
                         }
-                        }
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                         break;
                     }
                 }
-                tx_progress++;
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_3: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_pub_hb_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
+                    tx_progress = 0;
+                    tx_cnt_elapsed = 0;
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else if (next_packet_type == 4) {
                 if (cnt_sedp_sub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                if (sedp_reader_tbl[tx_progress].initial_send_counter == 3
-                    && !cnt_sedp_sub_hb_elapsed) {
-                    if (tx_progress == 3) {
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
-                    }
-                } else {
-                    switch (tx_progress) {
-                    case 0:
-                        SEDP_SUB_HEARTBEAT_OUT(0);
-                        break;
-                    case 1:
-                        SEDP_SUB_HEARTBEAT_OUT(1);
-                        break;
-                    case 2:
-                        SEDP_SUB_HEARTBEAT_OUT(2);
-                        break;
-                    case 3:
-                        SEDP_SUB_HEARTBEAT_OUT(3);
-                        if (tx_cnt_elapsed == 4) {
-                            /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_4: {
-#pragma HLS protocol fixed
-                            *cnt_sedp_sub_hb_set = 1;
-                            CLOCK_BOUNDARY;
-                            CLOCK_BOUNDARY;
+                /* Cyber unroll_times=all */
+                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
+                     sedp_reader_id++) {
+#pragma HLS unroll
+                    if (tx_progress == sedp_reader_id) {
+                        if ((sedp_reader_tbl[sedp_reader_id]
+                                 .initial_send_counter
+                             < 3)
+                            || cnt_sedp_sub_hb_elapsed) {
+                            SEDP_SUB_HEARTBEAT_OUT(sedp_reader_id);
                         }
-                        }
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                         break;
                     }
                 }
-                tx_progress++;
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_4: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_sub_hb_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
+                    tx_progress = 0;
+                    tx_cnt_elapsed = 0;
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else if (next_packet_type == 5) {
-                uint8_t wr_seqnum
-                    = sedp_reader_tbl[tx_progress].builtin_pubrd_wr_seqnum;
-                uint8_t rd_seqnum
-                    = sedp_reader_tbl[tx_progress].builtin_pubrd_rd_seqnum;
-                bool acknack_req
-                    = sedp_reader_tbl[tx_progress].builtin_pubrd_acknack_req;
-                uint8_t snstate_base = rd_seqnum;
-                bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
                 if (cnt_sedp_pub_an_elapsed)
                     tx_cnt_elapsed++;
 
-                if (cnt_sedp_pub_an_elapsed
-                    || (acknack_req && !snstate_is_empty)) {
-                    switch (tx_progress) {
-                    case 0:
-                        SEDP_PUB_ACKNACK_OUT(0);
-                        break;
-                    case 1:
-                        SEDP_PUB_ACKNACK_OUT(1);
-                        break;
-                    case 2:
-                        SEDP_PUB_ACKNACK_OUT(2);
-                        break;
-                    case 3:
-                        SEDP_PUB_ACKNACK_OUT(3);
-                        if (tx_cnt_elapsed == 4) {
-                            /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_5: {
-#pragma HLS protocol fixed
-                            *cnt_sedp_pub_an_set = 1;
-                            CLOCK_BOUNDARY;
-                            CLOCK_BOUNDARY;
+                /* Cyber unroll_times=all */
+                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
+                     sedp_reader_id++) {
+#pragma HLS unroll
+                    if (tx_progress == sedp_reader_id) {
+                        const sedp_endpoint &reader
+                            = sedp_reader_tbl[sedp_reader_id];
+                        uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
+                        uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
+                        bool    acknack_req = reader.builtin_pubrd_acknack_req;
+                        uint8_t snstate_base = rd_seqnum;
+                        bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
+                        if (cnt_sedp_pub_an_elapsed
+                            || (acknack_req && !snstate_is_empty)) {
+                            SEDP_PUB_ACKNACK_OUT(sedp_reader_id);
                         }
-                        }
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                         break;
-                    }
-                } else {
-                    if (tx_progress == 3) {
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                     }
                 }
-                tx_progress++;
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_5: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_pub_an_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
+                    tx_progress = 0;
+                    tx_cnt_elapsed = 0;
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else if (next_packet_type == 6) {
-                uint8_t wr_seqnum
-                    = sedp_reader_tbl[tx_progress].builtin_subrd_wr_seqnum;
-                uint8_t rd_seqnum
-                    = sedp_reader_tbl[tx_progress].builtin_subrd_rd_seqnum;
-                bool acknack_req
-                    = sedp_reader_tbl[tx_progress].builtin_subrd_acknack_req;
-                uint8_t snstate_base = rd_seqnum;
-                bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
                 if (cnt_sedp_sub_an_elapsed)
                     tx_cnt_elapsed++;
 
-                if (cnt_sedp_sub_an_elapsed
-                    || (acknack_req && !snstate_is_empty)) {
-                    switch (tx_progress) {
-                    case 0:
-                        SEDP_SUB_ACKNACK_OUT(0);
-                        break;
-                    case 1:
-                        SEDP_SUB_ACKNACK_OUT(1);
-                        break;
-                    case 2:
-                        SEDP_SUB_ACKNACK_OUT(2);
-                        break;
-                    case 3:
-                        SEDP_SUB_ACKNACK_OUT(3);
-                        if (tx_cnt_elapsed == 4) {
-                            /* Cyber scheduling_block = non-transparent */
-                        cnt_reset_6: {
-#pragma HLS protocol fixed
-                            *cnt_sedp_sub_an_set = 1;
-                            CLOCK_BOUNDARY;
-                            CLOCK_BOUNDARY;
+                /* Cyber unroll_times=all */
+                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
+                     sedp_reader_id++) {
+#pragma HLS unroll
+                    if (tx_progress == sedp_reader_id) {
+                        const sedp_endpoint &reader
+                            = sedp_reader_tbl[sedp_reader_id];
+                        uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
+                        uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
+                        bool    acknack_req = reader.builtin_subrd_acknack_req;
+                        uint8_t snstate_base = rd_seqnum;
+                        bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+
+                        if (cnt_sedp_sub_an_elapsed
+                            || (acknack_req && !snstate_is_empty)) {
+                            SEDP_SUB_ACKNACK_OUT(sedp_reader_id);
                         }
-                        }
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                         break;
-                    }
-                } else {
-                    if (tx_progress == 3) {
-                        ROTATE_NEXT_PACKET_TYPE;
-                        tx_cnt_elapsed = 0;
                     }
                 }
-                tx_progress++;
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    if (tx_cnt_elapsed == SEDP_READER_MAX) {
+                        /* Cyber scheduling_block = non-transparent */
+                    cnt_reset_6: {
+#pragma HLS protocol fixed
+                        *cnt_sedp_sub_an_set = 1;
+                        CLOCK_BOUNDARY;
+                        CLOCK_BOUNDARY;
+                    }
+                    }
+                    tx_progress = 0;
+                    tx_cnt_elapsed = 0;
+                    ROTATE_NEXT_PACKET_TYPE;
+                }
             } else if (pub_enable != 0 && cnt_app_wr_elapsed
                        && next_packet_type == 7) {
                 switch (tx_topic_progress) {
                 case 0:
-                    APP_WRITER_OUT_TOPIC(0, tx_progress, app_reader_tbl, conf,
-                                         pub_app_data_0, pub_app_data_len_0,
-                                         app_writer_entity_id_list[0], tx_buf,
-                                         app_seqnum, now);
+                    APP_WRITER_OUT(
+                        0, tx_progress, app_reader_tbl, conf, pub_app_data_0,
+                        pub_app_data_len_0, pub_app_data_req_0,
+                        pub_app_data_rel_0, pub_app_data_grant_0,
+                        app_writer_entity_id_list[0], tx_buf, app_seqnum, now);
                     break;
                 case 1:
-                    APP_WRITER_OUT_TOPIC(1, tx_progress, app_reader_tbl, conf,
-                                         pub_app_data_1, pub_app_data_len_1,
-                                         app_writer_entity_id_list[1], tx_buf,
-                                         app_seqnum, now);
+                    APP_WRITER_OUT(
+                        1, tx_progress, app_reader_tbl, conf, pub_app_data_1,
+                        pub_app_data_len_1, pub_app_data_req_1,
+                        pub_app_data_rel_1, pub_app_data_grant_1,
+                        app_writer_entity_id_list[1], tx_buf, app_seqnum, now);
                     break;
                 case 2:
-                    APP_WRITER_OUT_TOPIC(2, tx_progress, app_reader_tbl, conf,
-                                         pub_app_data_2, pub_app_data_len_2,
-                                         app_writer_entity_id_list[2], tx_buf,
-                                         app_seqnum, now);
+                    APP_WRITER_OUT(
+                        2, tx_progress, app_reader_tbl, conf, pub_app_data_2,
+                        pub_app_data_len_2, pub_app_data_req_2,
+                        pub_app_data_rel_2, pub_app_data_grant_2,
+                        app_writer_entity_id_list[2], tx_buf, app_seqnum, now);
                     break;
                 case 3:
-                    APP_WRITER_OUT_TOPIC(3, tx_progress, app_reader_tbl, conf,
-                                         pub_app_data_3, pub_app_data_len_3,
-                                         app_writer_entity_id_list[3], tx_buf,
-                                         app_seqnum, now);
+                    APP_WRITER_OUT(
+                        3, tx_progress, app_reader_tbl, conf, pub_app_data_3,
+                        pub_app_data_len_3, pub_app_data_req_3,
+                        pub_app_data_rel_3, pub_app_data_grant_3,
+                        app_writer_entity_id_list[3], tx_buf, app_seqnum, now);
                     break;
                 }
-                if (tx_progress == (APP_READER_MAX - 1)) {
+                if (tx_progress < (APP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    tx_progress = 0;
                     if (tx_topic_progress < (PUB_TOPICS_MAX - 1)) {
                         tx_topic_progress++;
                     } else {
@@ -1116,7 +1096,6 @@ static void ros2_out(
                         tx_topic_progress = 0;
                     }
                 }
-                tx_progress++;
             } else if (next_packet_type == 8) {
                 // Remove dead endpoints.
                 if (reading_rtps_message) {
@@ -1124,25 +1103,22 @@ static void ros2_out(
                     // message.
                     tx_progress = 0;
                 } else {
-                    switch (tx_progress) {
-                    case 0:
-                        remove_dead_endpoints(0, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                        break;
-                    case 1:
-                        remove_dead_endpoints(1, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                        break;
-                    case 2:
-                        remove_dead_endpoints(2, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                        break;
-                    case 3:
-                        remove_dead_endpoints(3, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                        break;
+                    /* Cyber unroll_times=all */
+                    for (auto sedp_reader_id = 0;
+                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
+#pragma HLS unroll
+                        if (tx_progress == sedp_reader_id) {
+                            remove_dead_endpoints(
+                                sedp_reader_id, sedp_reader_tbl, app_reader_tbl,
+                                timestamp_i64);
+                            break;
+                        }
                     }
-                    tx_progress++;
+                    if (tx_progress < (SEDP_READER_MAX - 1)) {
+                        tx_progress++;
+                    } else {
+                        tx_progress = 0;
+                    }
                 }
                 if (tx_progress == 0) {
                     ROTATE_NEXT_PACKET_TYPE;
@@ -1169,30 +1145,75 @@ void ros2(
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    VOLATILE const uint8_t
-        pub_app_data_0[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_0[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
-    VOLATILE const uint8_t
+    VOLATILE const app_data_len_t
         *pub_app_data_len_0 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_1[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+    VOLATILE uint8_t
+        *pub_app_data_req_0 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_0 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_0 /* Cyber port_mode=shared, volatile=YES */,
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_1[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
-    VOLATILE const uint8_t
+    VOLATILE const app_data_len_t
         *pub_app_data_len_1 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_2[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+    VOLATILE uint8_t
+        *pub_app_data_req_1 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_1 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_1 /* Cyber port_mode=shared, volatile=YES */,
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_2[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
-    VOLATILE const uint8_t
+    VOLATILE const app_data_len_t
         *pub_app_data_len_2 /* Cyber port_mode=cw_fifo, volatile=YES */,
-    VOLATILE const uint8_t
-        pub_app_data_3[MAX_APP_DATA_LEN] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=YES */
+    VOLATILE uint8_t
+        *pub_app_data_req_2 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_2 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_2 /* Cyber port_mode=shared, volatile=YES */,
+
+#ifdef PUB_DATA_FF
+    VOLATILE
+#endif // PUB_DATA_FF
+    const uint32_t pub_app_data_3[MAX_APP_DATA_LEN / 4]
+#ifdef PUB_DATA_FF
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+#endif // PUB_DATA_FF
     ,
-    VOLATILE const uint8_t
-           *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES */,
+    VOLATILE const app_data_len_t
+        *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_req_3 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_rel_3 /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *pub_app_data_grant_3 /* Cyber port_mode=shared, volatile=YES */,
+
     uint8_t sub_app_data_0
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     uint8_t sub_app_data_1
@@ -1201,16 +1222,10 @@ void ros2(
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     uint8_t sub_app_data_3
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE uint8_t
+    VOLATILE app_data_len_t
         sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND, volatile=YES */,
     VOLATILE uint16_t sub_app_data_rep_id
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, volatile=YES */,
-    VOLATILE hls_uint<PUB_TOPICS_MAX>
-            *pub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<PUB_TOPICS_MAX>
-            *pub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<PUB_TOPICS_MAX>
-            *pub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
@@ -1279,6 +1294,11 @@ void ros2(
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->guid_prefix
+#pragma HLS disaggregate             variable = conf->participant_lease_duration
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.seconds
+#pragma HLS interface mode = ap_none port                                      \
+    = conf->participant_lease_duration.fraction
 #pragma HLS array_reshape variable = conf->pub_topic_name type = complete dim  \
     = 2
 #pragma HLS array_partition variable = conf->pub_topic_name type               \
@@ -1312,30 +1332,53 @@ void ros2(
     = complete                                                       dim = 1
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
 #pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
+
+#ifdef PUB_DATA_FF
 #pragma HLS interface mode = ap_fifo port = pub_app_data_0
-#pragma HLS array_reshape variable = pub_app_data_0 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_0
 #pragma HLS interface mode = ap_fifo port = pub_app_data_1
-#pragma HLS array_reshape variable = pub_app_data_1 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_1
 #pragma HLS interface mode = ap_fifo port = pub_app_data_2
-#pragma HLS array_reshape variable = pub_app_data_2 type = complete dim = 0
-#pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
 #pragma HLS interface mode = ap_fifo port = pub_app_data_3
+#pragma HLS array_reshape variable = pub_app_data_0 type = complete dim = 0
+#pragma HLS array_reshape variable = pub_app_data_1 type = complete dim = 0
+#pragma HLS array_reshape variable = pub_app_data_2 type = complete dim = 0
 #pragma HLS array_reshape variable = pub_app_data_3 type = complete dim = 0
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS interface mode = ap_memory port = pub_app_data_0 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_1 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_2 storage_type      \
+    = rom_1p                                                 latency = 1
+#pragma HLS interface mode = ap_memory port = pub_app_data_3 storage_type      \
+    = rom_1p                                                 latency = 1
+#endif // PUB_DATA_RAM
+
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_0
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_1
+#pragma HLS interface mode = ap_fifo port = pub_app_data_len_2
 #pragma HLS interface mode = ap_fifo port = pub_app_data_len_3
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_0
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_1
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_2
+#pragma HLS interface mode = ap_vld port = pub_app_data_req_3
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_0
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_1
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_2
+#pragma HLS interface mode = ap_vld port = pub_app_data_rel_3
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_0
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_1
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_2
+#pragma HLS interface mode = ap_ack port = pub_app_data_grant_3
 #pragma HLS interface mode = ap_memory port = sub_app_data_0
 #pragma HLS interface mode = ap_memory port = sub_app_data_1
 #pragma HLS interface mode = ap_memory port = sub_app_data_2
 #pragma HLS interface mode = ap_memory port = sub_app_data_3
 #pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
-#pragma HLS interface mode = ap_none port = sub_app_data_len
+#pragma HLS interface mode = ap_vld port = sub_app_data_len
 #pragma HLS array_partition variable = sub_app_data_rep_id type = complete dim \
     = 1
-#pragma HLS interface mode = ap_none port = sub_app_data_rep_id
-#pragma HLS interface mode = ap_vld port = pub_app_data_req
-#pragma HLS interface mode = ap_vld port = pub_app_data_rel
-#pragma HLS interface mode = ap_ack port = pub_app_data_grant
+#pragma HLS interface mode = ap_vld port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
@@ -1388,15 +1431,18 @@ void ros2(
 
     ros2_out(
         out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-        conf, pub_app_data_0, pub_app_data_len_0, pub_app_data_1,
-        pub_app_data_len_1, pub_app_data_2, pub_app_data_len_2, pub_app_data_3,
-        pub_app_data_len_3, pub_app_data_req, pub_app_data_rel,
-        pub_app_data_grant, udp_txbuf_rel, udp_txbuf_grant,
-        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
-        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
-        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
-        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
-        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set,
-        reading_rtps_message, timestamp_i64);
+        conf, pub_app_data_0, pub_app_data_len_0, pub_app_data_req_0,
+        pub_app_data_rel_0, pub_app_data_grant_0, pub_app_data_1,
+        pub_app_data_len_1, pub_app_data_req_1, pub_app_data_rel_1,
+        pub_app_data_grant_1, pub_app_data_2, pub_app_data_len_2,
+        pub_app_data_req_2, pub_app_data_rel_2, pub_app_data_grant_2,
+        pub_app_data_3, pub_app_data_len_3, pub_app_data_req_3,
+        pub_app_data_rel_3, pub_app_data_grant_3, udp_txbuf_rel,
+        udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
+        cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
+        cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
+        cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed,
+        cnt_sedp_sub_hb_set, cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
+        cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
+        cnt_app_wr_set, reading_rtps_message, timestamp_i64);
 }

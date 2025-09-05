@@ -41,9 +41,10 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
+    localparam ROS2CLK_HZ = 80_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(10),
+        .CLKOUT0_DIVIDE_F(12.5),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -122,9 +123,11 @@ module top (
     wire [15:0] ros2_port_num_seed = 16'd7400;
     wire [31:0] ros2_fragment_expiration = 32'd3333333333;
     wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
+    wire [31:0] ros2_participant_lease_duration_seconds = 32'd20;
+    wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
 
     // --- ROS2 Pubisher Configuration
-    wire [3:0] ros2pub_en = {sw3, sw2, sw1, sw0};
+    wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2pub_en = {sw3, sw2, sw1, sw0};
 
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0 = "bbb/tr";
     wire [7:0] ros2_pub_topic_name_len_0 = 8'd7;
@@ -145,9 +148,6 @@ module top (
     wire [7:0] ros2_pub_topic_name_len_3 = 8'd7;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3 = "_gnirtS::_sdd::gsm::sgsm_dts";
     wire [7:0] ros2_pub_topic_type_name_len_3 = 8'd29;
-
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd23;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
 
     // --- ROS2 Publisher Message Control
     reg [29:0] msg_change_counter;
@@ -171,10 +171,22 @@ module top (
 
     // Published messages
     wire [7:0] msg_number[0:3];
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number[0], "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number[1], "C - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number[2], "D - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number[3], "E - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_0 = 8'd23;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_0 = ROS2_PUB_APP_DATA_STRLEN_0 + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number[0], "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_0};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_1 = 8'd24;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_1 = ROS2_PUB_APP_DATA_STRLEN_1 + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number[1], "CC - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_1};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_2 = 8'd25;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_2 = ROS2_PUB_APP_DATA_STRLEN_2 + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number[2], "DDD - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_2};
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_3 = 8'd26;
+    localparam [7:0] ROS2_PUB_APP_DATA_LEN_3 = ROS2_PUB_APP_DATA_STRLEN_3 + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number[3], "EEEE - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_3};
 
     generate
         genvar iter;
@@ -191,6 +203,35 @@ module top (
         end
     endgenerate
 
+`ifdef ROS2_PUB_DATA_RAM
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_0_addr;
+    wire ros2_pub_app_data_0_ce;
+    reg  [31:0] ros2_pub_app_data_0_rdata;
+
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_1_addr;
+    wire ros2_pub_app_data_1_ce;
+    reg  [31:0] ros2_pub_app_data_1_rdata;
+
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_2_addr;
+    wire ros2_pub_app_data_2_ce;
+    reg  [31:0] ros2_pub_app_data_2_rdata;
+
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_3_addr;
+    wire ros2_pub_app_data_3_ce;
+    reg  [31:0] ros2_pub_app_data_3_rdata;
+
+    always @(posedge clk_int) begin
+        if (ros2_pub_app_data_0_ce)
+            ros2_pub_app_data_0_rdata <= ros2_pub_app_data_0[32*ros2_pub_app_data_0_addr +: 32];
+        if (ros2_pub_app_data_1_ce)
+            ros2_pub_app_data_1_rdata <= ros2_pub_app_data_1[32*ros2_pub_app_data_1_addr +: 32];
+        if (ros2_pub_app_data_2_ce)
+            ros2_pub_app_data_2_rdata <= ros2_pub_app_data_2[32*ros2_pub_app_data_2_addr +: 32];
+        if (ros2_pub_app_data_3_ce)
+            ros2_pub_app_data_3_rdata <= ros2_pub_app_data_3[32*ros2_pub_app_data_3_addr +: 32];
+    end
+`endif
+
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
     wire [7:0] ros2_sub_topic_name_len = 8'd7;
@@ -198,17 +239,29 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
 
     // --- ROS2 Subscriber Received Message
+    wire w_ros2_sub_app_data_len_valid;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
+
+    wire        w_ros2_sub_app_data_rep_id_valid;
+    wire [15:0] w_ros2_sub_app_data_rep_id;
+    reg  [15:0] ros2_sub_app_data_rep_id;
+
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
     wire ros2_sub_app_data_ce;
     wire ros2_sub_app_data_we;
     wire [7:0] ros2_sub_app_data_wdata;
     reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
+
     always @(posedge clk_int) begin
+        if (w_ros2_sub_app_data_len_valid)
+            ros2_sub_app_data_len <= w_ros2_sub_app_data_len;
+        if (w_ros2_sub_app_data_rep_id_valid)
+            ros2_sub_app_data_rep_id <= w_ros2_sub_app_data_rep_id;
         if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
             rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
     end
-    wire [7:0] ros2_sub_app_data_len;
-    wire [15:0] ros2_sub_app_data_rep_id;
+
     assign led4 = rx_msg_reg[0][0];
     assign led5 = rx_msg_reg[0][1];
     assign led6 = rx_msg_reg[0][2];
@@ -238,15 +291,16 @@ module top (
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
         .PRESCALER_DIV              (PRESCALER_DIV),
-        .TX_INTERVAL_COUNT          ((`ROS2CLK_HZ / PRESCALER_DIV) / 100),
-        .TX_PERIOD_SPDP_WR_COUNT    ((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_WR_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_HB_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_PUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_SEDP_SUB_AN_COUNT((`ROS2CLK_HZ / PRESCALER_DIV) * 3),
-        .TX_PERIOD_APP_WR_COUNT     ((`ROS2CLK_HZ / PRESCALER_DIV) * 3)
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
+        .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
+        .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_APP_WR_COUNT     ((ROS2CLK_HZ / PRESCALER_DIV) * 3)
     )
     ros2 (
         .clk(clk_int),
@@ -254,7 +308,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(ros2pub_en),
-        .ros2sub_en(4'b0001),
+        .ros2sub_en(1),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -277,6 +331,8 @@ module top (
         .ros2_port_num_seed(ros2_port_num_seed),
         .ros2_fragment_expiration(ros2_fragment_expiration),
         .ros2_guid_prefix(ros2_guid_prefix),
+        .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+        .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
 
         .ros2_pub_topic_name_0(ros2_pub_topic_name_0),
         .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len_0),
@@ -318,17 +374,34 @@ module top (
         .ros2_sub_topic_type_name_3(0),
         .ros2_sub_topic_type_name_len_3(0),
 
+`ifdef ROS2_PUB_DATA_FF
         .ros2_pub_app_data_0(ros2_pub_app_data_0),
-        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
-
         .ros2_pub_app_data_1(ros2_pub_app_data_1),
-        .ros2_pub_app_data_len_1(ROS2_PUB_APP_DATA_LEN),
-
         .ros2_pub_app_data_2(ros2_pub_app_data_2),
-        .ros2_pub_app_data_len_2(ROS2_PUB_APP_DATA_LEN),
-
         .ros2_pub_app_data_3(ros2_pub_app_data_3),
-        .ros2_pub_app_data_len_3(ROS2_PUB_APP_DATA_LEN),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_0_addr(ros2_pub_app_data_0_addr),
+        .ros2_pub_app_data_0_ce(ros2_pub_app_data_0_ce),
+        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_0_rdata),
+
+        .ros2_pub_app_data_1_addr(ros2_pub_app_data_1_addr),
+        .ros2_pub_app_data_1_ce(ros2_pub_app_data_1_ce),
+        .ros2_pub_app_data_1_rdata(ros2_pub_app_data_1_rdata),
+
+        .ros2_pub_app_data_2_addr(ros2_pub_app_data_2_addr),
+        .ros2_pub_app_data_2_ce(ros2_pub_app_data_2_ce),
+        .ros2_pub_app_data_2_rdata(ros2_pub_app_data_2_rdata),
+
+        .ros2_pub_app_data_3_addr(ros2_pub_app_data_3_addr),
+        .ros2_pub_app_data_3_ce(ros2_pub_app_data_3_ce),
+        .ros2_pub_app_data_3_rdata(ros2_pub_app_data_3_rdata),
+`endif
+
+        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN_0),
+        .ros2_pub_app_data_len_1(ROS2_PUB_APP_DATA_LEN_1),
+        .ros2_pub_app_data_len_2(ROS2_PUB_APP_DATA_LEN_2),
+        .ros2_pub_app_data_len_3(ROS2_PUB_APP_DATA_LEN_3),
 
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
@@ -338,28 +411,36 @@ module top (
         .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
         .ros2_sub_app_data_0_we(ros2_sub_app_data_we),
         .ros2_sub_app_data_0_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len_0(ros2_sub_app_data_len),
-        .ros2_sub_app_data_rep_id_0(ros2_sub_app_data_rep_id),
+        .ros2_sub_app_data_len_0_valid(w_ros2_sub_app_data_len_valid),
+        .ros2_sub_app_data_len_0(w_ros2_sub_app_data_len),
+        .ros2_sub_app_data_rep_id_0_valid(w_ros2_sub_app_data_rep_id_valid),
+        .ros2_sub_app_data_rep_id_0(w_ros2_sub_app_data_rep_id),
 
         .ros2_sub_app_data_1_addr(),
         .ros2_sub_app_data_1_ce(),
         .ros2_sub_app_data_1_we(),
         .ros2_sub_app_data_1_wdata(),
+        .ros2_sub_app_data_len_1_valid(),
         .ros2_sub_app_data_len_1(),
+        .ros2_sub_app_data_rep_id_1_valid(),
         .ros2_sub_app_data_rep_id_1(),
 
         .ros2_sub_app_data_2_addr(),
         .ros2_sub_app_data_2_ce(),
         .ros2_sub_app_data_2_we(),
         .ros2_sub_app_data_2_wdata(),
+        .ros2_sub_app_data_len_2_valid(),
         .ros2_sub_app_data_len_2(),
+        .ros2_sub_app_data_rep_id_2_valid(),
         .ros2_sub_app_data_rep_id_2(),
 
         .ros2_sub_app_data_3_addr(),
         .ros2_sub_app_data_3_ce(),
         .ros2_sub_app_data_3_we(),
         .ros2_sub_app_data_3_wdata(),
+        .ros2_sub_app_data_len_3_valid(),
         .ros2_sub_app_data_len_3(),
+        .ros2_sub_app_data_rep_id_3_valid(),
         .ros2_sub_app_data_rep_id_3(),
 
         .ros2_sub_app_data_req(0),

@@ -9,6 +9,7 @@
 #include "rtps.hpp"
 #include "sedp.hpp"
 #include "spdp.hpp"
+#include "util.hpp"
 
 /* Cyber func=inline */
 void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
@@ -643,7 +644,7 @@ void sedp_writer(
 
     uint16_t pid_type_name_size = SP_STR_DATA_SIZE(type_name_len);
 
-    static const uint32_t type_max_size_serialized = 84;
+    static const uint32_t type_max_size_serialized = 4 + MAX_APP_DATA_LEN;
     static const uint32_t durability_qos = 0;
     static const duration deadline = DURATION_INFINITE;
     static const duration latency_budget = DURATION_ZERO;
@@ -1077,11 +1078,7 @@ void sedp_writer(
 #error "not implemented!"
 #endif
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_WRITER_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_WRITER_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 /* Cyber func=inline */
@@ -1141,7 +1138,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     buf[34] = reader_guid_prefix[10];
     buf[35] = reader_guid_prefix[11];
     buf[36] = SBM_ID_HEARTBEAT;
-    buf[37] = sbm_flags;
+    buf[37] = sbm_flags | SBM_FLAGS_FINAL;
     buf[38] = S_BYTE0(SBM_HEARTBEAT_DATA_SIZE);
     buf[39] = S_BYTE1(SBM_HEARTBEAT_DATA_SIZE);
     buf[40] = reader_entity_id[0];
@@ -1173,11 +1170,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     buf[66] = L_BYTE2(cnt);
     buf[67] = L_BYTE3(cnt);
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_HEARTBEAT_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_HEARTBEAT_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 /* Cyber func=inline */
@@ -1232,7 +1225,7 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[34] = reader_guid_prefix[10];
     buf[35] = reader_guid_prefix[11];
     buf[36] = SBM_ID_ACKNACK;
-    buf[37] = sbm_flags;
+    buf[37] = sbm_flags | SBM_FLAGS_FINAL;
     buf[38] = S_BYTE0(SBM_ACKNACK_DATA_SIZE);
     buf[39] = S_BYTE1(SBM_ACKNACK_DATA_SIZE);
     buf[40] = reader_entity_id[0];
@@ -1267,9 +1260,5 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     buf[66] = L_BYTE2(cnt);
     buf[67] = L_BYTE3(cnt);
 
-    /* Cyber unroll_times=all */
-    for (int i = SEDP_ACKNACK_TOT_LEN; i < MAX_TX_UDP_PAYLOAD_LEN; i++) {
-#pragma HLS unroll
-        buf[i] = 0;
-    }
+    clear_txbuf(buf, SEDP_ACKNACK_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }

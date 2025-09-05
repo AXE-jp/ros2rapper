@@ -25,6 +25,7 @@ setup(
             'sub_1 = py_pubsub.sub_1:main',
             'sub_2 = py_pubsub.sub_2:main',
             'sub_3 = py_pubsub.sub_3:main',
+            'sub_all = py_pubsub.sub_all:main',
         ],
     },
 )

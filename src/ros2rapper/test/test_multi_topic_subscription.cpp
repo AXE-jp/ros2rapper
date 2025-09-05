@@ -1,6 +1,11 @@
-#include "app.hpp"
+// Copyright (c) 2021-2025 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include <cassert>
 #include <iostream>
+
+#include "app.hpp"
+#include "ros2.hpp"
 
 // The recipient's reader entity ID: {0x00, 0x00, 0x10, 0x04}.
 constexpr uint8_t app_reader_test_data_0[] = {
@@ -106,7 +111,7 @@ static void call_app_reader(
     uint8_t                   sub_app_data_1[MAX_APP_DATA_LEN],
     uint8_t                   sub_app_data_2[MAX_APP_DATA_LEN],
     uint8_t                   sub_app_data_3[MAX_APP_DATA_LEN],
-    uint8_t                   sub_app_data_len[SUB_TOPICS_MAX],
+    app_data_len_t            sub_app_data_len[SUB_TOPICS_MAX],
     uint16_t sub_app_data_rep_id[SUB_TOPICS_MAX], const uint8_t test_data[],
     size_t test_data_len) {
     for (auto j = 0; j < test_data_len; j++) {
@@ -127,8 +132,8 @@ static int check_app_reader(hls_uint<SUB_TOPICS_MAX> sub_enable,
                             hls_uint<SUB_TOPICS_MAX> sub_app_data_req,
                             hls_uint<SUB_TOPICS_MAX> sub_app_data_rel,
                             hls_uint<SUB_TOPICS_MAX> sub_app_data_grant,
-                            const uint8_t sub_app_data[MAX_APP_DATA_LEN],
-                            uint8_t       sub_app_data_len,
+                            const uint8_t  sub_app_data[MAX_APP_DATA_LEN],
+                            app_data_len_t sub_app_data_len,
                             hls_uint<SUB_TOPICS_MAX> flag,
                             const uint8_t            test_data[],
                             uint8_t                  test_data_payload_len,
@@ -192,12 +197,12 @@ static int test_app_reader() {
     hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
     hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
 
-    uint8_t  sub_app_data_0[MAX_APP_DATA_LEN];
-    uint8_t  sub_app_data_1[MAX_APP_DATA_LEN];
-    uint8_t  sub_app_data_2[MAX_APP_DATA_LEN];
-    uint8_t  sub_app_data_3[MAX_APP_DATA_LEN];
-    uint8_t  sub_app_data_len[SUB_TOPICS_MAX];
-    uint16_t sub_app_data_rep_id[SUB_TOPICS_MAX];
+    uint8_t        sub_app_data_0[MAX_APP_DATA_LEN];
+    uint8_t        sub_app_data_1[MAX_APP_DATA_LEN];
+    uint8_t        sub_app_data_2[MAX_APP_DATA_LEN];
+    uint8_t        sub_app_data_3[MAX_APP_DATA_LEN];
+    app_data_len_t sub_app_data_len[SUB_TOPICS_MAX];
+    uint16_t       sub_app_data_rep_id[SUB_TOPICS_MAX];
 
     unsigned int n_patterns = (1 << SUB_TOPICS_MAX);
     for (unsigned int sub_enable_pattern = 0; sub_enable_pattern < n_patterns;
