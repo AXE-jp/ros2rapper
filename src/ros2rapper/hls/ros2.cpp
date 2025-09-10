@@ -437,42 +437,38 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
                     const uint8_t app_writer_entity_id[4], tx_buf &tx_buf,
                     int64_t &app_seqnum, timestamp now) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto id = 0; id < APP_READER_MAX; id++) {
-#pragma HLS unroll
-        if ((app_reader_id == id) && app_reader_tbl[id].alive
-            && (app_reader_tbl[id].app_ep_type & APP_EP_PUB)
-            && (app_reader_tbl[id].pub_topic_id == topic_id)) {
+    if ((app_reader_id < APP_READER_MAX) && app_reader_tbl[app_reader_id].alive
+        && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)
+        && (app_reader_tbl[app_reader_id].pub_topic_id == topic_id)) {
 
-            uint8_t grant;
-            /* Cyber scheduling_block = non-transparent */
-        app_data_request_section: {
+        uint8_t grant;
+        /* Cyber scheduling_block = non-transparent */
+    app_data_request_section: {
 #pragma HLS protocol fixed
-            *pub_app_data_req
+        *pub_app_data_req = 0 /* write dummy value to assert valid signal */;
+        CLOCK_BOUNDARY;
+        CLOCK_BOUNDARY;
+        grant = *pub_app_data_grant;
+    }
+
+        if (grant) {
+            app_writer_out(
+                app_writer_entity_id, app_reader_tbl[app_reader_id].ip_addr,
+                app_reader_tbl[app_reader_id].udp_port,
+                app_reader_tbl[app_reader_id].guid_prefix,
+                app_reader_tbl[app_reader_id].entity_id, tx_buf, app_seqnum,
+                conf->ip_addr, conf->node_udp_port, conf->guid_prefix,
+                pub_app_data, *pub_app_data_len, now);
+
+            /* Cyber scheduling_block = non-transparent */
+        app_data_release_section: {
+#pragma HLS protocol fixed
+            CLOCK_BOUNDARY;
+            *pub_app_data_rel
                 = 0 /* write dummy value to assert valid signal */;
             CLOCK_BOUNDARY;
             CLOCK_BOUNDARY;
-            grant = *pub_app_data_grant;
         }
-
-            if (grant) {
-                app_writer_out(
-                    app_writer_entity_id, app_reader_tbl[id].ip_addr,
-                    app_reader_tbl[id].udp_port, app_reader_tbl[id].guid_prefix,
-                    app_reader_tbl[id].entity_id, tx_buf, app_seqnum,
-                    conf->ip_addr, conf->node_udp_port, conf->guid_prefix,
-                    pub_app_data, *pub_app_data_len, now);
-
-                /* Cyber scheduling_block = non-transparent */
-            app_data_release_section: {
-#pragma HLS protocol fixed
-                CLOCK_BOUNDARY;
-                *pub_app_data_rel
-                    = 0 /* write dummy value to assert valid signal */;
-                CLOCK_BOUNDARY;
-                CLOCK_BOUNDARY;
-            }
-            }
         }
     }
 }
@@ -800,28 +796,11 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send published topic data
-                    /* Cyber unroll_times=all */
-                    for (auto sedp_reader_id = 0;
-                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
-#pragma HLS unroll
-                        if (tx_progress == sedp_reader_id) {
-                            if ((sedp_reader_tbl[sedp_reader_id]
-                                     .initial_send_counter
-                                 < 3)
-                                || cnt_sedp_pub_wr_elapsed) {
-                                /* Cyber unroll_times=all */
-                                for (auto topic_id = 0;
-                                     topic_id < PUB_TOPICS_MAX; topic_id++) {
-#pragma HLS unroll
-                                    if (tx_topic_progress == topic_id) {
-                                        SEDP_PUB_WRITER_OUT(topic_id,
-                                                            sedp_reader_id);
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
+                    if ((tx_progress < SEDP_READER_MAX)
+                        && ((sedp_reader_tbl[tx_progress].initial_send_counter
+                             < 3)
+                            || cnt_sedp_pub_wr_elapsed)) {
+                        SEDP_PUB_WRITER_OUT(tx_topic_progress, tx_progress);
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -861,28 +840,11 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send subscribed topic data
-                    /* Cyber unroll_times=all */
-                    for (auto sedp_reader_id = 0;
-                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
-#pragma HLS unroll
-                        if (tx_progress == sedp_reader_id) {
-                            if ((sedp_reader_tbl[sedp_reader_id]
-                                     .initial_send_counter
-                                 < 3)
-                                || cnt_sedp_sub_wr_elapsed) {
-                                /* Cyber unroll_times=all */
-                                for (auto topic_id = 0;
-                                     topic_id < SUB_TOPICS_MAX; topic_id++) {
-#pragma HLS unroll
-                                    if (tx_topic_progress == topic_id) {
-                                        SEDP_SUB_WRITER_OUT(topic_id,
-                                                            sedp_reader_id);
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
+                    if ((tx_progress < SEDP_READER_MAX)
+                        && ((sedp_reader_tbl[tx_progress].initial_send_counter
+                             < 3)
+                            || cnt_sedp_sub_wr_elapsed)) {
+                        SEDP_SUB_WRITER_OUT(tx_topic_progress, tx_progress);
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -896,20 +858,12 @@ static void ros2_out(
                 if (cnt_sedp_pub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                /* Cyber unroll_times=all */
-                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
-                     sedp_reader_id++) {
-#pragma HLS unroll
-                    if (tx_progress == sedp_reader_id) {
-                        if ((sedp_reader_tbl[sedp_reader_id]
-                                 .initial_send_counter
-                             < 3)
-                            || cnt_sedp_pub_hb_elapsed) {
-                            SEDP_PUB_HEARTBEAT_OUT(sedp_reader_id);
-                        }
-                        break;
-                    }
+                if ((tx_progress < SEDP_READER_MAX)
+                    && ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
+                        || cnt_sedp_pub_hb_elapsed)) {
+                    SEDP_PUB_HEARTBEAT_OUT(tx_progress);
                 }
+
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
@@ -930,20 +884,12 @@ static void ros2_out(
                 if (cnt_sedp_sub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                /* Cyber unroll_times=all */
-                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
-                     sedp_reader_id++) {
-#pragma HLS unroll
-                    if (tx_progress == sedp_reader_id) {
-                        if ((sedp_reader_tbl[sedp_reader_id]
-                                 .initial_send_counter
-                             < 3)
-                            || cnt_sedp_sub_hb_elapsed) {
-                            SEDP_SUB_HEARTBEAT_OUT(sedp_reader_id);
-                        }
-                        break;
-                    }
+                if ((tx_progress < SEDP_READER_MAX)
+                    && ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
+                        || cnt_sedp_sub_hb_elapsed)) {
+                    SEDP_SUB_HEARTBEAT_OUT(tx_progress);
                 }
+
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
@@ -964,26 +910,20 @@ static void ros2_out(
                 if (cnt_sedp_pub_an_elapsed)
                     tx_cnt_elapsed++;
 
-                /* Cyber unroll_times=all */
-                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
-                     sedp_reader_id++) {
-#pragma HLS unroll
-                    if (tx_progress == sedp_reader_id) {
-                        const sedp_endpoint &reader
-                            = sedp_reader_tbl[sedp_reader_id];
-                        uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
-                        uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
-                        bool    acknack_req = reader.builtin_pubrd_acknack_req;
-                        uint8_t snstate_base = rd_seqnum;
-                        bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+                if (tx_progress < SEDP_READER_MAX) {
+                    const sedp_endpoint &reader = sedp_reader_tbl[tx_progress];
+                    uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
+                    uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
+                    bool    acknack_req = reader.builtin_pubrd_acknack_req;
+                    uint8_t snstate_base = rd_seqnum;
+                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-                        if (cnt_sedp_pub_an_elapsed
-                            || (acknack_req && !snstate_is_empty)) {
-                            SEDP_PUB_ACKNACK_OUT(sedp_reader_id);
-                        }
-                        break;
+                    if (cnt_sedp_pub_an_elapsed
+                        || (acknack_req && !snstate_is_empty)) {
+                        SEDP_PUB_ACKNACK_OUT(tx_progress);
                     }
                 }
+
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
@@ -1004,26 +944,20 @@ static void ros2_out(
                 if (cnt_sedp_sub_an_elapsed)
                     tx_cnt_elapsed++;
 
-                /* Cyber unroll_times=all */
-                for (auto sedp_reader_id = 0; sedp_reader_id < SEDP_READER_MAX;
-                     sedp_reader_id++) {
-#pragma HLS unroll
-                    if (tx_progress == sedp_reader_id) {
-                        const sedp_endpoint &reader
-                            = sedp_reader_tbl[sedp_reader_id];
-                        uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
-                        uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
-                        bool    acknack_req = reader.builtin_subrd_acknack_req;
-                        uint8_t snstate_base = rd_seqnum;
-                        bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
+                if (tx_progress < SEDP_READER_MAX) {
+                    const sedp_endpoint &reader = sedp_reader_tbl[tx_progress];
+                    uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
+                    uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
+                    bool    acknack_req = reader.builtin_subrd_acknack_req;
+                    uint8_t snstate_base = rd_seqnum;
+                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-                        if (cnt_sedp_sub_an_elapsed
-                            || (acknack_req && !snstate_is_empty)) {
-                            SEDP_SUB_ACKNACK_OUT(sedp_reader_id);
-                        }
-                        break;
+                    if (cnt_sedp_sub_an_elapsed
+                        || (acknack_req && !snstate_is_empty)) {
+                        SEDP_SUB_ACKNACK_OUT(tx_progress);
                     }
                 }
+
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
                     tx_progress++;
                 } else {
@@ -1097,16 +1031,9 @@ static void ros2_out(
                     // message.
                     tx_progress = 0;
                 } else {
-                    /* Cyber unroll_times=all */
-                    for (auto sedp_reader_id = 0;
-                         sedp_reader_id < SEDP_READER_MAX; sedp_reader_id++) {
-#pragma HLS unroll
-                        if (tx_progress == sedp_reader_id) {
-                            remove_dead_endpoints(
-                                sedp_reader_id, sedp_reader_tbl, app_reader_tbl,
-                                timestamp_i64);
-                            break;
-                        }
+                    if (tx_progress < SEDP_READER_MAX) {
+                        remove_dead_endpoints(tx_progress, sedp_reader_tbl,
+                                              app_reader_tbl, timestamp_i64);
                     }
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
                         tx_progress++;
