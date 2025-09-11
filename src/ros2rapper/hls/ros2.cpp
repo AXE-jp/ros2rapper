@@ -1150,9 +1150,15 @@ void ros2(
     uint8_t sub_app_data_3
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     VOLATILE app_data_len_t
-        sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND, volatile=YES */,
-    VOLATILE uint16_t sub_app_data_rep_id
-        [SUB_TOPICS_MAX] /* Cyber array=EXPAND, volatile=YES */,
+        sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
+                                            array_index=const, port_mode=shared,
+                                            volatile=yes */
+    ,
+    VOLATILE uint16_t
+        sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
+                                               array_index=const,
+                                               port_mode=shared, volatile=yes */
+    ,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
