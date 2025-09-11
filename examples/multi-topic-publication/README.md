@@ -1,0 +1,42 @@
+# Multi-Topic Publish Example of ROS2rapper with Ethernet
+
+* Publish four ROS2 topics and send string messages.
+* Subscribe ROS2 topic and receive string messages.
+
+## Requirements
+* Arty A7-100T FPGA board
+* Linux machine
+  * Ubuntu 22.04 LTS (recommended)
+  * Vivado 2023.2
+  * Vitis HLS 2023.2
+  * Docker
+
+## Build
+To run high-level synthesis, logic synthesis and PnR, run following commands.
+```
+$ make create-proj
+$ make synth
+```
+
+Then write generated bitstream (ros2rapper-multi-topic-pub/ros2rapper-multi-topic-pub.runs/impl\_1/top.bit) to FPGA.
+
+## Run
+### Prepare
+* Connect Linux machine and FPGA board through Ethernet.
+* Configure Linux machine's IP address to be the same network address of FPGA's. IP address of FPGA is `192.168.1.100`.
+
+### Test ROS2rapper Publisher feature
+* This example publishes the "/bbb", "/ccc", "/ddd" and "/eee" topic.
+* To subscribe this topic, run following command.
+  * `./run-subscriber.sh`
+  * This script runs subscriber on Docker container. This docker container uses a host network.
+* Message "Message from FPGA - Xn" will be shown periodically ('X' is 'B', 'CC', 'DDD' or 'EEEE' corresponding to the topic name and the last number 'n' changes from 0 to 9).
+
+### Test ROS2rapper Subscriber feature
+* This example subscribes the "/aaa" topic.
+* To subscribe this topic, run following command.
+  * `./run-publisher.sh`
+  * This script runs publisher on Docker container. This docker container uses a host network.
+* Publisher on Linux machine sends following string messages with a period of 1 sec.
+  *  "A", "AA", "AAA", ..., "AAAAAAAAAA", "A", "AA", ...
+* When ROS2rapper receives message, LED 4-7 is changed according to lower 4 bits of first character of message.

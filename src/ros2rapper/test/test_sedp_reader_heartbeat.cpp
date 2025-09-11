@@ -10,6 +10,7 @@
 #include "hls.hpp"
 // #include "ros2.hpp"
 #include "sedp.hpp"
+#include "test_sedp_reader.hpp"
 
 /*
 HEARTBEAT Message Content:
@@ -103,34 +104,46 @@ int test_sedp_reader_heartbeat() {
 
     app_endpoint app_reader_tbl[APP_READER_MAX];
 
-    hls_uint<1> enable = 1;
+    hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
 
     const uint16_t port_num_seed = 7400;
 
-    const uint8_t pub_topic_name[] = "rt/fpgapubtest";
-    const uint8_t pub_topic_name_len = sizeof(pub_topic_name);
-    const uint8_t pub_type_name[] = "std_msgs::msg::dds_::String_";
-    const uint8_t pub_type_name_len = sizeof(pub_type_name);
+    const uint8_t pub_topic_name_0[] = "rt/fpgapubtest";
+    const uint8_t pub_type_name_0[] = "std_msgs::msg::dds_::String_";
 
     const uint8_t sub_topic_name_0[] = "rt/fpgapubtest";
-    const uint8_t sub_topic_name_len_0 = sizeof(sub_topic_name_0);
     const uint8_t sub_type_name_0[] = "std_msgs::msg::dds_::String_";
-    const uint8_t sub_type_name_len_0 = sizeof(sub_type_name_0);
 
-    const uint8_t sub_topic_name_1[] = {};
-    const uint8_t sub_topic_name_len_1 = 0;
-    const uint8_t sub_type_name_1[] = {};
-    const uint8_t sub_type_name_len_1 = 0;
+    uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
+    uint8_t pub_topic_name_len[PUB_TOPICS_MAX];
+    uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
+    uint8_t pub_type_name_len[PUB_TOPICS_MAX];
 
-    const uint8_t sub_topic_name_2[] = {};
-    const uint8_t sub_topic_name_len_2 = 0;
-    const uint8_t sub_type_name_2[] = {};
-    const uint8_t sub_type_name_len_2 = 0;
+    uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN];
+    uint8_t sub_topic_name_len[SUB_TOPICS_MAX];
+    uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN];
+    uint8_t sub_type_name_len[SUB_TOPICS_MAX];
 
-    const uint8_t sub_topic_name_3[] = {};
-    const uint8_t sub_topic_name_len_3 = 0;
-    const uint8_t sub_type_name_3[] = {};
-    const uint8_t sub_type_name_len_3 = 0;
+    setup_topic_data(0, pub_topic_name, pub_topic_name_len, pub_type_name,
+                     pub_type_name_len, pub_topic_name_0,
+                     sizeof(pub_topic_name_0), pub_type_name_0,
+                     sizeof(pub_type_name_0));
+
+    for (auto id = 1; id < PUB_TOPICS_MAX; id++) {
+        setup_topic_data(id, pub_topic_name, pub_topic_name_len, pub_type_name,
+                         pub_type_name_len, NULL, 0, NULL, 0);
+    }
+
+    setup_topic_data(0, sub_topic_name, sub_topic_name_len, sub_type_name,
+                     sub_type_name_len, sub_topic_name_0,
+                     sizeof(sub_topic_name_0), sub_type_name_0,
+                     sizeof(sub_type_name_0));
+
+    for (auto id = 1; id < SUB_TOPICS_MAX; id++) {
+        setup_topic_data(id, sub_topic_name, sub_topic_name_len, sub_type_name,
+                         sub_type_name_len, NULL, 0, NULL, 0);
+    }
 
     /*****************************************************/
 
@@ -141,15 +154,11 @@ int test_sedp_reader_heartbeat() {
         }
         in.write(x);
 
-        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, enable, ip_addr,
-                    subnet_mask, port_num_seed, own_guid_prefix, pub_topic_name,
-                    pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name_0, sub_topic_name_len_0, sub_type_name_0,
-                    sub_type_name_len_0, sub_topic_name_1, sub_topic_name_len_1,
-                    sub_type_name_1, sub_type_name_len_1, sub_topic_name_2,
-                    sub_topic_name_len_2, sub_type_name_2, sub_type_name_len_2,
-                    sub_topic_name_3, sub_topic_name_len_3, sub_type_name_3,
-                    sub_type_name_len_3);
+        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+                    ip_addr, subnet_mask, port_num_seed, own_guid_prefix,
+                    pub_topic_name, pub_topic_name_len, pub_type_name,
+                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
+                    sub_type_name, sub_type_name_len);
     }
 
     unsigned int sedp_reader_cnt = 0;

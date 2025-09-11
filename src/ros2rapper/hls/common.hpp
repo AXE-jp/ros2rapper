@@ -32,8 +32,13 @@
 
 #define MAX_TX_UDP_PAYLOAD_LEN (TX_BUF_LEN - (IP_HDR_SIZE + UDP_HDR_SIZE))
 
-#define ENTITYID_APP_WRITER                                                    \
-    { 0x00, 0x00, 0x10, 0x03 }
+#define ENTITYID_APP_WRITER_LIST                                               \
+    {                                                                          \
+        {0x00, 0x00, 0x10, 0x03}, {0x00, 0x00, 0x11, 0x03},                    \
+            {0x00, 0x00, 0x12, 0x03}, {                                        \
+            0x00, 0x00, 0x13, 0x03                                             \
+        }                                                                      \
+    }
 #define ENTITYID_APP_READER_LIST                                               \
     {                                                                          \
         {0x00, 0x00, 0x10, 0x04}, {0x00, 0x00, 0x11, 0x04},                    \

@@ -45,20 +45,20 @@ void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
 hls_uint<APP_READER_MAX>
 find_living_app_endpoints(const app_endpoint tbl[APP_READER_MAX]);
 
-void sedp_reader(hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                 app_endpoint reader_tbl[APP_READER_MAX], hls_uint<1> enable,
-                 const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-                 uint16_t port_num_seed, const uint8_t guid_prefix[12],
-                 const uint8_t pub_topic_name[], uint8_t pub_topic_name_len,
-                 const uint8_t pub_type_name[], uint8_t pub_type_name_len,
-                 const uint8_t sub_topic_name_0[], uint8_t sub_topic_name_len_0,
-                 const uint8_t sub_type_name_0[], uint8_t sub_type_name_len_0,
-                 const uint8_t sub_topic_name_1[], uint8_t sub_topic_name_len_1,
-                 const uint8_t sub_type_name_1[], uint8_t sub_type_name_len_1,
-                 const uint8_t sub_topic_name_2[], uint8_t sub_topic_name_len_2,
-                 const uint8_t sub_type_name_2[], uint8_t sub_type_name_len_2,
-                 const uint8_t sub_topic_name_3[], uint8_t sub_topic_name_len_3,
-                 const uint8_t sub_type_name_3[], uint8_t sub_type_name_len_3);
+void sedp_reader(
+    hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+    app_endpoint             reader_tbl[APP_READER_MAX],
+    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
+    const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
+    uint16_t port_num_seed, const uint8_t guid_prefix[12],
+    const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t pub_topic_name_len[PUB_TOPICS_MAX],
+    const uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t pub_type_name_len[PUB_TOPICS_MAX],
+    const uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
+    const uint8_t sub_topic_name_len[SUB_TOPICS_MAX],
+    const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
+    const uint8_t sub_type_name_len[SUB_TOPICS_MAX]);
 
 void sedp_writer(
     const uint8_t writer_guid_prefix[12], const uint8_t writer_entity_id[4],

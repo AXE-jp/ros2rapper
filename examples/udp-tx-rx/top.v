@@ -208,8 +208,8 @@ module top (
         .rst_n(rst_n_int),
 
         .ether_en(1'b1),
-        .ros2pub_en(1'b0),
-        .ros2sub_en(4'd0),
+        .ros2pub_en(0),
+        .ros2sub_en(0),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -235,10 +235,25 @@ module top (
         .ros2_participant_lease_duration_seconds(0),
         .ros2_participant_lease_duration_fraction(0),
 
-        .ros2_pub_topic_name(0),
-        .ros2_pub_topic_name_len(0),
-        .ros2_pub_topic_type_name(0),
-        .ros2_pub_topic_type_name_len(0),
+        .ros2_pub_topic_name_0(0),
+        .ros2_pub_topic_name_len_0(0),
+        .ros2_pub_topic_type_name_0(0),
+        .ros2_pub_topic_type_name_len_0(0),
+
+        .ros2_pub_topic_name_1(0),
+        .ros2_pub_topic_name_len_1(0),
+        .ros2_pub_topic_type_name_1(0),
+        .ros2_pub_topic_type_name_len_1(0),
+
+        .ros2_pub_topic_name_2(0),
+        .ros2_pub_topic_name_len_2(0),
+        .ros2_pub_topic_type_name_2(0),
+        .ros2_pub_topic_type_name_len_2(0),
+
+        .ros2_pub_topic_name_3(0),
+        .ros2_pub_topic_name_len_3(0),
+        .ros2_pub_topic_type_name_3(0),
+        .ros2_pub_topic_type_name_len_3(0),
 
         .ros2_sub_topic_name_0(0),
         .ros2_sub_topic_name_len_0(0),
@@ -261,16 +276,35 @@ module top (
         .ros2_sub_topic_type_name_len_3(0),
 
 `ifdef ROS2_PUB_DATA_FF
-        .ros2_pub_app_data(),
+        .ros2_pub_app_data_0(0),
+        .ros2_pub_app_data_1(0),
+        .ros2_pub_app_data_2(0),
+        .ros2_pub_app_data_3(0),
 `endif
 `ifdef ROS2_PUB_DATA_RAM
-        .ros2_pub_app_data_addr(),
-        .ros2_pub_app_data_ce(),
-        .ros2_pub_app_data_rdata(0),
+        .ros2_pub_app_data_0_addr(),
+        .ros2_pub_app_data_0_ce(),
+        .ros2_pub_app_data_0_rdata(0),
+
+        .ros2_pub_app_data_1_addr(),
+        .ros2_pub_app_data_1_ce(),
+        .ros2_pub_app_data_1_rdata(0),
+
+        .ros2_pub_app_data_2_addr(),
+        .ros2_pub_app_data_2_ce(),
+        .ros2_pub_app_data_2_rdata(0),
+
+        .ros2_pub_app_data_3_addr(),
+        .ros2_pub_app_data_3_ce(),
+        .ros2_pub_app_data_3_rdata(0),
 `endif
-        .ros2_pub_app_data_len(),
-        .ros2_pub_app_data_req(1'b0),
-        .ros2_pub_app_data_rel(1'b0),
+        .ros2_pub_app_data_len_0(0),
+        .ros2_pub_app_data_len_1(0),
+        .ros2_pub_app_data_len_2(0),
+        .ros2_pub_app_data_len_3(0),
+
+        .ros2_pub_app_data_req(0),
+        .ros2_pub_app_data_rel(0),
         .ros2_pub_app_data_grant(),
 
         .ros2_sub_app_data_addr(),
