@@ -239,62 +239,103 @@ module top (
     wire [7:0] ros2_sub_topic_type_name_len_3 = 8'd29;
 
     // --- ROS2 Subscriber Received Message
-    wire w_ros2_sub_app_data_len_valid;
-    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len;
-    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_0_addr;
+    wire        ros2_sub_app_data_0_ce;
+    wire        ros2_sub_app_data_0_we;
+    wire [7:0]  ros2_sub_app_data_0_wdata;
+    reg  [7:0]  ros2_sub_app_data_0[0:`ROS2_MAX_APP_DATA_LEN-1];
+    wire w_ros2_sub_app_data_len_0_valid;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len_0;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len_0;
+    wire        w_ros2_sub_app_data_rep_id_0_valid;
+    wire [15:0] w_ros2_sub_app_data_rep_id_0;
+    reg  [15:0] ros2_sub_app_data_rep_id_0;
 
-    wire        w_ros2_sub_app_data_rep_id_valid;
-    wire [15:0] w_ros2_sub_app_data_rep_id;
-    reg  [15:0] ros2_sub_app_data_rep_id;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_1_addr;
+    wire        ros2_sub_app_data_1_ce;
+    wire        ros2_sub_app_data_1_we;
+    wire [7:0]  ros2_sub_app_data_1_wdata;
+    reg  [7:0]  ros2_sub_app_data_1[0:`ROS2_MAX_APP_DATA_LEN-1];
+    wire w_ros2_sub_app_data_len_1_valid;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len_1;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len_1;
+    wire        w_ros2_sub_app_data_rep_id_1_valid;
+    wire [15:0] w_ros2_sub_app_data_rep_id_1;
+    reg  [15:0] ros2_sub_app_data_rep_id_1;
 
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
-    wire ros2_sub_app_data_ce;
-    wire ros2_sub_app_data_we;
-    wire [7:0] ros2_sub_app_data_wdata;
-    reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_2_addr;
+    wire        ros2_sub_app_data_2_ce;
+    wire        ros2_sub_app_data_2_we;
+    wire [7:0]  ros2_sub_app_data_2_wdata;
+    reg  [7:0]  ros2_sub_app_data_2[0:`ROS2_MAX_APP_DATA_LEN-1];
+    wire w_ros2_sub_app_data_len_2_valid;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len_2;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len_2;
+    wire        w_ros2_sub_app_data_rep_id_2_valid;
+    wire [15:0] w_ros2_sub_app_data_rep_id_2;
+    reg  [15:0] ros2_sub_app_data_rep_id_2;
 
-    wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv;
-    reg [3:0] sub_recvd_reg_0;
-    reg [3:0] sub_recvd_reg_1;
-    reg [3:0] sub_recvd_reg_2;
-    reg [3:0] sub_recvd_reg_3;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_3_addr;
+    wire        ros2_sub_app_data_3_ce;
+    wire        ros2_sub_app_data_3_we;
+    wire [7:0]  ros2_sub_app_data_3_wdata;
+    reg  [7:0]  ros2_sub_app_data_3[0:`ROS2_MAX_APP_DATA_LEN-1];
+    wire w_ros2_sub_app_data_len_3_valid;
+    wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] w_ros2_sub_app_data_len_3;
+    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len_3;
+    wire        w_ros2_sub_app_data_rep_id_3_valid;
+    wire [15:0] w_ros2_sub_app_data_rep_id_3;
+    reg  [15:0] ros2_sub_app_data_rep_id_3;
 
     always @(posedge clk_int) begin
-        if (w_ros2_sub_app_data_len_valid)
-            ros2_sub_app_data_len <= w_ros2_sub_app_data_len;
-        if (w_ros2_sub_app_data_rep_id_valid)
-            ros2_sub_app_data_rep_id <= w_ros2_sub_app_data_rep_id;
-        if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
-            rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
-        if (ros2_sub_app_data_recv[0])
-            sub_recvd_reg_0 <= rx_msg_reg[0][3:0];
-        if (ros2_sub_app_data_recv[1])
-            sub_recvd_reg_1 <= rx_msg_reg[0][3:0];
-        if (ros2_sub_app_data_recv[2])
-            sub_recvd_reg_2 <= rx_msg_reg[0][3:0];
-        if (ros2_sub_app_data_recv[3])
-            sub_recvd_reg_3 <= rx_msg_reg[0][3:0];
+        if (ros2_sub_app_data_0_ce & ros2_sub_app_data_0_we)
+            ros2_sub_app_data_0[ros2_sub_app_data_0_addr][7:0] <= ros2_sub_app_data_0_wdata;
+        if (w_ros2_sub_app_data_len_0_valid)
+            ros2_sub_app_data_len_0 <= w_ros2_sub_app_data_len_0;
+        if (w_ros2_sub_app_data_rep_id_0_valid)
+            ros2_sub_app_data_rep_id_0 <= w_ros2_sub_app_data_rep_id_0;
+
+        if (ros2_sub_app_data_1_ce & ros2_sub_app_data_1_we)
+            ros2_sub_app_data_1[ros2_sub_app_data_1_addr][7:0] <= ros2_sub_app_data_1_wdata;
+        if (w_ros2_sub_app_data_len_1_valid)
+            ros2_sub_app_data_len_1 <= w_ros2_sub_app_data_len_1;
+        if (w_ros2_sub_app_data_rep_id_1_valid)
+            ros2_sub_app_data_rep_id_1 <= w_ros2_sub_app_data_rep_id_1;
+
+        if (ros2_sub_app_data_2_ce & ros2_sub_app_data_2_we)
+            ros2_sub_app_data_2[ros2_sub_app_data_2_addr][7:0] <= ros2_sub_app_data_2_wdata;
+        if (w_ros2_sub_app_data_len_2_valid)
+            ros2_sub_app_data_len_2 <= w_ros2_sub_app_data_len_2;
+        if (w_ros2_sub_app_data_rep_id_2_valid)
+            ros2_sub_app_data_rep_id_2 <= w_ros2_sub_app_data_rep_id_2;
+
+        if (ros2_sub_app_data_3_ce & ros2_sub_app_data_3_we)
+            ros2_sub_app_data_3[ros2_sub_app_data_3_addr][7:0] <= ros2_sub_app_data_3_wdata;
+        if (w_ros2_sub_app_data_len_3_valid)
+            ros2_sub_app_data_len_3 <= w_ros2_sub_app_data_len_3;
+        if (w_ros2_sub_app_data_rep_id_3_valid)
+            ros2_sub_app_data_rep_id_3 <= w_ros2_sub_app_data_rep_id_3;
     end
 
-    assign led4 = sub_recvd_reg_0[0];
-    assign led5 = sub_recvd_reg_0[1];
-    assign led6 = sub_recvd_reg_0[2];
-    assign led7 = sub_recvd_reg_0[3];
+    assign led4 = ros2_sub_app_data_0[0][0];
+    assign led5 = ros2_sub_app_data_0[0][1];
+    assign led6 = ros2_sub_app_data_0[0][2];
+    assign led7 = ros2_sub_app_data_0[0][3];
 
-    assign led0_b = sub_recvd_reg_1[0];
-    assign led1_b = sub_recvd_reg_1[1];
-    assign led2_b = sub_recvd_reg_1[2];
-    assign led3_b = sub_recvd_reg_1[3];
+    assign led0_b = ros2_sub_app_data_1[0][0];
+    assign led1_b = ros2_sub_app_data_1[0][1];
+    assign led2_b = ros2_sub_app_data_1[0][2];
+    assign led3_b = ros2_sub_app_data_1[0][3];
 
-    assign led0_g = sub_recvd_reg_2[0];
-    assign led1_g = sub_recvd_reg_2[1];
-    assign led2_g = sub_recvd_reg_2[2];
-    assign led3_g = sub_recvd_reg_2[3];
+    assign led0_g = ros2_sub_app_data_2[0][0];
+    assign led1_g = ros2_sub_app_data_2[0][1];
+    assign led2_g = ros2_sub_app_data_2[0][2];
+    assign led3_g = ros2_sub_app_data_2[0][3];
 
-    assign led0_r = sub_recvd_reg_3[0];
-    assign led1_r = sub_recvd_reg_3[1];
-    assign led2_r = sub_recvd_reg_3[2];
-    assign led3_r = sub_recvd_reg_3[3];
+    assign led0_r = ros2_sub_app_data_3[0][0];
+    assign led1_r = ros2_sub_app_data_3[0][1];
+    assign led2_r = ros2_sub_app_data_3[0][2];
+    assign led3_r = ros2_sub_app_data_3[0][3];
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -436,18 +477,46 @@ module top (
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
         .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
-        .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
-        .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
-        .ros2_sub_app_data_we(ros2_sub_app_data_we),
-        .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len_valid(w_ros2_sub_app_data_len_valid),
-        .ros2_sub_app_data_len(w_ros2_sub_app_data_len),
-        .ros2_sub_app_data_rep_id_valid(w_ros2_sub_app_data_rep_id_valid),
-        .ros2_sub_app_data_rep_id(w_ros2_sub_app_data_rep_id),
-        .ros2_sub_app_data_req(1'b0),
-        .ros2_sub_app_data_rel(1'b0),
+        .ros2_sub_app_data_0_addr(ros2_sub_app_data_0_addr),
+        .ros2_sub_app_data_0_ce(ros2_sub_app_data_0_ce),
+        .ros2_sub_app_data_0_we(ros2_sub_app_data_0_we),
+        .ros2_sub_app_data_0_wdata(ros2_sub_app_data_0_wdata),
+        .ros2_sub_app_data_len_0_valid(w_ros2_sub_app_data_len_0_valid),
+        .ros2_sub_app_data_len_0(w_ros2_sub_app_data_len_0),
+        .ros2_sub_app_data_rep_id_0_valid(w_ros2_sub_app_data_rep_id_0_valid),
+        .ros2_sub_app_data_rep_id_0(w_ros2_sub_app_data_rep_id_0),
+
+        .ros2_sub_app_data_1_addr(ros2_sub_app_data_1_addr),
+        .ros2_sub_app_data_1_ce(ros2_sub_app_data_1_ce),
+        .ros2_sub_app_data_1_we(ros2_sub_app_data_1_we),
+        .ros2_sub_app_data_1_wdata(ros2_sub_app_data_1_wdata),
+        .ros2_sub_app_data_len_1_valid(w_ros2_sub_app_data_len_1_valid),
+        .ros2_sub_app_data_len_1(w_ros2_sub_app_data_len_1),
+        .ros2_sub_app_data_rep_id_1_valid(w_ros2_sub_app_data_rep_id_1_valid),
+        .ros2_sub_app_data_rep_id_1(w_ros2_sub_app_data_rep_id_1),
+
+        .ros2_sub_app_data_2_addr(ros2_sub_app_data_2_addr),
+        .ros2_sub_app_data_2_ce(ros2_sub_app_data_2_ce),
+        .ros2_sub_app_data_2_we(ros2_sub_app_data_2_we),
+        .ros2_sub_app_data_2_wdata(ros2_sub_app_data_2_wdata),
+        .ros2_sub_app_data_len_2_valid(w_ros2_sub_app_data_len_2_valid),
+        .ros2_sub_app_data_len_2(w_ros2_sub_app_data_len_2),
+        .ros2_sub_app_data_rep_id_2_valid(w_ros2_sub_app_data_rep_id_2_valid),
+        .ros2_sub_app_data_rep_id_2(w_ros2_sub_app_data_rep_id_2),
+
+        .ros2_sub_app_data_3_addr(ros2_sub_app_data_3_addr),
+        .ros2_sub_app_data_3_ce(ros2_sub_app_data_3_ce),
+        .ros2_sub_app_data_3_we(ros2_sub_app_data_3_we),
+        .ros2_sub_app_data_3_wdata(ros2_sub_app_data_3_wdata),
+        .ros2_sub_app_data_len_3_valid(w_ros2_sub_app_data_len_3_valid),
+        .ros2_sub_app_data_len_3(w_ros2_sub_app_data_len_3),
+        .ros2_sub_app_data_rep_id_3_valid(w_ros2_sub_app_data_rep_id_3_valid),
+        .ros2_sub_app_data_rep_id_3(w_ros2_sub_app_data_rep_id_3),
+
+        .ros2_sub_app_data_req(0),
+        .ros2_sub_app_data_rel(0),
         .ros2_sub_app_data_grant(),
-        .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
+        .ros2_sub_app_data_recv(),
 
         .udp_rxbuf_rel(1'b1),
         .udp_rxbuf_grant(),

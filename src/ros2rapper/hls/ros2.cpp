@@ -108,13 +108,18 @@ static void ros2_in(
     app_endpoint             app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const config_t *conf, VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-    VOLATILE uint8_t *sub_app_data_req, VOLATILE uint8_t *sub_app_data_rel,
-    VOLATILE uint8_t        *sub_app_data_grant,
-    uint8_t                  sub_app_data[MAX_APP_DATA_LEN],
-    VOLATILE app_data_len_t *sub_app_data_len,
-    VOLATILE uint16_t *sub_app_data_rep_id, VOLATILE uint8_t *rawudp_rxbuf_rel,
-    VOLATILE uint8_t *rawudp_rxbuf_grant, bool ignore_ip_checksum,
-    bool *reading_rtps_message, int64_t timestamp_i64, hls_uint<9> *xout) {
+    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
+    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
+    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_grant,
+    uint8_t                            sub_app_data_0[MAX_APP_DATA_LEN],
+    uint8_t                            sub_app_data_1[MAX_APP_DATA_LEN],
+    uint8_t                            sub_app_data_2[MAX_APP_DATA_LEN],
+    uint8_t                            sub_app_data_3[MAX_APP_DATA_LEN],
+    VOLATILE app_data_len_t            sub_app_data_len[SUB_TOPICS_MAX],
+    VOLATILE uint16_t                  sub_app_data_rep_id[SUB_TOPICS_MAX],
+    VOLATILE uint8_t *rawudp_rxbuf_rel, VOLATILE uint8_t *rawudp_rxbuf_grant,
+    bool ignore_ip_checksum, bool *reading_rtps_message, int64_t timestamp_i64,
+    hls_uint<9> *xout) {
 
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
@@ -167,7 +172,8 @@ static void ros2_in(
     if (sub_enable != 0) {
         app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,
                    sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
-                   sub_app_data_grant, sub_app_data, sub_app_data_len,
+                   sub_app_data_grant, sub_app_data_0, sub_app_data_1,
+                   sub_app_data_2, sub_app_data_3, sub_app_data_len,
                    sub_app_data_rep_id);
     }
 
@@ -1135,20 +1141,32 @@ void ros2(
     VOLATILE uint8_t
         *pub_app_data_grant_3 /* Cyber port_mode=shared, volatile=YES */,
 
-    uint8_t sub_app_data
+    uint8_t sub_app_data_0
+        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
+    uint8_t sub_app_data_1
+        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
+    uint8_t sub_app_data_2
+        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
+    uint8_t sub_app_data_3
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     VOLATILE app_data_len_t
-        *sub_app_data_len /* Cyber port_mode=shared, volatile=YES */,
+        sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
+                                            array_index=const, port_mode=shared,
+                                            volatile=yes */
+    ,
     VOLATILE uint16_t
-            *sub_app_data_rep_id /* Cyber port_mode=shared, volatile=YES */,
+        sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
+                                               array_index=const,
+                                               port_mode=shared, volatile=yes */
+    ,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *sub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<SUB_TOPICS_MAX>
+            *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<SUB_TOPICS_MAX>
+            *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE hls_uint<SUB_TOPICS_MAX>
+            *sub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
         *udp_rxbuf_grant /* Cyber port_mode=shared, volatile=YES */,
@@ -1285,8 +1303,14 @@ void ros2(
 #pragma HLS interface mode = ap_ack port = pub_app_data_grant_1
 #pragma HLS interface mode = ap_ack port = pub_app_data_grant_2
 #pragma HLS interface mode = ap_ack port = pub_app_data_grant_3
-#pragma HLS interface mode = ap_memory port = sub_app_data
+#pragma HLS interface mode = ap_memory port = sub_app_data_0
+#pragma HLS interface mode = ap_memory port = sub_app_data_1
+#pragma HLS interface mode = ap_memory port = sub_app_data_2
+#pragma HLS interface mode = ap_memory port = sub_app_data_3
+#pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
 #pragma HLS interface mode = ap_vld port = sub_app_data_len
+#pragma HLS array_partition variable = sub_app_data_rep_id type = complete dim \
+    = 1
 #pragma HLS interface mode = ap_vld port = sub_app_data_rep_id
 #pragma HLS interface mode = ap_vld port = sub_app_data_recv
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
@@ -1332,10 +1356,11 @@ void ros2(
 
     ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
             pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
-            sub_app_data_rel, sub_app_data_grant, sub_app_data,
-            sub_app_data_len, sub_app_data_rep_id, udp_rxbuf_rel,
-            udp_rxbuf_grant, conf->ignore_ip_checksum, &reading_rtps_message,
-            timestamp_i64, xout);
+            sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+            sub_app_data_1, sub_app_data_2, sub_app_data_3, sub_app_data_len,
+            sub_app_data_rep_id, udp_rxbuf_rel, udp_rxbuf_grant,
+            conf->ignore_ip_checksum, &reading_rtps_message, timestamp_i64,
+            xout);
 
     ros2_out(
         out, udp_txbuf, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,

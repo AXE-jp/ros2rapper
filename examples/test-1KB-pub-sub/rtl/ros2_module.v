@@ -155,40 +155,48 @@ module ros2_module #(
     assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
 
     // --- ROS2 Subscriber message control
-    reg  ros2_sub_app_data_req;
-    wire ros2_sub_app_data_rel;
-    wire ros2_sub_app_data_grant;
+    reg  ros2_sub_app_data_req_0;
+    wire ros2_sub_app_data_rel_0;
+    wire ros2_sub_app_data_grant_0;
     wire [3:0] ros2_sub_app_data_recv;
 
-    assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant;
-    assign ros2_sub_app_data_rel = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
+    assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant_0;
+    assign ros2_sub_app_data_rel_0 = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             sub_state <= STATE_IDLE;
-            ros2_sub_app_data_req <= 1'b0;
+            ros2_sub_app_data_req_0 <= 1'b0;
             led4 <= 1'b0;
             led5 <= 1'b0;
         end else begin
             if (sub_state == STATE_WAIT_GRANT) begin
-                if (ros2_sub_app_data_grant) begin
+                if (ros2_sub_app_data_grant_0) begin
                     sub_state <= STATE_WAIT_VALID;
                 end
             end else if (sub_state == STATE_WAIT_VALID) begin
                 if (sub_data_result_ap_vld) begin
                     sub_state <= STATE_IDLE;
-                    ros2_sub_app_data_req <= 1'b0;
+                    ros2_sub_app_data_req_0 <= 1'b0;
                     led4 <= sub_data_result;
                     led5 <= ~sub_data_result;
                 end
             end else begin  // sub_state == STATE_IDLE
-                if (ros2_sub_app_data_recv != 0) begin
+                if (ros2_sub_app_data_recv[0]) begin
                     sub_state <= STATE_WAIT_GRANT;
-                    ros2_sub_app_data_req <= 1'b1;
+                    ros2_sub_app_data_req_0 <= 1'b1;
                 end
             end
         end
     end
+
+    wire [3:0] ros2_sub_app_data_req;
+    wire [3:0] ros2_sub_app_data_rel;
+    wire [3:0] ros2_sub_app_data_grant;
+
+    assign ros2_sub_app_data_req[0] = ros2_sub_app_data_req_0;
+    assign ros2_sub_app_data_rel[0] = ros2_sub_app_data_rel_0;
+    assign ros2_sub_app_data_grant_0 = ros2_sub_app_data_grant[0];
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -330,14 +338,42 @@ module ros2_module #(
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
         .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
-        .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
-        .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
-        .ros2_sub_app_data_we(ros2_sub_app_data_we),
-        .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-        .ros2_sub_app_data_len_valid(),
-        .ros2_sub_app_data_len(),
-        .ros2_sub_app_data_rep_id_valid(),
-        .ros2_sub_app_data_rep_id(),
+        .ros2_sub_app_data_0_addr(ros2_sub_app_data_addr),
+        .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
+        .ros2_sub_app_data_0_we(ros2_sub_app_data_we),
+        .ros2_sub_app_data_0_wdata(ros2_sub_app_data_wdata),
+        .ros2_sub_app_data_len_0_valid(),
+        .ros2_sub_app_data_len_0(),
+        .ros2_sub_app_data_rep_id_0_valid(),
+        .ros2_sub_app_data_rep_id_0(),
+
+        .ros2_sub_app_data_1_addr(),
+        .ros2_sub_app_data_1_ce(),
+        .ros2_sub_app_data_1_we(),
+        .ros2_sub_app_data_1_wdata(),
+        .ros2_sub_app_data_len_1_valid(),
+        .ros2_sub_app_data_len_1(),
+        .ros2_sub_app_data_rep_id_1_valid(),
+        .ros2_sub_app_data_rep_id_1(),
+
+        .ros2_sub_app_data_2_addr(),
+        .ros2_sub_app_data_2_ce(),
+        .ros2_sub_app_data_2_we(),
+        .ros2_sub_app_data_2_wdata(),
+        .ros2_sub_app_data_len_2_valid(),
+        .ros2_sub_app_data_len_2(),
+        .ros2_sub_app_data_rep_id_2_valid(),
+        .ros2_sub_app_data_rep_id_2(),
+
+        .ros2_sub_app_data_3_addr(),
+        .ros2_sub_app_data_3_ce(),
+        .ros2_sub_app_data_3_we(),
+        .ros2_sub_app_data_3_wdata(),
+        .ros2_sub_app_data_len_3_valid(),
+        .ros2_sub_app_data_len_3(),
+        .ros2_sub_app_data_rep_id_3_valid(),
+        .ros2_sub_app_data_rep_id_3(),
+
         .ros2_sub_app_data_req(ros2_sub_app_data_req),
         .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
         .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
