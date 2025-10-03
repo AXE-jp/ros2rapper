@@ -14,7 +14,7 @@
 /* Cyber func=inline */
 static uint16_t spdp_writer_out(const sender_config_t    *conf,
                                 const message_metadata_t *msg_metadata,
-                                uint8_t                   tx_buf[TX_BUF_LEN]) {
+                                uint8_t                   tx_buf[]) {
     uint8_t metatraffic_port[2];
 #pragma HLS array_partition variable = metatraffic_port type = complete dim = 1
     uint8_t default_port[2];
@@ -36,6 +36,35 @@ static uint16_t spdp_writer_out(const sender_config_t    *conf,
                 conf->node_name_len, msg_metadata->now);
 
     return SPDP_WRITER_IP_PKT_LEN;
+}
+
+/* Cyber func=inline */
+static uint16_t
+sedp_writer_out(const uint8_t writer_entity_id[4],
+                const uint8_t reader_entity_id[4], const uint8_t topic_name[],
+                uint8_t topic_name_len, const uint8_t topic_type_name[],
+                uint8_t topic_type_name_len, const sender_config_t *conf,
+                const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
+    uint8_t reader_guid_prefix[12];
+    int64_t seqnum;
+    uint8_t usertraffic_port[2];
+    uint8_t app_entity_id[4];
+    deserialize_sedp_metadata(reader_guid_prefix, &seqnum, usertraffic_port,
+                              app_entity_id, msg_metadata);
+
+    ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
+                  SEDP_WRITER_UDP_PKT_LEN, tx_buf);
+
+    udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
+                   SEDP_WRITER_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+
+    sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
+                reader_entity_id, seqnum, conf->ip_addr, usertraffic_port,
+                app_entity_id, tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
+                topic_name, topic_name_len, topic_type_name,
+                topic_type_name_len, msg_metadata->now);
+
+    return SEDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
@@ -89,7 +118,22 @@ void ros2_sender(
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
 #pragma HLS interface mode = ap_ctrl_none port = return
 
+    static const uint8_t pub_writer_entity_id[4] /* Cyber array=EXPAND */
+        = ENTITYID_BUILTIN_PUBLICATIONS_WRITER;
+    static const uint8_t sub_writer_entity_id[4] /* Cyber array=EXPAND */
+        = ENTITYID_BUILTIN_SUBSCRIPTIONS_WRITER;
+#pragma HLS array_partition variable = pub_writer_entity_id complete dim = 0
+#pragma HLS array_partition variable = sub_writer_entity_id complete dim = 0
+
+    static const uint8_t pub_reader_entity_id[4] /* Cyber array=EXPAND */
+        = ENTITYID_BUILTIN_PUBLICATIONS_READER;
+    static const uint8_t sub_reader_entity_id[4] /* Cyber array=EXPAND */
+        = ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
+#pragma HLS array_partition variable = pub_reader_entity_id complete dim = 0
+#pragma HLS array_partition variable = sub_reader_entity_id complete dim = 0
+
     const message_metadata_t msg_metadata = in.read();
+    const topic_id_t         topic_id = msg_metadata.topic_id;
 #pragma HLS array_partition variable = msg_metadata.dst_addr type              \
     = complete                                               dim = 1
 #pragma HLS array_partition variable = msg_metadata.dst_port type              \
@@ -113,6 +157,24 @@ void ros2_sender(
 
     if (msg_metadata.message_type == MSG_TYPE_SPDP) {
         tx_buf_len = spdp_writer_out(conf, &msg_metadata, tx_buf);
+    } else if ((msg_metadata.message_type == MSG_TYPE_SEDP_PUB)
+               && (topic_id < PUB_TOPICS_MAX)) {
+        tx_buf_len = sedp_writer_out(pub_writer_entity_id, pub_reader_entity_id,
+                                     conf->pub_topic_name[topic_id],
+                                     conf->pub_topic_name_len[topic_id],
+                                     conf->pub_topic_type_name[topic_id],
+                                     conf->pub_topic_type_name_len[topic_id],
+                                     conf, &msg_metadata, tx_buf);
+    } else if ((msg_metadata.message_type == MSG_TYPE_SEDP_SUB)
+               && (topic_id < SUB_TOPICS_MAX)) {
+        tx_buf_len = sedp_writer_out(sub_writer_entity_id, sub_reader_entity_id,
+                                     conf->sub_topic_name[topic_id],
+                                     conf->sub_topic_name_len[topic_id],
+                                     conf->sub_topic_type_name[topic_id],
+                                     conf->sub_topic_type_name_len[topic_id],
+                                     conf, &msg_metadata, tx_buf);
+    } else {
+        return;
     }
 
     ip_set_checksum(tx_buf);
