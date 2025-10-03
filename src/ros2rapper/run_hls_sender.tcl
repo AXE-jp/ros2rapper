@@ -3,7 +3,14 @@
 
 open_project -reset proj_ros2_sender
 
+add_files hls/ip.cpp
+add_files hls/message_metadata.cpp
 add_files hls/ros2_sender.cpp
+add_files hls/rtps.cpp
+add_files hls/slip.cpp
+add_files hls/spdp.cpp
+add_files hls/udp.cpp
+add_files hls/util.cpp
 
 set_top ros2_sender
 
