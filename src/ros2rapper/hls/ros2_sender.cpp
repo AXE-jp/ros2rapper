@@ -89,7 +89,7 @@ void ros2_sender(
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
 #pragma HLS interface mode = ap_ctrl_none port = return
 
-    message_metadata_t msg_metadata;
+    const message_metadata_t msg_metadata = in.read();
 #pragma HLS array_partition variable = msg_metadata.dst_addr type              \
     = complete                                               dim = 1
 #pragma HLS array_partition variable = msg_metadata.dst_port type              \
@@ -111,10 +111,6 @@ void ros2_sender(
 
     uint16_t tx_buf_len;
 
-    if (!in.read_nb(msg_metadata)) {
-        return;
-    }
-
     if (msg_metadata.message_type == MSG_TYPE_SPDP) {
         tx_buf_len = spdp_writer_out(conf, &msg_metadata, tx_buf);
     }
@@ -127,20 +123,16 @@ void ros2_sender(
 #pragma HLS stream variable = s depth = 2
 #endif // !USE_FIFOIF_ETHERNET
 
-    uint16_t i = 0;
-    while (i < tx_buf_len) {
-        if (!out.full()) {
+    for (uint16_t i = 0; i < tx_buf_len; i++) {
 #ifdef USE_FIFOIF_ETHERNET
-            out.write(tx_buf[i]);
+        out.write(tx_buf[i]);
 #else  // !USE_FIFOIF_ETHERNET
-            hls_uint<9> x = tx_buf[i];
-            if (i == (tx_buf_len - 1)) {
-                x |= 0x100;
-            }
-            s.write(x);
-            slip_out(s, out);
-#endif // USE_FIFOIF_ETHERNET
-            i++;
+        hls_uint<9> x = tx_buf[i];
+        if (i == (tx_buf_len - 1)) {
+            x |= 0x100;
         }
+        s.write(x);
+        slip_out(s, out);
+#endif // USE_FIFOIF_ETHERNET
     }
 }
