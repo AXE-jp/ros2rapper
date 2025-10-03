@@ -1,8 +1,8 @@
 // Copyright (c) 2021-2025 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef MESSAGE_METADATA
-#define MESSAGE_METADATA
+#ifndef MESSAGE_METADATA_HPP
+#define MESSAGE_METADATA_HPP
 
 #include "duration.hpp"
 #include "endpoint.hpp"
@@ -83,4 +83,4 @@ void deserialize_app_metadata(uint8_t                   reader_guid_prefix[12],
                               uint8_t                   writer_entity_id[4],
                               const message_metadata_t &msg_metadata);
 
-#endif // !MESSAGE_METADATA
+#endif // !MESSAGE_METADATA_HPP
