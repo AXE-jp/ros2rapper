@@ -29,39 +29,6 @@ static_assert(SUB_TOPICS_MAX <= 4,
               "topic_id_t should be able to represent SUB_TOPICS_MAX - 1.");
 
 typedef struct {
-    uint8_t  metatraffic_port[2];
-    uint8_t  default_port[2];
-    duration lease_duration;
-} spdp_message_metadata_t;
-
-typedef struct {
-    uint8_t reader_guid_prefix[12];
-    int64_t seqnum;
-    uint8_t usertraffic_port[2];
-    uint8_t app_entity_id[4];
-} sedp_message_metadata_t;
-
-typedef struct {
-    uint8_t  reader_guid_prefix[12];
-    int64_t  first_seqnum;
-    int64_t  last_seqnum;
-    uint32_t cnt;
-} sedp_heartbeat_message_metadata_t;
-
-typedef struct {
-    uint8_t  reader_guid_prefix[12];
-    uint8_t  snstate_base;
-    bool     snstate_empty;
-    uint32_t cnt;
-} sedp_acknack_message_metadata_t;
-
-typedef struct {
-    uint8_t reader_guid_prefix[12];
-    uint8_t reader_entity_id[4];
-    uint8_t writer_entity_id[4];
-} app_message_metadata_t;
-
-typedef struct {
     message_type_t message_type;
     topic_id_t     topic_id;
     uint8_t        dst_addr[4];
@@ -69,13 +36,51 @@ typedef struct {
     uint16_t       ip_data_real_len;
     uint8_t        dst_port[4];
     uint16_t       udp_data_len;
-    union {
-        spdp_message_metadata_t           spdp;
-        sedp_message_metadata_t           sedp;
-        sedp_heartbeat_message_metadata_t sedp_hb;
-        sedp_acknack_message_metadata_t   sedp_an;
-        app_message_metadata_t            app;
-    } rtps;
+    uint8_t        rtps_data[32];
 } message_metadata_t;
+
+void serialize_spdp_metadata(const uint8_t       metatraffic_port[2],
+                             const uint8_t       default_port[2],
+                             duration            lease_duration,
+                             message_metadata_t *msg_metadata);
+void deserialize_spdp_metadata(uint8_t                   metatraffic_port[2],
+                               uint8_t                   default_port[2],
+                               duration                 *lease_duration,
+                               const message_metadata_t &msg_metadata);
+
+void serialize_sedp_metadata(const uint8_t reader_guid_prefix[12],
+                             int64_t seqnum, const uint8_t usertraffic_port[2],
+                             const uint8_t       app_entity_id[4],
+                             message_metadata_t *msg_metadata);
+void deserialize_sedp_metadata(uint8_t reader_guid_prefix[12], int64_t *seqnum,
+                               uint8_t                   usertraffic_port[2],
+                               uint8_t                   app_entity_id[4],
+                               const message_metadata_t &msg_metadata);
+
+void serialize_sedp_heartbeat_metadata(const uint8_t reader_guid_prefix[12],
+                                       int64_t       first_seqnum,
+                                       int64_t last_seqnum, uint32_t cnt,
+                                       message_metadata_t *msg_metadata);
+void deserialize_sedp_heartbeat_metadata(
+    uint8_t reader_guid_prefix[12], int64_t *first_seqnum, int64_t *last_seqnum,
+    uint32_t *cnt, const message_metadata_t &msg_metadata);
+
+void serialize_sedp_acknack_metadata(const uint8_t reader_guid_prefix[12],
+                                     uint8_t snstate_base, bool snstate_empty,
+                                     uint32_t            cnt,
+                                     message_metadata_t *msg_metadata);
+void deserialize_sedp_acknack_metadata(uint8_t  reader_guid_prefix[12],
+                                       uint8_t *snstate_base,
+                                       bool *snstate_empty, uint32_t *cnt,
+                                       const message_metadata_t &msg_metadata);
+
+void serialize_app_metadata(const uint8_t       reader_guid_prefix[12],
+                            const uint8_t       reader_entity_id[4],
+                            const uint8_t       writer_entity_id[4],
+                            message_metadata_t *msg_metadata);
+void deserialize_app_metadata(uint8_t                   reader_guid_prefix[12],
+                              uint8_t                   reader_entity_id[4],
+                              uint8_t                   writer_entity_id[4],
+                              const message_metadata_t &msg_metadata);
 
 #endif // !MESSAGE_METADATA
