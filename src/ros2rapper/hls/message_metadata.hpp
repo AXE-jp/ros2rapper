@@ -33,10 +33,7 @@ typedef struct {
     message_type_t message_type;
     topic_id_t     topic_id;
     uint8_t        dst_addr[4];
-    uint8_t        ttl;
-    uint16_t       ip_data_real_len;
     uint8_t        dst_port[4];
-    uint16_t       udp_data_len;
     timestamp      now;
     uint8_t        rtps_data[32];
 } message_metadata_t;
