@@ -20,7 +20,7 @@ static int test_spdp_metadata() {
     serialize_spdp_metadata(metatraffic_port, default_port, lease_duration,
                             &msg_metadata);
     deserialize_spdp_metadata(metatraffic_port_out, default_port_out,
-                              &lease_duration_out, msg_metadata);
+                              &lease_duration_out, &msg_metadata);
 
     assert(metatraffic_port_out[0] == metatraffic_port[0]);
     assert(metatraffic_port_out[1] == metatraffic_port[1]);
@@ -49,7 +49,7 @@ static int test_sedp_metadata() {
                             app_entity_id, &msg_metadata);
     deserialize_sedp_metadata(reader_guid_prefix_out, &seqnum_out,
                               usertraffic_port_out, app_entity_id_out,
-                              msg_metadata);
+                              &msg_metadata);
 
     for (auto i = 0; i < 12; i++) {
         assert(reader_guid_prefix_out[i] == reader_guid_prefix[i]);
@@ -81,7 +81,7 @@ static int test_sedp_heartbeat_metadata() {
                                       last_seqnum, cnt, &msg_metadata);
     deserialize_sedp_heartbeat_metadata(reader_guid_prefix_out,
                                         &first_seqnum_out, &last_seqnum_out,
-                                        &cnt_out, msg_metadata);
+                                        &cnt_out, &msg_metadata);
 
     for (auto i = 0; i < 12; i++) {
         assert(reader_guid_prefix_out[i] == reader_guid_prefix[i]);
@@ -109,7 +109,7 @@ static int test_sedp_acknack_metadata(bool snstate_empty) {
                                     snstate_empty, cnt, &msg_metadata);
     deserialize_sedp_acknack_metadata(reader_guid_prefix_out, &snstate_base_out,
                                       &snstate_empty_out, &cnt_out,
-                                      msg_metadata);
+                                      &msg_metadata);
 
     for (auto i = 0; i < 12; i++) {
         assert(reader_guid_prefix_out[i] == reader_guid_prefix[i]);
@@ -122,17 +122,20 @@ static int test_sedp_acknack_metadata(bool snstate_empty) {
 }
 
 static int test_app_metadata() {
-    const uint8_t reader_guid_prefix[12] = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59};
+    const uint8_t reader_guid_prefix[12]
+        = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59};
     const uint8_t reader_entity_id[4] = {60, 61, 62, 63};
     const uint8_t writer_entity_id[4] = {255, 254, 253, 252};
 
     message_metadata_t msg_metadata;
     uint8_t            reader_guid_prefix_out[12];
-    uint8_t reader_entity_id_out[4];
-    uint8_t writer_entity_id_out[4];
+    uint8_t            reader_entity_id_out[4];
+    uint8_t            writer_entity_id_out[4];
 
-    serialize_app_metadata(reader_guid_prefix, reader_entity_id, writer_entity_id, &msg_metadata);
-    deserialize_app_metadata(reader_guid_prefix_out, reader_entity_id_out, writer_entity_id_out, msg_metadata);
+    serialize_app_metadata(reader_guid_prefix, reader_entity_id,
+                           writer_entity_id, &msg_metadata);
+    deserialize_app_metadata(reader_guid_prefix_out, reader_entity_id_out,
+                             writer_entity_id_out, &msg_metadata);
 
     for (auto i = 0; i < 12; i++) {
         assert(reader_guid_prefix_out[i] == reader_guid_prefix[i]);

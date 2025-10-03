@@ -46,7 +46,7 @@ void serialize_spdp_metadata(const uint8_t       metatraffic_port[2],
 void deserialize_spdp_metadata(uint8_t                   metatraffic_port[2],
                                uint8_t                   default_port[2],
                                duration                 *lease_duration,
-                               const message_metadata_t &msg_metadata);
+                               const message_metadata_t *msg_metadata);
 
 void serialize_sedp_metadata(const uint8_t reader_guid_prefix[12],
                              int64_t seqnum, const uint8_t usertraffic_port[2],
@@ -55,7 +55,7 @@ void serialize_sedp_metadata(const uint8_t reader_guid_prefix[12],
 void deserialize_sedp_metadata(uint8_t reader_guid_prefix[12], int64_t *seqnum,
                                uint8_t                   usertraffic_port[2],
                                uint8_t                   app_entity_id[4],
-                               const message_metadata_t &msg_metadata);
+                               const message_metadata_t *msg_metadata);
 
 void serialize_sedp_heartbeat_metadata(const uint8_t reader_guid_prefix[12],
                                        int64_t       first_seqnum,
@@ -63,7 +63,7 @@ void serialize_sedp_heartbeat_metadata(const uint8_t reader_guid_prefix[12],
                                        message_metadata_t *msg_metadata);
 void deserialize_sedp_heartbeat_metadata(
     uint8_t reader_guid_prefix[12], int64_t *first_seqnum, int64_t *last_seqnum,
-    uint32_t *cnt, const message_metadata_t &msg_metadata);
+    uint32_t *cnt, const message_metadata_t *msg_metadata);
 
 void serialize_sedp_acknack_metadata(const uint8_t reader_guid_prefix[12],
                                      uint8_t snstate_base, bool snstate_empty,
@@ -72,7 +72,7 @@ void serialize_sedp_acknack_metadata(const uint8_t reader_guid_prefix[12],
 void deserialize_sedp_acknack_metadata(uint8_t  reader_guid_prefix[12],
                                        uint8_t *snstate_base,
                                        bool *snstate_empty, uint32_t *cnt,
-                                       const message_metadata_t &msg_metadata);
+                                       const message_metadata_t *msg_metadata);
 
 void serialize_app_metadata(const uint8_t       reader_guid_prefix[12],
                             const uint8_t       reader_entity_id[4],
@@ -81,6 +81,6 @@ void serialize_app_metadata(const uint8_t       reader_guid_prefix[12],
 void deserialize_app_metadata(uint8_t                   reader_guid_prefix[12],
                               uint8_t                   reader_entity_id[4],
                               uint8_t                   writer_entity_id[4],
-                              const message_metadata_t &msg_metadata);
+                              const message_metadata_t *msg_metadata);
 
 #endif // !MESSAGE_METADATA_HPP
