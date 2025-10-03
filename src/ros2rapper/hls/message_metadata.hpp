@@ -7,6 +7,7 @@
 #include "duration.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
+#include "timestamp.hpp"
 #include <cstdint>
 
 typedef enum {
@@ -36,6 +37,7 @@ typedef struct {
     uint16_t       ip_data_real_len;
     uint8_t        dst_port[4];
     uint16_t       udp_data_len;
+    timestamp      now;
     uint8_t        rtps_data[32];
 } message_metadata_t;
 

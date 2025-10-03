@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "duration.hpp"
 #include "hls.hpp"
 #include "ip.hpp"
 #include "message_metadata.hpp"
@@ -13,7 +14,7 @@
 /* Cyber func=inline */
 static uint16_t spdp_writer_out(const sender_config_t    *conf,
                                 const message_metadata_t *msg_metadata,
-                                timestamp now, uint8_t tx_buf[TX_BUF_LEN]) {
+                                uint8_t                   tx_buf[TX_BUF_LEN]) {
     uint8_t metatraffic_port[2];
 #pragma HLS array_partition variable = metatraffic_port type = complete dim = 1
     uint8_t default_port[2];
@@ -32,7 +33,7 @@ static uint16_t spdp_writer_out(const sender_config_t    *conf,
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
                 conf->ip_addr, default_port, lease_duration,
                 tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
-                conf->node_name_len, now);
+                conf->node_name_len, msg_metadata->now);
 
     return SPDP_WRITER_IP_PKT_LEN;
 }
@@ -41,8 +42,7 @@ static uint16_t spdp_writer_out(const sender_config_t    *conf,
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=cw_fifo */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
-    const sender_config_t          *conf /* Cyber port_mode=in, stable_input */,
-    int64_t                         timestamp_i64 /* Cyber port_mode=in */) {
+    const sender_config_t *conf /* Cyber port_mode=in, stable_input */) {
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = ap_fifo port = out
 #pragma HLS disaggregate             variable = conf
@@ -87,7 +87,6 @@ void ros2_sender(
 #pragma HLS array_partition variable = conf->sub_topic_type_name_len type      \
     = complete                                                       dim = 1
 #pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
-#pragma HLS interface mode = ap_none port = timestamp_i64
 #pragma HLS interface mode = ap_ctrl_none port = return
 
     message_metadata_t msg_metadata;
@@ -112,16 +111,12 @@ void ros2_sender(
 
     uint16_t tx_buf_len;
 
-    timestamp now;
-    now.seconds = static_cast<int32_t>(timestamp_i64 >> 32);
-    now.fraction = static_cast<uint32_t>(timestamp_i64 & 0xffffffff);
-
     if (!in.read_nb(msg_metadata)) {
         return;
     }
 
     if (msg_metadata.message_type == MSG_TYPE_SPDP) {
-        tx_buf_len = spdp_writer_out(conf, &msg_metadata, now, tx_buf);
+        tx_buf_len = spdp_writer_out(conf, &msg_metadata, tx_buf);
     }
 
     ip_set_checksum(tx_buf);
