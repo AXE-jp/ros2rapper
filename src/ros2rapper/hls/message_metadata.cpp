@@ -154,23 +154,25 @@ void deserialize_sedp_acknack_metadata(uint8_t  reader_guid_prefix[12],
 }
 
 /* Cyber func=inline */
-void serialize_app_metadata(const uint8_t       reader_guid_prefix[12],
-                            const uint8_t       reader_entity_id[4],
-                            const uint8_t       writer_entity_id[4],
+void serialize_app_metadata(const uint8_t reader_guid_prefix[12],
+                            const uint8_t reader_entity_id[4],
+                            const uint8_t writer_entity_id[4], int64_t seqnum,
                             message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(reader_guid_prefix, msg_metadata->rtps_data, 12);
     copy_bytes(reader_entity_id, msg_metadata->rtps_data + 12, 4);
     copy_bytes(writer_entity_id, msg_metadata->rtps_data + 16, 4);
+    serialize_u64(seqnum, msg_metadata->rtps_data + 20);
 }
 
 /* Cyber func=inline */
-void deserialize_app_metadata(uint8_t                   reader_guid_prefix[12],
-                              uint8_t                   reader_entity_id[4],
-                              uint8_t                   writer_entity_id[4],
+void deserialize_app_metadata(uint8_t reader_guid_prefix[12],
+                              uint8_t reader_entity_id[4],
+                              uint8_t writer_entity_id[4], int64_t *seqnum,
                               const message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(msg_metadata->rtps_data, reader_guid_prefix, 12);
     copy_bytes(msg_metadata->rtps_data + 12, reader_entity_id, 4);
     copy_bytes(msg_metadata->rtps_data + 16, writer_entity_id, 4);
+    *seqnum = deserialize_u64(msg_metadata->rtps_data + 20);
 }

@@ -126,16 +126,18 @@ static int test_app_metadata() {
         = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59};
     const uint8_t reader_entity_id[4] = {60, 61, 62, 63};
     const uint8_t writer_entity_id[4] = {255, 254, 253, 252};
+    const int64_t seqnum = 0x58be147ad0369cf2;
 
     message_metadata_t msg_metadata;
     uint8_t            reader_guid_prefix_out[12];
     uint8_t            reader_entity_id_out[4];
     uint8_t            writer_entity_id_out[4];
+    int64_t            seqnum_out;
 
     serialize_app_metadata(reader_guid_prefix, reader_entity_id,
-                           writer_entity_id, &msg_metadata);
+                           writer_entity_id, seqnum, &msg_metadata);
     deserialize_app_metadata(reader_guid_prefix_out, reader_entity_id_out,
-                             writer_entity_id_out, &msg_metadata);
+                             writer_entity_id_out, &seqnum_out, &msg_metadata);
 
     for (auto i = 0; i < 12; i++) {
         assert(reader_guid_prefix_out[i] == reader_guid_prefix[i]);
@@ -144,6 +146,7 @@ static int test_app_metadata() {
         assert(reader_entity_id_out[i] == reader_entity_id[i]);
         assert(writer_entity_id_out[i] == writer_entity_id[i]);
     }
+    assert(seqnum == seqnum_out);
 
     return 0;
 }

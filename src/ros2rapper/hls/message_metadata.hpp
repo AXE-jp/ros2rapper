@@ -73,13 +73,13 @@ void deserialize_sedp_acknack_metadata(uint8_t  reader_guid_prefix[12],
                                        bool *snstate_empty, uint32_t *cnt,
                                        const message_metadata_t *msg_metadata);
 
-void serialize_app_metadata(const uint8_t       reader_guid_prefix[12],
-                            const uint8_t       reader_entity_id[4],
-                            const uint8_t       writer_entity_id[4],
+void serialize_app_metadata(const uint8_t reader_guid_prefix[12],
+                            const uint8_t reader_entity_id[4],
+                            const uint8_t writer_entity_id[4], int64_t seqnum,
                             message_metadata_t *msg_metadata);
-void deserialize_app_metadata(uint8_t                   reader_guid_prefix[12],
-                              uint8_t                   reader_entity_id[4],
-                              uint8_t                   writer_entity_id[4],
+void deserialize_app_metadata(uint8_t reader_guid_prefix[12],
+                              uint8_t reader_entity_id[4],
+                              uint8_t writer_entity_id[4], int64_t *seqnum,
                               const message_metadata_t *msg_metadata);
 
 #endif // !MESSAGE_METADATA_HPP
