@@ -93,6 +93,32 @@ static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
     return SEDP_HEARTBEAT_IP_PKT_LEN;
 }
 
+/* Cyber func=inline */
+static uint16_t sedp_acknack_out(const uint8_t             writer_entity_id[4],
+                                 const uint8_t             reader_entity_id[4],
+                                 const sender_config_t    *conf,
+                                 const message_metadata_t *msg_metadata,
+                                 uint8_t                   tx_buf[]) {
+    uint8_t  reader_guid_prefix[12];
+    uint8_t  snstate_base;
+    bool     snstate_empty;
+    uint32_t cnt;
+    deserialize_sedp_acknack_metadata(reader_guid_prefix, &snstate_base,
+                                      &snstate_empty, &cnt, msg_metadata);
+
+    ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
+                  SEDP_ACKNACK_UDP_PKT_LEN, tx_buf);
+
+    udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
+                   SEDP_ACKNACK_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+
+    sedp_acknack(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
+                 reader_entity_id, snstate_base, snstate_empty, cnt,
+                 tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
+
+    return SEDP_ACKNACK_IP_PKT_LEN;
+}
+
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=cw_fifo */,
@@ -207,6 +233,14 @@ void ros2_sender(
         tx_buf_len
             = sedp_heartbeat_out(sub_writer_entity_id, sub_reader_entity_id,
                                  conf, &msg_metadata, tx_buf);
+    } else if (msg_metadata.message_type == MSG_TYPE_SEDP_ACKNACK_PUB) {
+        tx_buf_len
+            = sedp_acknack_out(pub_writer_entity_id, pub_reader_entity_id, conf,
+                               &msg_metadata, tx_buf);
+    } else if (msg_metadata.message_type == MSG_TYPE_SEDP_ACKNACK_SUB) {
+        tx_buf_len
+            = sedp_acknack_out(sub_writer_entity_id, sub_reader_entity_id, conf,
+                               &msg_metadata, tx_buf);
     } else {
         return;
     }
