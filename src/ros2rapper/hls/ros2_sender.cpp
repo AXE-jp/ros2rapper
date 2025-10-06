@@ -67,6 +67,32 @@ sedp_writer_out(const uint8_t writer_entity_id[4],
     return SEDP_WRITER_IP_PKT_LEN;
 }
 
+/* Cyber func=inline */
+static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
+                                   const uint8_t          reader_entity_id[4],
+                                   const sender_config_t *conf,
+                                   const message_metadata_t *msg_metadata,
+                                   uint8_t                   tx_buf[]) {
+    uint8_t  reader_guid_prefix[12];
+    int64_t  first_seqnum;
+    int64_t  last_seqnum;
+    uint32_t cnt;
+    deserialize_sedp_heartbeat_metadata(reader_guid_prefix, &first_seqnum,
+                                        &last_seqnum, &cnt, msg_metadata);
+
+    ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
+                  SEDP_HEARTBEAT_UDP_PKT_LEN, tx_buf);
+
+    udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
+                   SEDP_HEARTBEAT_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+
+    sedp_heartbeat(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
+                   reader_entity_id, first_seqnum, last_seqnum, cnt,
+                   tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
+
+    return SEDP_HEARTBEAT_IP_PKT_LEN;
+}
+
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=cw_fifo */,
@@ -173,6 +199,14 @@ void ros2_sender(
                                      conf->sub_topic_type_name[topic_id],
                                      conf->sub_topic_type_name_len[topic_id],
                                      conf, &msg_metadata, tx_buf);
+    } else if (msg_metadata.message_type == MSG_TYPE_SEDP_HEARTBEAT_PUB) {
+        tx_buf_len
+            = sedp_heartbeat_out(pub_writer_entity_id, pub_reader_entity_id,
+                                 conf, &msg_metadata, tx_buf);
+    } else if (msg_metadata.message_type == MSG_TYPE_SEDP_HEARTBEAT_SUB) {
+        tx_buf_len
+            = sedp_heartbeat_out(sub_writer_entity_id, sub_reader_entity_id,
+                                 conf, &msg_metadata, tx_buf);
     } else {
         return;
     }
