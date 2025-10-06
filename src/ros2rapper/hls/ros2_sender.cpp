@@ -299,6 +299,8 @@ void ros2_sender(
         *rawudp_txbuf_rel /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
         *rawudp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *cnt_interval_set /* Cyber port_mode=shared, volatile=YES */,
     const sender_config_t *conf /* Cyber port_mode=in, stable_input */,
 
 #ifdef PUB_DATA_FF
@@ -374,6 +376,7 @@ void ros2_sender(
 #pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type = ram_1p
 #pragma HLS interface mode = ap_vld port = rawudp_txbuf_rel
 #pragma HLS interface mode = ap_ack port = rawudp_txbuf_grant
+#pragma HLS interface mode = ap_vld port = cnt_interval_set
 #pragma HLS disaggregate            variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
@@ -583,4 +586,12 @@ void ros2_sender(
         slip_out(s, out);
 #endif // USE_FIFOIF_ETHERNET
     }
+
+    /* Cyber scheduling_block = non-transparent */
+cnt_reset_interval: {
+#pragma HLS protocol fixed
+    *cnt_interval_set = 1;
+    CLOCK_BOUNDARY;
+    CLOCK_BOUNDARY;
+}
 }
