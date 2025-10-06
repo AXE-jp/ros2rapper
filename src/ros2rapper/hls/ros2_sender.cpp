@@ -229,8 +229,7 @@ rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 }
 
 /* Cyber func=inline */
-static uint16_t rawudp_out(const uint32_t    rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
-                           VOLATILE uint8_t *rawudp_txbuf_rel,
+static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
                            const sender_config_t *conf,
                            uint8_t                tx_buf[TX_BUF_LEN]) {
 #pragma HLS inline
@@ -264,7 +263,6 @@ static uint16_t rawudp_out(const uint32_t    rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 
     rawudp_copy_payload(rawudp_txbuf, udp_payload_len,
                         tx_buf + IP_HDR_SIZE + UDP_HDR_SIZE);
-    *rawudp_txbuf_rel = 0 /* write dummy value to assert ap_vld */;
 
     return IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
 }
@@ -530,7 +528,8 @@ void ros2_sender(
             break;
         }
     } else if (msg_metadata.message_type == MSG_TYPE_RAWUDP) {
-        tx_buf_len = rawudp_out(rawudp_txbuf, rawudp_txbuf_rel, conf, tx_buf);
+        tx_buf_len = rawudp_out(rawudp_txbuf, conf, tx_buf);
+        *rawudp_txbuf_rel = 0 /* write dummy value to assert ap_vld */;
     }
 
     if ((tx_buf_len == 0) || (tx_buf_len > TX_BUF_LEN)) {
