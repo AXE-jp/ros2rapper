@@ -3,6 +3,7 @@
 
 open_project -reset proj_ros2_sender
 
+add_files hls/app.cpp
 add_files hls/ip.cpp
 add_files hls/message_metadata.cpp
 add_files hls/ros2_sender.cpp
