@@ -335,13 +335,15 @@ static void ros2_out(
     VOLATILE uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
     VOLATILE uint8_t *cnt_app_wr_set, bool reading_rtps_message,
     int64_t timestamp_i64) {
-    static const uint8_t app_writer_entity_id_list[PUB_TOPICS_MAX]
-                                                  [4] /* Cyber array=EXPAND */
+    static const uint8_t
+        app_writer_entity_id_list[PUB_TOPICS_MAX]
+                                 [4] /* Cyber array=EXPAND, array_index=const */
         = ENTITYID_APP_WRITER_LIST;
 #pragma HLS array_partition variable = app_writer_entity_id_list complete dim  \
     = 0
-    static const uint8_t app_reader_entity_id_list[SUB_TOPICS_MAX]
-                                                  [4] /* Cyber array=EXPAND */
+    static const uint8_t
+        app_reader_entity_id_list[SUB_TOPICS_MAX]
+                                 [4] /* Cyber array=EXPAND array_index=const */
         = ENTITYID_APP_READER_LIST;
 #pragma HLS array_partition variable = app_reader_entity_id_list complete dim  \
     = 0
@@ -723,12 +725,10 @@ void ros2_main(
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     VOLATILE app_data_len_t
         sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                            array_index=const, port_mode=shared,
-                                            volatile=yes */
+                                            port_mode=shared, volatile=yes */
     ,
     VOLATILE uint16_t
         sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                               array_index=const,
                                                port_mode=shared, volatile=yes */
     ,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
