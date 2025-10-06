@@ -7,6 +7,7 @@
 
 /* Cyber func=inline */
 static void copy_bytes(const uint8_t src[], uint8_t dst[], unsigned int len) {
+#pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto i = 0; i < len; i++) {
 #pragma HLS unroll
