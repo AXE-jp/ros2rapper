@@ -728,7 +728,7 @@ int test_sedp_reader_2() {
                 // ROS2rapper should find a subscriber.
                 assert(app_reader_tbl[0].alive);
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
-                assert(app_reader_tbl[0].pub_topic_id == pub_id);
+                assert(app_reader_tbl[0].topic_id == pub_id);
             } else {
                 // ROS2rapper should ignore disabled topics.
                 assert(!app_reader_tbl[0].alive);

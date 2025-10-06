@@ -429,7 +429,7 @@ static void rawudp_out(const uint8_t dst_addr[4], const uint8_t dst_port[2],
     } while (0)
 
 /* Cyber func=inline */
-void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
+void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
                     app_endpoint    app_reader_tbl[APP_READER_MAX],
                     const config_t *conf,
 #ifdef PUB_DATA_FF
@@ -445,7 +445,7 @@ void APP_WRITER_OUT(pub_topic_id_t topic_id, app_reader_id_t app_reader_id,
 #pragma HLS inline
     if ((app_reader_id < APP_READER_MAX) && app_reader_tbl[app_reader_id].alive
         && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)
-        && (app_reader_tbl[app_reader_id].pub_topic_id == topic_id)) {
+        && (app_reader_tbl[app_reader_id].topic_id == topic_id)) {
 
         uint8_t grant;
         /* Cyber scheduling_block = non-transparent */

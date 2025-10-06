@@ -22,13 +22,6 @@ typedef enum {
     MSG_TYPE_RAWUDP
 } message_type_t;
 
-typedef hls_uint<2> topic_id_t;
-
-static_assert(PUB_TOPICS_MAX <= 4,
-              "topic_id_t should be able to represent PUB_TOPICS_MAX - 1.");
-static_assert(SUB_TOPICS_MAX <= 4,
-              "topic_id_t should be able to represent SUB_TOPICS_MAX - 1.");
-
 typedef struct {
     message_type_t message_type;
     topic_id_t     topic_id;

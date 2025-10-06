@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "common.hpp"
 #include "duration.hpp"
+#include "endpoint.hpp"
 #include "hls.hpp"
 #include "ip.hpp"
 #include "message_metadata.hpp"
