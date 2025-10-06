@@ -16,6 +16,18 @@ static void copy_bytes(const uint8_t src[], uint8_t dst[], unsigned int len) {
 }
 
 /* Cyber func=inline */
+void set_common_message_metadata(message_type_t message_type,
+                                 topic_id_t topic_id, const uint8_t dst_addr[4],
+                                 const uint8_t       dst_port[2],
+                                 message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    msg_metadata->message_type = message_type;
+    msg_metadata->topic_id = topic_id;
+    copy_bytes(dst_addr, msg_metadata->dst_addr, 4);
+    copy_bytes(dst_port, msg_metadata->dst_port, 2);
+}
+
+/* Cyber func=inline */
 static void serialize_u32(uint32_t data, uint8_t serialized[4]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
