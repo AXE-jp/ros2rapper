@@ -50,9 +50,14 @@ sedp_writer_out(const uint8_t writer_entity_id[4],
                 const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
 #pragma HLS inline
     uint8_t reader_guid_prefix[12];
+#pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
+    = 1
     int64_t seqnum;
     uint8_t usertraffic_port[2];
+#pragma HLS array_partition variable = usertraffic_port type = complete dim = 1
     uint8_t app_entity_id[4];
+#pragma HLS array_partition variable = app_entity_id type = complete dim = 1
+
     deserialize_sedp_metadata(reader_guid_prefix, &seqnum, usertraffic_port,
                               app_entity_id, msg_metadata);
 
@@ -78,10 +83,13 @@ static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
                                    const message_metadata_t *msg_metadata,
                                    uint8_t                   tx_buf[]) {
 #pragma HLS inline
-    uint8_t  reader_guid_prefix[12];
+    uint8_t reader_guid_prefix[12];
+#pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
+    = 1
     int64_t  first_seqnum;
     int64_t  last_seqnum;
     uint32_t cnt;
+
     deserialize_sedp_heartbeat_metadata(reader_guid_prefix, &first_seqnum,
                                         &last_seqnum, &cnt, msg_metadata);
 
@@ -105,10 +113,13 @@ static uint16_t sedp_acknack_out(const uint8_t             writer_entity_id[4],
                                  const message_metadata_t *msg_metadata,
                                  uint8_t                   tx_buf[]) {
 #pragma HLS inline
-    uint8_t  reader_guid_prefix[12];
+    uint8_t reader_guid_prefix[12];
+#pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
+    = 1
     uint8_t  snstate_base;
     bool     snstate_empty;
     uint32_t cnt;
+
     deserialize_sedp_acknack_metadata(reader_guid_prefix, &snstate_base,
                                       &snstate_empty, &cnt, msg_metadata);
 
@@ -135,9 +146,14 @@ static uint16_t app_writer_out(
     const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
 #pragma HLS inline
     uint8_t reader_guid_prefix[12];
+#pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
+    = 1
     uint8_t reader_entity_id[4];
+#pragma HLS array_partition variable = reader_entity_id type = complete dim = 1
     uint8_t writer_entity_id[4];
+#pragma HLS array_partition variable = writer_entity_id type = complete dim = 1
     int64_t seqnum;
+
     deserialize_app_metadata(reader_guid_prefix, reader_entity_id,
                              writer_entity_id, &seqnum, msg_metadata);
 
@@ -235,8 +251,11 @@ static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 #pragma HLS inline
     uint32_t ram_read_buf;
     uint8_t  dst_addr[4];
-    uint8_t  dst_port[2];
-    uint8_t  src_port[2];
+#pragma HLS array_partition variable = dst_addr type = complete dim = 1
+    uint8_t dst_port[2];
+#pragma HLS array_partition variable = dst_port type = complete dim = 1
+    uint8_t src_port[2];
+#pragma HLS array_partition variable = src_port type = complete dim = 1
     uint16_t udp_payload_len;
 
     ram_read_buf = rawudp_txbuf[0];

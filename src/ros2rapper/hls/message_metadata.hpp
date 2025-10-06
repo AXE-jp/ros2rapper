@@ -32,10 +32,10 @@ static_assert(SUB_TOPICS_MAX <= 4,
 typedef struct {
     message_type_t message_type;
     topic_id_t     topic_id;
-    uint8_t        dst_addr[4];
-    uint8_t        dst_port[4];
+    uint8_t        dst_addr[4] /* Cyber array=EXPAND */;
+    uint8_t        dst_port[4] /* Cyber array=EXPAND */;
     timestamp      now;
-    uint8_t        rtps_data[32];
+    uint8_t        rtps_data[32] /* Cyber array=EXPAND */;
 } message_metadata_t;
 
 void serialize_spdp_metadata(const uint8_t       metatraffic_port[2],
