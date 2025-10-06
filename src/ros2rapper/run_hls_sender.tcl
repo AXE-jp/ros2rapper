@@ -7,7 +7,6 @@ add_files hls/app.cpp
 add_files hls/ip.cpp
 add_files hls/message_metadata.cpp
 add_files hls/ros2_sender.cpp
-add_files hls/rtps.cpp
 add_files hls/sedp.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
