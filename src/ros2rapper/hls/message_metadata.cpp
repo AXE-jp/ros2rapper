@@ -25,7 +25,7 @@ static void serialize_u32(uint32_t data, uint8_t serialized[4]) {
 }
 
 /* Cyber func=inline */
-static void deserialize_u32(uint32_t *data, const uint8_t serialized[4]) {
+static uint32_t deserialize_u32(const uint8_t serialized[4]) {
 #pragma HLS inline
     uint32_t x = 0;
     /* Cyber unroll_times=all */
@@ -33,11 +33,11 @@ static void deserialize_u32(uint32_t *data, const uint8_t serialized[4]) {
 #pragma HLS unroll
         x |= static_cast<uint32_t>(serialized[i]) << (8 * i);
     }
-    *data = x;
+    return x;
 }
 
 /* Cyber func=inline */
-static void serialize_i64(int64_t data, uint8_t serialized[8]) {
+static void serialize_u64(uint64_t data, uint8_t serialized[8]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto i = 0; i < 8; i++) {
@@ -47,7 +47,7 @@ static void serialize_i64(int64_t data, uint8_t serialized[8]) {
 }
 
 /* Cyber func=inline */
-static void deserialize_i64(int64_t *data, const uint8_t serialized[8]) {
+static uint64_t deserialize_u64(const uint8_t serialized[8]) {
 #pragma HLS inline
     uint64_t x = 0;
     /* Cyber unroll_times=all */
@@ -55,7 +55,7 @@ static void deserialize_i64(int64_t *data, const uint8_t serialized[8]) {
 #pragma HLS unroll
         x |= static_cast<uint64_t>(serialized[i]) << (8 * i);
     }
-    *data = x;
+    return x;
 }
 
 /* Cyber func=inline */
@@ -78,12 +78,8 @@ void deserialize_spdp_metadata(uint8_t                   metatraffic_port[2],
 #pragma HLS inline
     copy_bytes(msg_metadata->rtps_data, metatraffic_port, 2);
     copy_bytes(msg_metadata->rtps_data + 2, default_port, 2);
-
-    uint32_t seconds, fraction;
-    deserialize_u32(&seconds, msg_metadata->rtps_data + 4);
-    deserialize_u32(&fraction, msg_metadata->rtps_data + 8);
-    lease_duration->seconds = seconds;
-    lease_duration->fraction = fraction;
+    lease_duration->seconds = deserialize_u32(msg_metadata->rtps_data + 4);
+    lease_duration->fraction = deserialize_u32(msg_metadata->rtps_data + 8);
 }
 
 /* Cyber func=inline */
@@ -93,7 +89,7 @@ void serialize_sedp_metadata(const uint8_t reader_guid_prefix[12],
                              message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(reader_guid_prefix, msg_metadata->rtps_data, 12);
-    serialize_i64(seqnum, msg_metadata->rtps_data + 12);
+    serialize_u64(seqnum, msg_metadata->rtps_data + 12);
     copy_bytes(usertraffic_port, msg_metadata->rtps_data + 20, 2);
     copy_bytes(app_entity_id, msg_metadata->rtps_data + 22, 4);
 }
@@ -105,7 +101,7 @@ void deserialize_sedp_metadata(uint8_t reader_guid_prefix[12], int64_t *seqnum,
                                const message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(msg_metadata->rtps_data, reader_guid_prefix, 12);
-    deserialize_i64(seqnum, msg_metadata->rtps_data + 12);
+    *seqnum = deserialize_u64(msg_metadata->rtps_data + 12);
     copy_bytes(msg_metadata->rtps_data + 20, usertraffic_port, 2);
     copy_bytes(msg_metadata->rtps_data + 22, app_entity_id, 4);
 }
@@ -117,8 +113,8 @@ void serialize_sedp_heartbeat_metadata(const uint8_t reader_guid_prefix[12],
                                        message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(reader_guid_prefix, msg_metadata->rtps_data, 12);
-    serialize_i64(first_seqnum, msg_metadata->rtps_data + 12);
-    serialize_i64(last_seqnum, msg_metadata->rtps_data + 20);
+    serialize_u64(first_seqnum, msg_metadata->rtps_data + 12);
+    serialize_u64(last_seqnum, msg_metadata->rtps_data + 20);
     serialize_u32(cnt, msg_metadata->rtps_data + 28);
 }
 
@@ -128,9 +124,9 @@ void deserialize_sedp_heartbeat_metadata(
     uint32_t *cnt, const message_metadata_t *msg_metadata) {
 #pragma HLS inline
     copy_bytes(msg_metadata->rtps_data, reader_guid_prefix, 12);
-    deserialize_i64(first_seqnum, msg_metadata->rtps_data + 12);
-    deserialize_i64(last_seqnum, msg_metadata->rtps_data + 20);
-    deserialize_u32(cnt, msg_metadata->rtps_data + 28);
+    *first_seqnum = deserialize_u64(msg_metadata->rtps_data + 12);
+    *last_seqnum = deserialize_u64(msg_metadata->rtps_data + 20);
+    *cnt = deserialize_u32(msg_metadata->rtps_data + 28);
 }
 
 /* Cyber func=inline */
@@ -154,7 +150,7 @@ void deserialize_sedp_acknack_metadata(uint8_t  reader_guid_prefix[12],
     copy_bytes(msg_metadata->rtps_data, reader_guid_prefix, 12);
     *snstate_base = msg_metadata->rtps_data[12];
     *snstate_empty = (msg_metadata->rtps_data[13] != 0);
-    deserialize_u32(cnt, msg_metadata->rtps_data + 14);
+    *cnt = deserialize_u32(msg_metadata->rtps_data + 14);
 }
 
 /* Cyber func=inline */
