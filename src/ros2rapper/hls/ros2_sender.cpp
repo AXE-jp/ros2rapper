@@ -293,6 +293,8 @@ void ros2_sender(
     uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     VOLATILE uint8_t
         *rawudp_txbuf_rel /* Cyber port_mode=shared, volatile=YES */,
+    VOLATILE uint8_t
+        *rawudp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
     const sender_config_t *conf /* Cyber port_mode=in, stable_input */,
 
 #ifdef PUB_DATA_FF
@@ -367,6 +369,7 @@ void ros2_sender(
 #pragma HLS interface mode = ap_fifo port = out
 #pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type = ram_1p
 #pragma HLS interface mode = ap_vld port = rawudp_txbuf_rel
+#pragma HLS interface mode = ap_ack port = rawudp_txbuf_grant
 #pragma HLS disaggregate            variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
@@ -546,7 +549,8 @@ void ros2_sender(
                                         &msg_metadata, tx_buf);
             break;
         }
-    } else if (msg_metadata.message_type == MSG_TYPE_RAWUDP) {
+    } else if ((msg_metadata.message_type == MSG_TYPE_RAWUDP)
+               && (*rawudp_txbuf_grant != 0)) {
         tx_buf_len = rawudp_out(rawudp_txbuf, conf, tx_buf);
         *rawudp_txbuf_rel = 0 /* write dummy value to assert ap_vld */;
     }
