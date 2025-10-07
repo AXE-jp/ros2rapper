@@ -21,7 +21,6 @@
 static uint16_t spdp_writer_out(const sender_config_t    *conf,
                                 const message_metadata_t *msg_metadata,
                                 uint8_t                   tx_buf[]) {
-#pragma HLS inline
     uint8_t metatraffic_port[2] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = metatraffic_port type = complete dim = 1
     uint8_t default_port[2] /* Cyber array=EXPAND */;
@@ -52,7 +51,6 @@ sedp_writer_out(const uint8_t writer_entity_id[4],
                 uint8_t topic_name_len, const uint8_t topic_type_name[],
                 uint8_t topic_type_name_len, const sender_config_t *conf,
                 const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
-#pragma HLS inline
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -86,7 +84,6 @@ static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
                                    const sender_config_t *conf,
                                    const message_metadata_t *msg_metadata,
                                    uint8_t                   tx_buf[]) {
-#pragma HLS inline
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -116,7 +113,6 @@ static uint16_t sedp_acknack_out(const uint8_t             writer_entity_id[4],
                                  const sender_config_t    *conf,
                                  const message_metadata_t *msg_metadata,
                                  uint8_t                   tx_buf[]) {
-#pragma HLS inline
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -148,7 +144,6 @@ static uint16_t app_writer_out(
     const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
     app_data_len_t pub_app_data_len, const sender_config_t *conf,
     const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
-#pragma HLS inline
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -252,7 +247,6 @@ rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
                            const sender_config_t *conf,
                            uint8_t                tx_buf[TX_BUF_LEN]) {
-#pragma HLS inline
     uint32_t ram_read_buf;
     uint8_t  dst_addr[4] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = dst_addr type = complete dim = 1
