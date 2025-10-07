@@ -519,9 +519,9 @@ ros2_sender (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
 
-    .in_r_dout(ros2_message_metadata),
-    .in_r_empty_n(ros2_message_metadata_valid),
-    .in_r_read(ros2_message_metadata_ready),
+    .in_r_dout(ros2_msg_metadata),
+    .in_r_empty_n(ros2_msg_metadata_valid),
+    .in_r_read(ros2_msg_metadata_ready),
 
     .out_r_din(tx_fifo_din),
     .out_r_full_n(~tx_fifo_full),
@@ -667,9 +667,9 @@ ros2_main (
   .in_empty(rx_fifo_empty),
   .in_rreq(rx_fifo_rd_en),
 
-  .out_din(ros2_message_metadata),
-  .out_full(~ros2_message_metadata_ready),
-  .out_wreq(ros2_message_metadata_valid),
+  .out_din(ros2_msg_metadata),
+  .out_full(~ros2_msg_metadata_ready),
+  .out_wreq(ros2_msg_metadata_valid),
 
   .udp_rxbuf_CS1(udp_rxbuf_ce),
   .udp_rxbuf_AD1(udp_rxbuf_addr),
@@ -1196,9 +1196,9 @@ ros2_sender (
   .clk(clk),
   .rst_n(rst_n),
 
-  .in_dout(ros2_message_metadata),
-  .in_empty(~ros2_message_metadata_valid),
-  .in_rreq(ros2_message_metadata_ready),
+  .in_dout(ros2_msg_metadata),
+  .in_empty(~ros2_msg_metadata_valid),
+  .in_rreq(ros2_msg_metadata_ready),
 
   .out_din(tx_fifo_din),
   .out_full(tx_fifo_full),
