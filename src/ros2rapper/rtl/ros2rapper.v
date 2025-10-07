@@ -3755,8 +3755,7 @@ ros2_sender (
   .pub_app_data_req_3_wd(),
   .pub_app_data_rel_3_we(ros2_pub_app_data_ip_rel[3]),
   .pub_app_data_rel_3_wd(),
-  .pub_app_data_grant_3_rd({7'd0, ros2_pub_app_data_ip_grant[3]}),
-
+  .pub_app_data_grant_3_rd({7'd0, ros2_pub_app_data_ip_grant[3]})
 );
 `endif
 
