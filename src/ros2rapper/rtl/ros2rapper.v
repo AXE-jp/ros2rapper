@@ -652,7 +652,7 @@ ros2_sender (
     .pub_app_data_rel_3_ap_vld(ros2_pub_app_data_ip_rel[3]),
     .pub_app_data_rel_3(),
     .pub_app_data_grant_3({7'd0, ros2_pub_app_data_ip_grant[3]}),
-    .pub_app_data_grant_3_ap_ack(),
+    .pub_app_data_grant_3_ap_ack()
 );
 `elsif ROS2RAPPER_HLS_CWB
 ros2_main
