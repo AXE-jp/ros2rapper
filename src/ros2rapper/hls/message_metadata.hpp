@@ -10,18 +10,17 @@
 #include "timestamp.hpp"
 #include <cstdint>
 
-typedef enum {
-    MSG_TYPE_NONE,
-    MSG_TYPE_SPDP,
-    MSG_TYPE_SEDP_PUB,
-    MSG_TYPE_SEDP_SUB,
-    MSG_TYPE_SEDP_HEARTBEAT_PUB,
-    MSG_TYPE_SEDP_HEARTBEAT_SUB,
-    MSG_TYPE_SEDP_ACKNACK_PUB,
-    MSG_TYPE_SEDP_ACKNACK_SUB,
-    MSG_TYPE_APP,
-    MSG_TYPE_RAWUDP
-} message_type_t;
+typedef hls_uint<4> message_type_t;
+#define MSG_TYPE_NONE 0
+#define MSG_TYPE_SPDP 1
+#define MSG_TYPE_SEDP_PUB 2
+#define MSG_TYPE_SEDP_SUB 3
+#define MSG_TYPE_SEDP_HEARTBEAT_PUB 4
+#define MSG_TYPE_SEDP_HEARTBEAT_SUB 5
+#define MSG_TYPE_SEDP_ACKNACK_PUB 6
+#define MSG_TYPE_SEDP_ACKNACK_SUB 7
+#define MSG_TYPE_APP 8
+#define MSG_TYPE_RAWUDP 9
 
 typedef struct {
     message_type_t message_type;
