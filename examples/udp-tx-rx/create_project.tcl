@@ -68,5 +68,8 @@ add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/lib/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/verilog-ethernet/*.v ]
 
+# Designate the top module
+set_property top top [get_filesets sources_1]
+
 # Import xdc files
 add_files -fileset constrs_1 -norecurse "./constrs/arty_a7_eth.xdc ./constrs/eth_mac_fifo.tcl ./constrs/axis_async_fifo.tcl ./constrs/sync_reset.tcl"

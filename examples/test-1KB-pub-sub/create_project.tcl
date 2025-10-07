@@ -122,5 +122,8 @@ if {[string equal [get_ips -quiet hls_sub_0] ""]} {
     upgrade_ip -quiet [get_ips hls_sub_0]
 }
 
+# Designate the top module
+set_property top top [get_filesets sources_1]
+
 # Import xdc files
 add_files -fileset constrs_1 -norecurse "./constrs/arty_a7_eth.xdc ./constrs/eth_mac_fifo.tcl ./constrs/axis_async_fifo.tcl ./constrs/sync_reset.tcl"
