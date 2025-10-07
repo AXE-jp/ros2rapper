@@ -540,7 +540,6 @@ ros2_sender (
     .cnt_interval_set_ap_vld(ros2_cnt_interval_set),
 
     .conf_ip_addr(ip_addr),
-    .conf_subnet_mask(subnet_mask),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
