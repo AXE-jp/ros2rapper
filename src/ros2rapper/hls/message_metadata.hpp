@@ -11,16 +11,16 @@
 #include <cstdint>
 
 typedef hls_uint<4> message_type_t;
-#define MSG_TYPE_NONE 0
-#define MSG_TYPE_SPDP 1
-#define MSG_TYPE_SEDP_PUB 2
-#define MSG_TYPE_SEDP_SUB 3
+#define MSG_TYPE_NONE               0
+#define MSG_TYPE_SPDP               1
+#define MSG_TYPE_SEDP_PUB           2
+#define MSG_TYPE_SEDP_SUB           3
 #define MSG_TYPE_SEDP_HEARTBEAT_PUB 4
 #define MSG_TYPE_SEDP_HEARTBEAT_SUB 5
-#define MSG_TYPE_SEDP_ACKNACK_PUB 6
-#define MSG_TYPE_SEDP_ACKNACK_SUB 7
-#define MSG_TYPE_APP 8
-#define MSG_TYPE_RAWUDP 9
+#define MSG_TYPE_SEDP_ACKNACK_PUB   6
+#define MSG_TYPE_SEDP_ACKNACK_SUB   7
+#define MSG_TYPE_APP                8
+#define MSG_TYPE_RAWUDP             9
 
 typedef struct {
     message_type_t message_type;
