@@ -774,7 +774,8 @@ void ros2_main(
     int64_t timestamp_i64 /* Cyber port_mode=in */, hls_uint<9> *xout) {
 
 #pragma HLS interface mode = ap_fifo port = in
-#pragma HLS interface mode = ap_fifo port = out
+// Designate 'register' to avoid a timing loop
+#pragma HLS interface mode = ap_fifo port = out register
 #pragma HLS interface mode = ap_memory port = udp_rxbuf
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
