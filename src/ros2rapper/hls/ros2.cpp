@@ -325,16 +325,16 @@ static void ros2_out(
     app_endpoint                    app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const config_t *conf, VOLATILE uint8_t *rawudp_txbuf_grant,
-    hls_uint<1> cnt_interval_elapsed, hls_uint<1> cnt_spdp_wr_elapsed,
-    VOLATILE uint8_t *cnt_spdp_wr_set, hls_uint<1> cnt_sedp_pub_wr_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_wr_set, hls_uint<1> cnt_sedp_sub_wr_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_wr_set, hls_uint<1> cnt_sedp_pub_hb_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_hb_set, hls_uint<1> cnt_sedp_sub_hb_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_hb_set, hls_uint<1> cnt_sedp_pub_an_elapsed,
-    VOLATILE uint8_t *cnt_sedp_pub_an_set, hls_uint<1> cnt_sedp_sub_an_elapsed,
-    VOLATILE uint8_t *cnt_sedp_sub_an_set, hls_uint<1> cnt_app_wr_elapsed,
-    VOLATILE uint8_t *cnt_app_wr_set, bool reading_rtps_message,
-    int64_t timestamp_i64) {
+    hls_uint<1> cnt_interval_elapsed, VOLATILE uint8_t *cnt_interval_set,
+    hls_uint<1> cnt_spdp_wr_elapsed, VOLATILE uint8_t *cnt_spdp_wr_set,
+    hls_uint<1> cnt_sedp_pub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_pub_wr_set,
+    hls_uint<1> cnt_sedp_sub_wr_elapsed, VOLATILE uint8_t *cnt_sedp_sub_wr_set,
+    hls_uint<1> cnt_sedp_pub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_pub_hb_set,
+    hls_uint<1> cnt_sedp_sub_hb_elapsed, VOLATILE uint8_t *cnt_sedp_sub_hb_set,
+    hls_uint<1> cnt_sedp_pub_an_elapsed, VOLATILE uint8_t *cnt_sedp_pub_an_set,
+    hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
+    hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
+    bool reading_rtps_message, int64_t timestamp_i64) {
     static const uint8_t
         app_writer_entity_id_list[PUB_TOPICS_MAX]
                                  [4] /* Cyber array=EXPAND, array_index=const */
@@ -702,6 +702,13 @@ static void ros2_out(
 
         if (msg_metadata.message_type != MSG_TYPE_NONE) {
             out.write(msg_metadata);
+            /* Cyber scheduling_block = non-transparent */
+        cnt_reset_interval: {
+#pragma HLS protocol fixed
+            *cnt_interval_set = 1;
+            CLOCK_BOUNDARY;
+            CLOCK_BOUNDARY;
+        }
         }
     }
 }
@@ -755,6 +762,8 @@ void ros2_main(
     hls_uint<1> cnt_sedp_sub_an_elapsed /* Cyber port_mode=in */,
     hls_uint<1> cnt_app_wr_elapsed /* Cyber port_mode=in */,
 
+    VOLATILE uint8_t
+        *cnt_interval_set /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
         *cnt_spdp_wr_set /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
@@ -857,6 +866,7 @@ void ros2_main(
 #pragma HLS interface mode = ap_ack port = cnt_sedp_sub_an_elapsed
 #pragma HLS interface mode = ap_ack port = cnt_app_wr_elapsed
 
+#pragma HLS interface mode = ap_vld port = cnt_interval_set
 #pragma HLS interface mode = ap_vld port = cnt_spdp_wr_set
 #pragma HLS interface mode = ap_vld port = cnt_sedp_pub_wr_set
 #pragma HLS interface mode = ap_vld port = cnt_sedp_sub_wr_set
@@ -887,9 +897,9 @@ void ros2_main(
             xout);
 
     ros2_out(out, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, conf,
-             udp_txbuf_grant, cnt_interval_elapsed, cnt_spdp_wr_elapsed,
-             cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
-             cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
+             udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
+             cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
+             cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
              cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
              cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
              cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,

@@ -464,6 +464,8 @@ ros2_main (
     .sub_app_data_grant(ros2_sub_app_data_ip_grant),
     .sub_app_data_grant_ap_ack(),
 
+    .cnt_interval_set(),
+    .cnt_interval_set_ap_vld(ros2_cnt_interval_set),
     .cnt_spdp_wr_set(),
     .cnt_spdp_wr_set_ap_vld(ros2_cnt_spdp_wr_set),
     .cnt_sedp_pub_wr_set(),
@@ -535,9 +537,6 @@ ros2_sender (
     .rawudp_txbuf_rel(),
     .rawudp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
     .rawudp_txbuf_grant_ap_ack(),
-
-    .cnt_interval_set(),
-    .cnt_interval_set_ap_vld(ros2_cnt_interval_set),
 
     .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
@@ -1151,6 +1150,8 @@ ros2_main (
   .sub_app_data_rel_wd(sub_app_data_ip_rel),
   .sub_app_data_grant_rd(ros2_sub_app_data_ip_grant),
 
+  .cnt_interval_set_wd(),
+  .cnt_interval_set_we(ros2_cnt_interval_set),
   .cnt_spdp_wr_set_wd(),
   .cnt_spdp_wr_set_we(ros2_cnt_spdp_wr_set),
   .cnt_sedp_pub_wr_set_wd(),
@@ -1210,9 +1211,6 @@ ros2_sender (
   .rawudp_txbuf_rel_we(udp_txbuf_ip_rel),
   .rawudp_txbuf_rel_wd(),
   .rawudp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
-
-  .cnt_interval_set_wd(),
-  .cnt_interval_set_we(ros2_cnt_interval_set),
 
   .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
