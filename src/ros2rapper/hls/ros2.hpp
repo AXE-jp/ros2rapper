@@ -58,7 +58,7 @@ typedef struct {
     uint8_t node_name[MAX_NODE_NAME_LEN] /* Cyber array=EXPAND */;
     uint8_t node_name_len;
     uint8_t node_udp_port[2] /* Cyber array=EXPAND */;
-    uint8_t guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
     uint8_t pub_topic_name
         [PUB_TOPICS_MAX]
         [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
