@@ -240,7 +240,7 @@ static void app_writer_out(topic_id_t    topic_id,
                 sedp_reader_tbl[(sedp_reader_id)].udp_port,                    \
                 sedp_reader_tbl[(sedp_reader_id)].guid_prefix,                 \
                 sedp_reader_tbl[(sedp_reader_id)].builtin_subwr_lastsn,        \
-                default_port, app_writer_entity_id_list[(topic_id)],           \
+                default_port, app_reader_entity_id_list[(topic_id)],           \
                 &msg_metadata);                                                \
         }                                                                      \
     } while (0)
