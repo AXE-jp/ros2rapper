@@ -279,7 +279,7 @@ static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_sender(
-    hls_stream<message_metadata_t> &in /* Cyber port_mode=cw_fifo */,
+    hls_stream<message_metadata_t> &in /* Cyber port_mode=axi_stream */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
     uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     VOLATILE uint8_t
@@ -356,7 +356,7 @@ void ros2_sender(
     VOLATILE uint8_t
         *pub_app_data_grant_3 /* Cyber port_mode=shared, volatile=YES */) {
 #pragma HLS interface mode = ap_ctrl_none port = return
-#pragma HLS interface mode = ap_fifo port = in
+#pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = ap_fifo port = out
 #pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type        \
     = rom_1p                                               latency = 1

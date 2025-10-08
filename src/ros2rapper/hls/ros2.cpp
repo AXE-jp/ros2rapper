@@ -716,7 +716,7 @@ static void ros2_out(
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_main(
     hls_stream<uint8_t>            &in /* Cyber port_mode=cw_fifo */,
-    hls_stream<message_metadata_t> &out /* Cyber port_mode=cw_fifo */,
+    hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
     uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
@@ -783,8 +783,7 @@ void ros2_main(
     int64_t timestamp_i64 /* Cyber port_mode=in */, hls_uint<9> *xout) {
 
 #pragma HLS interface mode = ap_fifo port = in
-// Designate 'register' to avoid a timing loop
-#pragma HLS interface mode = ap_fifo port = out register
+#pragma HLS interface mode = axis port = out
 #pragma HLS interface mode = ap_memory port = udp_rxbuf
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
