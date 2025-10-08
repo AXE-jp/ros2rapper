@@ -175,7 +175,7 @@ module top (
     // --- UDP TX Buffer
     reg [31:0] txbuf_rdata;
     wire [`UDP_TXBUF_AWIDTH-1:0] txbuf_addr;
-    always @(*) begin
+    always @(posedge clk_int) begin
         case (txbuf_addr)
         6'h00: txbuf_rdata <= 32'h0a01a8c0;  // Destinaton IP address: 192.168.1.10
         6'h01: txbuf_rdata <= 32'h0457_04d2; // Source Port: 1111, Destination Port: 1234
