@@ -217,13 +217,7 @@ rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 #pragma HLS inline
     static const uint16_t rawudp_txbuf_offset = 3;
 
-#ifdef PUB_DATA_FF
-    /* Cyber unroll_times=all */
-#endif // PUB_DATA_FF
     for (auto i = 0; i < (MAX_RAWUDP_OUT_PAYLOAD_LEN / 4); i++) {
-#ifdef PUB_DATA_FF
-#pragma HLS unroll
-#endif // PUB_DATA_FF
 #ifdef PUB_DATA_RAM
 #pragma HLS pipeline II = 2
 #endif // PUB_DATA_RAM
