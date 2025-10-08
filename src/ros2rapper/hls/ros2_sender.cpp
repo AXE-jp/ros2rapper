@@ -269,8 +269,7 @@ static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
     src_port[0] = (ram_read_buf >> 24) & 0xff;
 
     ram_read_buf = rawudp_txbuf[2];
-    udp_payload_len = ram_read_buf & 0xff;
-    udp_payload_len |= (ram_read_buf >> 8) & 0xff;
+    udp_payload_len = ram_read_buf & 0xffff;
     // padding 2byte
 
     ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
