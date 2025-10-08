@@ -70,14 +70,13 @@ get_matched_index(hls_uint<SEDP_READER_MAX> unmatched,
 }
 
 /* Cyber func=inline */
-static pub_topic_id_t
-get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
+static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto j = 0; j < PUB_TOPICS_MAX; j++) {
 #pragma HLS unroll
         if (matched[j]) {
-            return static_cast<pub_topic_id_t>(j);
+            return static_cast<topic_id_t>(j);
         }
     }
     return 0;
@@ -382,7 +381,7 @@ void sedp_reader(
                     if ((app_unmatched & valid) == valid) {
                         if (ep_type & BUILTIN_EP_SUB) {
                             reader.app_ep_type = APP_EP_PUB;
-                            reader.pub_topic_id = get_matched_pub_topic_id(
+                            reader.topic_id = get_matched_pub_topic_id(
                                 ~pub_topics_unmatched & ~pub_types_unmatched);
                         } else {
                             reader.app_ep_type = APP_EP_SUB;

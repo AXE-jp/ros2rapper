@@ -61,7 +61,8 @@ current_run -implementation [get_runs impl_1]
 add_files -norecurse -fileset sources_1 [ glob ./rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/rtl/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
+add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_sender/solution1/syn/verilog/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/lib/*.v ]
@@ -120,6 +121,9 @@ if {[string equal [get_ips -quiet hls_sub_0] ""]} {
 } else {
     upgrade_ip -quiet [get_ips hls_sub_0]
 }
+
+# Designate the top module
+set_property top top [get_filesets sources_1]
 
 # Import xdc files
 add_files -fileset constrs_1 -norecurse "./constrs/arty_a7_eth.xdc ./constrs/eth_mac_fifo.tcl ./constrs/axis_async_fifo.tcl ./constrs/sync_reset.tcl"
