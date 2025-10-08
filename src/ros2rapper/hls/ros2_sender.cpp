@@ -365,7 +365,8 @@ void ros2_sender(
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = ap_fifo port = out
-#pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type = ram_1p
+#pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type        \
+    = rom_1p                                               latency = 1
 #pragma HLS interface mode = ap_vld port = rawudp_txbuf_rel
 #pragma HLS interface mode = ap_ack port = rawudp_txbuf_grant
 #pragma HLS disaggregate            variable = conf
