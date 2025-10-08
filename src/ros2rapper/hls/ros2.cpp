@@ -343,7 +343,7 @@ static void ros2_out(
     = 0
     static const uint8_t
         app_reader_entity_id_list[SUB_TOPICS_MAX]
-                                 [4] /* Cyber array=EXPAND array_index=const */
+                                 [4] /* Cyber array=EXPAND, array_index=const */
         = ENTITYID_APP_READER_LIST;
 #pragma HLS array_partition variable = app_reader_entity_id_list complete dim  \
     = 0
