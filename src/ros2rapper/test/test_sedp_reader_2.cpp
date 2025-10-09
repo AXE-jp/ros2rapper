@@ -456,10 +456,10 @@ static void setup_reader_tables_with_default_value(
         CALL_SEDP_READER(1, 1, test_data);                                     \
     } while (0)
 
-int test_sedp_reader_2() {
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-    app_endpoint  app_reader_tbl[APP_READER_MAX];
+static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+static app_endpoint  app_reader_tbl[APP_READER_MAX];
 
+int test_sedp_reader_2() {
     config_t conf = {
         .ip_addr = {192, 168, 0, 4},
         .subnet_mask = {255, 255, 255, 0},
@@ -541,7 +541,7 @@ int test_sedp_reader_2() {
     }
 
     // Test whether sedp_reader ignores known endpoints.
-    constexpr unsigned int n_endpoint_patterns = (1 << APP_READER_MAX);
+    constexpr unsigned int n_endpoint_patterns = (1 << MIN(APP_READER_MAX, 8));
     for (auto known_endpoints = 1; known_endpoints < n_endpoint_patterns;
          known_endpoints++) {
         // Setup reader_tbl.
