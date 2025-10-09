@@ -39,21 +39,6 @@ static void compare_entity_id(const uint8_t      x,
 }
 
 /* Cyber func=inline */
-static sedp_reader_id_t
-get_matched_index(const bool          unmatched[SEDP_READER_MAX],
-                  const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto i = 0; i < SEDP_READER_MAX; i++) {
-#pragma HLS unroll
-        if ((!unmatched[i]) && sedp_reader_tbl[i].alive) {
-            return i;
-        }
-    }
-    return SEDP_READER_MAX;
-}
-
-/* Cyber func=inline */
 static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
@@ -156,11 +141,18 @@ void sedp_reader(
 
     app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
-    sedp_reader_id_t sedp_matched_idx
-        = get_matched_index(sedp_unmatched, sedp_reader_tbl);
-    bool is_participant_matched = (sedp_matched_idx < SEDP_READER_MAX);
-    sedp_endpoint &participant
-        = sedp_reader_tbl[is_participant_matched ? (int)sedp_matched_idx : 0];
+    sedp_reader_id_t sedp_matched_idx = 0;
+    bool is_participant_matched = false;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (sedp_reader_tbl[j].alive && !sedp_unmatched[j]) {
+            sedp_matched_idx = j;
+            is_participant_matched = true;
+            break;
+        }
+    }
+    sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
