@@ -257,8 +257,10 @@ static int test_spdp_reader_1() {
         CALL_SPDP_READER(sedp_reader_tbl, ip_addr, subnet_mask, port_num_seed,
                          timestamp_i64, test_spdp_reader_data_1);
         // Check sedp_reader_tbl
-        assert(find_living_sedp_endpoints(sedp_reader_tbl)
-               == known_participants);
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            bool known = ((1 << j) & known_participants);
+            assert(sedp_reader_tbl[j].alive == known);
+        }
     }
 
     return 0;

@@ -11,29 +11,24 @@
 /* Cyber func=inline */
 void compare_guid_prefix_of_sedp_endpoint(
     const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
-    hls_uint<SEDP_READER_MAX> &unmatched) {
+    bool unmatched[SEDP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < SEDP_READER_MAX; i++) {
 #pragma HLS unroll
         if (tbl[i].guid_prefix[idx] != x)
-            unmatched |= (hls_uint<SEDP_READER_MAX>)(0x1 << i);
+            unmatched[i] = true;
     }
 }
 
 /* Cyber func=inline */
-hls_uint<SEDP_READER_MAX>
-find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]) {
+void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]) {
 #pragma HLS inline
-    hls_uint<SEDP_READER_MAX> alive = 0;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
-        if (tbl[j].alive) {
-            alive |= hls_uint<SEDP_READER_MAX>(1 << j);
-        }
+        unmatched[j] = false;
     }
-    return alive;
 }
 
 #define FLAGS_FOUND_GUID     0x01
@@ -50,10 +45,11 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
         = ENTITYID_BUILTIN_PARTICIPANT_READER;
 #pragma HLS array_partition variable = par_reader_id complete dim = 0
 
-    static hls_uint<4>               state;
-    static uint16_t                  offset;
-    static hls_uint<3>               flags;
-    static hls_uint<SEDP_READER_MAX> unmatched;
+    static hls_uint<4> state;
+    static uint16_t    offset;
+    static hls_uint<3> flags;
+    static bool        unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = unmatched type = complete dim = 0
 
     static uint8_t  sbm_id;
     static bool     sbm_le;
@@ -171,9 +167,16 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             if (param_id == PID_SENTINEL) {
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<SEDP_READER_MAX> valid
-                        = find_living_sedp_endpoints(reader_tbl);
-                    if ((unmatched & valid) == valid) {
+                    // Test if the found node is unknown
+                    bool valid = true;
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+                        if (reader_tbl[j].alive && !unmatched[j]) {
+                            valid = false;
+                        }
+                    }
+                    if (valid) {
                         // Validate and initialize sedp_endpoint.
                         reader.builtin_pubrd_rd_seqnum = 1;
                         reader.builtin_subrd_rd_seqnum = 1;
@@ -196,7 +199,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                         reader.timestamp = timestamp_i64;
                     }
                 }
-                unmatched = 0;
+                reset_sedp_unmatched(unmatched);
                 flags = 0;
                 offset = 0;
                 lease_duration_found = false;
@@ -306,7 +309,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     }
 
     if (end) {
-        unmatched = 0;
+        reset_sedp_unmatched(unmatched);
         flags = 0;
         offset = 0;
         lease_duration_found = false;

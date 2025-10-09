@@ -63,7 +63,8 @@ void update_liveliness(hls_uint<9>   in,
     static uint16_t param_id;
     static uint16_t param_len;
 
-    static hls_uint<SEDP_READER_MAX> sedp_unmatched;
+    static bool sedp_unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = sedp_unmatched type = complete dim = 1
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -246,7 +247,7 @@ void update_liveliness(hls_uint<9>   in,
     if (end) {
         // Allow the garbage collector to change the endpoint tables.
         *reading_rtps_message = false;
-        sedp_unmatched = 0;
+        reset_sedp_unmatched(sedp_unmatched);
         offset = 0;
         state = STATE_READ_RTPS_HDR;
     }

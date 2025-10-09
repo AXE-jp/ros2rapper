@@ -55,18 +55,18 @@ static void compare_entity_id(const uint8_t             x,
 }
 
 /* Cyber func=inline */
-static uint8_t
-get_matched_index(hls_uint<SEDP_READER_MAX> unmatched,
-                  sedp_endpoint             sedp_reader_tbl[SEDP_READER_MAX]) {
+static sedp_reader_id_t
+get_matched_index(const bool          unmatched[SEDP_READER_MAX],
+                  const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
-    for (uint8_t i = 0; i < SEDP_READER_MAX; i++) {
+    for (auto i = 0; i < SEDP_READER_MAX; i++) {
 #pragma HLS unroll
-        if ((!unmatched[i]) & sedp_reader_tbl[i].alive) {
+        if ((!unmatched[i]) && sedp_reader_tbl[i].alive) {
             return i;
         }
     }
-    return 0;
+    return SEDP_READER_MAX;
 }
 
 /* Cyber func=inline */
@@ -126,12 +126,13 @@ void sedp_reader(
         = ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable = sub_reader_id complete dim = 0
 
-    static hls_uint<4>               state;
-    static uint16_t                  offset;
-    static hls_uint<5>               flags;
-    static hls_uint<APP_READER_MAX>  app_unmatched;
-    static hls_uint<SEDP_READER_MAX> sedp_unmatched;
-    static builtin_ep_type_t         ep_type;
+    static hls_uint<4>              state;
+    static uint16_t                 offset;
+    static hls_uint<5>              flags;
+    static hls_uint<APP_READER_MAX> app_unmatched;
+    static bool sedp_unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = sedp_unmatched complete dim = 1
+    static builtin_ep_type_t ep_type;
 
     static hls_uint<PUB_TOPICS_MAX> pub_topics_unmatched;
     static hls_uint<PUB_TOPICS_MAX> pub_types_unmatched;
@@ -170,12 +171,11 @@ void sedp_reader(
 
     app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
-    uint8_t sedp_matched_idx
+    sedp_reader_id_t sedp_matched_idx
         = get_matched_index(sedp_unmatched, sedp_reader_tbl);
-    bool is_participant_matched
-        = ((find_living_sedp_endpoints(sedp_reader_tbl) & ~sedp_unmatched)
-           != 0);
-    sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
+    bool is_participant_matched = (sedp_matched_idx < SEDP_READER_MAX);
+    sedp_endpoint &participant
+        = sedp_reader_tbl[is_participant_matched ? (int)sedp_matched_idx : 0];
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -598,7 +598,7 @@ void sedp_reader(
 
     if (end) {
         app_unmatched = 0;
-        sedp_unmatched = 0;
+        reset_sedp_unmatched(sedp_unmatched);
         flags = 0;
         pub_topics_unmatched = 0;
         pub_types_unmatched = 0;
