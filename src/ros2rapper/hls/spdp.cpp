@@ -31,6 +31,16 @@ void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]) {
     }
 }
 
+/* Cyber func=inline */
+void reset_app_unmatched(bool unmatched[APP_READER_MAX]) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        unmatched[j] = false;
+    }
+}
+
 #define FLAGS_FOUND_GUID     0x01
 #define FLAGS_FOUND_LOCATOR  0x02
 #define FLAGS_UNMATCH_DOMAIN 0x04
@@ -168,15 +178,15 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
                     // Test if the found node is unknown
-                    bool valid = true;
+                    bool unknown = true;
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
                         if (reader_tbl[j].alive && !unmatched[j]) {
-                            valid = false;
+                            unknown = false;
                         }
                     }
-                    if (valid) {
+                    if (unknown) {
                         // Validate and initialize sedp_endpoint.
                         reader.builtin_pubrd_rd_seqnum = 1;
                         reader.builtin_subrd_rd_seqnum = 1;
@@ -192,7 +202,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                         reader.pub_acknack_cnt = 0;
                         reader.sub_acknack_cnt = 0;
                         reader.alive = true;
-                        reader.children = 0;
+                        reset_sedp_endpoint_children(reader.children);
                         if (!lease_duration_found) {
                             reader.lease_duration = SPDP_LEASE_DURATION_DEFAULT;
                         }

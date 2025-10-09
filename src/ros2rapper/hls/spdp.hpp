@@ -28,6 +28,8 @@ void compare_guid_prefix_of_sedp_endpoint(
     bool unmatched[SEDP_READER_MAX]);
 
 void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]);
+void reset_app_unmatched(bool unmatched[APP_READER_MAX]);
+#define reset_sedp_endpoint_children reset_app_unmatched
 
 void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                  hls_uint<1> enable, const uint8_t ip_addr[4],
