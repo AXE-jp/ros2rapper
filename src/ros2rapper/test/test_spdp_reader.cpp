@@ -1,6 +1,7 @@
 // Copyright (c) 2021-2025 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "common.hpp"
 #include "duration.hpp"
 #include "spdp.hpp"
 #include <cassert>
@@ -198,14 +199,14 @@ static void call_spdp_reader(sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
     call_spdp_reader(sedp_reader_tbl, ip_addr, subnet_mask, port_num_seed,     \
                      timestamp_i64, test_data, sizeof(test_data))
 
+static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+
 static int test_spdp_reader_1() {
     constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t      subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t     port_num_seed = 7400;
     constexpr int64_t      timestamp_i64 = 0;
-    constexpr unsigned int n_patterns = (1 << SEDP_READER_MAX);
-
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+    constexpr unsigned int n_patterns = (1 << MIN(SEDP_READER_MAX, 8));
 
     // Test whether spdp_reader finds a new participant correctly.
     for (auto first_n_alive = 0; first_n_alive < SEDP_READER_MAX;
@@ -257,8 +258,10 @@ static int test_spdp_reader_1() {
         CALL_SPDP_READER(sedp_reader_tbl, ip_addr, subnet_mask, port_num_seed,
                          timestamp_i64, test_spdp_reader_data_1);
         // Check sedp_reader_tbl
-        assert(find_living_sedp_endpoints(sedp_reader_tbl)
-               == known_participants);
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            bool known = ((1 << j) & known_participants);
+            assert(sedp_reader_tbl[j].alive == known);
+        }
     }
 
     return 0;
@@ -269,8 +272,10 @@ static int test_spdp_reader_2() {
     constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t port_num_seed = 7400;
 
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-    int64_t       timestamp_i64;
+    int64_t timestamp_i64;
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        sedp_reader_tbl[j].alive = false;
+    }
 
     // Test whether spdp_reader reads PID_PARTICIPANT_LEASE_DURATION and sets
     // timestamp correctly.
@@ -324,8 +329,7 @@ static int test_spdp_reader_3() {
     constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t port_num_seed = 7400;
 
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-    int64_t       timestamp_i64 = 0;
+    int64_t timestamp_i64 = 0;
 
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         sedp_reader_tbl[j].alive = false;

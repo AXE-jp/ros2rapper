@@ -49,9 +49,9 @@ struct sedp_endpoint {
     uint32_t    pub_acknack_cnt;
     uint32_t    sub_acknack_cnt;
     bool        alive;
-    hls_uint<APP_READER_MAX> children;
-    int64_t                  lease_duration;
-    int64_t                  timestamp;
+    bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
+    int64_t lease_duration;
+    int64_t timestamp;
 };
 
 using builtin_ep_type_t = hls_uint<2>;

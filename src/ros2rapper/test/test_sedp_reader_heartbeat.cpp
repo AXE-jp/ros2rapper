@@ -62,6 +62,9 @@ static void print_port(const uint8_t portval[]) {
     printf("%d\n", wval);
 }
 
+static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+static app_endpoint  app_reader_tbl[APP_READER_MAX];
+
 int test_sedp_reader_heartbeat() {
     // hls_stream<hls_uint<9>> in;
     hls_uint<9> in;
@@ -77,7 +80,6 @@ int test_sedp_reader_heartbeat() {
     const uint8_t ip_addr[4] = {192, 168, 1, 200};
     const uint8_t subnet_mask[4] = {255, 255, 255, 0};
 
-    sedp_endpoint sedp_reader_tbl[APP_READER_MAX];
     sedp_reader_tbl[0].guid_prefix[0] = 0x01;
     sedp_reader_tbl[0].guid_prefix[1] = 0x0f;
     sedp_reader_tbl[0].guid_prefix[2] = 0x70;
@@ -101,8 +103,6 @@ int test_sedp_reader_heartbeat() {
     sedp_reader_tbl[0].builtin_pubrd_wr_seqnum = 0;
     sedp_reader_tbl[0].builtin_subrd_wr_seqnum = 0;
     sedp_reader_tbl[0].alive = true;
-
-    app_endpoint app_reader_tbl[APP_READER_MAX];
 
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;

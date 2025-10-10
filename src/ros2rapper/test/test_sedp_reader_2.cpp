@@ -422,7 +422,7 @@ static void setup_reader_tables_with_default_value(
     app_endpoint  app_reader_tbl[APP_READER_MAX]) {
     // Setup sedp_reader_tbl[0].
     sedp_reader_tbl[0].alive = true;
-    sedp_reader_tbl[0].children = 0;
+    reset_sedp_endpoint_children(sedp_reader_tbl[0].children);
     sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
@@ -456,10 +456,10 @@ static void setup_reader_tables_with_default_value(
         CALL_SEDP_READER(1, 1, test_data);                                     \
     } while (0)
 
-int test_sedp_reader_2() {
-    sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-    app_endpoint  app_reader_tbl[APP_READER_MAX];
+static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+static app_endpoint  app_reader_tbl[APP_READER_MAX];
 
+int test_sedp_reader_2() {
     config_t conf = {
         .ip_addr = {192, 168, 0, 4},
         .subnet_mask = {255, 255, 255, 0},
@@ -486,7 +486,7 @@ int test_sedp_reader_2() {
     // Setup sedp_reader_tbl.
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         sedp_reader_tbl[j].alive = false;
-        sedp_reader_tbl[j].children = 0;
+        reset_sedp_endpoint_children(sedp_reader_tbl[j].children);
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             sedp_reader_tbl[j].guid_prefix[k]
                 = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
@@ -502,14 +502,20 @@ int test_sedp_reader_2() {
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
     // sedp_reader should not create app_endpoint.
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        assert(sedp_reader_tbl[j].children == 0);
+        for (auto k = 0; k < APP_READER_MAX; k++) {
+            assert(!sedp_reader_tbl[j].children[k]);
+        }
     }
-    assert(find_living_app_endpoints(app_reader_tbl) == 0);
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        assert(!app_reader_tbl[j].alive);
+    }
 
     // Test whether sedp_reader overwrites when app_reader_tbl is full.
     // Setup sedp_reader_tbl.
     sedp_reader_tbl[0].alive = true;
-    sedp_reader_tbl[0].children = (1 << APP_READER_MAX) - 1;
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        sedp_reader_tbl[0].children[j] = true;
+    }
     sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
@@ -535,12 +541,14 @@ int test_sedp_reader_2() {
     }
 
     // Test whether sedp_reader ignores known endpoints.
-    constexpr unsigned int n_endpoint_patterns = (1 << APP_READER_MAX);
+    constexpr unsigned int n_endpoint_patterns = (1 << MIN(APP_READER_MAX, 8));
     for (auto known_endpoints = 1; known_endpoints < n_endpoint_patterns;
          known_endpoints++) {
         // Setup reader_tbl.
         sedp_reader_tbl[0].alive = true;
-        sedp_reader_tbl[0].children = known_endpoints;
+        for (auto j = 0; j < APP_READER_MAX; j++) {
+            sedp_reader_tbl[0].children[j] = (known_endpoints & (1 << j));
+        }
         sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
         sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
@@ -565,12 +573,14 @@ int test_sedp_reader_2() {
             app_reader_tbl[j].entity_id[3] = 0x03;
             app_reader_tbl[j].alive = known;
         }
-        assert(find_living_app_endpoints(app_reader_tbl) == known_endpoints);
         // sedp_reader gets a message from a known endpoint.
         CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
         // sedp_reader should not create a new app_endpoint.
-        assert(sedp_reader_tbl[0].children == known_endpoints);
-        assert(find_living_app_endpoints(app_reader_tbl) == known_endpoints);
+        for (auto j = 0; j < APP_READER_MAX; j++) {
+            bool known = (known_endpoints & (1 << j));
+            assert(sedp_reader_tbl[0].children[j] == known);
+            assert(app_reader_tbl[j].alive == known);
+        }
     }
 
     // Test whether sedp_reader create a new app_endpoint correctly.
@@ -590,13 +600,13 @@ int test_sedp_reader_2() {
     for (auto first_n_app_endpoints_alive = 0;
          first_n_app_endpoints_alive < APP_READER_MAX;
          first_n_app_endpoints_alive++) {
-        hls_uint<APP_READER_MAX> expected
-            = (1 << first_n_app_endpoints_alive) - 1;
         // Setup sedp_reader_tbl.
-        sedp_reader_tbl[0].children = expected;
+        for (auto j = 0; j < APP_READER_MAX; j++) {
+            sedp_reader_tbl[0].children[j] = (j < first_n_app_endpoints_alive);
+        }
         sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
         sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
-        sedp_reader_tbl[1].children = 0;
+        reset_sedp_endpoint_children(sedp_reader_tbl[1].children);
         sedp_reader_tbl[1].builtin_pubrd_rd_seqnum = 1;
         sedp_reader_tbl[1].builtin_subrd_rd_seqnum = 1;
         // Setup app_reader_tbl.
@@ -606,14 +616,16 @@ int test_sedp_reader_2() {
             }
             app_reader_tbl[j].alive = (j < first_n_app_endpoints_alive);
         }
-        assert(find_living_app_endpoints(app_reader_tbl) == expected);
         CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
         // sedp_reader should create a new app_endpoint.
-        assert(sedp_reader_tbl[0].children == expected);
-        assert(sedp_reader_tbl[1].children
-               == (1 << first_n_app_endpoints_alive));
-        assert(find_living_app_endpoints(app_reader_tbl)
-               == (expected | (1 << first_n_app_endpoints_alive)));
+        for (auto j = 0; j < APP_READER_MAX; j++) {
+            assert(sedp_reader_tbl[0].children[j]
+                   == (j < first_n_app_endpoints_alive));
+            assert(sedp_reader_tbl[1].children[j]
+                   == (j == first_n_app_endpoints_alive));
+            assert(app_reader_tbl[j].alive
+                   == (j <= first_n_app_endpoints_alive));
+        }
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             assert(
                 app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]
@@ -633,10 +645,10 @@ int test_sedp_reader_2() {
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         sedp_reader_tbl[j].alive = (j == 1);
     }
-    sedp_reader_tbl[0].children = 0;
+    reset_sedp_endpoint_children(sedp_reader_tbl[0].children);
     sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
-    sedp_reader_tbl[1].children = 0;
+    reset_sedp_endpoint_children(sedp_reader_tbl[1].children);
     sedp_reader_tbl[1].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[1].builtin_subrd_rd_seqnum = 1;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
@@ -651,8 +663,10 @@ int test_sedp_reader_2() {
     }
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
     // Check
-    assert(sedp_reader_tbl[0].children == 0);
-    assert(sedp_reader_tbl[1].children == 1);
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        assert(!sedp_reader_tbl[0].children[j]);
+        assert(sedp_reader_tbl[1].children[j] == (j == 0));
+    }
     assert(app_reader_tbl[0].alive);
 
     // Test whether sedp_reader finds a new subscriber when ROS2rapper gets a

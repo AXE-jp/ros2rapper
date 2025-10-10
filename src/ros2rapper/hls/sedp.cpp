@@ -15,58 +15,27 @@
 void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
                                          const app_endpoint tbl[APP_READER_MAX],
                                          const int          idx,
-                                         hls_uint<APP_READER_MAX> &unmatched) {
+                                         bool unmatched[APP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
 #pragma HLS unroll
         if (tbl[i].guid_prefix[idx] != x)
-            unmatched |= (hls_uint<APP_READER_MAX>)(0x1 << i);
+            unmatched[i] = true;
     }
 }
 
 /* Cyber func=inline */
-hls_uint<APP_READER_MAX>
-find_living_app_endpoints(const app_endpoint tbl[APP_READER_MAX]) {
-#pragma HLS inline
-    hls_uint<APP_READER_MAX> alive = 0;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-        if (tbl[j].alive) {
-            alive |= hls_uint<APP_READER_MAX>(1 << j);
-        }
-    }
-    return alive;
-}
-
-/* Cyber func=inline */
-static void compare_entity_id(const uint8_t             x,
-                              const app_endpoint        tbl[APP_READER_MAX],
-                              const int                 idx,
-                              hls_uint<APP_READER_MAX> &unmatched) {
+static void compare_entity_id(const uint8_t      x,
+                              const app_endpoint tbl[APP_READER_MAX],
+                              const int idx, bool unmatched[APP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
 #pragma HLS unroll
         if (tbl[i].entity_id[idx] != x)
-            unmatched |= (hls_uint<APP_READER_MAX>)(0x1 << i);
+            unmatched[i] = true;
     }
-}
-
-/* Cyber func=inline */
-static uint8_t
-get_matched_index(hls_uint<SEDP_READER_MAX> unmatched,
-                  sedp_endpoint             sedp_reader_tbl[SEDP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (uint8_t i = 0; i < SEDP_READER_MAX; i++) {
-#pragma HLS unroll
-        if ((!unmatched[i]) & sedp_reader_tbl[i].alive) {
-            return i;
-        }
-    }
-    return 0;
 }
 
 /* Cyber func=inline */
@@ -126,12 +95,14 @@ void sedp_reader(
         = ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable = sub_reader_id complete dim = 0
 
-    static hls_uint<4>               state;
-    static uint16_t                  offset;
-    static hls_uint<5>               flags;
-    static hls_uint<APP_READER_MAX>  app_unmatched;
-    static hls_uint<SEDP_READER_MAX> sedp_unmatched;
-    static builtin_ep_type_t         ep_type;
+    static hls_uint<4> state;
+    static uint16_t    offset;
+    static hls_uint<5> flags;
+    static bool        app_unmatched[APP_READER_MAX] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = app_unmatched complete dim = 1
+    static bool sedp_unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = sedp_unmatched complete dim = 1
+    static builtin_ep_type_t ep_type;
 
     static hls_uint<PUB_TOPICS_MAX> pub_topics_unmatched;
     static hls_uint<PUB_TOPICS_MAX> pub_types_unmatched;
@@ -170,11 +141,17 @@ void sedp_reader(
 
     app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
-    uint8_t sedp_matched_idx
-        = get_matched_index(sedp_unmatched, sedp_reader_tbl);
-    bool is_participant_matched
-        = ((find_living_sedp_endpoints(sedp_reader_tbl) & ~sedp_unmatched)
-           != 0);
+    sedp_reader_id_t sedp_matched_idx = 0;
+    bool is_participant_matched = false;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (sedp_reader_tbl[j].alive && !sedp_unmatched[j]) {
+            sedp_matched_idx = j;
+            is_participant_matched = true;
+            break;
+        }
+    }
     sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
 
     uint8_t data = in & 0xff;
@@ -376,9 +353,16 @@ void sedp_reader(
             if (param_id == PID_SENTINEL) {
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    hls_uint<APP_READER_MAX> valid
-                        = find_living_app_endpoints(app_reader_tbl);
-                    if ((app_unmatched & valid) == valid) {
+                    // Test the found entity is unknown.
+                    bool unknown = true;
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+                        if (app_reader_tbl[j].alive && !app_unmatched[j]) {
+                            unknown = false;
+                        }
+                    }
+                    if (unknown) {
                         if (ep_type & BUILTIN_EP_SUB) {
                             reader.app_ep_type = APP_EP_PUB;
                             reader.topic_id = get_matched_pub_topic_id(
@@ -387,12 +371,11 @@ void sedp_reader(
                             reader.app_ep_type = APP_EP_SUB;
                         }
                         // Validate app_reader_tbl[unused_app_reader_id]
-                        participant.children |= hls_uint<APP_READER_MAX>(
-                            1 << unused_app_reader_id);
+                        participant.children[unused_app_reader_id] = true;
                         app_reader_tbl[unused_app_reader_id].alive = true;
                     }
                 }
-                app_unmatched = 0;
+                reset_app_unmatched(app_unmatched);
                 flags = 0;
                 pub_topics_unmatched = 0;
                 pub_types_unmatched = 0;
@@ -597,8 +580,8 @@ void sedp_reader(
     }
 
     if (end) {
-        app_unmatched = 0;
-        sedp_unmatched = 0;
+        reset_app_unmatched(app_unmatched);
+        reset_sedp_unmatched(sedp_unmatched);
         flags = 0;
         pub_topics_unmatched = 0;
         pub_types_unmatched = 0;
