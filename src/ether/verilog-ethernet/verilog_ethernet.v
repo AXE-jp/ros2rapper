@@ -254,7 +254,10 @@ wire        tx_ip_payload_axis_tready;
 wire        tx_ip_payload_axis_tlast;
 wire        tx_ip_payload_axis_tuser;
 
-udp_checksum_gen
+udp_checksum_gen #(
+    .PAYLOAD_FIFO_DEPTH(`UDP_PAYLOAD_FIFO_DEPTH),
+    .HEADER_FIFO_DEPTH(`UDP_HEADER_FIFO_DEPTH)
+)
 udp_checksum_gen_inst (
     .clk(clk),
     .rst_n(rst_n),
