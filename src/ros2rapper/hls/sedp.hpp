@@ -70,7 +70,7 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
                     const uint8_t reader_guid_prefix[12],
                     const uint8_t reader_entity_id[4],
                     const int64_t first_seqnum, const int64_t last_seqnum,
-                    const uint32_t cnt, uint8_t buf[SEDP_HEARTBEAT_TOT_LEN]);
+                    const uint32_t cnt, hls_stream<uint8_t> &out);
 
 void sedp_acknack(const uint8_t writer_guid_prefix[12],
                   const uint8_t writer_entity_id[4],
