@@ -279,7 +279,7 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
 
 /* Cyber func=inline */
 void udp_set_header(const uint8_t src_port[2], const uint8_t dst_port[2],
-                    const uint16_t udp_data_len, hls_uint<uint8_t> &out) {
+                    const uint16_t udp_data_len, hls_stream<uint8_t> &out) {
 #pragma HLS inline
     uint16_t tot_len = UDP_HDR_SIZE + udp_data_len;
 
