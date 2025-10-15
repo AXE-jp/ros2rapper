@@ -218,23 +218,25 @@ rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
     static const uint16_t rawudp_txbuf_offset = 3;
 
     for (auto i = 0; i < (MAX_RAWUDP_OUT_PAYLOAD_LEN / 4); i++) {
-#ifdef PUB_DATA_RAM
-#pragma HLS pipeline II = 2
-#endif // PUB_DATA_RAM
+#pragma HLS PIPELINE II = 4
+        if ((4 * i) >= udp_payload_len) {
+            break;
+        }
         uint32_t ram_read_buf = rawudp_txbuf[i + rawudp_txbuf_offset];
-        tx_buf[4 * i] = ((4 * i) < udp_payload_len) ? (ram_read_buf & 0xff) : 0;
-        tx_buf[(4 * i) + 1] = (((4 * i) + 1) < udp_payload_len)
-                                  ? ((ram_read_buf >> 8) & 0xff)
-                                  : 0;
-        tx_buf[(4 * i) + 2] = (((4 * i) + 2) < udp_payload_len)
-                                  ? ((ram_read_buf >> 16) & 0xff)
-                                  : 0;
-        tx_buf[(4 * i) + 3] = (((4 * i) + 3) < udp_payload_len)
-                                  ? ((ram_read_buf >> 24) & 0xff)
-                                  : 0;
+        out.write(ram_read_buf & 0xff);
+        if (((4 * i) + 1) >= udp_payload_len) {
+            break;
+        }
+        out.write((ram_read_buf >> 8) & 0xff);
+        if (((4 * i) + 2) >= udp_payload_len) {
+            break;
+        }
+        out.write((ram_read_buf >> 16) & 0xff);
+        if (((4 * i) + 3) >= udp_payload_len) {
+            break;
+        }
+        out.write((ram_read_buf >> 24) & 0xff);
     }
-
-    clear_txbuf(tx_buf, MAX_RAWUDP_OUT_PAYLOAD_LEN, MAX_TX_UDP_PAYLOAD_LEN);
 }
 
 /* Cyber func=inline */
