@@ -190,19 +190,23 @@ module ros2_ether #(
     input  wire [35:0] arp_req_timeout
 );
 
-wire tx_ip_hdr_valid;
-wire tx_ip_hdr_ready;
-wire [5:0] tx_ip_dscp;
-wire [1:0] tx_ip_ecn;
-wire [15:0] tx_ip_length;
-wire [7:0] tx_ip_ttl;
-wire [7:0] tx_ip_protocol;
-wire [31:0] tx_ip_source_ip;
-wire [31:0] tx_ip_dest_ip;
-wire [7:0] tx_ip_payload_axis_tdata;
-wire tx_ip_payload_axis_tvalid;
-wire tx_ip_payload_axis_tready;
-wire tx_ip_payload_axis_tlast;
+wire tx_udp_hdr_valid;
+wire tx_udp_hdr_ready;
+wire [5:0] tx_udp_ip_dscp;
+wire [1:0] tx_udp_ip_ecn;
+wire [15:0] tx_udp_ip_length;
+wire [7:0] tx_udp_ip_ttl;
+wire [7:0] tx_udp_ip_protocol;
+wire [31:0] tx_udp_ip_source_ip;
+wire [31:0] tx_udp_ip_dest_ip;
+wire [15:0] tx_udp_source_port;
+wire [15:0] tx_udp_dest_port;
+wire [15:0] tx_udp_length;
+wire [15:0] tx_udp_checksum;
+wire [7:0] tx_udp_payload_axis_tdata;
+wire tx_udp_payload_axis_tvalid;
+wire tx_udp_payload_axis_tready;
+wire tx_udp_payload_axis_tlast;
 
 wire rx_ip_hdr_valid;
 wire rx_ip_hdr_ready;
@@ -238,20 +242,24 @@ verilog_ethernet verilog_ethernet_inst (
     .phy_tx_en(phy_tx_en),
     .phy_reset_n(phy_rst_n),
 
-    .tx_ip_hdr_valid(tx_ip_hdr_valid),
-    .tx_ip_hdr_ready(tx_ip_hdr_ready),
-    .tx_ip_dscp(tx_ip_dscp),
-    .tx_ip_ecn(tx_ip_ecn),
-    .tx_ip_length(tx_ip_length),
-    .tx_ip_ttl(tx_ip_ttl),
-    .tx_ip_protocol(tx_ip_protocol),
-    .tx_ip_source_ip(tx_ip_source_ip),
-    .tx_ip_dest_ip(tx_ip_dest_ip),
-    .tx_ip_payload_axis_tdata(tx_ip_payload_axis_tdata),
-    .tx_ip_payload_axis_tvalid(tx_ip_payload_axis_tvalid),
-    .tx_ip_payload_axis_tready(tx_ip_payload_axis_tready),
-    .tx_ip_payload_axis_tlast(tx_ip_payload_axis_tlast),
-    .tx_ip_payload_axis_tuser(1'b0),
+    .tx_udp_hdr_valid(tx_udp_ip_hdr_valid),
+    .tx_udp_hdr_ready(tx_udp_ip_hdr_ready),
+    .tx_udp_ip_dscp(tx_udp_ip_dscp),
+    .tx_udp_ip_ecn(tx_udp_ip_ecn),
+    .tx_udp_ip_length(tx_udp_ip_length),
+    .tx_udp_ip_ttl(tx_udp_ip_ttl),
+    .tx_udp_ip_protocol(tx_udp_ip_protocol),
+    .tx_udp_ip_source_ip(tx_udp_ip_source_ip),
+    .tx_udp_ip_dest_ip(tx_udp_ip_dest_ip),
+    .tx_udp_source_port(tx_udp_source_port),
+    .tx_udp_dest_port(tx_udp_dest_port),
+    .tx_udp_length(tx_udp_length),
+    .tx_udp_checksum(tx_udp_checksum),
+    .tx_udp_payload_axis_tdata(tx_udp_payload_axis_tdata),
+    .tx_udp_payload_axis_tvalid(tx_udp_payload_axis_tvalid),
+    .tx_udp_payload_axis_tready(tx_udp_payload_axis_tready),
+    .tx_udp_payload_axis_tlast(tx_udp_payload_axis_tlast),
+    .tx_udp_payload_axis_tuser(1'b0),
 
     .rx_ip_hdr_valid(rx_ip_hdr_valid),
     .rx_ip_hdr_ready(rx_ip_hdr_ready),
@@ -515,19 +523,23 @@ ros2_eth_tx_adapter (
     .i_din_data(tx_fifo_dout),
     .i_din_empty_n(~tx_fifo_empty),
     .o_din_rd_en(tx_fifo_rd_en),
-    .o_tx_hdr_valid(tx_ip_hdr_valid),
-    .i_tx_hdr_ready(tx_ip_hdr_ready),
-    .o_tx_ip_dest_ip(tx_ip_dest_ip),
-    .o_tx_ip_source_ip(tx_ip_source_ip),
-    .o_tx_ip_protocol(tx_ip_protocol),
-    .o_tx_ip_ttl(tx_ip_ttl),
-    .o_tx_ip_length(tx_ip_length),
-    .o_tx_ip_ecn(tx_ip_ecn),
-    .o_tx_ip_dscp(tx_ip_dscp),
-    .o_tx_payload_tvalid(tx_ip_payload_axis_tvalid),
-    .i_tx_payload_tready(tx_ip_payload_axis_tready),
-    .o_tx_payload_tdata(tx_ip_payload_axis_tdata),
-    .o_tx_payload_tlast(tx_ip_payload_axis_tlast),
+    .o_tx_hdr_valid(tx_udp_ip_hdr_valid),
+    .i_tx_hdr_ready(tx_udp_ip_hdr_ready),
+    .o_tx_ip_dest_ip(tx_udp_ip_dest_ip),
+    .o_tx_ip_source_ip(tx_udp_ip_source_ip),
+    .o_tx_ip_protocol(tx_udp_ip_protocol),
+    .o_tx_ip_ttl(tx_udp_ip_ttl),
+    .o_tx_ip_length(tx_udp_ip_length),
+    .o_tx_ip_ecn(tx_udp_ip_ecn),
+    .o_tx_ip_dscp(tx_udp_ip_dscp),
+    .o_tx_udp_source_port(tx_udp_source_port),
+    .o_tx_udp_dest_port(tx_udp_dest_port),
+    .o_tx_udp_length(tx_udp_length),
+    .o_tx_udp_checksum(tx_udp_checksum),
+    .o_tx_payload_tvalid(tx_udp_payload_axis_tvalid),
+    .i_tx_payload_tready(tx_udp_payload_axis_tready),
+    .o_tx_payload_tdata(tx_udp_payload_axis_tdata),
+    .o_tx_payload_tlast(tx_udp_payload_axis_tlast),
     .o_tx_payload_tkeep(),
     .o_tx_payload_tstrb()
 );
