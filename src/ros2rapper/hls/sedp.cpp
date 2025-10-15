@@ -598,10 +598,9 @@ void sedp_writer(
     const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
     int64_t seqnum, const uint8_t usertraffic_addr[4],
     const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
-    hls_stream<uint8_t> &out,
-    const uint8_t topic_name[MAX_TOPIC_NAME_LEN], uint8_t topic_name_len,
-    const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len,
-    timestamp now) {
+    hls_stream<uint8_t> &out, const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
+    uint8_t topic_name_len, const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
+    uint8_t type_name_len, timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -1060,7 +1059,7 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
                   const uint8_t reader_guid_prefix[12],
                   const uint8_t reader_entity_id[4], uint8_t snstate_base,
                   bool snstate_is_empty, const uint32_t cnt,
-                  uint8_t buf[SEDP_ACKNACK_TOT_LEN]) {
+                  hls_stream<uint8_t> &out) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -1069,77 +1068,75 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     static const uint8_t sbm_flags = 0;
 #endif // SBM_ENDIAN_BIG
 
-    buf[0] = 'R';
-    buf[1] = 'T';
-    buf[2] = 'P';
-    buf[3] = 'S';
-    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8] = writer_guid_prefix[0];
-    buf[9] = writer_guid_prefix[1];
-    buf[10] = writer_guid_prefix[2];
-    buf[11] = writer_guid_prefix[3];
-    buf[12] = writer_guid_prefix[4];
-    buf[13] = writer_guid_prefix[5];
-    buf[14] = writer_guid_prefix[6];
-    buf[15] = writer_guid_prefix[7];
-    buf[16] = writer_guid_prefix[8];
-    buf[17] = writer_guid_prefix[9];
-    buf[18] = writer_guid_prefix[10];
-    buf[19] = writer_guid_prefix[11];
-    buf[20] = SBM_ID_INFO_DST;
-    buf[21] = sbm_flags;
-    buf[22] = S_BYTE0(GUID_PREFIX_SIZE);
-    buf[23] = S_BYTE1(GUID_PREFIX_SIZE);
-    buf[24] = reader_guid_prefix[0];
-    buf[25] = reader_guid_prefix[1];
-    buf[26] = reader_guid_prefix[2];
-    buf[27] = reader_guid_prefix[3];
-    buf[28] = reader_guid_prefix[4];
-    buf[29] = reader_guid_prefix[5];
-    buf[30] = reader_guid_prefix[6];
-    buf[31] = reader_guid_prefix[7];
-    buf[32] = reader_guid_prefix[8];
-    buf[33] = reader_guid_prefix[9];
-    buf[34] = reader_guid_prefix[10];
-    buf[35] = reader_guid_prefix[11];
-    buf[36] = SBM_ID_ACKNACK;
-    buf[37] = sbm_flags | SBM_FLAGS_FINAL;
-    buf[38] = S_BYTE0(SBM_ACKNACK_DATA_SIZE);
-    buf[39] = S_BYTE1(SBM_ACKNACK_DATA_SIZE);
-    buf[40] = reader_entity_id[0];
-    buf[41] = reader_entity_id[1];
-    buf[42] = reader_entity_id[2];
-    buf[43] = reader_entity_id[3];
-    buf[44] = writer_entity_id[0];
-    buf[45] = writer_entity_id[1];
-    buf[46] = writer_entity_id[2];
-    buf[47] = writer_entity_id[3];
-    buf[48] = 0;
-    buf[49] = 0;
-    buf[50] = 0;
-    buf[51] = 0;
-    buf[52] = snstate_base;
-    buf[53] = 0;
-    buf[54] = 0;
-    buf[55] = 0;
-    buf[56] = 1;
-    buf[57] = 0;
-    buf[58] = 0;
-    buf[59] = 0;
-    buf[60] = 0;
-    buf[61] = 0;
-    buf[62] = 0;
-    buf[63]
-        = snstate_is_empty
-              ? 0x00
-              : 0x80; // Reporting missing seqnum by ACKNACK is done one by one.
-    buf[64] = L_BYTE0(cnt);
-    buf[65] = L_BYTE1(cnt);
-    buf[66] = L_BYTE2(cnt);
-    buf[67] = L_BYTE3(cnt);
-
-    clear_txbuf(buf, SEDP_ACKNACK_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
+    out.write('R');
+    out.write('T');
+    out.write('P');
+    out.write('S');
+    out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
+    out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
+    out.write(RTPS_HDR_VENDOR_ID >> 8);
+    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(writer_guid_prefix[0]);
+    out.write(writer_guid_prefix[1]);
+    out.write(writer_guid_prefix[2]);
+    out.write(writer_guid_prefix[3]);
+    out.write(writer_guid_prefix[4]);
+    out.write(writer_guid_prefix[5]);
+    out.write(writer_guid_prefix[6]);
+    out.write(writer_guid_prefix[7]);
+    out.write(writer_guid_prefix[8]);
+    out.write(writer_guid_prefix[9]);
+    out.write(writer_guid_prefix[10]);
+    out.write(writer_guid_prefix[11]);
+    out.write(SBM_ID_INFO_DST);
+    out.write(sbm_flags);
+    out.write(S_BYTE0(GUID_PREFIX_SIZE));
+    out.write(S_BYTE1(GUID_PREFIX_SIZE));
+    out.write(reader_guid_prefix[0]);
+    out.write(reader_guid_prefix[1]);
+    out.write(reader_guid_prefix[2]);
+    out.write(reader_guid_prefix[3]);
+    out.write(reader_guid_prefix[4]);
+    out.write(reader_guid_prefix[5]);
+    out.write(reader_guid_prefix[6]);
+    out.write(reader_guid_prefix[7]);
+    out.write(reader_guid_prefix[8]);
+    out.write(reader_guid_prefix[9]);
+    out.write(reader_guid_prefix[10]);
+    out.write(reader_guid_prefix[11]);
+    out.write(SBM_ID_ACKNACK);
+    out.write(sbm_flags | SBM_FLAGS_FINAL);
+    out.write(S_BYTE0(SBM_ACKNACK_DATA_SIZE));
+    out.write(S_BYTE1(SBM_ACKNACK_DATA_SIZE));
+    out.write(reader_entity_id[0]);
+    out.write(reader_entity_id[1]);
+    out.write(reader_entity_id[2]);
+    out.write(reader_entity_id[3]);
+    out.write(writer_entity_id[0]);
+    out.write(writer_entity_id[1]);
+    out.write(writer_entity_id[2]);
+    out.write(writer_entity_id[3]);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(snstate_base);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(1);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(0);
+    out.write(
+        snstate_is_empty
+            ? 0x00
+            : 0x80); // Reporting missing seqnum by ACKNACK is done one by one.
+    out.write(L_BYTE0(cnt));
+    out.write(L_BYTE1(cnt));
+    out.write(L_BYTE2(cnt));
+    out.write(L_BYTE3(cnt));
 }
