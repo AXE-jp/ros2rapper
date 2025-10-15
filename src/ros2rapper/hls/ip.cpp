@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "checksum.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 
 #ifdef __SYNTHESIS__
