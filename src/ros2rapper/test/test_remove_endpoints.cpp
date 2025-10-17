@@ -468,10 +468,40 @@ static int test_remove_dead_endpoints_2() {
     return 0;
 }
 
+static int test_remove_dead_endpoints_3() {
+    // Set up tables.
+    // sedp_reader_tbl[0] is alive and has a child app_reader_tbl[0].
+    sedp_reader_tbl[0].alive = true;
+    sedp_reader_tbl[0].children[0] = true;
+    sedp_reader_tbl[0].timestamp = 0;
+    sedp_reader_tbl[0].lease_duration = static_cast<int64_t>(20) << 32;
+    // sedp_reader_tbl[0] is dead and had a child app_reader_tbl[0].
+    sedp_reader_tbl[1].alive = false;
+    sedp_reader_tbl[1].children[0] = true;
+    sedp_reader_tbl[1].timestamp = 0;
+    sedp_reader_tbl[1].lease_duration = static_cast<int64_t>(20) << 32;
+    // app_reader_tbl[0] is alive.
+    app_reader_tbl[0].alive = true;
+
+    int64_t timestamp_i64 = static_cast<int64_t>(30) << 32;
+    // sedp_reader_tbl[1] is already dead, so its children should not be removed
+    // by remove_dead_endpoints.
+    remove_dead_endpoints(1, sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    assert(app_reader_tbl[0].alive);
+    // sedp_reader_tbl[0] is alive, so its children should be removed by
+    // remove_dead_endpoints.
+    remove_dead_endpoints(0, sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    assert(!sedp_reader_tbl[0].alive);
+    assert(!app_reader_tbl[0].alive);
+
+    return 0;
+}
+
 int test_remove_endpoints() {
     assert(test_update_liveliness() == 0);
     assert(test_update_timestamp() == 0);
     assert(test_remove_dead_endpoints_1() == 0);
     assert(test_remove_dead_endpoints_2() == 0);
+    assert(test_remove_dead_endpoints_3() == 0);
     return 0;
 }
