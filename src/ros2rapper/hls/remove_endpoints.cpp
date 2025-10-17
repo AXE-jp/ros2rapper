@@ -4,20 +4,18 @@
 #include "remove_endpoints.hpp"
 
 /* Cyber func=inline */
-static void remove_sedp_endpoint(sedp_reader_id_t id,
-                                 sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                                 app_endpoint  app_reader_tbl[APP_READER_MAX]) {
+static void remove_sedp_endpoint(sedp_endpoint *sedp_reader,
+                                 app_endpoint app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
-    if (id < SEDP_READER_MAX) {
-        // Remove sedp_reader_tbl[id].
-        sedp_reader_tbl[id].alive = false;
-        // Remove the children of sedp_reader_tbl[id].
-        /* Cyber unroll_times=all */
-        for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS array_partition variable = sedp_reader->children complete dim = 1
+    // Remove sedp_reader
+    sedp_reader->alive = false;
+    // Remove the children of sedp_reader
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
-            if (sedp_reader_tbl[id].children[j]) {
-                app_reader_tbl[j].alive = false;
-            }
+        if (sedp_reader->children[j]) {
+            app_reader_tbl[j].alive = false;
         }
     }
 }
@@ -94,12 +92,21 @@ void update_liveliness(hls_uint<9>   in,
             offset = 0;
             state = STATE_READ_SBM_HDR;
             // Update timestamps of matched endpoints in sedp_reader_tbl.
+            sedp_reader_id_t sedp_matched_idx = 0;
+            bool             is_participant_matched = false;
             /* Cyber unroll_times=all */
             for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
                 if (!sedp_unmatched[j]) {
-                    sedp_reader_tbl[j].timestamp = timestamp_i64;
+                    sedp_matched_idx = j;
+                    is_participant_matched = true;
+                    break;
                 }
+            }
+            if (is_participant_matched) {
+                sedp_endpoint reader = sedp_reader_tbl[sedp_matched_idx];
+                reader.timestamp = timestamp_i64;
+                sedp_reader_tbl[sedp_matched_idx] = reader;
             }
         }
         break;
@@ -214,17 +221,23 @@ void update_liveliness(hls_uint<9>   in,
         break;
     case STATE_READ_STATUS_INFO:
         // See RTPS 2.3 specification 9.6.3.9.
-        if (offset == 3) {
-            if ((data & 3) != 0) {
-                // disposed (0x01) or unregistered (0x02)
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        if ((offset == 3) && ((data & 3) != 0)) {
+            // disposed (0x01) or unregistered (0x02)
+            sedp_reader_id_t sedp_matched_idx = 0;
+            bool             is_participant_matched = false;
+            /* Cyber unroll_times=all */
+            for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
-                    if (!sedp_unmatched[j]) {
-                        remove_sedp_endpoint(j, sedp_reader_tbl,
-                                             app_reader_tbl);
-                    }
+                if (!sedp_unmatched[j]) {
+                    sedp_matched_idx = j;
+                    is_participant_matched = true;
+                    break;
                 }
+            }
+            if (is_participant_matched) {
+                sedp_endpoint reader = sedp_reader_tbl[sedp_matched_idx];
+                remove_sedp_endpoint(&reader, app_reader_tbl);
+                sedp_reader_tbl[sedp_matched_idx] = reader;
             }
         }
         offset++;
@@ -261,9 +274,11 @@ void remove_dead_endpoints(sedp_reader_id_t id,
 #pragma HLS inline
     // Check timeout
     if (id < SEDP_READER_MAX) {
-        if ((timestamp_i64 - sedp_reader_tbl[id].timestamp)
-            > sedp_reader_tbl[id].lease_duration) {
-            remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
+        sedp_endpoint reader = sedp_reader_tbl[id];
+        if (reader.alive
+            && ((timestamp_i64 - reader.timestamp) > reader.lease_duration)) {
+            remove_sedp_endpoint(&reader, app_reader_tbl);
+            sedp_reader_tbl[id] = reader;
         }
     }
 }

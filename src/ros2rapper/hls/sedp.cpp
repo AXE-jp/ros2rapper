@@ -20,7 +20,7 @@ void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
 #pragma HLS unroll
-        if (tbl[i].guid_prefix[idx] != x)
+        if ((!tbl[i].alive) || (tbl[i].guid_prefix[idx] != x))
             unmatched[i] = true;
     }
 }
@@ -33,7 +33,7 @@ static void compare_entity_id(const uint8_t      x,
     /* Cyber unroll_times=all */
     for (int i = 0; i < APP_READER_MAX; i++) {
 #pragma HLS unroll
-        if (tbl[i].entity_id[idx] != x)
+        if ((!tbl[i].alive) || (tbl[i].entity_id[idx] != x))
             unmatched[i] = true;
     }
 }
@@ -142,17 +142,21 @@ void sedp_reader(
     app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
     sedp_reader_id_t sedp_matched_idx = 0;
-    bool is_participant_matched = false;
+    bool             is_participant_matched = false;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
-        if (sedp_reader_tbl[j].alive && !sedp_unmatched[j]) {
+        if (!sedp_unmatched[j]) {
             sedp_matched_idx = j;
             is_participant_matched = true;
             break;
         }
     }
-    sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
+    sedp_endpoint participant = sedp_reader_tbl[sedp_matched_idx];
+#pragma HLS array_partition variable = participant.ip_addr complete dim = 1
+#pragma HLS array_partition variable = participant.udp_port complete dim = 1
+#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = participant.children complete dim = 1
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -358,7 +362,7 @@ void sedp_reader(
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
-                        if (app_reader_tbl[j].alive && !app_unmatched[j]) {
+                        if (!app_unmatched[j]) {
                             unknown = false;
                         }
                     }
@@ -579,6 +583,9 @@ void sedp_reader(
     default:; // do nothing
     }
 
+    if (is_participant_matched) {
+        sedp_reader_tbl[sedp_matched_idx] = participant;
+    }
     if (end) {
         reset_app_unmatched(app_unmatched);
         reset_sedp_unmatched(sedp_unmatched);

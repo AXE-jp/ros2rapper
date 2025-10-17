@@ -13,10 +13,10 @@ void compare_guid_prefix_of_sedp_endpoint(
     const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
     bool unmatched[SEDP_READER_MAX]) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
     for (int i = 0; i < SEDP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].guid_prefix[idx] != x)
+        sedp_endpoint reader = tbl[i];
+#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
+        if ((!reader.alive) || (reader.guid_prefix[idx] != x))
             unmatched[i] = true;
     }
 }
@@ -76,12 +76,16 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     }
 
     // Find an unused point in reader_tbl.
+    sedp_endpoint reader;
+#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
+#pragma HLS array_partition variable = reader.udp_port complete dim = 1
+#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = reader.children complete dim = 1
     sedp_reader_id_t unused_reader_id;
-    /* Cyber unroll_times=all */
     for (unused_reader_id = 0; unused_reader_id < SEDP_READER_MAX;
          unused_reader_id++) {
-#pragma HLS unroll
-        if (!reader_tbl[unused_reader_id].alive) {
+        reader = reader_tbl[unused_reader_id];
+        if (!reader.alive) {
             break;
         }
     }
@@ -89,9 +93,8 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
         return;
     }
 
-    sedp_endpoint &reader = reader_tbl[unused_reader_id];
-    uint8_t        data = in & 0xff;
-    bool           end = in & 0x100;
+    uint8_t data = in & 0xff;
+    bool    end = in & 0x100;
 
     switch (state) {
     case 0:
@@ -182,7 +185,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
                     /* Cyber unroll_times=all */
                     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
-                        if (reader_tbl[j].alive && !unmatched[j]) {
+                        if (!unmatched[j]) {
                             unknown = false;
                         }
                     }
@@ -318,6 +321,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     case 8:; // do nothing
     }
 
+    reader_tbl[unused_reader_id] = reader;
     if (end) {
         reset_sedp_unmatched(unmatched);
         flags = 0;

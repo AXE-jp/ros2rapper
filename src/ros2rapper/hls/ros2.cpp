@@ -215,88 +215,58 @@ static void app_writer_out(topic_id_t    topic_id,
         spdp_writer_out(metatraffic_port, default_port, conf, &msg_metadata);  \
     } while (0)
 
-#define SEDP_PUB_WRITER_OUT(topic_id, sedp_reader_id)                          \
+#define SEDP_PUB_WRITER_OUT(topic_id, reader)                                  \
     do {                                                                       \
-        if (sedp_reader_tbl[(sedp_reader_id)].alive) {                         \
-            sedp_reader_tbl[(sedp_reader_id)].builtin_pubwr_lastsn++;          \
-            sedp_writer_out(                                                   \
-                MSG_TYPE_SEDP_PUB, topic_id,                                   \
-                sedp_reader_tbl[(sedp_reader_id)].ip_addr,                     \
-                sedp_reader_tbl[(sedp_reader_id)].udp_port,                    \
-                sedp_reader_tbl[(sedp_reader_id)].guid_prefix,                 \
-                sedp_reader_tbl[(sedp_reader_id)].builtin_pubwr_lastsn,        \
-                default_port, app_writer_entity_id_list[(topic_id)],           \
-                &msg_metadata);                                                \
-        }                                                                      \
+        (reader).builtin_pubwr_lastsn++;                                       \
+        sedp_writer_out(MSG_TYPE_SEDP_PUB, topic_id, (reader).ip_addr,         \
+                        (reader).udp_port, (reader).guid_prefix,               \
+                        (reader).builtin_pubwr_lastsn, default_port,           \
+                        app_writer_entity_id_list[(topic_id)], &msg_metadata); \
     } while (0)
 
-#define SEDP_SUB_WRITER_OUT(topic_id, sedp_reader_id)                          \
+#define SEDP_SUB_WRITER_OUT(topic_id, reader)                                  \
     do {                                                                       \
-        if (sedp_reader_tbl[(sedp_reader_id)].alive) {                         \
-            sedp_reader_tbl[(sedp_reader_id)].builtin_subwr_lastsn++;          \
-            sedp_writer_out(                                                   \
-                MSG_TYPE_SEDP_SUB, topic_id,                                   \
-                sedp_reader_tbl[(sedp_reader_id)].ip_addr,                     \
-                sedp_reader_tbl[(sedp_reader_id)].udp_port,                    \
-                sedp_reader_tbl[(sedp_reader_id)].guid_prefix,                 \
-                sedp_reader_tbl[(sedp_reader_id)].builtin_subwr_lastsn,        \
-                default_port, app_reader_entity_id_list[(topic_id)],           \
-                &msg_metadata);                                                \
-        }                                                                      \
+        (reader).builtin_subwr_lastsn++;                                       \
+        sedp_writer_out(MSG_TYPE_SEDP_SUB, topic_id, (reader).ip_addr,         \
+                        (reader).udp_port, (reader).guid_prefix,               \
+                        (reader).builtin_subwr_lastsn, default_port,           \
+                        app_reader_entity_id_list[(topic_id)], &msg_metadata); \
     } while (0)
 
-#define SEDP_PUB_HEARTBEAT_OUT(id)                                             \
+#define SEDP_PUB_HEARTBEAT_OUT(reader)                                         \
+    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, (reader).ip_addr,          \
+                       (reader).udp_port, (reader).guid_prefix,                \
+                       (reader).builtin_pubwr_lastsn + 1,                      \
+                       (reader).builtin_pubwr_lastsn,                          \
+                       (reader).pub_heartbeat_cnt, &msg_metadata)
+
+#define SEDP_SUB_HEARTBEAT_OUT(reader)                                         \
     do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_heartbeat_out(                                                \
-                MSG_TYPE_SEDP_HEARTBEAT_PUB, sedp_reader_tbl[(id)].ip_addr,    \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix,                             \
-                sedp_reader_tbl[(id)].builtin_pubwr_lastsn + 1,                \
-                sedp_reader_tbl[(id)].builtin_pubwr_lastsn,                    \
-                sedp_reader_tbl[(id)].pub_heartbeat_cnt, &msg_metadata);       \
-        }                                                                      \
+        sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, (reader).ip_addr,      \
+                           (reader).udp_port, (reader).guid_prefix,            \
+                           (reader).builtin_subwr_lastsn + 1,                  \
+                           (reader).builtin_subwr_lastsn,                      \
+                           (reader).sub_heartbeat_cnt, &msg_metadata);         \
+        if ((reader).initial_send_counter != 3)                                \
+            (reader).initial_send_counter++;                                   \
     } while (0)
 
-#define SEDP_SUB_HEARTBEAT_OUT(id)                                             \
+#define SEDP_PUB_ACKNACK_OUT(reader)                                           \
     do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_heartbeat_out(                                                \
-                MSG_TYPE_SEDP_HEARTBEAT_SUB, sedp_reader_tbl[(id)].ip_addr,    \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix,                             \
-                sedp_reader_tbl[(id)].builtin_subwr_lastsn + 1,                \
-                sedp_reader_tbl[(id)].builtin_subwr_lastsn,                    \
-                sedp_reader_tbl[(id)].sub_heartbeat_cnt, &msg_metadata);       \
-            if (sedp_reader_tbl[(id)].initial_send_counter != 3)               \
-                sedp_reader_tbl[(id)].initial_send_counter++;                  \
-        }                                                                      \
+        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, (reader).ip_addr,          \
+                         (reader).udp_port, (reader).guid_prefix,              \
+                         snstate_base, snstate_is_empty,                       \
+                         (reader).pub_acknack_cnt, &msg_metadata);             \
+        (reader).builtin_pubrd_acknack_req = false;                            \
     } while (0)
 
-#define SEDP_PUB_ACKNACK_OUT(id)                                               \
+#define SEDP_SUB_ACKNACK_OUT(reader)                                           \
     do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_acknack_out(                                                  \
-                MSG_TYPE_SEDP_ACKNACK_PUB, sedp_reader_tbl[(id)].ip_addr,      \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, snstate_base,               \
-                snstate_is_empty, sedp_reader_tbl[(id)].pub_acknack_cnt,       \
-                &msg_metadata);                                                \
-            sedp_reader_tbl[(id)].builtin_pubrd_acknack_req = false;           \
-        }                                                                      \
-    } while (0)
-
-#define SEDP_SUB_ACKNACK_OUT(id)                                               \
-    do {                                                                       \
-        if (sedp_reader_tbl[(id)].alive) {                                     \
-            sedp_acknack_out(                                                  \
-                MSG_TYPE_SEDP_ACKNACK_SUB, sedp_reader_tbl[(id)].ip_addr,      \
-                sedp_reader_tbl[(id)].udp_port,                                \
-                sedp_reader_tbl[(id)].guid_prefix, snstate_base,               \
-                snstate_is_empty, sedp_reader_tbl[(id)].sub_acknack_cnt,       \
-                &msg_metadata);                                                \
-            sedp_reader_tbl[(id)].builtin_subrd_acknack_req = false;           \
-        }                                                                      \
+        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, (reader).ip_addr,          \
+                         (reader).udp_port, (reader).guid_prefix,              \
+                         snstate_base, snstate_is_empty,                       \
+                         (reader).sub_acknack_cnt, &msg_metadata);             \
+        (reader).builtin_subrd_acknack_req = false;                            \
     } while (0)
 
 /* Cyber func=inline */
@@ -414,6 +384,12 @@ static void ros2_out(
     msg_metadata.now.fraction
         = static_cast<uint32_t>(timestamp_i64 & 0xffffffff);
 
+    sedp_endpoint reader;
+#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
+#pragma HLS array_partition variable = reader.udp_port complete dim = 1
+#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = reader.children complete dim = 1
+
     if (!out.full()) {
         if (*rawudp_txbuf_grant == 1) {
             msg_metadata.message_type = MSG_TYPE_RAWUDP;
@@ -425,12 +401,12 @@ static void ros2_out(
                 //   2. there exists a living sedp_endpoint whose
                 //      initial_send_counter is less than three.
                 bool send = cnt_spdp_wr_elapsed;
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-                    if (sedp_reader_tbl[j].alive
-                        && (sedp_reader_tbl[j].initial_send_counter < 3)) {
-                        send = true;
+                if (!send) {
+                    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+                        reader = sedp_reader_tbl[j];
+                        if (reader.alive && (reader.initial_send_counter < 3)) {
+                            send = true;
+                        }
                     }
                 }
                 if (send) {
@@ -474,11 +450,14 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send published topic data
-                    if ((tx_progress < SEDP_READER_MAX)
-                        && ((sedp_reader_tbl[tx_progress].initial_send_counter
-                             < 3)
-                            || cnt_sedp_pub_wr_elapsed)) {
-                        SEDP_PUB_WRITER_OUT(tx_topic_progress, tx_progress);
+                    if (tx_progress < SEDP_READER_MAX) {
+                        reader = sedp_reader_tbl[tx_progress];
+                        if (reader.alive
+                            && ((reader.initial_send_counter < 3)
+                                || cnt_sedp_pub_wr_elapsed)) {
+                            SEDP_PUB_WRITER_OUT(tx_topic_progress, reader);
+                            sedp_reader_tbl[tx_progress] = reader;
+                        }
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -518,11 +497,14 @@ static void ros2_out(
                         tx_cnt_elapsed++;
                     }
                     // Send subscribed topic data
-                    if ((tx_progress < SEDP_READER_MAX)
-                        && ((sedp_reader_tbl[tx_progress].initial_send_counter
-                             < 3)
-                            || cnt_sedp_sub_wr_elapsed)) {
-                        SEDP_SUB_WRITER_OUT(tx_topic_progress, tx_progress);
+                    if (tx_progress < SEDP_READER_MAX) {
+                        reader = sedp_reader_tbl[tx_progress];
+                        if (reader.alive
+                            && ((reader.initial_send_counter < 3)
+                                || cnt_sedp_sub_wr_elapsed)) {
+                            SEDP_SUB_WRITER_OUT(tx_topic_progress, reader);
+                            sedp_reader_tbl[tx_progress] = reader;
+                        }
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -536,10 +518,14 @@ static void ros2_out(
                 if (cnt_sedp_pub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                if ((tx_progress < SEDP_READER_MAX)
-                    && ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
-                        || cnt_sedp_pub_hb_elapsed)) {
-                    SEDP_PUB_HEARTBEAT_OUT(tx_progress);
+                if (tx_progress < SEDP_READER_MAX) {
+                    reader = sedp_reader_tbl[tx_progress];
+                    if (reader.alive
+                        && ((reader.initial_send_counter < 3)
+                            || cnt_sedp_pub_hb_elapsed)) {
+                        SEDP_PUB_HEARTBEAT_OUT(reader);
+                        sedp_reader_tbl[tx_progress] = reader;
+                    }
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -562,10 +548,14 @@ static void ros2_out(
                 if (cnt_sedp_sub_hb_elapsed)
                     tx_cnt_elapsed++;
 
-                if ((tx_progress < SEDP_READER_MAX)
-                    && ((sedp_reader_tbl[tx_progress].initial_send_counter < 3)
-                        || cnt_sedp_sub_hb_elapsed)) {
-                    SEDP_SUB_HEARTBEAT_OUT(tx_progress);
+                if (tx_progress < SEDP_READER_MAX) {
+                    reader = sedp_reader_tbl[tx_progress];
+                    if (reader.alive
+                        && ((reader.initial_send_counter < 3)
+                            || cnt_sedp_sub_hb_elapsed)) {
+                        SEDP_SUB_HEARTBEAT_OUT(reader);
+                        sedp_reader_tbl[tx_progress] = reader;
+                    }
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -589,16 +579,18 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    const sedp_endpoint &reader = sedp_reader_tbl[tx_progress];
+                    reader = sedp_reader_tbl[tx_progress];
                     uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
                     uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
                     bool    acknack_req = reader.builtin_pubrd_acknack_req;
                     uint8_t snstate_base = rd_seqnum;
                     bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-                    if (cnt_sedp_pub_an_elapsed
-                        || (acknack_req && !snstate_is_empty)) {
-                        SEDP_PUB_ACKNACK_OUT(tx_progress);
+                    if (reader.alive
+                        && (cnt_sedp_pub_an_elapsed
+                            || (acknack_req && !snstate_is_empty))) {
+                        SEDP_PUB_ACKNACK_OUT(reader);
+                        sedp_reader_tbl[tx_progress] = reader;
                     }
                 }
 
@@ -623,16 +615,18 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    const sedp_endpoint &reader = sedp_reader_tbl[tx_progress];
+                    reader = sedp_reader_tbl[tx_progress];
                     uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
                     uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
                     bool    acknack_req = reader.builtin_subrd_acknack_req;
                     uint8_t snstate_base = rd_seqnum;
                     bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
 
-                    if (cnt_sedp_sub_an_elapsed
-                        || (acknack_req && !snstate_is_empty)) {
-                        SEDP_SUB_ACKNACK_OUT(tx_progress);
+                    if (reader.alive
+                        && (cnt_sedp_sub_an_elapsed
+                            || (acknack_req && !snstate_is_empty))) {
+                        SEDP_SUB_ACKNACK_OUT(reader);
+                        sedp_reader_tbl[tx_progress] = reader;
                     }
                 }
 
@@ -717,6 +711,8 @@ static void ros2_out(
 void ros2_main(
     hls_stream<uint8_t>            &in /* Cyber port_mode=cw_fifo */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
+    sedp_endpoint
+             sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
     uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
@@ -784,6 +780,8 @@ void ros2_main(
 
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = axis port = out
+#pragma HLS interface mode = ap_memory port = sedp_reader_tbl storage_type     \
+    = ram_1p                                                  latency = 1
 #pragma HLS interface mode = ap_memory port = udp_rxbuf
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
@@ -877,9 +875,7 @@ void ros2_main(
 
 #pragma HLS interface mode = ap_none port = timestamp_i64
 
-    static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-    static app_endpoint  app_reader_tbl[APP_READER_MAX];
-#pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
+    static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
     // This flag becomes true when ros2rapper begins to read the GUID prefix in
