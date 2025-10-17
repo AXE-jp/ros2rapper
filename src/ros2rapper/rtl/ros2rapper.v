@@ -310,12 +310,12 @@ wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
 
-reg  [`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH-1:0] ros2_sedp_reader_external_tbl[0:`ROS2_SEDP_READER_MAX-1];
-wire [$clog2(`ROS2_SEDP_READER_MAX)-1:0] ros2_sedp_reader_external_tbl_address;
-wire ros2_sedp_reader_external_tbl_ce;
-wire ros2_sedp_reader_external_tbl_we;
-wire [`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH-1:0] ros2_sedp_reader_external_tbl_wdata;
-reg  [`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH-1:0] ros2_sedp_reader_external_tbl_rdata;
+reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX-1];
+wire [$clog2(`ROS2_SEDP_READER_MAX)-1:0] ros2_sedp_reader_tbl_address;
+wire ros2_sedp_reader_tbl_ce;
+wire ros2_sedp_reader_tbl_we;
+wire [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_wdata;
+reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_rdata;
 
 integer j;
 `ifdef TARGET_XILINX
@@ -327,17 +327,17 @@ always @(posedge clk or negedge rst_n) begin
 `ifndef TARGET_XILINX
         for (j = 0; j < `ROS2_SEDP_READER_MAX; j = j + 1) begin
 `ifdef TARGET_SIM
-            ros2_sedp_reader_external_tbl[j] = {`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH{1'b0}};
+            ros2_sedp_reader_tbl[j] = {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
 `else
-            ros2_sedp_reader_external_tbl[j] <= {`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH{1'b0}};
+            ros2_sedp_reader_tbl[j] <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
 `endif
         end
 `endif
-        ros2_sedp_reader_external_tbl_rdata <= {`ROS2_SEDP_ENDPOINT_EXTERNAL_WIDTH{1'b0}};
+        ros2_sedp_reader_tbl_rdata <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
     end else begin
-        ros2_sedp_reader_external_tbl_rdata <= ros2_sedp_reader_external_tbl[ros2_sedp_reader_external_tbl_address];
-        if (ros2_sedp_reader_external_tbl_ce & ros2_sedp_reader_external_tbl_we) begin
-            ros2_sedp_reader_external_tbl[ros2_sedp_reader_external_tbl_address] <= ros2_sedp_reader_external_tbl_wdata;
+        ros2_sedp_reader_tbl_rdata <= ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address];
+        if (ros2_sedp_reader_tbl_ce & ros2_sedp_reader_tbl_we) begin
+            ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address] <= ros2_sedp_reader_tbl_wdata;
         end
     end
 end
@@ -396,11 +396,11 @@ ros2_main (
     .out_r_TREADY(ros2_msg_metadata_ready),
     .out_r_TVALID(ros2_msg_metadata_valid),
 
-    .sedp_reader_external_tbl_address0(ros2_sedp_reader_external_tbl_address),
-    .sedp_reader_external_tbl_ce0(ros2_sedp_reader_external_tbl_ce),
-    .sedp_reader_external_tbl_we0(ros2_sedp_reader_external_tbl_we),
-    .sedp_reader_external_tbl_d0(ros2_sedp_reader_external_tbl_wdata),
-    .sedp_reader_external_tbl_q0(ros2_sedp_reader_external_tbl_rdata),
+    .sedp_reader_tbl_address0(ros2_sedp_reader_tbl_address),
+    .sedp_reader_tbl_ce0(ros2_sedp_reader_tbl_ce),
+    .sedp_reader_tbl_we0(ros2_sedp_reader_tbl_we),
+    .sedp_reader_tbl_d0(ros2_sedp_reader_tbl_wdata),
+    .sedp_reader_tbl_q0(ros2_sedp_reader_tbl_rdata),
 
     .udp_rxbuf_address0(udp_rxbuf_addr),
     .udp_rxbuf_ce0(udp_rxbuf_ce),
@@ -707,11 +707,11 @@ ros2_main (
   .out_TREADY(ros2_msg_metadata_ready),
   .out_TVALID(ros2_msg_metadata_valid),
 
-  .sedp_reader_external_tbl_AD1(ros2_sedp_reader_external_tbl_address),
-  .sedp_reader_external_tbl_CS1(ros2_sedp_reader_external_tbl_ce),
-  .sedp_reader_external_tbl_WE1(ros2_sedp_reader_external_tbl_we),
-  .sedp_reader_external_tbl_WD1(ros2_sedp_reader_external_tbl_wdata),
-  .sedp_reader_external_tbl_RD1(ros2_sedp_reader_external_tbl_rdata),
+  .sedp_reader_tbl_AD1(ros2_sedp_reader_tbl_address),
+  .sedp_reader_tbl_CS1(ros2_sedp_reader_tbl_ce),
+  .sedp_reader_tbl_WE1(ros2_sedp_reader_tbl_we),
+  .sedp_reader_tbl_WD1(ros2_sedp_reader_tbl_wdata),
+  .sedp_reader_tbl_RD1(ros2_sedp_reader_tbl_rdata),
 
   .udp_rxbuf_CS1(udp_rxbuf_ce),
   .udp_rxbuf_AD1(udp_rxbuf_addr),
