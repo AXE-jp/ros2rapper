@@ -365,9 +365,9 @@ static int test_update_timestamp() {
                     = (j == target) ? test_update_liveliness_alive_data_1
                                           [k + RTPS_HDR_OFFSET_GUID_PREFIX]
                                     : 0;
+                sedp_reader_tbl[j].alive = true;
             }
         }
-        sedp_reader_tbl[target].alive = true;
         call_update_liveliness(&conf, sedp_reader_tbl, timestamp_i64_new,
                                test_update_liveliness_alive_data_1,
                                sizeof(test_update_liveliness_alive_data_1));
