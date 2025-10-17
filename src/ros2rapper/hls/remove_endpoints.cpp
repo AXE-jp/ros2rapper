@@ -8,7 +8,7 @@ static void remove_sedp_endpoint(sedp_reader_id_t id,
                                  sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
                                  app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
-    if (id < SEDP_READER_MAX) {
+    if ((id < SEDP_READER_MAX) && sedp_reader_tbl[id].alive) {
         // Remove sedp_reader_tbl[id].
         sedp_reader_tbl[id].alive = false;
         // Remove the children of sedp_reader_tbl[id].
@@ -261,9 +261,8 @@ void remove_dead_endpoints(sedp_reader_id_t id,
 #pragma HLS inline
     // Check timeout
     if (id < SEDP_READER_MAX) {
-        sedp_endpoint reader = sedp_reader_tbl[id];
-        if (reader.alive
-            && ((timestamp_i64 - reader.timestamp) > reader.lease_duration)) {
+        if ((timestamp_i64 - sedp_reader_tbl[id].timestamp)
+            > sedp_reader_tbl[id].lease_duration) {
             remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
         }
     }
