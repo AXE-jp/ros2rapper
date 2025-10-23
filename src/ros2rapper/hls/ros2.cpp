@@ -54,12 +54,12 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 #endif // USE_FIFOIF_ETHERNET
 
 /* Cyber func=inline */
-static void ros2_in(
-    hls_stream<rtps_data_t> &in,
-    sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint             app_reader_tbl[APP_READER_MAX],
-    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
-    int64_t timestamp_i64) {
+static void ros2_in(hls_stream<rtps_data_t> &in,
+                    sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+                    app_endpoint             app_reader_tbl[APP_READER_MAX],
+                    hls_uint<PUB_TOPICS_MAX> pub_enable,
+                    hls_uint<SUB_TOPICS_MAX> sub_enable,
+                    int64_t                  timestamp_i64) {
 #pragma HLS inline
 
     hls_uint<1> enable = (pub_enable != 0) || (sub_enable != 0);
@@ -74,8 +74,8 @@ static void ros2_in(
         return;
     }
 
-    bool is_sedp_reader_tbl_full = true;
-    bool is_participant_matched = false;
+    bool             is_sedp_reader_tbl_full = true;
+    bool             is_participant_matched = false;
     sedp_reader_id_t sedp_unused_idx;
     sedp_reader_id_t sedp_matched_idx;
 
@@ -103,7 +103,7 @@ static void ros2_in(
         }
     }
 
-    bool is_app_reader_tbl_full = true;
+    bool            is_app_reader_tbl_full = true;
     app_reader_id_t app_unused_idx;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
@@ -162,7 +162,8 @@ static void ros2_in(
         /* Cyber func=inline */
         for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
-            participant.lease_duration = static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+            participant.lease_duration
+                = static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
         }
         participant.timestamp = timestamp_i64;
         participant.alive = true;
@@ -889,7 +890,7 @@ static void ros2_out(
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_main(
-    hls_stream<rtps_data_t> &in /* Cyber port_mode=axi_stream */,
+    hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
     uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
@@ -1061,7 +1062,8 @@ void ros2_main(
     // RTPS message.
     static const bool reading_rtps_message = false;
 
-    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, timestamp_i64);
+    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64);
 
     ros2_out(out, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, conf,
              udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
