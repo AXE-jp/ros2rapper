@@ -54,6 +54,31 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 #endif // USE_FIFOIF_ETHERNET
 
 /* Cyber func=inline */
+static bool is_app_endpoint_matched(sedp_endpoint participant,
+                                    app_endpoint app_reader_tbl[APP_READER_MAX],
+                                    const uint8_t entity_id[4]) {
+#pragma HLS inline
+    /* Cyber unroll_times=4 */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (participant.children[j]) {
+            bool matched = true;
+            /* Cyber unroll_times=4 */
+            for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+                if (app_reader_tbl[j].entity_id[k] != entity_id[k]) {
+                    matched = false;
+                }
+            }
+            if (matched) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* Cyber func=inline */
 static void ros2_in(hls_stream<rtps_data_t> &in,
                     sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
                     app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -249,7 +274,9 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
                 reader.topic_id = rtps_data.topic_id;
                 reader.app_ep_type = APP_EP_SUB;
                 reader.alive = true;
-                if (!is_app_reader_tbl_full) {
+                if (!is_app_reader_tbl_full
+                    && !is_app_endpoint_matched(participant, app_reader_tbl,
+                                                reader.entity_id)) {
                     app_reader_tbl[app_unused_idx] = reader;
                     participant.children[app_unused_idx] = true;
                 }
@@ -283,7 +310,9 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
                 reader.topic_id = rtps_data.topic_id;
                 reader.app_ep_type = APP_EP_PUB;
                 reader.alive = true;
-                if (!is_app_reader_tbl_full) {
+                if (!is_app_reader_tbl_full
+                    && !is_app_endpoint_matched(participant, app_reader_tbl,
+                                                reader.entity_id)) {
                     app_reader_tbl[app_unused_idx] = reader;
                     participant.children[app_unused_idx] = true;
                 }
