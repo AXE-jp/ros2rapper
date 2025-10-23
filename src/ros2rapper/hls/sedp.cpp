@@ -142,7 +142,7 @@ void sedp_reader(
     app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
 
     sedp_reader_id_t sedp_matched_idx = 0;
-    bool is_participant_matched = false;
+    bool             is_participant_matched = false;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #pragma HLS unroll
