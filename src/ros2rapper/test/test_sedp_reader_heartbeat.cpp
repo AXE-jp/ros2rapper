@@ -8,10 +8,9 @@
 
 #include "endpoint.hpp"
 #include "hls.hpp"
-// #include "ros2.hpp"
+#include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "sedp.hpp"
-#include "test.hpp"
 #include "test_sedp_reader.hpp"
 
 /*

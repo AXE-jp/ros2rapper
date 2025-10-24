@@ -6,7 +6,6 @@
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "sedp.hpp"
-#include "test.hpp"
 #include "test_sedp_reader.hpp"
 
 void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],

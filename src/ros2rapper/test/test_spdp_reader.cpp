@@ -4,9 +4,9 @@
 #include "common.hpp"
 #include "duration.hpp"
 #include "hls.hpp"
+#include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "spdp.hpp"
-#include "test.hpp"
 #include <cassert>
 
 // SPDP message sample with PID_PARTICIPANT_LEASE_DURATION.
