@@ -145,11 +145,33 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
 #pragma HLS array_partition variable = participant.ip_addr complete dim = 1
 #pragma HLS array_partition variable = participant.udp_port complete dim = 1
 #pragma HLS array_partition variable = participant.children complete dim = 1
+
     app_endpoint reader;
 #pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = reader.ip_addr complete dim = 1
 #pragma HLS array_partition variable = reader.udp_port complete dim = 1
 #pragma HLS array_partition variable = reader.entity_id complete dim = 1
+    // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or RTPS_TYPE_SEDP_SUB
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+#pragma HLS unroll
+        reader.guid_prefix[j] = rtps_data.guid_prefix[j];
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader.ip_addr[j] = rtps_data.data[j];
+    }
+    reader.udp_port[0] = rtps_data.data[4];
+    reader.udp_port[1] = rtps_data.data[5];
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader.entity_id[j] = rtps_data.data[j + 6];
+    }
+    reader.topic_id = rtps_data.data[10];
+    reader.alive = true;
+
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
         if (is_participant_matched) {
@@ -250,30 +272,11 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_SEDP_PUB:
         if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[0];
+            uint8_t sn = rtps_data.data[11];
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_pubrd_rd_seqnum == sn) {
                 participant.builtin_pubrd_rd_seqnum++;
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-                    reader.guid_prefix[j] = rtps_data.guid_prefix[j];
-                }
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    reader.ip_addr[j] = rtps_data.data[j + 1];
-                }
-                reader.udp_port[0] = rtps_data.data[5];
-                reader.udp_port[1] = rtps_data.data[6];
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    reader.entity_id[j] = rtps_data.data[j + 7];
-                }
-                reader.topic_id = rtps_data.topic_id;
                 reader.app_ep_type = APP_EP_SUB;
-                reader.alive = true;
                 if (!is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant, app_reader_tbl,
                                                 reader.entity_id)) {
@@ -286,30 +289,11 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_SEDP_SUB:
         if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[0];
+            uint8_t sn = rtps_data.data[11];
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_subrd_rd_seqnum == sn) {
                 participant.builtin_subrd_rd_seqnum++;
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-                    reader.guid_prefix[j] = rtps_data.guid_prefix[j];
-                }
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    reader.ip_addr[j] = rtps_data.data[j + 1];
-                }
-                reader.udp_port[0] = rtps_data.data[5];
-                reader.udp_port[1] = rtps_data.data[6];
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    reader.entity_id[j] = rtps_data.data[j + 7];
-                }
-                reader.topic_id = rtps_data.topic_id;
                 reader.app_ep_type = APP_EP_PUB;
-                reader.alive = true;
                 if (!is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant, app_reader_tbl,
                                                 reader.entity_id)) {
