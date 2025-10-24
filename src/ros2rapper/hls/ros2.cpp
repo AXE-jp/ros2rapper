@@ -79,12 +79,11 @@ static bool is_app_endpoint_matched(sedp_endpoint participant,
 }
 
 /* Cyber func=inline */
-static void ros2_in(hls_stream<rtps_data_t> &in,
-                    sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
-                    app_endpoint             app_reader_tbl[APP_READER_MAX],
-                    hls_uint<PUB_TOPICS_MAX> pub_enable,
-                    hls_uint<SUB_TOPICS_MAX> sub_enable,
-                    int64_t                  timestamp_i64) {
+void ros2_in(hls_stream<rtps_data_t> &in,
+             sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+             app_endpoint             app_reader_tbl[APP_READER_MAX],
+             hls_uint<PUB_TOPICS_MAX> pub_enable,
+             hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
 #pragma HLS inline
 
     hls_uint<1> enable = (pub_enable != 0) || (sub_enable != 0);
@@ -131,7 +130,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
     bool            is_app_reader_tbl_full = true;
     app_reader_id_t app_unused_idx;
     /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+    for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
         app_endpoint reader = app_reader_tbl[j];
         if (is_app_reader_tbl_full && !reader.alive) {
@@ -211,7 +210,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
             participant.lease_duration
-                = static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+                |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
         }
         participant.timestamp = timestamp_i64;
         participant.alive = true;
@@ -221,7 +220,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
             sedp_reader_tbl[sedp_unused_idx] = participant;
         }
         break;
-    case RTPS_TYPE_HEARTBEAT_PUB:
+    case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];
@@ -236,7 +235,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
             sedp_reader_tbl[sedp_matched_idx] = participant;
         }
         break;
-    case RTPS_TYPE_HEARTBEAT_SUB:
+    case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];

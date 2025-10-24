@@ -4,7 +4,9 @@
 #include <cassert>
 
 #include "ros2.hpp"
+#include "ros2_receiver.hpp"
 #include "sedp.hpp"
+#include "test.hpp"
 #include "test_sedp_reader.hpp"
 
 void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
@@ -359,17 +361,21 @@ static void call_sedp_reader(
     const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
     const uint8_t sub_type_name_len[SUB_TOPICS_MAX], const uint8_t test_data[],
     size_t test_data_len) {
+    hls_stream<rtps_data_t> stream;
+    int64_t                 timestamp_i64 = 0;
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
             x |= hls_uint<9>(0x100);
         }
-        sedp_reader(x, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                    ip_addr, subnet_mask, port_num_seed, guid_prefix,
-                    pub_topic_name, pub_topic_name_len, pub_type_name,
-                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
-                    sub_type_name, sub_type_name_len);
+        sedp_reader(x, stream, pub_enable, sub_enable, ip_addr, subnet_mask,
+                    port_num_seed, guid_prefix, pub_topic_name,
+                    pub_topic_name_len, pub_type_name, pub_type_name_len,
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
+    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64);
 }
 
 static void setup_topic_data_all(
