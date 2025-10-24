@@ -81,6 +81,8 @@ typedef struct {
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
 } sender_config_t;
 
+#include "ros2_receiver.hpp"
+
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
