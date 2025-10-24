@@ -58,12 +58,12 @@ static bool is_app_endpoint_matched(sedp_endpoint participant,
                                     app_endpoint app_reader_tbl[APP_READER_MAX],
                                     const uint8_t entity_id[4]) {
 #pragma HLS inline
-    /* Cyber unroll_times=4 */
+    /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
         if (participant.children[j]) {
             bool matched = true;
-            /* Cyber unroll_times=4 */
+            /* Cyber unroll_times=all */
             for (auto k = 0; k < 4; k++) {
 #pragma HLS unroll
                 if (app_reader_tbl[j].entity_id[k] != entity_id[k]) {
@@ -171,12 +171,12 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
             participant.sub_acknack_cnt = 0;
             reset_sedp_endpoint_children(participant.children);
         }
-        /* Cyber func=inline */
+        /* Cyber unroll_times=all */
         for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
             participant.guid_prefix[j] = rtps_data.guid_prefix[j];
         }
-        /* Cyber func=inline */
+        /* Cyber unroll_times=all */
         for (auto j = 0; j < 4; j++) {
 #pragma HLS unroll
             participant.ip_addr[j] = rtps_data.data[j];
@@ -184,7 +184,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         participant.udp_port[0] = rtps_data.data[4];
         participant.udp_port[1] = rtps_data.data[5];
         participant.lease_duration = 0;
-        /* Cyber func=inline */
+        /* Cyber unroll_times=all */
         for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
             participant.lease_duration
@@ -324,7 +324,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         if (is_participant_matched) {
             participant = sedp_reader_tbl[sedp_matched_idx];
             participant.alive = false;
-            /* Cyber func=inline */
+            /* Cyber unroll_times=all */
             for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
                 if (participant.children[j]) {
