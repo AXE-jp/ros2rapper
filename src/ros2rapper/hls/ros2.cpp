@@ -151,7 +151,8 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
 #pragma HLS array_partition variable = reader.ip_addr complete dim = 1
 #pragma HLS array_partition variable = reader.udp_port complete dim = 1
 #pragma HLS array_partition variable = reader.entity_id complete dim = 1
-    // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or RTPS_TYPE_SEDP_SUB
+    // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
+    // RTPS_TYPE_SEDP_SUB
     /* Cyber unroll_times=all */
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
