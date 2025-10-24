@@ -136,7 +136,7 @@ static void ros2_in(hls_stream<rtps_data_t> &in,
         app_endpoint reader = app_reader_tbl[j];
         if (is_app_reader_tbl_full && !reader.alive) {
             is_app_reader_tbl_full = false;
-            app_unused_idx = true;
+            app_unused_idx = j;
         }
     }
 
