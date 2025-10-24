@@ -18,7 +18,6 @@ typedef hls_uint<3> rtps_type_t;
 typedef struct {
     rtps_type_t type;
     uint8_t     guid_prefix[12] /* Cyber array=EXPAND */;
-    topic_id_t  topic_id;
     uint8_t     data[14] /* Cyber array=EXPAND */;
 } rtps_data_t;
 
