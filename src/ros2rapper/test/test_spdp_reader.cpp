@@ -182,10 +182,10 @@ constexpr uint8_t SOURCE_GUID_PREFIX[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0xcf, 0xe4, 0x00, 0x00, 0x00, 0x00};
 
 static void call_spdp_reader(hls_stream<rtps_data_t> &out,
-                             const uint8_t ip_addr[4],
-                             const uint8_t subnet_mask[4],
-                             uint16_t port_num_seed,
-                             const uint8_t test_data[], size_t test_data_size) {
+                             const uint8_t            ip_addr[4],
+                             const uint8_t            subnet_mask[4],
+                             uint16_t port_num_seed, const uint8_t test_data[],
+                             size_t test_data_size) {
     for (auto j = 0; j < test_data_size; j++) {
         hls_uint<9> data = test_data[j];
         if (j == (test_data_size - 1)) {
@@ -195,23 +195,26 @@ static void call_spdp_reader(hls_stream<rtps_data_t> &out,
     }
 }
 
-#define CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_data) \
-    call_spdp_reader(out, ip_addr, subnet_mask, port_num_seed, test_data, sizeof(test_data))
+#define CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_data)  \
+    call_spdp_reader(out, ip_addr, subnet_mask, port_num_seed, test_data,      \
+                     sizeof(test_data))
 
 static int test_spdp_reader_1() {
-    constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
-    constexpr uint8_t      subnet_mask[4] = {255, 255, 255, 0};
-    constexpr uint16_t     port_num_seed = 7400;
+    constexpr uint8_t       ip_addr[4] = {192, 168, 0, 3};
+    constexpr uint8_t       subnet_mask[4] = {255, 255, 255, 0};
+    constexpr uint16_t      port_num_seed = 7400;
     hls_stream<rtps_data_t> out;
-    rtps_data_t rtps_data;
+    rtps_data_t             rtps_data;
 
-    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_spdp_reader_data_1);
+    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_1);
     assert(!out.empty());
     rtps_data = out.read();
     assert(out.empty());
     assert(rtps_data.type == RTPS_TYPE_SPDP);
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-        assert(rtps_data.guid_prefix[j] == test_spdp_reader_data_1[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        assert(rtps_data.guid_prefix[j]
+               == test_spdp_reader_data_1[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
     }
     // Check IP address
     assert(rtps_data.data[0] == 192);
@@ -230,12 +233,14 @@ static int test_spdp_reader_1() {
         }
     }
 
-    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_spdp_reader_data_2);
+    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_2);
     assert(out.read_nb(rtps_data));
     assert(out.empty());
     assert(rtps_data.type == RTPS_TYPE_SPDP);
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-        assert(rtps_data.guid_prefix[j] == test_spdp_reader_data_2[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        assert(rtps_data.guid_prefix[j]
+               == test_spdp_reader_data_2[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
     }
     // Check IP address
     assert(rtps_data.data[0] == 192);
@@ -254,12 +259,14 @@ static int test_spdp_reader_1() {
         }
     }
 
-    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_spdp_reader_data_3);
+    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_3);
     assert(out.read_nb(rtps_data));
     assert(out.empty());
     assert(rtps_data.type == RTPS_TYPE_SPDP);
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-        assert(rtps_data.guid_prefix[j] == test_spdp_reader_data_3[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        assert(rtps_data.guid_prefix[j]
+               == test_spdp_reader_data_3[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
     }
     // Check IP address
     assert(rtps_data.data[0] == 192);
@@ -278,12 +285,14 @@ static int test_spdp_reader_1() {
         }
     }
 
-    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed, test_spdp_reader_data_4);
+    CALL_SPDP_READER(out, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_4);
     assert(out.read_nb(rtps_data));
     assert(out.empty());
     assert(rtps_data.type == RTPS_TYPE_SPDP);
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-        assert(rtps_data.guid_prefix[j] == test_spdp_reader_data_4[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        assert(rtps_data.guid_prefix[j]
+               == test_spdp_reader_data_4[j + RTPS_HDR_OFFSET_GUID_PREFIX]);
     }
     // Check IP address
     assert(rtps_data.data[0] == 192);
