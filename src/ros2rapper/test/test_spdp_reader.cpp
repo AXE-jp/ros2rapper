@@ -319,7 +319,7 @@ static int test_spdp_reader_0() {
 static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
 static app_endpoint  app_reader_tbl[APP_READER_MAX];
 
-int test_spdp_reader_1() {
+static int test_spdp_reader_1() {
     constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t      subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t     port_num_seed = 7400;
