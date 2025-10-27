@@ -35,13 +35,7 @@ void ip_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     static uint16_t    offset;
     static uint16_t    sum;
 
-    hls_uint<9> x;
-
-    if (out.full())
-        return;
-
-    if (!in.read_nb(x))
-        return;
+    hls_uint<9> x = in.read();
 
     uint8_t data = x & 0xff;
     bool    end = x & 0x100;

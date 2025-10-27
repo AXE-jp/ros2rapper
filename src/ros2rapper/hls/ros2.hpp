@@ -29,7 +29,6 @@ typedef struct {
     uint16_t port_num_seed;
     uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
-    duration participant_lease_duration;
     uint8_t  pub_topic_name
         [PUB_TOPICS_MAX]
         [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
@@ -51,6 +50,11 @@ typedef struct {
     uint8_t sub_topic_type_name_len
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
     bool ignore_ip_checksum;
+} receiver_config_t;
+
+typedef struct {
+    uint16_t port_num_seed;
+    duration participant_lease_duration;
 } config_t;
 
 typedef struct {

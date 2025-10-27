@@ -259,9 +259,11 @@ check_sedp_reader_tbl_liveliness(sedp_reader_id_t target, bool target_alive,
     return 0;
 }
 
-static void call_update_liveliness(
-    const config_t *conf, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-    int64_t timestamp_i64, const uint8_t test_data[], size_t length) {
+static void
+call_update_liveliness(const receiver_config_t *conf,
+                       sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
+                       int64_t timestamp_i64, const uint8_t test_data[],
+                       size_t length) {
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
     hls_stream<rtps_data_t>  stream;
@@ -278,8 +280,8 @@ static void call_update_liveliness(
             timestamp_i64);
 }
 
-static int test_update_liveliness_1(const config_t *conf, unsigned int target,
-                                    bool          target_alive,
+static int test_update_liveliness_1(const receiver_config_t *conf,
+                                    unsigned int target, bool target_alive,
                                     const uint8_t test_data[],
                                     size_t        test_data_length,
                                     const char   *test_data_name) {
@@ -309,7 +311,7 @@ static int test_update_liveliness_1(const config_t *conf, unsigned int target,
            == 0)
 
 static int test_update_liveliness() {
-    config_t conf;
+    receiver_config_t conf;
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
         conf.guid_prefix[j] = test_update_liveliness_guid_prefix[j];
     }

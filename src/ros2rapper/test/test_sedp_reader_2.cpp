@@ -378,7 +378,7 @@ static void call_sedp_reader(
 }
 
 static void setup_topic_data_all(
-    config_t *conf, int pub_id, const uint8_t pub_topic_name_0[],
+    receiver_config_t *conf, int pub_id, const uint8_t pub_topic_name_0[],
     uint8_t pub_topic_name_len_0, const uint8_t pub_type_name_0[],
     uint8_t pub_type_name_len_0, int sub_id, const uint8_t sub_topic_name_0[],
     uint8_t sub_topic_name_len_0, const uint8_t sub_type_name_0[],
@@ -465,7 +465,7 @@ static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
 static app_endpoint  app_reader_tbl[APP_READER_MAX];
 
 int test_sedp_reader_2() {
-    config_t conf = {
+    receiver_config_t conf = {
         .ip_addr = {192, 168, 0, 4},
         .subnet_mask = {255, 255, 255, 0},
         .port_num_seed = 7400,
