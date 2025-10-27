@@ -260,27 +260,6 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         }
         break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
-        if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_pubrd_rd_seqnum == sn) {
-                participant.builtin_pubrd_rd_seqnum++;
-                participant.builtin_pubrd_acknack_req = true;
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
-        }
-        break;
-    case RTPS_TYPE_SEDP_SUB_SN_ONLY:
-        if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_subrd_rd_seqnum == sn) {
-                participant.builtin_subrd_rd_seqnum++;
-                participant.builtin_subrd_acknack_req = true;
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
-        }
-        break;
     case RTPS_TYPE_SEDP_PUB:
         if (is_participant_matched) {
             uint8_t sn = rtps_data.data[11];
@@ -288,7 +267,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
             if (participant.builtin_pubrd_rd_seqnum == sn) {
                 participant.builtin_pubrd_rd_seqnum++;
                 participant.builtin_pubrd_acknack_req = true;
-                if (!is_app_reader_tbl_full
+                if ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
+                    && !is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant.children,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
@@ -301,6 +281,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
             }
         }
         break;
+    case RTPS_TYPE_SEDP_SUB_SN_ONLY:
     case RTPS_TYPE_SEDP_SUB:
         if (is_participant_matched) {
             uint8_t sn = rtps_data.data[11];
@@ -308,7 +289,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
             if (participant.builtin_subrd_rd_seqnum == sn) {
                 participant.builtin_subrd_rd_seqnum++;
                 participant.builtin_subrd_acknack_req = true;
-                if (!is_app_reader_tbl_full
+                if ((rtps_data.type == RTPS_TYPE_SEDP_SUB)
+                    && !is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant.children,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
