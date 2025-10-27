@@ -261,7 +261,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
         if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[0];
+            uint8_t sn = rtps_data.data[11];
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_pubrd_rd_seqnum == sn) {
                 participant.builtin_pubrd_rd_seqnum++;
@@ -272,7 +272,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_SEDP_SUB_SN_ONLY:
         if (is_participant_matched) {
-            uint8_t sn = rtps_data.data[0];
+            uint8_t sn = rtps_data.data[11];
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_subrd_rd_seqnum == sn) {
                 participant.builtin_subrd_rd_seqnum++;
