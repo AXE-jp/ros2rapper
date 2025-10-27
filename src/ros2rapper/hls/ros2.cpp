@@ -3,55 +3,12 @@
 
 #include "common.hpp"
 
-#include "app.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
-#include "ip.hpp"
 #include "message_metadata.hpp"
 #include "remove_endpoints.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
-#include "sedp.hpp"
-#include "slip.hpp"
-#include "spdp.hpp"
-#include "udp.hpp"
-#include "util.hpp"
-
-#define USE_FIFOIF_ETHERNET
-
-#ifdef USE_FIFOIF_ETHERNET
-/* Cyber func=inline */
-void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
-#pragma HLS inline
-    static uint16_t offset = 0;
-    static uint16_t len = 0;
-
-    uint8_t x;
-
-    if (out.full())
-        return;
-
-    if (!in.read_nb(x))
-        return;
-
-    switch (offset) {
-    case IP_HDR_OFFSET_TOT_LEN:
-        len = (uint16_t)x << 8;
-        break;
-    case IP_HDR_OFFSET_TOT_LEN + 1:
-        len |= (uint16_t)x;
-    }
-
-    offset++;
-    if (offset == len) {
-        out.write(x | 0x100);
-        offset = 0;
-        len = 0;
-    } else {
-        out.write(x);
-    }
-};
-#endif // USE_FIFOIF_ETHERNET
 
 /* Cyber func=inline */
 static bool is_app_endpoint_matched(sedp_endpoint participant,
