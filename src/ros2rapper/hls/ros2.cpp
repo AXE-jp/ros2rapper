@@ -142,6 +142,30 @@ static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
 }
 
 /* Cyber func=inline */
+static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
+                                     app_endpoint      *reader) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+#pragma HLS unroll
+        reader->guid_prefix[j] = rtps_data.guid_prefix[j];
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader->ip_addr[j] = rtps_data.data[j];
+    }
+    reader->udp_port[0] = rtps_data.data[4];
+    reader->udp_port[1] = rtps_data.data[5];
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader->entity_id[j] = rtps_data.data[j + 6];
+    }
+    reader->topic_id = rtps_data.data[10];
+}
+
+/* Cyber func=inline */
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -187,25 +211,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 #pragma HLS array_partition variable = reader.entity_id complete dim = 1
     // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
     // RTPS_TYPE_SEDP_SUB
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        reader.guid_prefix[j] = rtps_data.guid_prefix[j];
-    }
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        reader.ip_addr[j] = rtps_data.data[j];
-    }
-    reader.udp_port[0] = rtps_data.data[4];
-    reader.udp_port[1] = rtps_data.data[5];
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        reader.entity_id[j] = rtps_data.data[j + 6];
-    }
-    reader.topic_id = rtps_data.data[10];
-    reader.alive = true;
+    copy_app_endpoint_params(rtps_data, &reader);
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
@@ -279,13 +285,14 @@ void ros2_in(hls_stream<rtps_data_t> &in,
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_pubrd_rd_seqnum == sn) {
                 participant.builtin_pubrd_rd_seqnum++;
-                reader.app_ep_type = APP_EP_SUB;
                 if (!is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant.children,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
-                    app_reader_tbl[app_unused_idx] = reader;
+                    reader.app_ep_type = APP_EP_SUB;
+                    reader.alive = true;
                     participant.children[app_unused_idx] = true;
+                    app_reader_tbl[app_unused_idx] = reader;
                 }
                 sedp_reader_tbl[sedp_matched_idx] = participant;
             }
@@ -297,13 +304,14 @@ void ros2_in(hls_stream<rtps_data_t> &in,
             participant = sedp_reader_tbl[sedp_matched_idx];
             if (participant.builtin_subrd_rd_seqnum == sn) {
                 participant.builtin_subrd_rd_seqnum++;
-                reader.app_ep_type = APP_EP_PUB;
                 if (!is_app_reader_tbl_full
                     && !is_app_endpoint_matched(participant.children,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
-                    app_reader_tbl[app_unused_idx] = reader;
+                    reader.app_ep_type = APP_EP_PUB;
+                    reader.alive = true;
                     participant.children[app_unused_idx] = true;
+                    app_reader_tbl[app_unused_idx] = reader;
                 }
                 sedp_reader_tbl[sedp_matched_idx] = participant;
             }
