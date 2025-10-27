@@ -11,6 +11,47 @@
 #include "ros2_receiver.hpp"
 
 /* Cyber func=inline */
+static void find_unused_and_matched_sedp_endpoint(
+    const uint8_t       guid_prefix[GUID_PREFIX_SIZE],
+    const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX], bool *is_full_out,
+    bool *is_matched_out, sedp_reader_id_t *unused_idx_out,
+    sedp_reader_id_t *matched_idx_out) {
+#pragma HLS inline
+    bool             is_full = true;
+    bool             is_matched = false;
+    sedp_reader_id_t unused_idx = 0;
+    sedp_reader_id_t matched_idx = 0;
+
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS unroll
+        sedp_endpoint participant = sedp_reader_tbl[j];
+#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
+        bool j_matched = participant.alive;
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+#pragma HLS unroll
+            if (participant.guid_prefix[k] != guid_prefix[k]) {
+                j_matched = false;
+            }
+        }
+
+        if (is_full && !participant.alive) {
+            is_full = false;
+            unused_idx = j;
+        } else if (!is_matched && j_matched) {
+            is_matched = true;
+            matched_idx = j;
+        }
+    }
+
+    *is_full_out = is_full;
+    *is_matched_out = is_matched;
+    *unused_idx_out = unused_idx;
+    *matched_idx_out = matched_idx;
+}
+
+/* Cyber func=inline */
 static bool is_app_endpoint_matched(sedp_endpoint participant,
                                     app_endpoint app_reader_tbl[APP_READER_MAX],
                                     const uint8_t entity_id[4]) {
@@ -55,34 +96,13 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         return;
     }
 
-    bool             is_sedp_reader_tbl_full = true;
-    bool             is_participant_matched = false;
+    bool             is_sedp_reader_tbl_full;
+    bool             is_participant_matched;
     sedp_reader_id_t sedp_unused_idx;
     sedp_reader_id_t sedp_matched_idx;
-
-    // Find an unused entry and the matched entry of sedp_reader_tbl
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-        sedp_endpoint participant = sedp_reader_tbl[j];
-#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
-        bool matched = participant.alive;
-        /* Cyber unroll_times=all */
-        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-#pragma HLS unroll
-            if (participant.guid_prefix[k] != rtps_data.guid_prefix[k]) {
-                matched = false;
-            }
-        }
-
-        if (is_sedp_reader_tbl_full && !participant.alive) {
-            is_sedp_reader_tbl_full = false;
-            sedp_unused_idx = j;
-        } else if (!is_participant_matched && matched) {
-            is_participant_matched = true;
-            sedp_matched_idx = j;
-        }
-    }
+    find_unused_and_matched_sedp_endpoint(
+        rtps_data.guid_prefix, sedp_reader_tbl, &is_sedp_reader_tbl_full,
+        &is_participant_matched, &sedp_unused_idx, &sedp_matched_idx);
 
     bool            is_app_reader_tbl_full = true;
     app_reader_id_t app_unused_idx;
