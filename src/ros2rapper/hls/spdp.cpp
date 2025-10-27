@@ -264,6 +264,7 @@ void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
                         // Read the seconds of the lease duration.
                         spdp_lease_duration[offset + 4] = data;
                     } else {
+                        // Read the fractional part of the lease duration.
                         spdp_lease_duration[offset - 4] = data;
                     }
                 } else {
