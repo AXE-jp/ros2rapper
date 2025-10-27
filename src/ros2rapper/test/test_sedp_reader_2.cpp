@@ -518,18 +518,8 @@ int test_sedp_reader_2() {
     }
 
     // Test whether sedp_reader overwrites when app_reader_tbl is full.
-    // Setup sedp_reader_tbl.
-    sedp_reader_tbl[0].alive = true;
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-        sedp_reader_tbl[0].children[j] = true;
-    }
-    sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
-    sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
-    for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-        sedp_reader_tbl[0].guid_prefix[k]
-            = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
-    }
-    // Setup app_reader_tbl.
+    // Setup tables
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     for (auto j = 0; j < APP_READER_MAX; j++) {
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             app_reader_tbl[j].guid_prefix[k] = 0;
@@ -539,6 +529,13 @@ int test_sedp_reader_2() {
     // sedp_reader gets a message from a known participant, but app_reader_tbl
     // is full.
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
+    CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_sub_data);
+    // Check sedp_reader_tbl
+    // ros2_in should not change the acknack parameters.
+    assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 1);
+    assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 1);
+    assert(!sedp_reader_tbl[0].builtin_pubrd_acknack_req);
+    assert(!sedp_reader_tbl[0].builtin_subrd_acknack_req);
     // Check app_reader_tbl.
     for (auto j = 0; j < APP_READER_MAX; j++) {
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
