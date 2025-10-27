@@ -77,7 +77,7 @@ void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
 #pragma HLS array_partition variable = spdp_udp_port complete dim = 1
     static uint8_t
         spdp_lease_duration[8] /* Cyber array=EXPAND, array_index=const */;
-#pragma HLS array_partition variable = lease_duration complete dim = 1
+#pragma HLS array_partition variable = spdp_lease_duration complete dim = 1
 
     if (!enable) {
         return;
