@@ -52,6 +52,24 @@ static void find_unused_and_matched_sedp_endpoint(
 }
 
 /* Cyber func=inline */
+static void find_unused_app_endpoint(const app_endpoint app_reader_tbl, bool *is_full_out, app_endpoint *unused_idx_out) {
+#pragma HLS inline
+    bool is_full = true;
+    app_reader_id_t unused_idx = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        app_endpoint reader = app_reader_tbl[j];
+        if (is_full && !reader.alive) {
+            is_full = false;
+            unused_idx = j;
+        }
+    }
+    *is_full_out = is_full;
+    *unused_idx_out = unused_idx;
+}
+
+/* Cyber func=inline */
 static bool is_app_endpoint_matched(sedp_endpoint participant,
                                     app_endpoint app_reader_tbl[APP_READER_MAX],
                                     const uint8_t entity_id[4]) {
@@ -106,15 +124,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 
     bool            is_app_reader_tbl_full = true;
     app_reader_id_t app_unused_idx;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-        app_endpoint reader = app_reader_tbl[j];
-        if (is_app_reader_tbl_full && !reader.alive) {
-            is_app_reader_tbl_full = false;
-            app_unused_idx = j;
-        }
-    }
+    find_unused_app_endpoint(app_reader_tbl, is_app_reader_tbl_full, app_unused_idx);
 
     sedp_endpoint participant;
 #pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
