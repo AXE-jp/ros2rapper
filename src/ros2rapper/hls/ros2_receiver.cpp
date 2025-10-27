@@ -49,7 +49,7 @@ void ros2_receiver(
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
-    const config_t          *conf /* Cyber port_mode=in, stable_input */,
+    const receiver_config_t *conf /* Cyber port_mode=in, stable_input */,
     VOLATILE                 hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
