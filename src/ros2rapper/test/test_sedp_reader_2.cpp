@@ -430,6 +430,8 @@ static void setup_reader_tables_with_default_value(
     reset_sedp_endpoint_children(sedp_reader_tbl[0].children);
     sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
+    sedp_reader_tbl[0].builtin_pubrd_acknack_req = false;
+    sedp_reader_tbl[0].builtin_subrd_acknack_req = false;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
         sedp_reader_tbl[0].guid_prefix[k]
             = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
@@ -700,6 +702,9 @@ int test_sedp_reader_2() {
         CALL_SEDP_READER(pub_enable, sub_enable, test_sedp_reader_sub_data);
         // ROS2rapper should not find a subscriber.
         assert(!app_reader_tbl[0].alive);
+        // Check the acknack parameters
+        assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 2);
+        assert(sedp_reader_tbl[0].builtin_subrd_acknack_req);
 
         // Test whether ROS2rapper finds a new subscriber (case 2).
         setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
@@ -748,6 +753,9 @@ int test_sedp_reader_2() {
                 assert(app_reader_tbl[0].alive);
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
                 assert(app_reader_tbl[0].topic_id == pub_id);
+                // Check the acknack parameters
+                assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 2);
+                assert(sedp_reader_tbl[0].builtin_subrd_acknack_req);
             } else {
                 // ROS2rapper should ignore disabled topics.
                 assert(!app_reader_tbl[0].alive);
@@ -767,6 +775,8 @@ int test_sedp_reader_2() {
                              wrong_topic_name_1, sub_type_name_0);
         CALL_SEDP_READER(pub_enable, sub_enable, test_sedp_reader_pub_data);
         assert(!app_reader_tbl[0].alive);
+        assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 2);
+        assert(sedp_reader_tbl[0].builtin_pubrd_acknack_req);
 
         // Test whether ROS2rapper finds a new publisher (case 2).
         setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
@@ -802,6 +812,8 @@ int test_sedp_reader_2() {
             if (sub_enable_pattern & (1 << sub_id)) {
                 assert(app_reader_tbl[0].alive);
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
+                assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 2);
+                assert(sedp_reader_tbl[0].builtin_pubrd_acknack_req);
             } else {
                 assert(!app_reader_tbl[0].alive);
             }

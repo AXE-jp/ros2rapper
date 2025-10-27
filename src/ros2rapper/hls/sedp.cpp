@@ -313,22 +313,22 @@ void sedp_reader(
 #pragma HLS unroll
                     rtps_data.guid_prefix[j] = sedp_guid_prefix[j];
                 }
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    rtps_data.data[j] = sedp_ip_addr[j];
-                }
-                rtps_data.data[4] = sedp_udp_port[0];
-                rtps_data.data[5] = sedp_udp_port[1];
-                /* Cyber unroll_times=all */
-                for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-                    rtps_data.data[j + 6] = sedp_entity_id[j];
-                }
-                rtps_data.data[11] = sbm_sn_0;
 
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+                        rtps_data.data[j] = sedp_ip_addr[j];
+                    }
+                    rtps_data.data[4] = sedp_udp_port[0];
+                    rtps_data.data[5] = sedp_udp_port[1];
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+                        rtps_data.data[j + 6] = sedp_entity_id[j];
+                    }
+                    rtps_data.data[11] = sbm_sn_0;
                     if (ep_type & BUILTIN_EP_SUB) {
                         rtps_data.data[10] = get_matched_pub_topic_id(
                             ~pub_topics_unmatched & ~pub_types_unmatched);
@@ -337,6 +337,7 @@ void sedp_reader(
                         rtps_data.type = RTPS_TYPE_SEDP_PUB;
                     }
                 } else {
+                    rtps_data.data[0] = sbm_sn_0;
                     if (ep_type & BUILTIN_EP_SUB) {
                         rtps_data.type = RTPS_TYPE_SEDP_SUB_SN_ONLY;
                     } else {
