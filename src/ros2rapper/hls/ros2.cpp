@@ -72,14 +72,15 @@ find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
 }
 
 /* Cyber func=inline */
-static bool is_app_endpoint_matched(sedp_endpoint participant,
-                                    app_endpoint app_reader_tbl[APP_READER_MAX],
-                                    const uint8_t entity_id[4]) {
+static bool
+is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
+                        const uint8_t entity_id[4],
+                        app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
-        if (participant.children[j]) {
+        if (guid_prefix_matched[j]) {
             bool matched = true;
             /* Cyber unroll_times=all */
             for (auto k = 0; k < 4; k++) {
@@ -280,8 +281,9 @@ void ros2_in(hls_stream<rtps_data_t> &in,
                 participant.builtin_pubrd_rd_seqnum++;
                 reader.app_ep_type = APP_EP_SUB;
                 if (!is_app_reader_tbl_full
-                    && !is_app_endpoint_matched(participant, app_reader_tbl,
-                                                reader.entity_id)) {
+                    && !is_app_endpoint_matched(participant.children,
+                                                reader.entity_id,
+                                                app_reader_tbl)) {
                     app_reader_tbl[app_unused_idx] = reader;
                     participant.children[app_unused_idx] = true;
                 }
@@ -297,8 +299,9 @@ void ros2_in(hls_stream<rtps_data_t> &in,
                 participant.builtin_subrd_rd_seqnum++;
                 reader.app_ep_type = APP_EP_PUB;
                 if (!is_app_reader_tbl_full
-                    && !is_app_endpoint_matched(participant, app_reader_tbl,
-                                                reader.entity_id)) {
+                    && !is_app_endpoint_matched(participant.children,
+                                                reader.entity_id,
+                                                app_reader_tbl)) {
                     app_reader_tbl[app_unused_idx] = reader;
                     participant.children[app_unused_idx] = true;
                 }
