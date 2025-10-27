@@ -212,6 +212,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
     // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
     // RTPS_TYPE_SEDP_SUB
     copy_app_endpoint_params(rtps_data, &reader);
+    reader.alive = true;
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
@@ -272,9 +273,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
                     reader.app_ep_type = APP_EP_SUB;
-                    reader.alive = true;
-                    participant.children[app_unused_idx] = true;
                     app_reader_tbl[app_unused_idx] = reader;
+                    participant.children[app_unused_idx] = true;
                 }
                 sedp_reader_tbl[sedp_matched_idx] = participant;
             }
@@ -293,9 +293,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
                                                 reader.entity_id,
                                                 app_reader_tbl)) {
                     reader.app_ep_type = APP_EP_PUB;
-                    reader.alive = true;
-                    participant.children[app_unused_idx] = true;
                     app_reader_tbl[app_unused_idx] = reader;
+                    participant.children[app_unused_idx] = true;
                 }
                 sedp_reader_tbl[sedp_matched_idx] = participant;
             }
