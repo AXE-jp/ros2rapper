@@ -52,9 +52,9 @@ static void find_unused_and_matched_sedp_endpoint(
 }
 
 /* Cyber func=inline */
-static void find_unused_app_endpoint(const app_endpoint app_reader_tbl,
-                                     bool              *is_full_out,
-                                     app_endpoint      *unused_idx_out) {
+static void
+find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
+                         bool *is_full_out, app_reader_id_t *unused_idx_out) {
 #pragma HLS inline
     bool            is_full = true;
     app_reader_id_t unused_idx = 0;
@@ -143,10 +143,10 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         rtps_data.guid_prefix, sedp_reader_tbl, &is_sedp_reader_tbl_full,
         &is_participant_matched, &sedp_unused_idx, &sedp_matched_idx);
 
-    bool            is_app_reader_tbl_full = true;
+    bool            is_app_reader_tbl_full;
     app_reader_id_t app_unused_idx;
-    find_unused_app_endpoint(app_reader_tbl, is_app_reader_tbl_full,
-                             app_unused_idx);
+    find_unused_app_endpoint(app_reader_tbl, &is_app_reader_tbl_full,
+                             &app_unused_idx);
 
     sedp_endpoint participant;
 #pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
