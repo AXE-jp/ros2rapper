@@ -6,6 +6,7 @@
 #include "hls.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
+#include "rtps.hpp"
 #include "spdp.hpp"
 #include <cassert>
 
@@ -512,10 +513,56 @@ static int test_spdp_reader_3() {
     return 0;
 }
 
+static int test_update_timestamp() {
+    // Test whether ros2_in updates timestamps in sedp_reader_tbl
+    // correctly.
+    constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
+    constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
+    constexpr uint16_t port_num_seed = 7400;
+
+    const hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    const hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+
+    hls_stream<rtps_data_t> stream;
+    CALL_SPDP_READER(stream, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_1);
+    rtps_data_t rtps_data_1 = stream.read();
+
+    for (auto target = 0; target < SEDP_READER_MAX; target++) {
+        int64_t timestamp_i64_orig = 0;
+        int64_t timestamp_i64_new = static_cast<int64_t>(target + 1) << 32;
+        // Initialize sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            sedp_reader_tbl[j].timestamp = timestamp_i64_orig;
+            sedp_reader_tbl[j].alive = true;
+            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+                sedp_reader_tbl[j].guid_prefix[k]
+                    = (j == target) ? test_spdp_reader_data_1
+                                          [k + RTPS_HDR_OFFSET_GUID_PREFIX]
+                                    : 0;
+            }
+        }
+        // Update sedp_reader_tbl
+        stream.write(rtps_data_1);
+        ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+                timestamp_i64_new);
+        // Check sedp_reader_tbl.
+        for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            if (j == target) {
+                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_new);
+            } else {
+                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_orig);
+            }
+        }
+    }
+    return 0;
+}
+
 int test_spdp_reader() {
     assert(test_spdp_reader_0() == 0);
     assert(test_spdp_reader_1() == 0);
     assert(test_spdp_reader_2() == 0);
     assert(test_spdp_reader_3() == 0);
+    assert(test_update_timestamp() == 0);
     return 0;
 }
