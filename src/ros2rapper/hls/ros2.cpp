@@ -522,7 +522,7 @@ static void ros2_out(
     hls_uint<1> cnt_sedp_pub_an_elapsed, VOLATILE uint8_t *cnt_sedp_pub_an_set,
     hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
     hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
-    bool reading_rtps_message, int64_t timestamp_i64) {
+    int64_t timestamp_i64) {
     static const uint8_t
         app_writer_entity_id_list[PUB_TOPICS_MAX]
                                  [4] /* Cyber array=EXPAND, array_index=const */
@@ -865,22 +865,14 @@ static void ros2_out(
                 }
             } else if (next_packet_type == 8) {
                 // Remove dead endpoints.
-                if (reading_rtps_message) {
-                    // Do not change endpoint tables while reading a RTPS
-                    // message.
-                    tx_progress = 0;
-                } else {
-                    if (tx_progress < SEDP_READER_MAX) {
-                        remove_dead_endpoints(tx_progress, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                    }
-                    if (tx_progress < (SEDP_READER_MAX - 1)) {
-                        tx_progress++;
-                    } else {
-                        tx_progress = 0;
-                    }
+                if (tx_progress < SEDP_READER_MAX) {
+                    remove_dead_endpoints(tx_progress, sedp_reader_tbl,
+                                          app_reader_tbl, timestamp_i64);
                 }
-                if (tx_progress == 0) {
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    tx_progress = 0;
                     ROTATE_NEXT_PACKET_TYPE;
                 }
             } else {
@@ -981,11 +973,6 @@ void ros2_main(
 #pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
-    // This flag becomes true when ros2rapper begins to read the GUID prefix in
-    // a RTPS message and becomes false when ros2rapper reaches the end of the
-    // RTPS message.
-    static const bool reading_rtps_message = false;
-
     ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
 
@@ -997,5 +984,5 @@ void ros2_main(
              cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
              cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
              cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, reading_rtps_message, timestamp_i64);
+             cnt_app_wr_set, timestamp_i64);
 }
