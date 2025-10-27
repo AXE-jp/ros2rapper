@@ -52,9 +52,11 @@ static void find_unused_and_matched_sedp_endpoint(
 }
 
 /* Cyber func=inline */
-static void find_unused_app_endpoint(const app_endpoint app_reader_tbl, bool *is_full_out, app_endpoint *unused_idx_out) {
+static void find_unused_app_endpoint(const app_endpoint app_reader_tbl,
+                                     bool              *is_full_out,
+                                     app_endpoint      *unused_idx_out) {
 #pragma HLS inline
-    bool is_full = true;
+    bool            is_full = true;
     app_reader_id_t unused_idx = 0;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {
@@ -95,6 +97,25 @@ static bool is_app_endpoint_matched(sedp_endpoint participant,
 }
 
 /* Cyber func=inline */
+static void initialize_sedp_endpoint(sedp_endpoint *participant) {
+#pragma HLS inline
+    participant->builtin_pubrd_rd_seqnum = 1;
+    participant->builtin_subrd_rd_seqnum = 1;
+    participant->builtin_pubrd_wr_seqnum = 0;
+    participant->builtin_subrd_wr_seqnum = 0;
+    participant->builtin_pubrd_acknack_req = false;
+    participant->builtin_subrd_acknack_req = false;
+    participant->builtin_pubwr_lastsn = 0;
+    participant->builtin_subwr_lastsn = 0;
+    participant->initial_send_counter = 0;
+    participant->pub_heartbeat_cnt = 0;
+    participant->sub_heartbeat_cnt = 0;
+    participant->pub_acknack_cnt = 0;
+    participant->sub_acknack_cnt = 0;
+    reset_sedp_endpoint_children(participant->children);
+}
+
+/* Cyber func=inline */
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -124,7 +145,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 
     bool            is_app_reader_tbl_full = true;
     app_reader_id_t app_unused_idx;
-    find_unused_app_endpoint(app_reader_tbl, is_app_reader_tbl_full, app_unused_idx);
+    find_unused_app_endpoint(app_reader_tbl, is_app_reader_tbl_full,
+                             app_unused_idx);
 
     sedp_endpoint participant;
 #pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
@@ -164,21 +186,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         if (is_participant_matched) {
             participant = sedp_reader_tbl[sedp_matched_idx];
         } else {
-            // Initialize sedp_endpoint
-            participant.builtin_pubrd_rd_seqnum = 1;
-            participant.builtin_subrd_rd_seqnum = 1;
-            participant.builtin_pubrd_wr_seqnum = 0;
-            participant.builtin_subrd_wr_seqnum = 0;
-            participant.builtin_pubrd_acknack_req = false;
-            participant.builtin_subrd_acknack_req = false;
-            participant.builtin_pubwr_lastsn = 0;
-            participant.builtin_subwr_lastsn = 0;
-            participant.initial_send_counter = 0;
-            participant.pub_heartbeat_cnt = 0;
-            participant.sub_heartbeat_cnt = 0;
-            participant.pub_acknack_cnt = 0;
-            participant.sub_acknack_cnt = 0;
-            reset_sedp_endpoint_children(participant.children);
+            initialize_sedp_endpoint(&participant);
         }
         /* Cyber unroll_times=all */
         for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
