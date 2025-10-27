@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2024 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef ROS2_RECEIVER_HPP
 #define ROS2_RECEIVER_HPP
 

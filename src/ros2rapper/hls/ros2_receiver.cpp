@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2025 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "ros2_receiver.hpp"
 #include "app.hpp"
 #include "endpoint.hpp"
