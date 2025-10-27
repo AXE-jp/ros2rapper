@@ -116,6 +116,31 @@ static void initialize_sedp_endpoint(sedp_endpoint *participant) {
 }
 
 /* Cyber func=inline */
+static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
+                                      sedp_endpoint     *participant) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+#pragma HLS unroll
+        participant->guid_prefix[j] = rtps_data.guid_prefix[j];
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        participant->ip_addr[j] = rtps_data.data[j];
+    }
+    participant->udp_port[0] = rtps_data.data[4];
+    participant->udp_port[1] = rtps_data.data[5];
+    participant->lease_duration = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        participant->lease_duration
+            |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+    }
+}
+
+/* Cyber func=inline */
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -188,25 +213,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         } else {
             initialize_sedp_endpoint(&participant);
         }
-        /* Cyber unroll_times=all */
-        for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-            participant.guid_prefix[j] = rtps_data.guid_prefix[j];
-        }
-        /* Cyber unroll_times=all */
-        for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-            participant.ip_addr[j] = rtps_data.data[j];
-        }
-        participant.udp_port[0] = rtps_data.data[4];
-        participant.udp_port[1] = rtps_data.data[5];
-        participant.lease_duration = 0;
-        /* Cyber unroll_times=all */
-        for (auto j = 0; j < 8; j++) {
-#pragma HLS unroll
-            participant.lease_duration
-                |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
-        }
+        copy_sedp_endpoint_params(rtps_data, &participant);
         participant.timestamp = timestamp_i64;
         participant.alive = true;
         if (is_participant_matched) {
