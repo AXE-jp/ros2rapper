@@ -23,7 +23,13 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
     static uint16_t offset = 0;
     static uint16_t len = 0;
 
-    uint8_t x = in.read();
+    uint8_t x;
+
+    if (out.full())
+        return;
+
+    if (!in.read_nb(x))
+        return;
 
     switch (offset) {
     case IP_HDR_OFFSET_TOT_LEN:
