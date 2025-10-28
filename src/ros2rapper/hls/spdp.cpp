@@ -302,7 +302,6 @@ void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
     case 8:; // do nothing
     }
 
-    reader_tbl[unused_reader_id] = reader;
     if (end) {
         flags = 0;
         offset = 0;
