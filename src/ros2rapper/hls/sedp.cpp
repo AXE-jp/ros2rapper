@@ -538,9 +538,6 @@ void sedp_reader(
     default:; // do nothing
     }
 
-    if (is_participant_matched) {
-        sedp_reader_tbl[sedp_matched_idx] = participant;
-    }
     if (end) {
         flags = 0;
         pub_topics_unmatched = 0;

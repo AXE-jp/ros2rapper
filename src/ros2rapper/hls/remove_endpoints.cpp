@@ -212,11 +212,6 @@ void update_liveliness(hls_uint<9> in, hls_stream<rtps_data_t> &out,
                 }
                 out.write(rtps_data);
             }
-            if (is_participant_matched) {
-                sedp_endpoint reader = sedp_reader_tbl[sedp_matched_idx];
-                remove_sedp_endpoint(&reader, app_reader_tbl);
-                sedp_reader_tbl[sedp_matched_idx] = reader;
-            }
         }
         offset++;
         if (offset == PID_STATUS_INFO_SIZE) {
