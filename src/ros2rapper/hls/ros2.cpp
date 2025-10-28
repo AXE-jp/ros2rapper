@@ -3,134 +3,317 @@
 
 #include "common.hpp"
 
-#include "app.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
-#include "ip.hpp"
 #include "message_metadata.hpp"
 #include "remove_endpoints.hpp"
 #include "ros2.hpp"
-#include "sedp.hpp"
-#include "slip.hpp"
-#include "spdp.hpp"
-#include "udp.hpp"
-#include "util.hpp"
-
-#define USE_FIFOIF_ETHERNET
-
-#ifdef USE_FIFOIF_ETHERNET
-/* Cyber func=inline */
-void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
-#pragma HLS inline
-    static uint16_t offset = 0;
-    static uint16_t len = 0;
-
-    uint8_t x;
-
-    if (out.full())
-        return;
-
-    if (!in.read_nb(x))
-        return;
-
-    switch (offset) {
-    case IP_HDR_OFFSET_TOT_LEN:
-        len = (uint16_t)x << 8;
-        break;
-    case IP_HDR_OFFSET_TOT_LEN + 1:
-        len |= (uint16_t)x;
-    }
-
-    offset++;
-    if (offset == len) {
-        out.write(x | 0x100);
-        offset = 0;
-        len = 0;
-    } else {
-        out.write(x);
-    }
-};
-#endif // USE_FIFOIF_ETHERNET
+#include "ros2_receiver.hpp"
 
 /* Cyber func=inline */
-static void ros2_in(
-    hls_stream<uint8_t> &in, uint32_t rawudp_rxbuf[],
-    uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint             app_reader_tbl[APP_READER_MAX],
-    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
-    const config_t *conf, VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
-    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
-    VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_grant,
-    uint8_t                            sub_app_data_0[MAX_APP_DATA_LEN],
-    uint8_t                            sub_app_data_1[MAX_APP_DATA_LEN],
-    uint8_t                            sub_app_data_2[MAX_APP_DATA_LEN],
-    uint8_t                            sub_app_data_3[MAX_APP_DATA_LEN],
-    VOLATILE app_data_len_t            sub_app_data_len[SUB_TOPICS_MAX],
-    VOLATILE uint16_t                  sub_app_data_rep_id[SUB_TOPICS_MAX],
-    VOLATILE uint8_t *rawudp_rxbuf_rel, VOLATILE uint8_t *rawudp_rxbuf_grant,
-    bool ignore_ip_checksum, bool *reading_rtps_message, int64_t timestamp_i64,
-    hls_uint<9> *xout) {
-
-    static bool ip_parity_error = false;
-    static bool udp_parity_error = false;
-
-    static const uint8_t app_reader_entity_id_list[SUB_TOPICS_MAX]
-                                                  [4] /* Cyber array=EXPAND */
-        = ENTITYID_APP_READER_LIST;
-#pragma HLS array_partition variable = app_reader_entity_id_list complete dim  \
-    = 0
-
+static void find_unused_and_matched_sedp_endpoint(
+    const uint8_t       guid_prefix[GUID_PREFIX_SIZE],
+    const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX], bool *is_full_out,
+    bool *is_matched_out, sedp_reader_id_t *unused_idx_out,
+    sedp_reader_id_t *matched_idx_out) {
 #pragma HLS inline
-    static hls_stream<hls_uint<9>> s1 /* Cyber fifo_size=2 */;
-    static hls_stream<hls_uint<9>> s2 /* Cyber fifo_size=2 */;
-    static hls_stream<hls_uint<9>> s3 /* Cyber fifo_size=2 */;
-#pragma HLS stream variable = s1 depth = 2
-#pragma HLS stream variable = s2 depth = 2
-#pragma HLS stream variable = s3 depth = 2
+    bool             is_full = true;
+    bool             is_matched = false;
+    sedp_reader_id_t unused_idx = 0;
+    sedp_reader_id_t matched_idx = 0;
+
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS pipeline
+        sedp_endpoint participant = sedp_reader_tbl[j];
+#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
+        bool j_matched = participant.alive;
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+#pragma HLS unroll
+            if (participant.guid_prefix[k] != guid_prefix[k]) {
+                j_matched = false;
+            }
+        }
+
+        if (is_full && !participant.alive) {
+            is_full = false;
+            unused_idx = j;
+        } else if (!is_matched && j_matched) {
+            is_matched = true;
+            matched_idx = j;
+        }
+    }
+
+    *is_full_out = is_full;
+    *is_matched_out = is_matched;
+    *unused_idx_out = unused_idx;
+    *matched_idx_out = matched_idx;
+}
+
+/* Cyber func=inline */
+static void
+find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
+                         bool *is_full_out, app_reader_id_t *unused_idx_out) {
+#pragma HLS inline
+    bool            is_full = true;
+    app_reader_id_t unused_idx = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        app_endpoint reader = app_reader_tbl[j];
+        if (is_full && !reader.alive) {
+            is_full = false;
+            unused_idx = j;
+        }
+    }
+    *is_full_out = is_full;
+    *unused_idx_out = unused_idx;
+}
+
+/* Cyber func=inline */
+static bool
+is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
+                        const uint8_t entity_id[4],
+                        app_endpoint  app_reader_tbl[APP_READER_MAX]) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        if (guid_prefix_matched[j]) {
+            bool matched = true;
+            /* Cyber unroll_times=all */
+            for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+                if (app_reader_tbl[j].entity_id[k] != entity_id[k]) {
+                    matched = false;
+                }
+            }
+            if (matched) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* Cyber func=inline */
+static void initialize_sedp_endpoint(sedp_endpoint *participant) {
+#pragma HLS inline
+    participant->builtin_pubrd_rd_seqnum = 1;
+    participant->builtin_subrd_rd_seqnum = 1;
+    participant->builtin_pubrd_wr_seqnum = 0;
+    participant->builtin_subrd_wr_seqnum = 0;
+    participant->builtin_pubrd_acknack_req = false;
+    participant->builtin_subrd_acknack_req = false;
+    participant->builtin_pubwr_lastsn = 0;
+    participant->builtin_subwr_lastsn = 0;
+    participant->initial_send_counter = 0;
+    participant->pub_heartbeat_cnt = 0;
+    participant->sub_heartbeat_cnt = 0;
+    participant->pub_acknack_cnt = 0;
+    participant->sub_acknack_cnt = 0;
+    reset_sedp_endpoint_children(participant->children);
+}
+
+/* Cyber func=inline */
+static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
+                                      sedp_endpoint     *participant) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+#pragma HLS unroll
+        participant->guid_prefix[j] = rtps_data.guid_prefix[j];
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        participant->ip_addr[j] = rtps_data.data[j];
+    }
+    participant->udp_port[0] = rtps_data.data[4];
+    participant->udp_port[1] = rtps_data.data[5];
+    participant->lease_duration = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        participant->lease_duration
+            |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+    }
+}
+
+/* Cyber func=inline */
+static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
+                                     app_endpoint      *reader) {
+#pragma HLS inline
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+#pragma HLS unroll
+        reader->guid_prefix[j] = rtps_data.guid_prefix[j];
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader->ip_addr[j] = rtps_data.data[j];
+    }
+    reader->udp_port[0] = rtps_data.data[4];
+    reader->udp_port[1] = rtps_data.data[5];
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        reader->entity_id[j] = rtps_data.data[j + 6];
+    }
+    reader->topic_id = rtps_data.data[10];
+}
+
+/* Cyber func=inline */
+void ros2_in(hls_stream<rtps_data_t> &in,
+             sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+             app_endpoint             app_reader_tbl[APP_READER_MAX],
+             hls_uint<PUB_TOPICS_MAX> pub_enable,
+             hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
+#pragma HLS inline
 
     hls_uint<1> enable = (pub_enable != 0) || (sub_enable != 0);
 
-    hls_uint<9> x;
-
-#ifdef USE_FIFOIF_ETHERNET
-    pre_ip_in(in, s1);
-#else  // !USE_FIFOIF_ETHERNET
-    slip_in(in, s1);
-#endif // USE_FIFOIF_ETHERNET
-    ip_in(s1, s2, ip_payloads, conf->fragment_expiration, ignore_ip_checksum,
-          ip_parity_error);
-    udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
-           rawudp_rxbuf_grant, udp_parity_error);
-
-    if (!s3.read_nb(x))
+    rtps_data_t rtps_data;
+#pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = rtps_data.data complete dim = 1
+    if (!in.read_nb(rtps_data)) {
         return;
-
-    update_liveliness(x, conf->guid_prefix, sedp_reader_tbl, app_reader_tbl,
-                      reading_rtps_message, timestamp_i64);
-
-    spdp_reader(x, sedp_reader_tbl, enable, conf->ip_addr, conf->subnet_mask,
-                conf->port_num_seed, timestamp_i64);
-
-    sedp_reader(x, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                conf->ip_addr, conf->subnet_mask, conf->port_num_seed,
-                conf->guid_prefix, conf->pub_topic_name,
-                conf->pub_topic_name_len, conf->pub_topic_type_name,
-                conf->pub_topic_type_name_len, conf->sub_topic_name,
-                conf->sub_topic_name_len, conf->sub_topic_type_name,
-                conf->sub_topic_type_name_len);
-
-    if (sub_enable != 0) {
-        app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,
-                   sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
-                   sub_app_data_grant, sub_app_data_0, sub_app_data_1,
-                   sub_app_data_2, sub_app_data_3, sub_app_data_len,
-                   sub_app_data_rep_id);
+    }
+    if (!enable) {
+        return;
     }
 
-    *xout = x; // Workaround for CWB: FIFO read request will not be
-               // asserted if result of read_nb() is unused.
+    bool             is_sedp_reader_tbl_full;
+    bool             is_participant_matched;
+    sedp_reader_id_t sedp_unused_idx;
+    sedp_reader_id_t sedp_matched_idx;
+    find_unused_and_matched_sedp_endpoint(
+        rtps_data.guid_prefix, sedp_reader_tbl, &is_sedp_reader_tbl_full,
+        &is_participant_matched, &sedp_unused_idx, &sedp_matched_idx);
+
+    bool            is_app_reader_tbl_full;
+    app_reader_id_t app_unused_idx;
+    find_unused_app_endpoint(app_reader_tbl, &is_app_reader_tbl_full,
+                             &app_unused_idx);
+
+    sedp_endpoint participant;
+#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = participant.ip_addr complete dim = 1
+#pragma HLS array_partition variable = participant.udp_port complete dim = 1
+#pragma HLS array_partition variable = participant.children complete dim = 1
+
+    app_endpoint reader;
+#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
+#pragma HLS array_partition variable = reader.udp_port complete dim = 1
+#pragma HLS array_partition variable = reader.entity_id complete dim = 1
+    // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
+    // RTPS_TYPE_SEDP_SUB
+    copy_app_endpoint_params(rtps_data, &reader);
+    reader.alive = true;
+
+    switch (rtps_data.type) {
+    case RTPS_TYPE_SPDP:
+        if (is_participant_matched) {
+            participant = sedp_reader_tbl[sedp_matched_idx];
+        } else {
+            initialize_sedp_endpoint(&participant);
+        }
+        copy_sedp_endpoint_params(rtps_data, &participant);
+        participant.timestamp = timestamp_i64;
+        participant.alive = true;
+        if (is_participant_matched) {
+            sedp_reader_tbl[sedp_matched_idx] = participant;
+        } else if (!is_sedp_reader_tbl_full) {
+            sedp_reader_tbl[sedp_unused_idx] = participant;
+        }
+        break;
+    case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
+        if (is_participant_matched) {
+            uint8_t first_sn = rtps_data.data[0];
+            uint8_t last_sn = rtps_data.data[1];
+            participant = sedp_reader_tbl[sedp_matched_idx];
+            if (participant.builtin_pubrd_rd_seqnum < first_sn
+                || participant.builtin_pubrd_wr_seqnum < last_sn)
+                participant.builtin_pubrd_acknack_req = true;
+            if (participant.builtin_pubrd_rd_seqnum < first_sn)
+                participant.builtin_pubrd_rd_seqnum = first_sn;
+            if (participant.builtin_pubrd_wr_seqnum < last_sn)
+                participant.builtin_pubrd_wr_seqnum = last_sn;
+            sedp_reader_tbl[sedp_matched_idx] = participant;
+        }
+        break;
+    case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
+        if (is_participant_matched) {
+            uint8_t first_sn = rtps_data.data[0];
+            uint8_t last_sn = rtps_data.data[1];
+            participant = sedp_reader_tbl[sedp_matched_idx];
+            if (participant.builtin_subrd_rd_seqnum < first_sn
+                || participant.builtin_subrd_wr_seqnum < last_sn)
+                participant.builtin_subrd_acknack_req = true;
+            if (participant.builtin_subrd_rd_seqnum < first_sn)
+                participant.builtin_subrd_rd_seqnum = first_sn;
+            if (participant.builtin_subrd_wr_seqnum < last_sn)
+                participant.builtin_subrd_wr_seqnum = last_sn;
+            sedp_reader_tbl[sedp_matched_idx] = participant;
+        }
+        break;
+    case RTPS_TYPE_SEDP_PUB_SN_ONLY:
+    case RTPS_TYPE_SEDP_PUB:
+        if (is_participant_matched && !is_app_reader_tbl_full) {
+            uint8_t sn = rtps_data.data[11];
+            participant = sedp_reader_tbl[sedp_matched_idx];
+            if (participant.builtin_pubrd_rd_seqnum == sn) {
+                participant.builtin_pubrd_rd_seqnum++;
+                participant.builtin_pubrd_acknack_req = true;
+                if ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
+                    && !is_app_endpoint_matched(participant.children,
+                                                reader.entity_id,
+                                                app_reader_tbl)) {
+                    reader.app_ep_type = APP_EP_SUB;
+                    app_reader_tbl[app_unused_idx] = reader;
+                    participant.children[app_unused_idx] = true;
+                }
+                sedp_reader_tbl[sedp_matched_idx] = participant;
+            }
+        }
+        break;
+    case RTPS_TYPE_SEDP_SUB_SN_ONLY:
+    case RTPS_TYPE_SEDP_SUB:
+        if (is_participant_matched && !is_app_reader_tbl_full) {
+            uint8_t sn = rtps_data.data[11];
+            participant = sedp_reader_tbl[sedp_matched_idx];
+            if (participant.builtin_subrd_rd_seqnum == sn) {
+                participant.builtin_subrd_rd_seqnum++;
+                participant.builtin_subrd_acknack_req = true;
+                if ((rtps_data.type == RTPS_TYPE_SEDP_SUB)
+                    && !is_app_endpoint_matched(participant.children,
+                                                reader.entity_id,
+                                                app_reader_tbl)) {
+                    reader.app_ep_type = APP_EP_PUB;
+                    app_reader_tbl[app_unused_idx] = reader;
+                    participant.children[app_unused_idx] = true;
+                }
+                sedp_reader_tbl[sedp_matched_idx] = participant;
+            }
+        }
+        break;
+    case RTPS_TYPE_RM_ENDPOINT:
+        if (is_participant_matched) {
+            participant = sedp_reader_tbl[sedp_matched_idx];
+            participant.alive = false;
+            /* Cyber unroll_times=all */
+            for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+                if (participant.children[j]) {
+                    app_reader_tbl[j].alive = false;
+                }
+            }
+            sedp_reader_tbl[sedp_matched_idx] = participant;
+        }
+        break;
+    }
 }
 
 /* Cyber func=inline */
@@ -304,7 +487,7 @@ static void ros2_out(
     hls_uint<1> cnt_sedp_pub_an_elapsed, VOLATILE uint8_t *cnt_sedp_pub_an_set,
     hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
     hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
-    bool reading_rtps_message, int64_t timestamp_i64) {
+    int64_t timestamp_i64) {
     static const uint8_t
         app_writer_entity_id_list[PUB_TOPICS_MAX]
                                  [4] /* Cyber array=EXPAND, array_index=const */
@@ -671,22 +854,14 @@ static void ros2_out(
                 }
             } else if (next_packet_type == 8) {
                 // Remove dead endpoints.
-                if (reading_rtps_message) {
-                    // Do not change endpoint tables while reading a RTPS
-                    // message.
-                    tx_progress = 0;
-                } else {
-                    if (tx_progress < SEDP_READER_MAX) {
-                        remove_dead_endpoints(tx_progress, sedp_reader_tbl,
-                                              app_reader_tbl, timestamp_i64);
-                    }
-                    if (tx_progress < (SEDP_READER_MAX - 1)) {
-                        tx_progress++;
-                    } else {
-                        tx_progress = 0;
-                    }
+                if (tx_progress < SEDP_READER_MAX) {
+                    remove_dead_endpoints(tx_progress, sedp_reader_tbl,
+                                          app_reader_tbl, timestamp_i64);
                 }
-                if (tx_progress == 0) {
+                if (tx_progress < (SEDP_READER_MAX - 1)) {
+                    tx_progress++;
+                } else {
+                    tx_progress = 0;
                     ROTATE_NEXT_PACKET_TYPE;
                 }
             } else {
@@ -709,42 +884,13 @@ static void ros2_out(
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_main(
-    hls_stream<uint8_t>            &in /* Cyber port_mode=cw_fifo */,
+    hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
     sedp_endpoint
-             sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
-    uint32_t udp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
-    uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
+        sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
-    uint8_t                  sub_app_data_0
-        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    uint8_t sub_app_data_1
-        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    uint8_t sub_app_data_2
-        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    uint8_t sub_app_data_3
-        [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE app_data_len_t
-        sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=yes */
-    ,
-    VOLATILE uint16_t
-        sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                               port_mode=shared, volatile=yes */
-    ,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
-            *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
-            *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
-            *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
-            *sub_app_data_grant /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t *udp_rxbuf_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *udp_rxbuf_grant /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
         *udp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
 
@@ -776,80 +922,20 @@ void ros2_main(
         *cnt_sedp_sub_an_set /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *cnt_app_wr_set /* Cyber port_mode=shared, volatile=YES */,
 
-    int64_t timestamp_i64 /* Cyber port_mode=in */, hls_uint<9> *xout) {
+    int64_t timestamp_i64 /* Cyber port_mode=in */) {
 
-#pragma HLS interface mode = ap_fifo port = in
+#pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out
 #pragma HLS interface mode = ap_memory port = sedp_reader_tbl storage_type     \
     = ram_1p                                                  latency = 1
-#pragma HLS interface mode = ap_memory port = udp_rxbuf
-#pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
 #pragma HLS interface mode = ap_none port = sub_enable
 #pragma HLS disaggregate             variable = conf
-#pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->ip_addr
-#pragma HLS array_reshape variable = conf->subnet_mask type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->subnet_mask
-#pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->rx_udp_port
-#pragma HLS interface mode = ap_none port = conf->port_num_seed
-#pragma HLS interface mode = ap_none port = conf->fragment_expiration
-#pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->guid_prefix
 #pragma HLS disaggregate             variable = conf->participant_lease_duration
 #pragma HLS interface mode = ap_none port                                      \
     = conf->participant_lease_duration.seconds
 #pragma HLS interface mode = ap_none port                                      \
     = conf->participant_lease_duration.fraction
-#pragma HLS array_reshape variable = conf->pub_topic_name type = complete dim  \
-    = 2
-#pragma HLS array_partition variable = conf->pub_topic_name type               \
-    = complete                                              dim = 1
-#pragma HLS interface mode = ap_none port = conf->pub_topic_name
-#pragma HLS array_partition variable = conf->pub_topic_name_len type           \
-    = complete                                                  dim = 1
-#pragma HLS interface mode = ap_none port = conf->pub_topic_name_len
-#pragma HLS array_reshape variable = conf->pub_topic_type_name type            \
-    = complete                                                 dim = 2
-#pragma HLS array_partition variable = conf->pub_topic_type_name type          \
-    = complete                                                   dim = 1
-#pragma HLS interface mode = ap_none port = conf->pub_topic_type_name
-#pragma HLS array_partition variable = conf->pub_topic_type_name_len type      \
-    = complete                                                       dim = 1
-#pragma HLS interface mode = ap_none port = conf->pub_topic_type_name_len
-#pragma HLS array_reshape variable = conf->sub_topic_name type = complete dim  \
-    = 2
-#pragma HLS array_partition variable = conf->sub_topic_name type               \
-    = complete                                              dim = 1
-#pragma HLS interface mode = ap_none port = conf->sub_topic_name
-#pragma HLS array_partition variable = conf->sub_topic_name_len type           \
-    = complete                                                  dim = 1
-#pragma HLS interface mode = ap_none port = conf->sub_topic_name_len
-#pragma HLS array_reshape variable = conf->sub_topic_type_name type            \
-    = complete                                                 dim = 2
-#pragma HLS array_partition variable = conf->sub_topic_type_name type          \
-    = complete                                                   dim = 1
-#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name
-#pragma HLS array_partition variable = conf->sub_topic_type_name_len type      \
-    = complete                                                       dim = 1
-#pragma HLS interface mode = ap_none port = conf->sub_topic_type_name_len
-#pragma HLS interface mode = ap_none port = conf->ignore_ip_checksum
-#pragma HLS interface mode = ap_memory port = sub_app_data_0
-#pragma HLS interface mode = ap_memory port = sub_app_data_1
-#pragma HLS interface mode = ap_memory port = sub_app_data_2
-#pragma HLS interface mode = ap_memory port = sub_app_data_3
-#pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
-#pragma HLS interface mode = ap_vld port = sub_app_data_len
-#pragma HLS array_partition variable = sub_app_data_rep_id type = complete dim \
-    = 1
-#pragma HLS interface mode = ap_vld port = sub_app_data_rep_id
-#pragma HLS interface mode = ap_vld port = sub_app_data_recv
-#pragma HLS interface mode = ap_vld port = sub_app_data_req
-#pragma HLS interface mode = ap_vld port = sub_app_data_rel
-#pragma HLS interface mode = ap_ack port = sub_app_data_grant
-#pragma HLS interface mode = ap_vld port = udp_rxbuf_rel
-#pragma HLS interface mode = ap_ack port = udp_rxbuf_grant
 #pragma HLS interface mode = ap_ack port = udp_txbuf_grant
 #pragma HLS interface mode = ap_ctrl_none port = return
 
@@ -878,18 +964,8 @@ void ros2_main(
     static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
-    // This flag becomes true when ros2rapper begins to read the GUID prefix in
-    // a RTPS message and becomes false when ros2rapper reaches the end of the
-    // RTPS message.
-    static bool reading_rtps_message;
-
-    ros2_in(in, udp_rxbuf, ip_payloads, sedp_reader_tbl, app_reader_tbl,
-            pub_enable, sub_enable, conf, sub_app_data_recv, sub_app_data_req,
-            sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
-            sub_app_data_1, sub_app_data_2, sub_app_data_3, sub_app_data_len,
-            sub_app_data_rep_id, udp_rxbuf_rel, udp_rxbuf_grant,
-            conf->ignore_ip_checksum, &reading_rtps_message, timestamp_i64,
-            xout);
+    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64);
 
     ros2_out(out, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, conf,
              udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
@@ -899,5 +975,5 @@ void ros2_main(
              cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
              cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
              cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, reading_rtps_message, timestamp_i64);
+             cnt_app_wr_set, timestamp_i64);
 }

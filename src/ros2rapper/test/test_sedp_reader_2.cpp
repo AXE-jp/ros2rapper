@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "ros2.hpp"
+#include "ros2_receiver.hpp"
 #include "sedp.hpp"
 #include "test_sedp_reader.hpp"
 
@@ -359,21 +360,25 @@ static void call_sedp_reader(
     const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
     const uint8_t sub_type_name_len[SUB_TOPICS_MAX], const uint8_t test_data[],
     size_t test_data_len) {
+    hls_stream<rtps_data_t> stream;
+    int64_t                 timestamp_i64 = 0;
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
             x |= hls_uint<9>(0x100);
         }
-        sedp_reader(x, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                    ip_addr, subnet_mask, port_num_seed, guid_prefix,
-                    pub_topic_name, pub_topic_name_len, pub_type_name,
-                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
-                    sub_type_name, sub_type_name_len);
+        sedp_reader(x, stream, pub_enable, sub_enable, ip_addr, subnet_mask,
+                    port_num_seed, guid_prefix, pub_topic_name,
+                    pub_topic_name_len, pub_type_name, pub_type_name_len,
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
+    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64);
 }
 
 static void setup_topic_data_all(
-    config_t *conf, int pub_id, const uint8_t pub_topic_name_0[],
+    receiver_config_t *conf, int pub_id, const uint8_t pub_topic_name_0[],
     uint8_t pub_topic_name_len_0, const uint8_t pub_type_name_0[],
     uint8_t pub_type_name_len_0, int sub_id, const uint8_t sub_topic_name_0[],
     uint8_t sub_topic_name_len_0, const uint8_t sub_type_name_0[],
@@ -425,6 +430,8 @@ static void setup_reader_tables_with_default_value(
     reset_sedp_endpoint_children(sedp_reader_tbl[0].children);
     sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
     sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
+    sedp_reader_tbl[0].builtin_pubrd_acknack_req = false;
+    sedp_reader_tbl[0].builtin_subrd_acknack_req = false;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
         sedp_reader_tbl[0].guid_prefix[k]
             = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
@@ -460,7 +467,7 @@ static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
 static app_endpoint  app_reader_tbl[APP_READER_MAX];
 
 int test_sedp_reader_2() {
-    config_t conf = {
+    receiver_config_t conf = {
         .ip_addr = {192, 168, 0, 4},
         .subnet_mask = {255, 255, 255, 0},
         .port_num_seed = 7400,
@@ -511,18 +518,8 @@ int test_sedp_reader_2() {
     }
 
     // Test whether sedp_reader overwrites when app_reader_tbl is full.
-    // Setup sedp_reader_tbl.
-    sedp_reader_tbl[0].alive = true;
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-        sedp_reader_tbl[0].children[j] = true;
-    }
-    sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
-    sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
-    for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-        sedp_reader_tbl[0].guid_prefix[k]
-            = test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX];
-    }
-    // Setup app_reader_tbl.
+    // Setup tables
+    setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
     for (auto j = 0; j < APP_READER_MAX; j++) {
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
             app_reader_tbl[j].guid_prefix[k] = 0;
@@ -532,6 +529,13 @@ int test_sedp_reader_2() {
     // sedp_reader gets a message from a known participant, but app_reader_tbl
     // is full.
     CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
+    CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_sub_data);
+    // Check sedp_reader_tbl
+    // ros2_in should not change the acknack parameters.
+    assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 1);
+    assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 1);
+    assert(!sedp_reader_tbl[0].builtin_pubrd_acknack_req);
+    assert(!sedp_reader_tbl[0].builtin_subrd_acknack_req);
     // Check app_reader_tbl.
     for (auto j = 0; j < APP_READER_MAX; j++) {
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
@@ -695,6 +699,9 @@ int test_sedp_reader_2() {
         CALL_SEDP_READER(pub_enable, sub_enable, test_sedp_reader_sub_data);
         // ROS2rapper should not find a subscriber.
         assert(!app_reader_tbl[0].alive);
+        // Check the acknack parameters
+        assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 2);
+        assert(sedp_reader_tbl[0].builtin_subrd_acknack_req);
 
         // Test whether ROS2rapper finds a new subscriber (case 2).
         setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
@@ -743,6 +750,9 @@ int test_sedp_reader_2() {
                 assert(app_reader_tbl[0].alive);
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_PUB);
                 assert(app_reader_tbl[0].topic_id == pub_id);
+                // Check the acknack parameters
+                assert(sedp_reader_tbl[0].builtin_subrd_rd_seqnum == 2);
+                assert(sedp_reader_tbl[0].builtin_subrd_acknack_req);
             } else {
                 // ROS2rapper should ignore disabled topics.
                 assert(!app_reader_tbl[0].alive);
@@ -762,6 +772,8 @@ int test_sedp_reader_2() {
                              wrong_topic_name_1, sub_type_name_0);
         CALL_SEDP_READER(pub_enable, sub_enable, test_sedp_reader_pub_data);
         assert(!app_reader_tbl[0].alive);
+        assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 2);
+        assert(sedp_reader_tbl[0].builtin_pubrd_acknack_req);
 
         // Test whether ROS2rapper finds a new publisher (case 2).
         setup_reader_tables_with_default_value(sedp_reader_tbl, app_reader_tbl);
@@ -797,6 +809,8 @@ int test_sedp_reader_2() {
             if (sub_enable_pattern & (1 << sub_id)) {
                 assert(app_reader_tbl[0].alive);
                 assert(app_reader_tbl[0].app_ep_type & APP_EP_SUB);
+                assert(sedp_reader_tbl[0].builtin_pubrd_rd_seqnum == 2);
+                assert(sedp_reader_tbl[0].builtin_pubrd_acknack_req);
             } else {
                 assert(!app_reader_tbl[0].alive);
             }

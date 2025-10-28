@@ -21,4 +21,4 @@
 `define EXT_TX_FIFO_DEPTH  2
 `define EXT_RX_FIFO_DEPTH  2048
 
-`define ARP_CACHE_ADDR_WIDTH       4
+`define ARP_CACHE_ADDR_WIDTH       7

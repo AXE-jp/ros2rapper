@@ -8,6 +8,7 @@ add_files hls/checksum.cpp
 add_files hls/ip.cpp
 add_files hls/message_metadata.cpp
 add_files hls/remove_endpoints.cpp
+add_files hls/ros2_receiver.cpp
 add_files hls/ros2_sender.cpp
 add_files hls/ros2.cpp
 add_files hls/rtps.cpp
