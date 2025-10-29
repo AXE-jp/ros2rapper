@@ -10,30 +10,7 @@
 #include "util.hpp"
 
 /* Cyber func=inline */
-void compare_guid_prefix_of_sedp_endpoint(
-    const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
-    bool unmatched[SEDP_READER_MAX]) {
-#pragma HLS inline
-    for (int i = 0; i < SEDP_READER_MAX; i++) {
-        sedp_endpoint reader = tbl[i];
-#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
-        if ((!reader.alive) || (reader.guid_prefix[idx] != x))
-            unmatched[i] = true;
-    }
-}
-
-/* Cyber func=inline */
-void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-        unmatched[j] = false;
-    }
-}
-
-/* Cyber func=inline */
-void reset_app_unmatched(bool unmatched[APP_READER_MAX]) {
+void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {

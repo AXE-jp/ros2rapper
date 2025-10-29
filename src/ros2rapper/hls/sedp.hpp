@@ -38,11 +38,6 @@
 #define SEDP_ACKNACK_UDP_PKT_LEN  (UDP_HDR_SIZE + SEDP_ACKNACK_RTPS_PKT_LEN)
 #define SEDP_ACKNACK_IP_PKT_LEN   (IP_HDR_SIZE + SEDP_ACKNACK_UDP_PKT_LEN)
 
-void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
-                                         const app_endpoint tbl[APP_READER_MAX],
-                                         const int          idx,
-                                         bool unmatched[APP_READER_MAX]);
-
 void sedp_reader(
     hls_uint<9> in, hls_stream<rtps_data_t> &out,
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
