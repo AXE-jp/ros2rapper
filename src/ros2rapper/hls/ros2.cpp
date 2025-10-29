@@ -22,8 +22,15 @@ static void find_unused_and_matched_sedp_endpoint(
     sedp_reader_id_t unused_idx = 0;
     sedp_reader_id_t matched_idx = 0;
 
+#ifdef SEDP_READER_TBL_FF
+    /* Cyber unroll_times=all */
+#endif // SEDP_READER_TBL_FF
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#ifdef SEDP_READER_TBL_FF
+#pragma HLS unroll
+#else // !SEDP_READER_TBL_FF
 #pragma HLS pipeline
+#endif // SEDP_READER_TBL_FF
         sedp_endpoint participant = sedp_reader_tbl[j];
 #pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
         bool j_matched = participant.alive;
@@ -585,7 +592,13 @@ static void ros2_out(
                 //      initial_send_counter is less than three.
                 bool send = cnt_spdp_wr_elapsed;
                 if (!send) {
+#ifdef SEDP_READER_TBL_FF
+                    /* Cyber unroll_times=all */
+#endif // SEDP_READER_TBL_FF
                     for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#ifdef SEDP_READER_TBL_FF
+#pragma HLS unroll
+#endif // SEDP_READER_TBL_FF
                         reader = sedp_reader_tbl[j];
                         if (reader.alive && (reader.initial_send_counter < 3)) {
                             send = true;
@@ -886,8 +899,10 @@ static void ros2_out(
 void ros2_main(
     hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
+#ifdef SEDP_READER_TBL_RAM
     sedp_endpoint
         sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
+#endif // SEDP_READER_TBL_RAM
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const config_t          *conf /* Cyber port_mode=in, stable_input */,
@@ -926,8 +941,12 @@ void ros2_main(
 
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out
+
+#ifdef SEDP_READER_TBL_RAM
 #pragma HLS interface mode = ap_memory port = sedp_reader_tbl storage_type     \
     = ram_1p                                                  latency = 1
+#endif
+
 #pragma HLS interface mode = ap_none port = pub_enable
 #pragma HLS interface mode = ap_none port = sub_enable
 #pragma HLS disaggregate             variable = conf
@@ -960,6 +979,11 @@ void ros2_main(
 #pragma HLS interface mode = ap_vld port = cnt_app_wr_set
 
 #pragma HLS interface mode = ap_none port = timestamp_i64
+
+#ifdef SEDP_READER_TBL_FF
+    static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
+#pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
+#endif
 
     static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0

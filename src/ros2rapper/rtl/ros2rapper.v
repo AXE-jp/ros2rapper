@@ -324,6 +324,7 @@ wire ros2_sedp_reader_tbl_we;
 wire [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_wdata;
 reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_rdata;
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
 integer j;
 `ifdef TARGET_XILINX
 always @(posedge clk) begin // Vivado could not infer BRAM if async reset is used.
@@ -348,6 +349,7 @@ always @(posedge clk or negedge rst_n) begin
         end
     end
 end
+`endif
 
 ros2rapper_tx_counters #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
@@ -515,11 +517,13 @@ ros2_main (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
     .sedp_reader_tbl_address0(ros2_sedp_reader_tbl_address),
     .sedp_reader_tbl_ce0(ros2_sedp_reader_tbl_ce),
     .sedp_reader_tbl_we0(ros2_sedp_reader_tbl_we),
     .sedp_reader_tbl_d0(ros2_sedp_reader_tbl_wdata),
     .sedp_reader_tbl_q0(ros2_sedp_reader_tbl_rdata),
+`endif
 
     .pub_enable(pub_enable),
     .sub_enable(sub_enable),
@@ -1225,11 +1229,13 @@ ros2_main (
   .clk(clk),
   .rst_n(rst_n),
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
   .sedp_reader_tbl_AD1(ros2_sedp_reader_tbl_address),
   .sedp_reader_tbl_CS1(ros2_sedp_reader_tbl_ce),
   .sedp_reader_tbl_WE1(ros2_sedp_reader_tbl_we),
   .sedp_reader_tbl_WD1(ros2_sedp_reader_tbl_wdata),
   .sedp_reader_tbl_RD1(ros2_sedp_reader_tbl_rdata),
+`endif
 
   .pub_enable(pub_enable),
   .sub_enable(sub_enable),
