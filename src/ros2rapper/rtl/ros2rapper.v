@@ -317,6 +317,7 @@ wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
 reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX-1];
 wire [$clog2(`ROS2_SEDP_READER_MAX)-1:0] ros2_sedp_reader_tbl_address;
 wire ros2_sedp_reader_tbl_ce;
@@ -324,23 +325,22 @@ wire ros2_sedp_reader_tbl_we;
 wire [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_wdata;
 reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_rdata;
 
-`ifdef ROS2_SEDP_READER_TBL_RAM
 integer j;
 `ifdef TARGET_XILINX
 always @(posedge clk) begin // Vivado could not infer BRAM if async reset is used.
-`else
+`else // !TARGET_XILINX
 always @(posedge clk or negedge rst_n) begin
-`endif
+`endif // TARGET_XILINX
     if (!rst_n) begin
 `ifndef TARGET_XILINX
         for (j = 0; j < `ROS2_SEDP_READER_MAX; j = j + 1) begin
 `ifdef TARGET_SIM
             ros2_sedp_reader_tbl[j] = {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
-`else
+`else // !TARGET_SIM
             ros2_sedp_reader_tbl[j] <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
-`endif
+`endif // TARGET_SIM
         end
-`endif
+`endif // TARGET_XILINX
         ros2_sedp_reader_tbl_rdata <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
     end else begin
         ros2_sedp_reader_tbl_rdata <= ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address];
@@ -349,7 +349,7 @@ always @(posedge clk or negedge rst_n) begin
         end
     end
 end
-`endif
+`endif // ROS2_SEDP_READER_TBL_RAM
 
 ros2rapper_tx_counters #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
