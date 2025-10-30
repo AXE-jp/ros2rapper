@@ -1210,10 +1210,10 @@ ros2_receiver (
 
   .sub_app_data_recv_we(sub_app_data_recv_valid),
   .sub_app_data_recv_wd(sub_app_data_recv),
-  .sub_app_data_req_we(sub_app_data_ip_req_valid),
-  .sub_app_data_req_wd(sub_app_data_ip_req),
-  .sub_app_data_rel_we(sub_app_data_ip_rel_valid),
-  .sub_app_data_rel_wd(sub_app_data_ip_rel),
+  .sub_app_data_req_we(ros2_sub_app_data_ip_req_valid),
+  .sub_app_data_req_wd(ros2_sub_app_data_ip_req),
+  .sub_app_data_rel_we(ros2_sub_app_data_ip_rel_valid),
+  .sub_app_data_rel_wd(ros2_sub_app_data_ip_rel),
   .sub_app_data_grant_rd(ros2_sub_app_data_ip_grant),
 
   .rawudp_rxbuf_rel_we(udp_rxbuf_ip_rel),
@@ -1242,7 +1242,7 @@ ros2_main (
 
   .in_TDATA(ros2_rtps_data),
   .in_TREADY(ros2_rtps_data_ready),
-  .in_TVALID(ros2_rtsp_data_valid),
+  .in_TVALID(ros2_rtps_data_valid),
 
   .out_TDATA(ros2_msg_metadata),
   .out_TREADY(ros2_msg_metadata_ready),
