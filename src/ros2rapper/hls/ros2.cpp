@@ -78,29 +78,35 @@ find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
 }
 
 /* Cyber func=inline */
+static bool is_same_entity_id(const uint8_t lhs[4], const uint8_t rhs[4]) {
+#pragma HLS inline
+    bool is_same = true;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        if (lhs[j] != rhs[j]) {
+            is_same = false;
+        }
+    }
+    return is_same;
+}
+
+/* Cyber func=inline */
 static bool
 is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
                         const uint8_t entity_id[4],
                         app_endpoint  app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
+    bool matched = false;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {
 #pragma HLS unroll
-        if (guid_prefix_matched[j]) {
-            bool matched = true;
-            /* Cyber unroll_times=all */
-            for (auto k = 0; k < 4; k++) {
-#pragma HLS unroll
-                if (app_reader_tbl[j].entity_id[k] != entity_id[k]) {
-                    matched = false;
-                }
-            }
-            if (matched) {
-                return true;
-            }
+        if (guid_prefix_matched[j]
+            && is_same_entity_id(entity_id, app_reader_tbl[j].entity_id)) {
+            matched = true;
         }
     }
-    return false;
+    return matched;
 }
 
 /* Cyber func=inline */
