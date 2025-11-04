@@ -77,23 +77,39 @@ module ros2_module #(
 
     localparam [`ROS2_APP_DATA_LEN_WIDTH:0] ROS2_PUB_APP_DATA_LEN = 16'd1024;
 
+`ifdef ROS2_PUB_DATA_FF
     reg [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data;
-`ifdef ROS2_PUB_DATA_RAM
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr1;
-    reg  [31:0] ros2_pub_app_data_rdata1;
-`endif
-    always @(posedge clk) begin
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ros2_pub_app_data <= {`ROS2_MAX_APP_DATA_LEN{8'd0}};
         end else begin
-`ifdef ROS2_PUB_DATA_RAM
-            ros2_pub_app_data_rdata1 <= ros2_pub_app_data[32*ros2_pub_app_data_addr1 +: 32];
-`endif
             if (ros2_pub_app_data_ce0 & ros2_pub_app_data_we0) begin
                 ros2_pub_app_data[16*ros2_pub_app_data_addr0 +: 16] <= ros2_pub_app_data_wdata0;
             end
         end
     end
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    reg  [31:0] ros2_pub_app_data [`ROS2_MAX_APP_DATA_LEN/4];
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr1;
+    reg  [31:0] ros2_pub_app_data_rdata1;
+
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr0_32 = ros2_pub_app_data_addr0[$clog2(`ROS2_MAX_APP_DATA_LEN)-2:1];
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            ros2_pub_app_data_rdata1 <= 32'd0;
+        end else begin
+            ros2_pub_app_data_rdata1 <= ros2_pub_app_data[ros2_pub_app_data_addr1];
+            if (ros2_pub_app_data_ce0 & ros2_pub_app_data_we0) begin
+                if (ros2_pub_app_data_addr0[0]) begin
+                    ros2_pub_app_data[ros2_pub_app_data_addr0_32][31:16] <= ros2_pub_app_data_wdata0;
+                end else begin
+                    ros2_pub_app_data[ros2_pub_app_data_addr0_32][15:0] <= ros2_pub_app_data_wdata0;
+                end
+            end
+        end
+    end
+`endif
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "cipot_elpmas/tr";
