@@ -90,7 +90,7 @@ module ros2_module #(
     end
 `endif
 `ifdef ROS2_PUB_DATA_RAM
-    reg  [31:0] ros2_pub_app_data [`ROS2_MAX_APP_DATA_LEN/4];
+    reg  [31:0] ros2_pub_app_data [0:`ROS2_MAX_APP_DATA_LEN/4-1];
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr1;
     reg  [31:0] ros2_pub_app_data_rdata1;
 
