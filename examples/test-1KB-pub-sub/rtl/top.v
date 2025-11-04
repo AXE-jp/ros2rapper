@@ -54,7 +54,7 @@ module top(
         .pub_app_data_ce0(pub_app_data_ce),
         .pub_app_data_we0(pub_app_data_we),
         .pub_app_data_d0(pub_app_data_wdata),
-        .pub_app_data_seed(pub_app_data_seed)
+        .pub_data_seed(pub_data_seed)
     );
 
     wire sub_data_result;

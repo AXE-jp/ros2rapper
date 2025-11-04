@@ -126,7 +126,7 @@ module ros2_module #(
     end
 
     reg  ros2_pub_app_data_req_0;
-    reg  ros2_pub_app_data_rel_0;
+    wire ros2_pub_app_data_rel_0;
     wire ros2_pub_app_data_grant_0;
 
     assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_ready;
