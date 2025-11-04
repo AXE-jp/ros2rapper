@@ -104,7 +104,7 @@ module top(
         .ros2_pub_app_data_addr0(pub_app_data_addr),
         .ros2_pub_app_data_ce0(pub_app_data_ce),
         .ros2_pub_app_data_we0(pub_app_data_we),
-        .ros2_pub_app_data_wdata0(pub_app_data_wdata0),
+        .ros2_pub_app_data_wdata0(pub_app_data_wdata),
         .pub_data_seed(pub_data_seed),
 
         .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
