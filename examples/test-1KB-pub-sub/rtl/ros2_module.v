@@ -28,9 +28,12 @@ module ros2_module #(
     output reg        led4,
     output reg        led5,
 
-    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
-    input  wire ros2_pub_app_data_ap_vld,
-    output wire ros2_pub_app_data_ap_ack,
+    output reg  ros2_pub_app_data_ap_start,
+    input  wire ros2_pub_app_data_ap_ready,
+    input  wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-2:0] ros2_pub_app_data_addr0,
+    input  wire ros2_pub_app_data_ce0,
+    input  wire ros2_pub_app_data_we0,
+    input  wire [15:0] ros2_pub_app_data_wdata0,
     output reg  [15:0] pub_data_seed,
 
     output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
@@ -74,17 +77,23 @@ module ros2_module #(
 
     localparam [`ROS2_APP_DATA_LEN_WIDTH:0] ROS2_PUB_APP_DATA_LEN = 16'd1024;
 
+    reg [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data;
 `ifdef ROS2_PUB_DATA_RAM
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr;
-    wire ros2_pub_app_data_ce;
-    reg  [31:0] ros2_pub_app_data_rdata;
-    integer i;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr1;
+    reg  [31:0] ros2_pub_app_data_rdata1;
+`endif
     always @(posedge clk) begin
-        if (ros2_pub_app_data_ce) begin
-            ros2_pub_app_data_rdata <= ros2_pub_app_data[32*ros2_pub_app_data_addr +: 32];
+        if (!rst_n) begin
+            ros2_pub_app_data <= {`ROS2_MAX_APP_DATA_LEN{8'd0}};
+        end else begin
+`ifdef ROS2_PUB_DATA_RAM
+            ros2_pub_app_data_rdata1 <= ros2_pub_app_data[32*ros2_pub_app_data_addr1 +: 32];
+`endif
+            if (ros2_pub_app_data_ce0 & ros2_pub_app_data_we0) begin
+                ros2_pub_app_data[16*ros2_pub_app_data_addr0 +: 16] <= ros2_pub_app_data_wdata0;
+            end
         end
     end
-`endif
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "cipot_elpmas/tr";
@@ -117,25 +126,27 @@ module ros2_module #(
     end
 
     reg  ros2_pub_app_data_req_0;
-    wire ros2_pub_app_data_rel_0;
+    reg  ros2_pub_app_data_rel_0;
     wire ros2_pub_app_data_grant_0;
 
-    assign ros2_pub_app_data_ap_ack = (pub_state == STATE_WAIT_GRANT) & ros2_pub_app_data_grant_0;
-    assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_vld;
+    assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_ready;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             pub_state <= STATE_IDLE;
             ros2_pub_app_data_req_0 <= 1'b0;
+            ros2_pub_app_data_ap_start <= 1'b0;
         end else begin
             if (pub_state == STATE_WAIT_GRANT) begin
                 if (ros2_pub_app_data_grant_0) begin
                     pub_state <= STATE_WAIT_VALID;
+                    ros2_pub_app_data_ap_start <= 1'b1;
                 end
             end else if (pub_state == STATE_WAIT_VALID) begin
-                if (ros2_pub_app_data_ap_vld) begin
+                if (ros2_pub_app_data_ap_ready) begin
                     pub_state <= STATE_IDLE;
                     ros2_pub_app_data_req_0 <= 1'b0;
+                    ros2_pub_app_data_ap_start <= 1'b0;
                 end
             end else begin  // pub_state == STATE_IDLE
                 if (count == 0) begin
@@ -312,9 +323,9 @@ module ros2_module #(
         .ros2_pub_app_data_3(0),
 `endif
 `ifdef ROS2_PUB_DATA_RAM
-        .ros2_pub_app_data_0_addr(ros2_pub_app_data_addr),
-        .ros2_pub_app_data_0_ce(ros2_pub_app_data_ce),
-        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_rdata),
+        .ros2_pub_app_data_0_addr(ros2_pub_app_data_addr1),
+        .ros2_pub_app_data_0_ce(),
+        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_rdata1),
 
         .ros2_pub_app_data_1_addr(),
         .ros2_pub_app_data_1_ce(),
