@@ -531,23 +531,23 @@ static void ros2_out(
 
     static int64_t app_seqnum;
 
-    static hls_uint<10> tx_progress;
+    static hls_uint<7> tx_progress;
     static_assert(
-        SEDP_READER_MAX <= 1024,
+        SEDP_READER_MAX <= 128,
         "'tx_progress' must be able to represent SEDP_READER_MAX - 1.");
     static_assert(
-        APP_READER_MAX <= 1024,
+        APP_READER_MAX <= 128,
         "'tx_progress' must be able to represent APP_READER_MAX - 1.");
 
-    static hls_uint<11> tx_cnt_elapsed;
+    static hls_uint<8> tx_cnt_elapsed;
     static_assert(
-        SEDP_READER_MAX <= 2047,
+        SEDP_READER_MAX <= 255,
         "'tx_cnt_elapsed' should be able to represent SEDP_READER_MAX.");
     static_assert(
-        PUB_TOPICS_MAX <= 2047,
+        PUB_TOPICS_MAX <= 255,
         "'tx_cnt_elapsed' should be able to represent PUB_TOPICS_MAX.");
     static_assert(
-        SUB_TOPICS_MAX <= 2047,
+        SUB_TOPICS_MAX <= 255,
         "'tx_cnt_elapsed' should be able to represent SUB_TOPICS_MAX.");
 
     static hls_uint<3> tx_topic_progress;
