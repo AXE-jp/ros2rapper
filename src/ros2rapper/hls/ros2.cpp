@@ -134,27 +134,26 @@ static void initialize_sedp_endpoint(sedp_endpoint *participant) {
 
 /* Cyber func=inline */
 static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
-                                      sedp_endpoint     *participant) {
+                                      uint8_t ip_addr[4], uint8_t udp_port[2],
+                                      int64_t *lease_duration_out) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        participant->guid_prefix[j] = rtps_data.guid_prefix[j];
-    }
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 4; j++) {
 #pragma HLS unroll
-        participant->ip_addr[j] = rtps_data.data[j];
+        ip_addr[j] = rtps_data.data[j];
     }
-    participant->udp_port[0] = rtps_data.data[4];
-    participant->udp_port[1] = rtps_data.data[5];
-    participant->lease_duration = 0;
+
+    udp_port[0] = rtps_data.data[4];
+    udp_port[1] = rtps_data.data[5];
+
+    int64_t lease_duration = 0;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
-        participant->lease_duration
-            |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+        lease_duration |= static_cast<int64_t>(rtps_data.data[j + 6])
+                          << (8 * j);
     }
+    *lease_duration_out = lease_duration;
 }
 
 /* Cyber func=inline */
@@ -179,6 +178,72 @@ static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
         reader->entity_id[j] = rtps_data.data[j + 6];
     }
     reader->topic_id = rtps_data.data[10];
+}
+
+/* Cyber func=inline */
+void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
+                         const uint8_t guid_prefix[12], int64_t lease_duration,
+                         int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
+                         sedp_reader_id_t idx) {
+#pragma HLS inline
+    uint32_t rdata;
+    get_sedp_reader_tbl(&rdata, tbl, idx, 0);
+    uint32_t wdata
+        = (rdata & 0xffff) | (udp_port[0] << 16) | (udp_port[1] << 24);
+    set_sedp_reader_tbl(wdata, tbl, idx, 0);
+    set_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
+    set_sedp_reader_tbl_guid_prefix(guid_prefix, tbl, idx);
+    set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
+    set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
+}
+
+/* Cyber func=inline */
+void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
+                         const uint8_t guid_prefix[12], int64_t lease_duration,
+                         int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
+                         sedp_reader_id_t idx) {
+#pragma HLS inline
+    uint32_t wdata = 1 | (udp_port[0] << 16) | (udp_port[1] << 24);
+    set_sedp_reader_tbl(wdata, tbl, idx, 0);
+    uint8_t pubrd_wr_seqnum = 0;
+    uint8_t pubrd_rd_seqnum = 1;
+    uint8_t subrd_wr_seqnum = 0;
+    uint8_t subrd_rd_seqnum = 1;
+    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
+                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
+    set_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
+    set_sedp_reader_tbl_guid_prefix(guid_prefix, tbl, idx);
+    set_sedp_reader_tbl_pubwr_last_sn(0, tbl, idx);
+    set_sedp_reader_tbl_subwr_last_sn(0, tbl, idx);
+    set_sedp_reader_tbl_pub_heartbeat_cnt(0, tbl, idx);
+    set_sedp_reader_tbl_sub_heartbeat_cnt(0, tbl, idx);
+    set_sedp_reader_tbl_pub_acknack_cnt(0, tbl, idx);
+    set_sedp_reader_tbl_sub_acknack_cnt(0, tbl, idx);
+    set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
+    set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
+    clear_sedp_reader_tbl_children(tbl, idx);
+}
+
+/* Cyber func=inline */
+void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
+                  sedp_reader_tbl_t *tbl, bool is_matched,
+                  sedp_reader_id_t matched_idx, bool is_full,
+                  sedp_reader_id_t unused_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = udp_port complete dim = 1
+    int64_t lease_duration;
+    copy_sedp_endpoint_params(rtps_data, ip_addr, udp_port, &lease_duration);
+
+    if (is_matched) {
+        ros2_in_spdp_update(ip_addr, udp_port, rtps_data.guid_prefix,
+                            lease_duration, timestamp_i64, tbl, matched_idx);
+    } else if (!is_full) {
+        ros2_in_spdp_new(ip_addr, udp_port, rtps_data.guid_prefix,
+                         lease_duration, timestamp_i64, tbl, unused_idx);
+    }
 }
 
 /* Cyber func=inline */
@@ -232,19 +297,9 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
-        if (is_participant_matched) {
-            participant = sedp_reader_tbl[sedp_matched_idx];
-        } else {
-            initialize_sedp_endpoint(&participant);
-        }
-        copy_sedp_endpoint_params(rtps_data, &participant);
-        participant.timestamp = timestamp_i64;
-        participant.alive = true;
-        if (is_participant_matched) {
-            sedp_reader_tbl[sedp_matched_idx] = participant;
-        } else if (!is_sedp_reader_tbl_full) {
-            sedp_reader_tbl[sedp_unused_idx] = participant;
-        }
+        ros2_in_spdp(rtps_data, timestamp_i64, sedp_reader_tbl,
+                     is_participant_matched, sedp_matched_idx,
+                     is_sedp_reader_tbl_full, sedp_unused_idx);
         break;
     case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
         if (is_participant_matched) {

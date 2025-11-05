@@ -72,6 +72,10 @@ struct sedp_endpoint {
     bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
 };
 
+static_assert(
+    APP_READER_MAX == 128,
+    "You have to modify sedp_reader_tbl_t, get_sedp_reader_tbl_children and "
+    "set_sedp_reader_tbl_children when you change APP_READER_MAX.");
 typedef struct {
     uint32_t ram[22 * SEDP_READER_MAX];
 } sedp_reader_tbl_t;
@@ -106,5 +110,38 @@ void get_sedp_reader_tbl_alive(bool *alive, const sedp_reader_tbl_t *tbl,
 void get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
                                      const sedp_reader_tbl_t *tbl,
                                      unsigned int             entry);
+
+void set_sedp_reader_tbl_rd_seqnums(uint8_t            pubrd_wr_seqnum,
+                                    uint8_t            pubrd_rd_seqnum,
+                                    uint8_t            subrd_wr_seqnum,
+                                    uint8_t            subrd_rd_seqnum,
+                                    sedp_reader_tbl_t *tbl, unsigned int entry);
+void set_sedp_reader_tbl_ip_addr(const uint8_t      ip_addr[4],
+                                 sedp_reader_tbl_t *tbl, unsigned int entry);
+void set_sedp_reader_tbl_guid_prefix(const uint8_t      guid_prefix[12],
+                                     sedp_reader_tbl_t *tbl,
+                                     unsigned int       entry);
+void set_sedp_reader_tbl_pubwr_lastsn(int64_t            pubwr_lastsn,
+                                      sedp_reader_tbl_t *tbl,
+                                      unsigned int       entry);
+void set_sedp_reader_tbl_subwr_lastsn(int64_t            subwr_lastsn,
+                                      sedp_reader_tbl_t *tbl,
+                                      unsigned int       entry);
+void set_sedp_reader_tbl_pub_heartbeat_cnt(uint32_t cnt, sedp_reader_tbl_t *tbl,
+                                           unsigned int entry);
+void set_sedp_reader_tbl_sub_heartbeat_cnt(uint32_t cnt, sedp_reader_tbl_t *tbl,
+                                           unsigned int entry);
+void set_sedp_reader_tbl_pub_acknack_cnt(uint32_t cnt, sedp_reader_tbl_t *tbl,
+                                         unsigned int entry);
+void set_sedp_reader_tbl_sub_acknack_cnt(uint32_t cnt, sedp_reader_tbl_t *tbl,
+                                         unsigned int entry);
+void set_sedp_reader_tbl_lease_duration(int64_t            lease_duration,
+                                        sedp_reader_tbl_t *tbl,
+                                        unsigned int       entry);
+void set_sedp_reader_tbl_timestamp(int64_t            timestamp_i64,
+                                   sedp_reader_tbl_t *tbl, unsigned int entry);
+void set_sedp_reader_tbl_children(const bool         children[APP_READER_MAX],
+                                  sedp_reader_tbl_t *tbl, unsigned int entry);
+void clear_sedp_reader_tbl_children(sedp_reader_tbl *tbl, unsigned int entry);
 
 #endif // !ENDPOINT_HPP
