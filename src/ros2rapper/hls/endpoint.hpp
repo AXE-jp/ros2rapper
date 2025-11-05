@@ -32,13 +32,18 @@ static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
               "SUB_TOPICS_MAX - 1.");
 
 struct sedp_endpoint {
-    // 0
+    // Word 0
+    //  0         alive
+    //  1         builtin_pubrd_acknack_req
+    //  2         builtin_subrd_acknack_req
+    //  8, 9      initial_send_counter
+    // 15 ... 31  udp_port
     bool        alive;
     bool        builtin_pubrd_acknack_req;
     bool        builtin_subrd_acknack_req;
     hls_uint<2> initial_send_counter;
     uint8_t     udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    // 1
+    // Word 1
     uint8_t     builtin_pubrd_wr_seqnum;
     uint8_t     builtin_pubrd_rd_seqnum;
     uint8_t     builtin_subrd_wr_seqnum;
