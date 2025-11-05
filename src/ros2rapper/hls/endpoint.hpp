@@ -72,6 +72,10 @@ struct sedp_endpoint {
     bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
 };
 
+typedef struct {
+    uint32_t ram[22 * SEDP_READER_MAX];
+} sedp_reader_tbl_t;
+
 using builtin_ep_type_t = hls_uint<2>;
 using app_ep_type_t = hls_uint<2>;
 
@@ -91,5 +95,10 @@ struct app_endpoint {
     topic_id_t    topic_id;
     bool          alive;
 };
+
+uint32_t get_sedp_reader_tbl(const sedp_reader_tbl_t *tbl, unsigned int entry,
+                             unsigned int word_index);
+void     set_sedp_reader_tbl(uint32_t data, sedp_reader_tbl_t *tbl,
+                             unsigned int entry, unsigned int word_index);
 
 #endif // !ENDPOINT_HPP
