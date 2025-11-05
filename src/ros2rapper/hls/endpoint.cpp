@@ -29,6 +29,22 @@ void get_sedp_reader_tbl_alive(bool *alive, const sedp_reader_tbl_t *tbl,
 }
 
 /* Cyber func=inline */
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry) {
+#pragma HLS inline
+    uint32_t data;
+    get_set_reader_tbl(&data, tbl, entry, 1);
+    *pubrd_wr_seqnum = data & 0xff;
+    *pubrd_rd_seqnum = (data >> 8) & 0xff;
+    *subrd_wr_seqnum = (data >> 16) & 0xff;
+    *subrd_rd_seqnum = data >> 24;
+}
+
+/* Cyber func=inline */
 void get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
                                      const sedp_reader_tbl_t *tbl,
                                      unsigned int             entry) {

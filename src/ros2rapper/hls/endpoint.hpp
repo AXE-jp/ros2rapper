@@ -31,6 +31,9 @@ static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
               "topic_id_t should be able to represent PUB_TOPICS_MAX - 1 and "
               "SUB_TOPICS_MAX - 1.");
 
+#define SEDP_ENDPOINT_PUBRD_ACKNACK_REQ 2
+#define SEDP_ENDPOINT_SUBRD_ACKNACK_REQ 4
+
 struct sedp_endpoint {
     // Word 0
     //  0         alive
@@ -107,6 +110,12 @@ void set_sedp_reader_tbl(uint32_t data, sedp_reader_tbl_t *tbl,
 
 void get_sedp_reader_tbl_alive(bool *alive, const sedp_reader_tbl_t *tbl,
                                unsigned int entry);
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry);
 void get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
                                      const sedp_reader_tbl_t *tbl,
                                      unsigned int             entry);

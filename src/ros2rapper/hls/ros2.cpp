@@ -247,6 +247,56 @@ void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
 }
 
 /* Cyber func=inline */
+void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+#pragma HLS inline
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_rd_seqnums(&pubrd_wr_seqnum, &pubrd_rd_seqnum,
+                                   &subrd_wr_seqnum, &subrd_rd_seqnum, tbl,
+                                   idx);
+
+    if (pubrd_rd_seqnum < first_sn || pubrd_wr_seqnum < last_sn) {
+        uint32_t rdata;
+        get_sedp_reader_tbl(&rdata, tbl, idx, 0);
+        uint32_t wdata = rdata | SEDP_ENDPOINT_PUBRD_ACKNACK_REQ;
+        set_sedp_reader_tbl(wdata, tbl, idx, 0);
+    }
+    if (pubrd_rd_seqnum < first_sn) {
+        pubrd_rd_seqnum = first_sn;
+    }
+    if (pubrd_wr_seqnum < last_sn) {
+        pubrd_wr_seqnum = last_sn;
+    }
+    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
+                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
+}
+
+/* Cyber func=inline */
+void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+#pragma HLS inline
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_rd_seqnums(&pubrd_wr_seqnum, &pubrd_rd_seqnum,
+                                   &subrd_wr_seqnum, &subrd_rd_seqnum, tbl,
+                                   idx);
+
+    if (subrd_rd_seqnum < first_sn || subrd_wr_seqnum < last_sn) {
+        uint32_t rdata;
+        get_sedp_reader_tbl(&rdata, tbl, idx, 0);
+        uint32_t wdata = rdata | SEDP_ENDPOINT_SUBRD_ACKNACK_REQ;
+        set_sedp_reader_tbl(wdata, tbl, idx, 0);
+    }
+    if (subrd_rd_seqnum < first_sn) {
+        subrd_rd_seqnum = first_sn;
+    }
+    if (subrd_wr_seqnum < last_sn) {
+        subrd_wr_seqnum = last_sn;
+    }
+    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
+                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
+}
+
+/* Cyber func=inline */
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -305,30 +355,16 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_pubrd_rd_seqnum < first_sn
-                || participant.builtin_pubrd_wr_seqnum < last_sn)
-                participant.builtin_pubrd_acknack_req = true;
-            if (participant.builtin_pubrd_rd_seqnum < first_sn)
-                participant.builtin_pubrd_rd_seqnum = first_sn;
-            if (participant.builtin_pubrd_wr_seqnum < last_sn)
-                participant.builtin_pubrd_wr_seqnum = last_sn;
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            ros2_in_sedp_heartbeat_pub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
         }
         break;
     case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_subrd_rd_seqnum < first_sn
-                || participant.builtin_subrd_wr_seqnum < last_sn)
-                participant.builtin_subrd_acknack_req = true;
-            if (participant.builtin_subrd_rd_seqnum < first_sn)
-                participant.builtin_subrd_rd_seqnum = first_sn;
-            if (participant.builtin_subrd_wr_seqnum < last_sn)
-                participant.builtin_subrd_wr_seqnum = last_sn;
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            ros2_in_sedp_heartbeat_sub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
         }
         break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
