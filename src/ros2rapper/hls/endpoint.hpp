@@ -96,9 +96,15 @@ struct app_endpoint {
     bool          alive;
 };
 
-uint32_t get_sedp_reader_tbl(const sedp_reader_tbl_t *tbl, unsigned int entry,
-                             unsigned int word_index);
-void     set_sedp_reader_tbl(uint32_t data, sedp_reader_tbl_t *tbl,
-                             unsigned int entry, unsigned int word_index);
+void get_sedp_reader_tbl(uint32_t *data, const sedp_reader_tbl_t *tbl,
+                         unsigned int entry, unsigned int word_index);
+void set_sedp_reader_tbl(uint32_t data, sedp_reader_tbl_t *tbl,
+                         unsigned int entry, unsigned int word_index);
+
+void get_sedp_reader_tbl_alive(bool *alive, const sedp_reader_tbl_t *tbl,
+                               unsigned int entry);
+void get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry);
 
 #endif // !ENDPOINT_HPP

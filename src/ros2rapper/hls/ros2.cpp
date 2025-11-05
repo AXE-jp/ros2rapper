@@ -12,8 +12,8 @@
 
 /* Cyber func=inline */
 static void find_unused_and_matched_sedp_endpoint(
-    const uint8_t       guid_prefix[GUID_PREFIX_SIZE],
-    const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX], bool *is_full_out,
+    const uint8_t            guid_prefix[GUID_PREFIX_SIZE],
+    const sedp_reader_tbl_t *sedp_reader_tbl, bool *is_full_out,
     bool *is_matched_out, sedp_reader_id_t *unused_idx_out,
     sedp_reader_id_t *matched_idx_out) {
 #pragma HLS inline
@@ -31,18 +31,22 @@ static void find_unused_and_matched_sedp_endpoint(
 #else // !SEDP_READER_TBL_FF
 #pragma HLS pipeline
 #endif // SEDP_READER_TBL_FF
-        sedp_endpoint participant = sedp_reader_tbl[j];
-#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
-        bool j_matched = participant.alive;
+        bool    j_alive;
+        uint8_t j_guid_prefix[12];
+#pragma HLS array_partition variable = j_guid_prefix complete dim = 1
+        get_sedp_reader_tbl_alive(&j_alive, sedp_reader_tbl, j);
+        get_sedp_reader_tbl_guid_prefix(j_guid_prefix, sedp_reader_tbl, j);
+
+        bool j_matched = j_alive;
         /* Cyber unroll_times=all */
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
 #pragma HLS unroll
-            if (participant.guid_prefix[k] != guid_prefix[k]) {
+            if (j_guid_prefix[k] != guid_prefix[k]) {
                 j_matched = false;
             }
         }
 
-        if (is_full && !participant.alive) {
+        if (is_full && !j_alive) {
             is_full = false;
             unused_idx = j;
         } else if (!is_matched && j_matched) {
