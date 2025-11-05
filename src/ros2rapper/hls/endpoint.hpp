@@ -32,26 +32,39 @@ static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
               "SUB_TOPICS_MAX - 1.");
 
 struct sedp_endpoint {
-    uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    // 0
+    bool        alive;
+    bool        builtin_pubrd_acknack_req;
+    bool        builtin_subrd_acknack_req;
+    hls_uint<2> initial_send_counter;
     uint8_t     udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    // 1
     uint8_t     builtin_pubrd_wr_seqnum;
     uint8_t     builtin_pubrd_rd_seqnum;
-    bool        builtin_pubrd_acknack_req;
     uint8_t     builtin_subrd_wr_seqnum;
     uint8_t     builtin_subrd_rd_seqnum;
-    bool        builtin_subrd_acknack_req;
+    // 2, 3, 4
+    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+    // 5
+    uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    // 6, 7
     int64_t     builtin_pubwr_lastsn;
+    // 8, 9
     int64_t     builtin_subwr_lastsn;
-    hls_uint<2> initial_send_counter;
+    // 10
     uint32_t    pub_heartbeat_cnt;
+    // 11
     uint32_t    sub_heartbeat_cnt;
+    // 12
     uint32_t    pub_acknack_cnt;
+    // 13
     uint32_t    sub_acknack_cnt;
-    bool        alive;
+    // 14, 15
+    int64_t     lease_duration;
+    // 16, 17
+    int64_t     timestamp;
+    // 18, 19, 20, 21
     bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
-    int64_t lease_duration;
-    int64_t timestamp;
 };
 
 using builtin_ep_type_t = hls_uint<2>;
