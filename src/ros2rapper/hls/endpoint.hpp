@@ -48,10 +48,10 @@ struct sedp_endpoint {
     uint8_t     builtin_pubrd_rd_seqnum;
     uint8_t     builtin_subrd_wr_seqnum;
     uint8_t     builtin_subrd_rd_seqnum;
-    // 2, 3, 4
-    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
-    // 5
+    // 2
     uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    // 3, 4, 5
+    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     // 6, 7
     int64_t     builtin_pubwr_lastsn;
     // 8, 9
