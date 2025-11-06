@@ -31,11 +31,23 @@ static void find_unused_and_matched_sedp_endpoint(
 #else // !SEDP_READER_TBL_FF
 #pragma HLS pipeline
 #endif // SEDP_READER_TBL_FF
-        bool    j_alive;
+        uint64_t data_0, data_1;
+        get_sedp_reader_tbl(&data_0, sedp_reader_tbl, j, 0);
+        get_sedp_reader_tbl(&data_1, sedp_reader_tbl, j, 1);
+
+        bool    j_alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
         uint8_t j_guid_prefix[12];
 #pragma HLS array_partition variable = j_guid_prefix complete dim = 1
-        get_sedp_reader_tbl_alive(&j_alive, sedp_reader_tbl, j);
-        get_sedp_reader_tbl_guid_prefix(j_guid_prefix, sedp_reader_tbl, j);
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+            j_guid_prefix[k] = (data_0 >> (8 * (k + 4)));
+        }
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < 8; k++) {
+#pragma HLS unroll
+            j_guid_prefix[k + 4] = (data_1 >> (8 * k));
+        }
 
         bool j_matched = j_alive;
         /* Cyber unroll_times=all */
@@ -114,25 +126,6 @@ is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
 }
 
 /* Cyber func=inline */
-static void initialize_sedp_endpoint(sedp_endpoint *participant) {
-#pragma HLS inline
-    participant->builtin_pubrd_rd_seqnum = 1;
-    participant->builtin_subrd_rd_seqnum = 1;
-    participant->builtin_pubrd_wr_seqnum = 0;
-    participant->builtin_subrd_wr_seqnum = 0;
-    participant->builtin_pubrd_acknack_req = false;
-    participant->builtin_subrd_acknack_req = false;
-    participant->builtin_pubwr_lastsn = 0;
-    participant->builtin_subwr_lastsn = 0;
-    participant->initial_send_counter = 0;
-    participant->pub_heartbeat_cnt = 0;
-    participant->sub_heartbeat_cnt = 0;
-    participant->pub_acknack_cnt = 0;
-    participant->sub_acknack_cnt = 0;
-    reset_sedp_endpoint_children(participant->children);
-}
-
-/* Cyber func=inline */
 static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
                                       uint8_t ip_addr[4], uint8_t udp_port[2],
                                       int64_t *lease_duration_out) {
@@ -182,43 +175,56 @@ static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
 
 /* Cyber func=inline */
 void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
-                         const uint8_t guid_prefix[12], int64_t lease_duration,
-                         int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
-                         sedp_reader_id_t idx) {
+                         int64_t lease_duration, int64_t timestamp_i64,
+                         sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
-    uint32_t rdata;
-    get_sedp_reader_tbl(&rdata, tbl, idx, 0);
-    uint32_t wdata
-        = (rdata & 0xffff) | (udp_port[0] << 16) | (udp_port[1] << 24);
-    set_sedp_reader_tbl(wdata, tbl, idx, 0);
-    set_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
-    set_sedp_reader_tbl_guid_prefix(guid_prefix, tbl, idx);
+    // Update the UDP port
+    uint64_t rdata_0;
+    get_sedp_reader_tbl(&rdata_0, tbl, idx, 0);
+    uint64_t wdata_0 = (rdata_0 & 0xffffffff0000ffff) | (udp_port[0] << 16)
+                       | (udp_port[1] << 24);
+    set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
+
+    // Update the IP address
+    uint8_t old_ip_addr[4];
+    uint8_t sn_0, sn_1, sn_2, sn_3;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(old_ip_addr, &sn_0, &sn_1, &sn_2,
+                                               &sn_3, tbl, idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, sn_0, sn_1, sn_2, sn_3,
+                                               tbl, idx);
+
     set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
     set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
 }
 
 /* Cyber func=inline */
-void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
-                         const uint8_t guid_prefix[12], int64_t lease_duration,
-                         int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
-                         sedp_reader_id_t idx) {
+void ros2_in_spdp_new(const uint8_t ip_addr[4], const uint8_t udp_port[2],
+                      const uint8_t guid_prefix[12], int64_t lease_duration,
+                      int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
+                      sedp_reader_id_t idx) {
 #pragma HLS inline
-    uint32_t wdata = 1 | (udp_port[0] << 16) | (udp_port[1] << 24);
-    set_sedp_reader_tbl(wdata, tbl, idx, 0);
-    uint8_t pubrd_wr_seqnum = 0;
-    uint8_t pubrd_rd_seqnum = 1;
-    uint8_t subrd_wr_seqnum = 0;
-    uint8_t subrd_rd_seqnum = 1;
-    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
-                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
-    set_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
-    set_sedp_reader_tbl_guid_prefix(guid_prefix, tbl, idx);
+    // Set flags, initial_send_counter, UDP port and GUID prefix
+    uint64_t wdata_0
+        = SEDP_ENDPOINT_ALIVE | (udp_port[0] << 16) | (udp_port[1] << 24);
+    uint64_t wdata_1 = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        wdata_0 |= guid_prefix[j] << (8 * (j + 4));
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        wdata_1 |= guid_prefix[j + 4] << (8 * j);
+    }
+    set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
+    set_sedp_reader_tbl(wdata_1, tbl, idx, 1);
+
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, 0, 1, 0, 1, tbl, idx);
     set_sedp_reader_tbl_pubwr_last_sn(0, tbl, idx);
     set_sedp_reader_tbl_subwr_last_sn(0, tbl, idx);
-    set_sedp_reader_tbl_pub_heartbeat_cnt(0, tbl, idx);
-    set_sedp_reader_tbl_sub_heartbeat_cnt(0, tbl, idx);
-    set_sedp_reader_tbl_pub_acknack_cnt(0, tbl, idx);
-    set_sedp_reader_tbl_sub_acknack_cnt(0, tbl, idx);
+    set_sedp_reader_tbl_heartbeat_cnt(0, 0, tbl, idx);
+    set_sedp_reader_tbl_acknack_cnt(0, 0, tbl, idx);
     set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
     set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
     clear_sedp_reader_tbl_children(tbl, idx);
@@ -238,8 +244,8 @@ void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
     copy_sedp_endpoint_params(rtps_data, ip_addr, udp_port, &lease_duration);
 
     if (is_matched) {
-        ros2_in_spdp_update(ip_addr, udp_port, rtps_data.guid_prefix,
-                            lease_duration, timestamp_i64, tbl, matched_idx);
+        ros2_in_spdp_update(ip_addr, udp_port, lease_duration, timestamp_i64,
+                            tbl, matched_idx);
     } else if (!is_full) {
         ros2_in_spdp_new(ip_addr, udp_port, rtps_data.guid_prefix,
                          lease_duration, timestamp_i64, tbl, unused_idx);
@@ -250,10 +256,12 @@ void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
 void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
     uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
-    get_sedp_reader_tbl_rd_seqnums(&pubrd_wr_seqnum, &pubrd_rd_seqnum,
-                                   &subrd_wr_seqnum, &subrd_rd_seqnum, tbl,
-                                   idx);
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
 
     if (pubrd_rd_seqnum < first_sn || pubrd_wr_seqnum < last_sn) {
         uint32_t rdata;
@@ -267,18 +275,21 @@ void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
     if (pubrd_wr_seqnum < last_sn) {
         pubrd_wr_seqnum = last_sn;
     }
-    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
-                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, idx);
 }
 
 /* Cyber func=inline */
 void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
     uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
-    get_sedp_reader_tbl_rd_seqnums(&pubrd_wr_seqnum, &pubrd_rd_seqnum,
-                                   &subrd_wr_seqnum, &subrd_rd_seqnum, tbl,
-                                   idx);
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
 
     if (subrd_rd_seqnum < first_sn || subrd_wr_seqnum < last_sn) {
         uint32_t rdata;
@@ -292,8 +303,9 @@ void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
     if (subrd_wr_seqnum < last_sn) {
         subrd_wr_seqnum = last_sn;
     }
-    set_sedp_reader_tbl_rd_seqnums(pubrd_wr_seqnum, pubrd_rd_seqnum,
-                                   subrd_wr_seqnum, subrd_rd_seqnum, tbl, idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, idx);
 }
 
 /* Cyber func=inline */
