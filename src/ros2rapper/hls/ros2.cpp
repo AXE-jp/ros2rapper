@@ -174,9 +174,10 @@ static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
 }
 
 /* Cyber func=inline */
-void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
-                         int64_t lease_duration, int64_t timestamp_i64,
-                         sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+static void ros2_in_spdp_update(const uint8_t ip_addr[4],
+                                const uint8_t udp_port[2],
+                                int64_t lease_duration, int64_t timestamp_i64,
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
     // Update the UDP port
     uint64_t rdata_0;
@@ -198,10 +199,11 @@ void ros2_in_spdp_update(const uint8_t ip_addr[4], const uint8_t udp_port[2],
 }
 
 /* Cyber func=inline */
-void ros2_in_spdp_new(const uint8_t ip_addr[4], const uint8_t udp_port[2],
-                      const uint8_t guid_prefix[12], int64_t lease_duration,
-                      int64_t timestamp_i64, sedp_reader_tbl_t *tbl,
-                      sedp_reader_id_t idx) {
+static void ros2_in_spdp_new(const uint8_t ip_addr[4],
+                             const uint8_t udp_port[2],
+                             const uint8_t guid_prefix[12],
+                             int64_t lease_duration, int64_t timestamp_i64,
+                             sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
     // Set flags, initial_send_counter, UDP port and GUID prefix
     uint64_t wdata_0
@@ -231,10 +233,10 @@ void ros2_in_spdp_new(const uint8_t ip_addr[4], const uint8_t udp_port[2],
 }
 
 /* Cyber func=inline */
-void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
-                  sedp_reader_tbl_t *tbl, bool is_matched,
-                  sedp_reader_id_t matched_idx, bool is_full,
-                  sedp_reader_id_t unused_idx) {
+static void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
+                         sedp_reader_tbl_t *tbl, bool is_matched,
+                         sedp_reader_id_t matched_idx, bool is_full,
+                         sedp_reader_id_t unused_idx) {
 #pragma HLS inline
     uint8_t ip_addr[4] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = ip_addr complete dim = 1
@@ -253,8 +255,9 @@ void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
 }
 
 /* Cyber func=inline */
-void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
-                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+static void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
+                                       sedp_reader_tbl_t *tbl,
+                                       sedp_reader_id_t   idx) {
 #pragma HLS inline
     uint8_t ip_addr[4];
 #pragma HLS array_partition variable = ip_addr complete dim = 1
@@ -278,8 +281,9 @@ void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
 }
 
 /* Cyber func=inline */
-void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
-                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+static void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
+                                       sedp_reader_tbl_t *tbl,
+                                       sedp_reader_id_t   idx) {
 #pragma HLS inline
     uint8_t ip_addr[4];
 #pragma HLS array_partition variable = ip_addr complete dim = 1

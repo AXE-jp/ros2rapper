@@ -112,7 +112,8 @@ void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
 void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index);
 
-void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl, unsigned int entry);
+void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl,
+                                  unsigned int entry);
 
 void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     uint8_t ip_addr[4], uint8_t *pubrd_wr_seqnum, uint8_t *pubrd_rd_seqnum,

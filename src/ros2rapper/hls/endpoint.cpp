@@ -20,7 +20,8 @@ void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
 }
 
 /* Cyber func=inline */
-void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl, unsigned int entry) {
+void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl,
+                                  unsigned int entry) {
 #pragma HLS inline
     uint64_t data;
     get_sedp_reader_tbl(&data, tbl, entry, 0);
