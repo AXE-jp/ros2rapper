@@ -264,10 +264,7 @@ void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
         &subrd_rd_seqnum, tbl, idx);
 
     if (pubrd_rd_seqnum < first_sn || pubrd_wr_seqnum < last_sn) {
-        uint32_t rdata;
-        get_sedp_reader_tbl(&rdata, tbl, idx, 0);
-        uint32_t wdata = rdata | SEDP_ENDPOINT_PUBRD_ACKNACK_REQ;
-        set_sedp_reader_tbl(wdata, tbl, idx, 0);
+        enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ, tbl, idx);
     }
     if (pubrd_rd_seqnum < first_sn) {
         pubrd_rd_seqnum = first_sn;
@@ -292,10 +289,7 @@ void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
         &subrd_rd_seqnum, tbl, idx);
 
     if (subrd_rd_seqnum < first_sn || subrd_wr_seqnum < last_sn) {
-        uint32_t rdata;
-        get_sedp_reader_tbl(&rdata, tbl, idx, 0);
-        uint32_t wdata = rdata | SEDP_ENDPOINT_SUBRD_ACKNACK_REQ;
-        set_sedp_reader_tbl(wdata, tbl, idx, 0);
+        enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ, tbl, idx);
     }
     if (subrd_rd_seqnum < first_sn) {
         subrd_rd_seqnum = first_sn;

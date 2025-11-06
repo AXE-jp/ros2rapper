@@ -20,6 +20,14 @@ void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
 }
 
 /* Cyber func=inline */
+void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl, unsigned int entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 0);
+    set_sedp_reader_tbl(data | flags, tbl, entry, 0);
+}
+
+/* Cyber func=inline */
 void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     uint8_t ip_addr[4], uint8_t *pubrd_wr_seqnum, uint8_t *pubrd_rd_seqnum,
     uint8_t *subrd_wr_seqnum, uint8_t *subrd_rd_seqnum,
