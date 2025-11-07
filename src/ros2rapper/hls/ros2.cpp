@@ -589,10 +589,9 @@ static void sedp_heartbeat_out(message_type_t msg_type,
                                const uint8_t  dst_port[2],
                                const uint8_t  reader_guid_prefix[12],
                                const int64_t  first_seqnum,
-                               const int64_t last_seqnum, uint32_t &cnt,
+                               const int64_t last_seqnum, uint32_t cnt,
                                message_metadata_t *msg_metadata) {
 #pragma HLS inline
-    cnt++;
     set_common_message_metadata(msg_type, 0, dst_addr, dst_port, msg_metadata);
     serialize_sedp_heartbeat_metadata(reader_guid_prefix, first_seqnum,
                                       last_seqnum, cnt, msg_metadata);
@@ -603,9 +602,8 @@ static void sedp_acknack_out(message_type_t msg_type, const uint8_t dst_addr[4],
                              const uint8_t dst_port[2],
                              const uint8_t reader_guid_prefix[12],
                              uint8_t snstate_base, bool snstate_is_empty,
-                             uint32_t &cnt, message_metadata_t *msg_metadata) {
+                             uint32_t cnt, message_metadata_t *msg_metadata) {
 #pragma HLS inline
-    cnt++;
     set_common_message_metadata(msg_type, 0, dst_addr, dst_port, msg_metadata);
     serialize_sedp_acknack_metadata(reader_guid_prefix, snstate_base,
                                     snstate_is_empty, cnt, msg_metadata);
@@ -632,11 +630,10 @@ static void app_writer_out(topic_id_t    topic_id,
     } while (0)
 
 /* Cyber func=inline */
-static void SEDP_PUB_WRITER_OUT(hls_uint<1>         cnt_elapsed,
-                                const uint8_t       default_port[2],
-                                const uint8_t       entity_id[4],
-                                sedp_reader_tbl_t  *tbl,
-                                sedp_reader_id_t    sedp_idx,
+static void SEDP_PUB_WRITER_OUT(hls_uint<1>        cnt_elapsed,
+                                const uint8_t      default_port[2],
+                                const uint8_t      entity_id[4],
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
                                 message_metadata_t *msg_metadata) {
 #pragma HLS inline
     uint8_t ip_addr[4] /* Cyber array=EXPAND */;
@@ -646,25 +643,24 @@ static void SEDP_PUB_WRITER_OUT(hls_uint<1>         cnt_elapsed,
 #pragma HLS array_partition variable = udp_port complete dim = 1
 #pragma HLS array_partition variable = guid_prefix complete dim = 1
     if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
-                                guid_prefix, tbl, sedp_idx)) {
+                                guid_prefix, tbl, idx)) {
         return;
     }
 
     int64_t pubwr_lastsn;
-    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, tbl, sedp_idx);
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, tbl, idx);
     pubwr_lastsn++;
-    set_sedp_reader_tbl_pubwr_lastsn(pubwr_lastsn, tbl, sedp_idx);
+    set_sedp_reader_tbl_pubwr_lastsn(pubwr_lastsn, tbl, idx);
 
     sedp_writer_out(MSG_TYPE_SEDP_PUB, topic_id, ip_addr, udp_port, guid_prefix,
                     pubwr_lastsn, default_port, entity_id, msg_metadata);
 }
 
 /* Cyber func=inline */
-static void SEDP_SUB_WRITER_OUT(hls_uint<1>         cnt_elapsed,
-                                const uint8_t       default_port[2],
-                                const uint8_t       entity_id[4],
-                                sedp_reader_tbl_t  *tbl,
-                                sedp_reader_id_t    sedp_idx,
+static void SEDP_SUB_WRITER_OUT(hls_uint<1>        cnt_elapsed,
+                                const uint8_t      default_port[2],
+                                const uint8_t      entity_id[4],
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
                                 message_metadata_t *msg_metadata) {
 #pragma HLS inline
     uint8_t ip_addr[4] /* Cyber array=EXPAND */;
@@ -674,36 +670,80 @@ static void SEDP_SUB_WRITER_OUT(hls_uint<1>         cnt_elapsed,
 #pragma HLS array_partition variable = udp_port complete dim = 1
 #pragma HLS array_partition variable = guid_prefix complete dim = 1
     if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
-                                guid_prefix, tbl, sedp_idx)) {
+                                guid_prefix, tbl, idx)) {
         return;
     }
 
     int64_t subwr_lastsn;
-    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, tbl, sedp_idx);
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, tbl, idx);
     subwr_lastsn++;
-    set_sedp_reader_tbl_subwr_lastsn(subwr_lastsn, tbl, sedp_idx);
+    set_sedp_reader_tbl_subwr_lastsn(subwr_lastsn, tbl, idx);
 
     sedp_writer_out(MSG_TYPE_SEDP_SUB, topic_id, ip_addr, udp_port, guid_prefix,
                     subwr_lastsn, default_port, entity_id, msg_metadata);
 }
 
-#define SEDP_PUB_HEARTBEAT_OUT(reader)                                         \
-    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, (reader).ip_addr,          \
-                       (reader).udp_port, (reader).guid_prefix,                \
-                       (reader).builtin_pubwr_lastsn + 1,                      \
-                       (reader).builtin_pubwr_lastsn,                          \
-                       (reader).pub_heartbeat_cnt, &msg_metadata)
+/* Cyber func=inline */
+static void SEDP_PUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
+                                   sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                   message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
 
-#define SEDP_SUB_HEARTBEAT_OUT(reader)                                         \
-    do {                                                                       \
-        sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, (reader).ip_addr,      \
-                           (reader).udp_port, (reader).guid_prefix,            \
-                           (reader).builtin_subwr_lastsn + 1,                  \
-                           (reader).builtin_subwr_lastsn,                      \
-                           (reader).sub_heartbeat_cnt, &msg_metadata);         \
-        if ((reader).initial_send_counter != 3)                                \
-            (reader).initial_send_counter++;                                   \
-    } while (0)
+    int64_t pubwr_lastsn;
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, tbl, idx);
+
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt;
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      tbl, idx);
+    pub_heartbeat_cnt++;
+    set_sedp_reader_tbl_heartbeat_cnt(pub_heartbeat_cnt, sub_heartbeat_cnt, tbl,
+                                      idx);
+
+    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, ip_addr, udp_port,
+                       guid_prefix, pubwr_lastsn + 1, pubwr_lastsn,
+                       pub_heartbeat_cnt, msg_meatadata);
+}
+
+/* Cyber func=inline */
+static void SEDP_SUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
+                                   sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                   message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, true, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
+
+    int64_t subwr_lastsn;
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, tbl, idx);
+
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt;
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      tbl, idx);
+    sub_heartbeat_cnt++;
+    set_sedp_reader_tbl_heartbeat_cnt(pub_heartbeat_cnt, sub_heartbeat_cnt, tbl,
+                                      idx);
+
+    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, ip_addr, udp_port,
+                       guid_prefix, subwr_lastsn + 1, subwr_lastsn,
+                       sub_heartbeat_cnt, msg_meatadata);
+}
 
 #define SEDP_PUB_ACKNACK_OUT(reader)                                           \
     do {                                                                       \
@@ -972,13 +1012,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    if (reader.alive
-                        && ((reader.initial_send_counter < 3)
-                            || cnt_sedp_pub_hb_elapsed)) {
-                        SEDP_PUB_HEARTBEAT_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_PUB_HEARTBEAT_OUT(cnt_sedp_pub_hb_elapsed,
+                                           sedp_reader_tbl, tx_progress,
+                                           &msg_meatdata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -1002,13 +1038,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    if (reader.alive
-                        && ((reader.initial_send_counter < 3)
-                            || cnt_sedp_sub_hb_elapsed)) {
-                        SEDP_SUB_HEARTBEAT_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_SUB_HEARTBEAT_OUT(cnt_sedp_sub_hb_elapsed,
+                                           sedp_reader_tbl, tx_progress,
+                                           &msg_meatdata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
