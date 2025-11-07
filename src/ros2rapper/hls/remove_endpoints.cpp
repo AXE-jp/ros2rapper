@@ -260,7 +260,7 @@ void remove_dead_endpoints(sedp_reader_id_t   id,
             get_sedp_reader_tbl_timestamp(&last_spdp_timestamp, sedp_reader_tbl,
                                           id);
             if ((timestamp_i64 - last_spdp_timestamp) > lease_duration) {
-                remove_sedp_ednpoint(id, sedp_reader_tbl, app_reader_tbl);
+                remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
             }
         }
     }

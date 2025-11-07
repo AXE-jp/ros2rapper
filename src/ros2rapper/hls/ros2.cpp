@@ -191,8 +191,8 @@ static void ros2_in_spdp_new(const uint8_t ip_addr[4],
     set_sedp_reader_tbl(wdata_1, tbl, idx, 1);
 
     set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, 0, 1, 0, 1, tbl, idx);
-    set_sedp_reader_tbl_pubwr_last_sn(0, tbl, idx);
-    set_sedp_reader_tbl_subwr_last_sn(0, tbl, idx);
+    set_sedp_reader_tbl_pubwr_lastsn(0, tbl, idx);
+    set_sedp_reader_tbl_subwr_lastsn(0, tbl, idx);
     set_sedp_reader_tbl_heartbeat_cnt(0, 0, tbl, idx);
     set_sedp_reader_tbl_acknack_cnt(0, 0, tbl, idx);
     set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
@@ -344,18 +344,18 @@ static void ros2_in_sedp_pub(bool is_valid_topic, uint8_t seqnum,
     uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
     get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
         ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
-        &subrd_rd_seqnum, tbl, sedp_idx);
+        &subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
 
     if (pubrd_rd_seqnum != seqnum) {
         return;
     }
 
     pubrd_rd_seqnum++;
-    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
-                                               pubrd_rd_seqnum, subrd_wr_seqnum,
-                                               subrd_rd_seqnum, tbl, sedp_idx);
-    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ, tbl,
-                                 sedp_idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum,
+        subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ,
+                                 sedp_reader_tbl, sedp_idx);
 
     if (is_valid_topic) {
         ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
@@ -376,18 +376,18 @@ static void ros2_in_sedp_sub(bool is_valid_topic, uint8_t seqnum,
     uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
     get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
         ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
-        &subrd_rd_seqnum, tbl, sedp_idx);
+        &subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
 
     if (subrd_rd_seqnum != seqnum) {
         return;
     }
 
     subrd_rd_seqnum++;
-    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
-                                               pubrd_rd_seqnum, subrd_wr_seqnum,
-                                               subrd_rd_seqnum, tbl, sedp_idx);
-    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ, tbl,
-                                 sedp_idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum,
+        subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ,
+                                 sedp_reader_tbl, sedp_idx);
 
     if (is_valid_topic) {
         ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
@@ -470,7 +470,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
         reader.app_ep_type = APP_EP_SUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
             ros2_in_sedp_pub(rtps_data.type == RTPS_TYPE_SEDP_PUB,
-                             rtps_data.data[11], sedp_reader_tbl,
+                             rtps_data.data[11], reader, sedp_reader_tbl,
                              app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
@@ -479,7 +479,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
         reader.app_ep_type = APP_EP_PUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
             ros2_in_sedp_sub(rtps_data.type == RTPS_TYPE_SEDP_SUB,
-                             rtps_data.data[11], sedp_reader_tbl,
+                             rtps_data.data[11], reader, sedp_reader_tbl,
                              app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
@@ -514,8 +514,8 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
     uint8_t  sn_0, sn_1, sn_2, sn_3;
 
     get_sedp_reader_tbl(&data_0, tbl, idx, 0);
-    bool        alive = ((data & SEDP_ENDPOINT_ALIVE) != 0);
-    hls_uint<2> initial_send_counter = ((data >> 8) & 3);
+    bool        alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    hls_uint<2> initial_send_counter = ((data_0 >> 8) & 3);
     if (!alive || ((initial_send_counter == 3) && !cnt_elapsed)) {
         return false;
     }
@@ -629,7 +629,7 @@ static void app_writer_out(topic_id_t    topic_id,
     } while (0)
 
 /* Cyber func=inline */
-static void SEDP_PUB_WRITER_OUT(hls_uint<1>        cnt_elapsed,
+static void SEDP_PUB_WRITER_OUT(hls_uint<1> cnt_elapsed, topic_id_t topic_id,
                                 const uint8_t      default_port[2],
                                 const uint8_t      entity_id[4],
                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
@@ -656,7 +656,7 @@ static void SEDP_PUB_WRITER_OUT(hls_uint<1>        cnt_elapsed,
 }
 
 /* Cyber func=inline */
-static void SEDP_SUB_WRITER_OUT(hls_uint<1>        cnt_elapsed,
+static void SEDP_SUB_WRITER_OUT(hls_uint<1> cnt_elapsed, topic_id_t topic_id,
                                 const uint8_t      default_port[2],
                                 const uint8_t      entity_id[4],
                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
@@ -710,7 +710,7 @@ static void SEDP_PUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
 
     sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, ip_addr, udp_port,
                        guid_prefix, pubwr_lastsn + 1, pubwr_lastsn,
-                       pub_heartbeat_cnt, msg_meatadata);
+                       pub_heartbeat_cnt, msg_metadata);
 }
 
 /* Cyber func=inline */
@@ -741,7 +741,7 @@ static void SEDP_SUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
 
     sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, ip_addr, udp_port,
                        guid_prefix, subwr_lastsn + 1, subwr_lastsn,
-                       sub_heartbeat_cnt, msg_meatadata);
+                       sub_heartbeat_cnt, msg_metadata);
 }
 
 /* Cyber func=inline */
@@ -798,7 +798,7 @@ static void SEDP_PUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
     set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
 
     sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, ip_addr, udp_port, guid_prefix,
-                     snstate_bas, snstate_is_empty, pub_acknack_cnt,
+                     snstate_base, snstate_is_empty, pub_acknack_cnt,
                      msg_metadata);
 
     if (acknack_req) {
@@ -860,7 +860,7 @@ static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
     set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
 
     sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, ip_addr, udp_port, guid_prefix,
-                     snstate_bas, snstate_is_empty, sub_acknack_cnt,
+                     snstate_base, snstate_is_empty, sub_acknack_cnt,
                      msg_metadata);
 
     if (acknack_req) {
@@ -1055,7 +1055,8 @@ static void ros2_out(
                     // Send published topic data
                     if (tx_progress < SEDP_READER_MAX) {
                         SEDP_PUB_WRITER_OUT(
-                            cnt_sedp_pub_wr_elapsed, default_port,
+                            cnt_sedp_pub_wr_elapsed, tx_topic_progress,
+                            default_port,
                             app_writer_entity_id_list[tx_topic_progress],
                             sedp_reader_tbl, tx_progress, &msg_metadata);
                     }
@@ -1099,7 +1100,8 @@ static void ros2_out(
                     // Send subscribed topic data
                     if (tx_progress < SEDP_READER_MAX) {
                         SEDP_SUB_WRITER_OUT(
-                            cnt_sedp_sub_wr_elapsed, default_port,
+                            cnt_sedp_sub_wr_elapsed, tx_topic_progress,
+                            default_port,
                             app_reader_entity_id_list[tx_topic_progress],
                             sedp_reader_tbl, tx_progress, &msg_metadata);
                     }
@@ -1118,7 +1120,7 @@ static void ros2_out(
                 if (tx_progress < SEDP_READER_MAX) {
                     SEDP_PUB_HEARTBEAT_OUT(cnt_sedp_pub_hb_elapsed,
                                            sedp_reader_tbl, tx_progress,
-                                           &msg_meatdata);
+                                           &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -1144,7 +1146,7 @@ static void ros2_out(
                 if (tx_progress < SEDP_READER_MAX) {
                     SEDP_SUB_HEARTBEAT_OUT(cnt_sedp_sub_hb_elapsed,
                                            sedp_reader_tbl, tx_progress,
-                                           &msg_meatdata);
+                                           &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
