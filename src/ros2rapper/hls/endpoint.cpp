@@ -102,11 +102,31 @@ void set_sedp_reader_tbl_acknack_cnt(uint32_t           pub_acknack_cnt,
 }
 
 /* Cyber func=inline */
+void get_sedp_reader_tbl_lease_duration(int64_t                 *lease_duration,
+                                        const sedp_reader_tbl_t *tbl,
+                                        unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 7);
+    *lease_duration = data;
+}
+
+/* Cyber func=inline */
 void set_sedp_reader_tbl_lease_duration(int64_t            lease_duration,
                                         sedp_reader_tbl_t *tbl,
                                         unsigned int       entry) {
 #pragma HLS inline
     set_sedp_reader_tbl(lease_duration, tbl, entry, 7);
+}
+
+/* Cyber func=inline */
+void get_sedp_reader_tbl_timestamp(int64_t                 *timestamp_i64,
+                                   const sedp_reader_tbl_t *tbl,
+                                   unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 8);
+    *timestamp_i64 = data;
 }
 
 /* Cyber func=inline */

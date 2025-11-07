@@ -8,18 +8,25 @@
 #include <cstdint>
 
 /* Cyber func=inline */
-static void remove_sedp_endpoint(sedp_endpoint *sedp_reader,
-                                 app_endpoint app_reader_tbl[APP_READER_MAX]) {
+void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
+                          sedp_reader_tbl_t *sedp_reader_tbl,
+                          app_endpoint       app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
-#pragma HLS array_partition variable = sedp_reader->children complete dim = 1
-    // Remove sedp_reader
-    sedp_reader->alive = false;
-    // Remove the children of sedp_reader
+    uint64_t children_0, children_1;
+    get_sedp_reader_tbl(&children_0, sedp_reader_tbl, sedp_idx, 9);
+    get_sedp_reader_tbl(&children_1, sedp_reader_tbl, sedp_idx, 10);
+    // Remove sedp_endpoint
+    set_sedp_reader_tbl(0, sedp_reader_tbl, sedp_idx, 0);
+    // Remove the children of the sedp_endpoint
     /* Cyber unroll_times=all */
-    for (auto j = 0; j < APP_READER_MAX; j++) {
+    for (auto j = 0; j < 64; j++) {
 #pragma HLS unroll
-        if (sedp_reader->children[j]) {
+        uint64_t flag = static_cast<uint64_t>(1) << j;
+        if ((children_0 & flag) != 0) {
             app_reader_tbl[j].alive = false;
+        }
+        if ((children_1 & flag) != 0) {
+            app_reader_tbl[j + 64].alive = false;
         }
     }
 }
@@ -237,18 +244,24 @@ void update_liveliness(hls_uint<9> in, hls_stream<rtps_data_t> &out,
 }
 
 /* Cyber func=inline */
-void remove_dead_endpoints(sedp_reader_id_t id,
-                           sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
-                           app_endpoint     app_reader_tbl[APP_READER_MAX],
-                           int64_t          timestamp_i64) {
+void remove_dead_endpoints(sedp_reader_id_t   id,
+                           sedp_reader_tbl_t *sedp_reader_tbl,
+                           app_endpoint       app_reader_tbl[APP_READER_MAX],
+                           int64_t            timestamp_i64) {
 #pragma HLS inline
     // Check timeout
     if (id < SEDP_READER_MAX) {
-        sedp_endpoint reader = sedp_reader_tbl[id];
-        if (reader.alive
-            && ((timestamp_i64 - reader.timestamp) > reader.lease_duration)) {
-            remove_sedp_endpoint(&reader, app_reader_tbl);
-            sedp_reader_tbl[id] = reader;
+        uint64_t flags;
+        get_sedp_reader_tbl(&flags, sedp_reader_tbl, id, 0);
+        if ((flags & SEDP_ENDPOINT_ALIVE) != 0) {
+            int64_t lease_duration, last_spdp_timestamp;
+            get_sedp_reader_tbl_lease_duration(&lease_duration, sedp_reader_tbl,
+                                               id);
+            get_sedp_reader_tbl_timestamp(&last_spdp_timestamp, sedp_reader_tbl,
+                                          id);
+            if ((timestamp_i64 - last_spdp_timestamp) > lease_duration) {
+                remove_sedp_ednpoint(id, sedp_reader_tbl, app_reader_tbl);
+            }
         }
     }
 }
