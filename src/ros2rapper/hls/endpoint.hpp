@@ -85,7 +85,11 @@ static_assert(
     "ros2_in_sedp_pub, ros2_in_sedp_sub, remove_sedp_endpoint and tests when "
     "you change APP_READER_MAX.");
 typedef struct {
-    uint64_t ram[11 * SEDP_READER_MAX];
+    uint64_t ram[11 * SEDP_READER_MAX]
+#ifdef SEDP_READER_TBL_FF
+    /* Cyber array=EXPAND, array_index=const */
+#endif
+        ;
 } sedp_reader_tbl_t;
 
 using builtin_ep_type_t = hls_uint<2>;
