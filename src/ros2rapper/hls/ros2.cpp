@@ -486,16 +486,7 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_RM_ENDPOINT:
         if (is_participant_matched) {
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            participant.alive = false;
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-                if (participant.children[j]) {
-                    app_reader_tbl[j].alive = false;
-                }
-            }
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            remove_sedp_endpoint(sedp_matched_idx, sedp_reader_tbl, app_reader_tbl);
         }
         break;
     }
