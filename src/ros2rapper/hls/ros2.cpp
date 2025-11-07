@@ -530,7 +530,7 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
 #pragma HLS unroll
         guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
     }
-    /* Cyber unroll_times_all */
+    /* Cyber unroll_times=all */
     for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
         guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
@@ -745,23 +745,129 @@ static void SEDP_SUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
                        sub_heartbeat_cnt, msg_meatadata);
 }
 
-#define SEDP_PUB_ACKNACK_OUT(reader)                                           \
-    do {                                                                       \
-        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, (reader).ip_addr,          \
-                         (reader).udp_port, (reader).guid_prefix,              \
-                         snstate_base, snstate_is_empty,                       \
-                         (reader).pub_acknack_cnt, &msg_metadata);             \
-        (reader).builtin_pubrd_acknack_req = false;                            \
-    } while (0)
+/* Cyber func=inline */
+static void SEDP_PUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
+                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                 message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    static const uint64_t req_flag_mask = SEDP_ENDPOINT_PUBRD_ACKNACK_REQ;
 
-#define SEDP_SUB_ACKNACK_OUT(reader)                                           \
-    do {                                                                       \
-        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, (reader).ip_addr,          \
-                         (reader).udp_port, (reader).guid_prefix,              \
-                         snstate_base, snstate_is_empty,                       \
-                         (reader).sub_acknack_cnt, &msg_metadata);             \
-        (reader).builtin_subrd_acknack_req = false;                            \
-    } while (0)
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, idx, 0);
+    bool alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    bool acknack_req = ((data_0 & req_flag_mask) != 0);
+    if (!alive || (!cnt_elapsed && !acknack_req)) {
+        return;
+    }
+
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+    uint8_t snstate_base = pubrd_rd_seqnum;
+    bool    snstate_is_empty = (pubrd_wr_seqnum < pubrd_rd_seqnum);
+    if (!cnt_elapsed && snstate_is_empty) {
+        return;
+    }
+
+    udp_port[0] = (data_0 >> 16) & 0xff;
+    udp_port[1] = (data_0 >> 24) & 0xff;
+
+    get_sedp_reader_tbl(&data_1, tbl, idx, 1);
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
+    }
+
+    uint32_t pub_acknack_cnt, sub_acknack_cnt;
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt, tbl,
+                                    idx);
+    pub_acknack_cnt++;
+    set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
+
+    sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, ip_addr, udp_port, guid_prefix,
+                     snstate_bas, snstate_is_empty, pub_acknack_cnt,
+                     msg_metadata);
+
+    if (acknack_req) {
+        set_sedp_reader_tbl(data_0 & ~req_flag_mask, tbl, idx, 0);
+    }
+}
+
+/* Cyber func=inline */
+static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
+                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                 message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    static const uint64_t req_flag_mask = SEDP_ENDPOINT_SUBRD_ACKNACK_REQ;
+
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, idx, 0);
+    bool alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    bool acknack_req = ((data_0 & req_flag_mask) != 0);
+    if (!alive || (!cnt_elapsed && !acknack_req)) {
+        return;
+    }
+
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+    uint8_t snstate_base = subrd_rd_seqnum;
+    bool    snstate_is_empty = (subrd_wr_seqnum < subrd_rd_seqnum);
+    if (!cnt_elapsed && snstate_is_empty) {
+        return;
+    }
+
+    udp_port[0] = (data_0 >> 16) & 0xff;
+    udp_port[1] = (data_0 >> 24) & 0xff;
+
+    get_sedp_reader_tbl(&data_1, tbl, idx, 1);
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
+    }
+
+    uint32_t pub_acknack_cnt, sub_acknack_cnt;
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt, tbl,
+                                    idx);
+    sub_acknack_cnt++;
+    set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
+
+    sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, ip_addr, udp_port, guid_prefix,
+                     snstate_bas, snstate_is_empty, sub_acknack_cnt,
+                     msg_metadata);
+
+    if (acknack_req) {
+        set_sedp_reader_tbl(data_0 & ~req_flag_mask, tbl, idx, 0);
+    }
+}
 
 /* Cyber func=inline */
 static void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
@@ -1064,19 +1170,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
-                    uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
-                    bool    acknack_req = reader.builtin_pubrd_acknack_req;
-                    uint8_t snstate_base = rd_seqnum;
-                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-                    if (reader.alive
-                        && (cnt_sedp_pub_an_elapsed
-                            || (acknack_req && !snstate_is_empty))) {
-                        SEDP_PUB_ACKNACK_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_PUB_ACKNACK_OUT(cnt_sedp_pub_an_elapsed,
+                                         sedp_reader_tbl, tx_progress,
+                                         &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -1100,19 +1196,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
-                    uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
-                    bool    acknack_req = reader.builtin_subrd_acknack_req;
-                    uint8_t snstate_base = rd_seqnum;
-                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-                    if (reader.alive
-                        && (cnt_sedp_sub_an_elapsed
-                            || (acknack_req && !snstate_is_empty))) {
-                        SEDP_SUB_ACKNACK_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_SUB_ACKNACK_OUT(cnt_sedp_sub_an_elapsed,
+                                         sedp_reader_tbl, tx_progress,
+                                         &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
