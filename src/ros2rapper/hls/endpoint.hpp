@@ -174,6 +174,6 @@ void get_sedp_reader_tbl_timestamp(int64_t                 *timestamp_i64,
 void set_sedp_reader_tbl_timestamp(int64_t            timestamp_i64,
                                    sedp_reader_tbl_t *tbl, unsigned int entry);
 
-void clear_sedp_reader_tbl_children(sedp_reader_tbl *tbl, unsigned int entry);
+void clear_sedp_reader_tbl_children(sedp_reader_tbl_t *tbl, unsigned int entry);
 
 #endif // !ENDPOINT_HPP

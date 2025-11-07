@@ -181,7 +181,7 @@ void set_sedp_reader_tbl_timestamp(int64_t            timestamp_i64,
 }
 
 /* Cyber func=inline */
-void clear_sedp_reader_tbl_children(sedp_reader_tbl *tbl, unsigned int entry) {
+void clear_sedp_reader_tbl_children(sedp_reader_tbl_t *tbl, unsigned int entry) {
 #pragma HLS inline
     set_sedp_reader_tbl(0, tbl, entry, 9);
     set_sedp_reader_tbl(0, tbl, entry, 10);
