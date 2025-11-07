@@ -1315,9 +1315,10 @@ void ros2_main(
 #pragma HLS interface mode = axis port = out
 
 #ifdef SEDP_READER_TBL_RAM
-#pragma HLS interface mode = ap_memory port = sedp_reader_tbl storage_type     \
-    = ram_1p                                                  latency = 1
-#endif
+#pragma HLS disaggregate variable = sedp_reader_tbl
+#pragma HLS interface mode = ap_memory port                                    \
+    = sedp_reader_tbl->ram storage_type = ram_1p latency = 1
+#endif // SEDP_READER_TBL_RAM
 
 #pragma HLS interface mode = ap_none port = pub_enable
 #pragma HLS interface mode = ap_none port = sub_enable
