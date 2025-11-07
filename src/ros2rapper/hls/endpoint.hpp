@@ -79,10 +79,11 @@ struct sedp_endpoint {
     bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
 };
 
-static_assert(APP_READER_MAX == 128,
-              "You have to modify sedp_reader_tbl_t, "
-              "get_sedp_reader_tbl_children, set_sedp_reader_tbl_children and "
-              "clear_sedp_reader_tbl_children when you change APP_READER_MAX.");
+static_assert(
+    APP_READER_MAX == 128,
+    "You have to modify sedp_reader_tbl_t, clear_sedp_reader_tbl_children, "
+    "ros2_in_sedp_pub, ros2_in_sedp_sub, remove_sedp_endpoint and tests when "
+    "you change APP_READER_MAX.");
 typedef struct {
     uint64_t ram[11 * SEDP_READER_MAX];
 } sedp_reader_tbl_t;

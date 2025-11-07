@@ -486,7 +486,8 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_RM_ENDPOINT:
         if (is_participant_matched) {
-            remove_sedp_endpoint(sedp_matched_idx, sedp_reader_tbl, app_reader_tbl);
+            remove_sedp_endpoint(sedp_matched_idx, sedp_reader_tbl,
+                                 app_reader_tbl);
         }
         break;
     }
