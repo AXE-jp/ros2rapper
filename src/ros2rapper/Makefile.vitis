@@ -9,16 +9,22 @@ HDRS   = $(wildcard $(HLSDIR)/*.hpp)
 TBSRCS = $(wildcard $(TBDIR)/*.cpp)
 
 VERILOGTOP_MAIN = proj_ros2_main/solution1/syn/verilog/ros2_main.v
+VERILOGTOP_RECEIVER = proj_ros2_receiver/solution1/syn/verilog/ros2_receiver.v
 VERILOGTOP_SENDER = proj_ros2_sender/solution1/syn/verilog/ros2_sender.v
 
 .PHONY: synth synth_main synth_sender clean csim format
-synth: synth_main synth_sender
+synth: synth_main synth_receiver synth_sender
 synth_main: $(VERILOGTOP_MAIN)
+synth_receiver: $(VERILOGTOP_RECEIVER)
 synth_sender: $(VERILOGTOP_SENDER)
 
 $(VERILOGTOP_MAIN): $(SRCS) $(HDRS) run_hls.tcl
 	vitis_hls run_hls.tcl
 	./fix-hls-code-for-verilator.rb proj_ros2_main/solution1/syn/verilog
+
+$(VERILOGTOP_RECEIVER): $(SRCS) $(HDRS) run_hls_receiver.tcl
+	vitis_hls run_hls_receiver.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_receiver/solution1/syn/verilog
 
 $(VERILOGTOP_SENDER): $(SRCS) $(HDRS) run_hls_sender.tcl
 	vitis_hls run_hls_sender.tcl
@@ -29,6 +35,7 @@ csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
 
 clean:
 	rm -rf proj_ros2_main
+	rm -rf proj_ros2_receiver
 	rm -rf proj_ros2_sender
 	rm -rf proj_ros2test
 	rm -rf *.log
