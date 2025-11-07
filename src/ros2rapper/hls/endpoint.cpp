@@ -123,6 +123,18 @@ void set_sedp_reader_tbl_heartbeat_cnt(uint32_t           pub_heartbeat_cnt,
 }
 
 /* Cyber func=inline */
+void get_sedp_reader_tbl_acknack_cnt(uint32_t                *pub_acknack_cnt,
+                                     uint32_t                *sub_acknack_cnt,
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 6);
+    *pub_acknack_cnt = data & 0xffffffff;
+    *sub_acknack_cnt = data >> 32;
+}
+
+/* Cyber func=inline */
 void set_sedp_reader_tbl_acknack_cnt(uint32_t           pub_acknack_cnt,
                                      uint32_t           sub_acknack_cnt,
                                      sedp_reader_tbl_t *tbl,

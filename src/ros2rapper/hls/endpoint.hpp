@@ -152,6 +152,10 @@ void set_sedp_reader_tbl_heartbeat_cnt(uint32_t           pub_heartbeat_cnt,
                                        sedp_reader_tbl_t *tbl,
                                        unsigned int       entry);
 
+void get_sedp_reader_tbl_acknack_cnt(uint32_t                *pub_acknack_cnt,
+                                     uint32_t                *sub_acknack_cnt,
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry);
 void set_sedp_reader_tbl_acknack_cnt(uint32_t           pub_acknack_cnt,
                                      uint32_t           sub_acknack_cnt,
                                      sedp_reader_tbl_t *tbl,
