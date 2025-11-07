@@ -494,6 +494,17 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 }
 
 /* Cyber func=inline */
+static bool get_ros2_out_spdp_info(const sedp_reader_tbl_t *tbl,
+                                   unsigned int             idx) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, idx, 0);
+    bool        alive = ((data & SEDP_ENDPOINT_ALIVE) != 0);
+    hls_uint<2> initial_send_counter = ((data >> 8) & 3);
+    return alive && (initial_send_counter < 3);
+}
+
+/* Cyber func=inline */
 static void spdp_writer_out(const uint8_t metatraffic_port[2],
                             const uint8_t default_port[2], const config_t *conf,
                             message_metadata_t *msg_metadata) {
@@ -769,8 +780,7 @@ static void ros2_out(
 #ifdef SEDP_READER_TBL_FF
 #pragma HLS unroll
 #endif // SEDP_READER_TBL_FF
-                        reader = sedp_reader_tbl[j];
-                        if (reader.alive && (reader.initial_send_counter < 3)) {
+                        if (get_ros2_out_spdp_info(sedp_reader_tbl, j)) {
                             send = true;
                         }
                     }
