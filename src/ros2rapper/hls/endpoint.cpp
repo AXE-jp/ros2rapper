@@ -64,11 +64,31 @@ void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
 }
 
 /* Cyber func=inline */
+void get_sedp_reader_tbl_pubwr_lastsn(int64_t                 *pubwr_lastsn,
+                                      const sedp_reader_tbl_t *tbl,
+                                      unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 3);
+    *pubwr_lastsn = data;
+}
+
+/* Cyber func=inline */
 void set_sedp_reader_tbl_pubwr_lastsn(int64_t            pubwr_lastsn,
                                       sedp_reader_tbl_t *tbl,
                                       unsigned int       entry) {
 #pragma HLS inline
     set_sedp_reader_tbl(pubwr_lastsn, tbl, entry, 3);
+}
+
+/* Cyber func=inline */
+void get_sedp_reader_tbl_subwr_lastsn(int64_t                 *subwr_lastsn,
+                                      const sedp_reader_tbl_t *tbl,
+                                      unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, entry, 4);
+    *subwr_lastsn = data;
 }
 
 /* Cyber func=inline */

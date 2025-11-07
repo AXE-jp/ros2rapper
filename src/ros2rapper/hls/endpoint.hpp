@@ -129,12 +129,20 @@ void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     uint8_t subrd_wr_seqnum, uint8_t subrd_rd_seqnum, sedp_reader_tbl_t *tbl,
     unsigned int entry);
 
+void get_sedp_reader_tbl_pubwr_lastsn(int64_t                 *pubwr_lastsn,
+                                      const sedp_reader_tbl_t *tbl,
+                                      unsigned int             entry);
 void set_sedp_reader_tbl_pubwr_lastsn(int64_t            pubwr_lastsn,
                                       sedp_reader_tbl_t *tbl,
                                       unsigned int       entry);
+
+void get_sedp_reader_tbl_subwr_lastsn(int64_t                 *subwr_lastsn,
+                                      const sedp_reader_tbl_t *tbl,
+                                      unsigned int             entry);
 void set_sedp_reader_tbl_subwr_lastsn(int64_t            subwr_lastsn,
                                       sedp_reader_tbl_t *tbl,
                                       unsigned int       entry);
+
 void set_sedp_reader_tbl_heartbeat_cnt(uint32_t           pub_heartbeat_cnt,
                                        uint32_t           sub_heartbeat_cnt,
                                        sedp_reader_tbl_t *tbl,
