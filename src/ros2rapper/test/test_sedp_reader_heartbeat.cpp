@@ -8,7 +8,8 @@
 
 #include "endpoint.hpp"
 #include "hls.hpp"
-// #include "ros2.hpp"
+#include "ros2.hpp"
+#include "ros2_receiver.hpp"
 #include "sedp.hpp"
 #include "test_sedp_reader.hpp"
 
@@ -147,6 +148,9 @@ int test_sedp_reader_heartbeat() {
 
     /*****************************************************/
 
+    int64_t                 timestamp_i64 = 0;
+    hls_stream<rtps_data_t> stream;
+
     for (ii = 0; ii < sizeof(pkt22); ii++) {
         x = pkt22[ii];
         if (ii == (sizeof(pkt22) - 1)) {
@@ -154,12 +158,14 @@ int test_sedp_reader_heartbeat() {
         }
         in.write(x);
 
-        sedp_reader(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                    ip_addr, subnet_mask, port_num_seed, own_guid_prefix,
-                    pub_topic_name, pub_topic_name_len, pub_type_name,
-                    pub_type_name_len, sub_topic_name, sub_topic_name_len,
-                    sub_type_name, sub_type_name_len);
+        sedp_reader(in, stream, pub_enable, sub_enable, ip_addr, subnet_mask,
+                    port_num_seed, own_guid_prefix, pub_topic_name,
+                    pub_topic_name_len, pub_type_name, pub_type_name_len,
+                    sub_topic_name, sub_topic_name_len, sub_type_name,
+                    sub_type_name_len);
     }
+    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64);
 
     unsigned int sedp_reader_cnt = 0;
     for (auto j = 0; j < SEDP_READER_MAX; j++) {

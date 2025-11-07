@@ -1,4 +1,5 @@
 proj_ros2_main/
+proj_ros2_receiver/
 proj_ros2_sender/
 proj_ros2test/
 *.log
@@ -25,4 +26,7 @@ proj_ros2test/
 *.vgerr
 *.warn
 *.IFF
-ros2_cwb.v
+*.json
+ros2_main_cwb.v
+ros2_receiver_cwb.v
+ros2_sender_cwb.v

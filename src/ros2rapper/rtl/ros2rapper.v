@@ -184,6 +184,9 @@ module ros2rapper #(
     input  wire [7:0] ip_payloadsmem_rdata
 );
 
+wire [`ROS2_PUB_TOPICS_MAX-1:0] pub_enable = en ? ros2pub_en : {`ROS2_PUB_TOPICS_MAX{1'b0}};
+wire [`ROS2_SUB_TOPICS_MAX-1:0] sub_enable = en ? ros2sub_en : {`ROS2_SUB_TOPICS_MAX{1'b0}};
+
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_req;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_rel;
 wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ip_grant;
@@ -306,6 +309,10 @@ wire ros2_cnt_sedp_pub_an_elapsed;
 wire ros2_cnt_sedp_sub_an_elapsed;
 wire ros2_cnt_app_wr_elapsed;
 
+wire [`ROS2_RTPS_DATA_WIDTH-1:0] ros2_rtps_data;
+wire ros2_rtps_data_valid;
+wire ros2_rtps_data_ready;
+
 wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
@@ -348,26 +355,26 @@ ros2rapper_tx_counters (
 );
 
 `ifdef ROS2RAPPER_HLS_VITIS
-ros2_main
-ros2_main (
+ros2_receiver
+ros2_receiver (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
 
-    .pub_enable(en ? ros2pub_en : 0),
-    .sub_enable(en ? ros2sub_en : 0),
+    .pub_enable(pub_enable),
+    .sub_enable(sub_enable),
 
     .in_r_dout(rx_fifo_dout),
     .in_r_empty_n(~rx_fifo_empty),
     .in_r_read(rx_fifo_rd_en),
 
-    .out_r_TDATA(ros2_msg_metadata),
-    .out_r_TREADY(ros2_msg_metadata_ready),
-    .out_r_TVALID(ros2_msg_metadata_valid),
+    .out_r_TDATA(ros2_rtps_data),
+    .out_r_TREADY(ros2_rtps_data_ready),
+    .out_r_TVALID(ros2_rtps_data_valid),
 
-    .udp_rxbuf_address0(udp_rxbuf_addr),
-    .udp_rxbuf_ce0(udp_rxbuf_ce),
-    .udp_rxbuf_we0(udp_rxbuf_we),
-    .udp_rxbuf_d0(udp_rxbuf_wdata),
+    .rawudp_rxbuf_address0(udp_rxbuf_addr),
+    .rawudp_rxbuf_ce0(udp_rxbuf_ce),
+    .rawudp_rxbuf_we0(udp_rxbuf_we),
+    .rawudp_rxbuf_d0(udp_rxbuf_wdata),
 
     .ip_payloads_address0(ip_payloadsmem_addr),
     .ip_payloads_ce0(ip_payloadsmem_ce),
@@ -382,8 +389,6 @@ ros2_main (
 
     .conf_fragment_expiration(ros2_fragment_expiration),
     .conf_guid_prefix(ros2_guid_prefix),
-    .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
-    .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
     .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
 
     .conf_pub_topic_name_0(ros2_pub_topic_name_0),
@@ -464,6 +469,35 @@ ros2_main (
     .sub_app_data_grant(ros2_sub_app_data_ip_grant),
     .sub_app_data_grant_ap_ack(),
 
+    .rawudp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
+    .rawudp_rxbuf_rel(),
+    .rawudp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
+    .rawudp_rxbuf_grant_ap_ack(),
+
+    .xout(),
+    .xout_ap_vld()
+);
+
+ros2_main
+ros2_main (
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
+
+    .pub_enable(pub_enable),
+    .sub_enable(sub_enable),
+
+    .in_r_TDATA(ros2_rtps_data),
+    .in_r_TREADY(ros2_rtps_data_ready),
+    .in_r_TVALID(ros2_rtps_data_valid),
+
+    .out_r_TDATA(ros2_msg_metadata),
+    .out_r_TREADY(ros2_msg_metadata_ready),
+    .out_r_TVALID(ros2_msg_metadata_valid),
+
+    .conf_port_num_seed(ros2_port_num_seed),
+    .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+    .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
+
     .cnt_interval_set(),
     .cnt_interval_set_ap_vld(ros2_cnt_interval_set),
     .cnt_spdp_wr_set(),
@@ -502,18 +536,10 @@ ros2_main (
     .cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
     .cnt_app_wr_elapsed_ap_ack(),
 
-    .udp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
-    .udp_rxbuf_rel(),
-    .udp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
-    .udp_rxbuf_grant_ap_ack(),
-
     .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
     .udp_txbuf_grant_ap_ack(),
 
-    .timestamp_i64(local_timestamp),
-
-    .xout(),
-    .xout_ap_vld()
+    .timestamp_i64(local_timestamp)
 );
 
 ros2_sender
@@ -653,26 +679,26 @@ ros2_sender (
     .pub_app_data_grant_3_ap_ack()
 );
 `elsif ROS2RAPPER_HLS_CWB
-ros2_main
-ros2_main (
+ros2_receiver
+ros2_receiver (
   .clk(clk),
   .rst_n(rst_n),
 
-  .pub_enable(en ? ros2pub_en : 0),
-  .sub_enable(en ? ros2sub_en : 0),
+  .pub_enable(pub_enable),
+  .sub_enable(sub_enable),
 
   .in_dout(rx_fifo_dout),
   .in_empty(rx_fifo_empty),
   .in_rreq(rx_fifo_rd_en),
 
-  .out_TDATA(ros2_msg_metadata),
-  .out_TREADY(ros2_msg_metadata_ready),
-  .out_TVALID(ros2_msg_metadata_valid),
+  .out_TDATA(ros2_rtps_data),
+  .out_TREADY(ros2_rtps_data_ready),
+  .out_TVALID(ros2_rtps_data_valid),
 
-  .udp_rxbuf_CS1(udp_rxbuf_ce),
-  .udp_rxbuf_AD1(udp_rxbuf_addr),
-  .udp_rxbuf_WE1(udp_rxbuf_we),
-  .udp_rxbuf_WD1(udp_rxbuf_wdata),
+  .rawudp_rxbuf_CS1(udp_rxbuf_ce),
+  .rawudp_rxbuf_AD1(udp_rxbuf_addr),
+  .rawudp_rxbuf_WE1(udp_rxbuf_we),
+  .rawudp_rxbuf_WD1(udp_rxbuf_wdata),
 
   .ip_payloads_CS1(ip_payloadsmem_ce),
   .ip_payloads_AD1(ip_payloadsmem_addr),
@@ -694,8 +720,6 @@ ros2_main (
   .conf_guid_prefix_06(ros2_guid_prefix[55:48]), .conf_guid_prefix_07(ros2_guid_prefix[63:56]),
   .conf_guid_prefix_08(ros2_guid_prefix[71:64]), .conf_guid_prefix_09(ros2_guid_prefix[79:72]),
   .conf_guid_prefix_10(ros2_guid_prefix[87:80]), .conf_guid_prefix_11(ros2_guid_prefix[95:88]),
-  .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
-  .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
   .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
 
   .conf_pub_topic_name_0_00(ros2_pub_topic_name_0[7:0]), .conf_pub_topic_name_0_01(ros2_pub_topic_name_0[15:8]),
@@ -1150,6 +1174,34 @@ ros2_main (
   .sub_app_data_rel_wd(sub_app_data_ip_rel),
   .sub_app_data_grant_rd(ros2_sub_app_data_ip_grant),
 
+  .rawudp_rxbuf_rel_we(udp_rxbuf_ip_rel),
+  .rawudp_rxbuf_rel_wd(),
+  .rawudp_rxbuf_grant_rd({7'b0, udp_rxbuf_ip_grant}),
+
+  .xout_i(9'h0),
+  .xout_o()
+);
+
+ros2_main
+ros2_main (
+  .clk(clk),
+  .rst_n(rst_n),
+
+  .pub_enable(pub_enable),
+  .sub_enable(sub_enable),
+
+  .in_TDATA(ros2_rtps_data),
+  .in_TREADY(ros2_rtps_data_ready),
+  .in_TVALID(ros2_rtsp_data_valid),
+
+  .out_TDATA(ros2_msg_metadata),
+  .out_TREADY(ros2_msg_metadata_ready),
+  .out_TVALID(ros2_msg_metadata_valid),
+
+  .conf_port_num_seed(ros2_port_num_seed),
+  .conf_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+  .conf_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
+
   .cnt_interval_set_wd(),
   .cnt_interval_set_we(ros2_cnt_interval_set),
   .cnt_spdp_wr_set_wd(),
@@ -1179,16 +1231,9 @@ ros2_main (
   .cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
   .cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
 
-  .udp_rxbuf_rel_we(udp_rxbuf_ip_rel),
-  .udp_rxbuf_rel_wd(),
-  .udp_rxbuf_grant_rd({7'b0, udp_rxbuf_ip_grant}),
-
   .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
 
-  .timestamp_i64(local_timestamp),
-
-  .xout_i(9'h0),
-  .xout_o()
+  .timestamp_i64(local_timestamp)
 );
 
 ros2_sender
