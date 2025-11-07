@@ -94,38 +94,6 @@ find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
 }
 
 /* Cyber func=inline */
-static bool is_same_entity_id(const uint8_t lhs[4], const uint8_t rhs[4]) {
-#pragma HLS inline
-    bool is_same = true;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        if (lhs[j] != rhs[j]) {
-            is_same = false;
-        }
-    }
-    return is_same;
-}
-
-/* Cyber func=inline */
-static bool
-is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
-                        const uint8_t entity_id[4],
-                        app_endpoint  app_reader_tbl[APP_READER_MAX]) {
-#pragma HLS inline
-    bool matched = false;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-        if (guid_prefix_matched[j]
-            && is_same_entity_id(entity_id, app_reader_tbl[j].entity_id)) {
-            matched = true;
-        }
-    }
-    return matched;
-}
-
-/* Cyber func=inline */
 static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
                                       uint8_t ip_addr[4], uint8_t udp_port[2],
                                       int64_t *lease_duration_out) {
@@ -307,6 +275,127 @@ static void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
 }
 
 /* Cyber func=inline */
+static bool is_same_entity_id(const uint8_t lhs[4], const uint8_t rhs[4]) {
+#pragma HLS inline
+    bool is_same = true;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        if (lhs[j] != rhs[j]) {
+            is_same = false;
+        }
+    }
+    return is_same;
+}
+
+/* Cyber func=inline */
+static void ros2_in_add_new_app_endpoint(
+    const app_endpoint &reader, sedp_reader_tbl_t *sedp_reader_tbl,
+    app_endpoint app_reader_tbl[APP_READER_MAX], sedp_reader_id_t sedp_idx,
+    app_reader_id_t app_idx) {
+#pragma HLS inline
+    // Read children of sedp_endpoint.
+    uint64_t children_0, children_1;
+    get_sedp_reader_tbl(&children_0, sedp_reader_tbl, sedp_idx, 9);
+    get_sedp_reader_tbl(&children_1, sedp_reader_tbl, sedp_idx, 10);
+
+    // Check whether the found endpoint is known
+    bool is_known_app_endpoint = false;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 64; j++) {
+#pragma HLS unroll
+        uint64_t flag = static_cast<uint64_t>(1) << j;
+        if (((children_0 & flag) != 0)
+            && !is_same_entity_id(app_reader_tbl[j].entity_id,
+                                  reader.entity_id)) {
+            is_known_app_endpoint = true;
+        }
+        if (((children_1 & flag) != 0)
+            && !is_same_entity_id(app_reader_tbl[j + 64].entity_id,
+                                  reader.entity_id)) {
+            is_known_app_endpoint = true;
+        }
+    }
+
+    // Update the tables
+    if (!is_known_app_endpoint) {
+        app_reader_tbl[app_idx] = reader;
+        if (app_idx < 64) {
+            uint64_t data = children_0 | (static_cast<uint64_t>(1) << app_idx);
+            set_sedp_reader_tbl(data, sedp_reader_tbl, sedp_idx, 9);
+        } else {
+            uint64_t data
+                = children_1 | (static_cast<uint64_t>(1) << (app_idx - 64));
+            set_sedp_reader_tbl(data, sedp_reader_tbl, sedp_idx, 10);
+        }
+    }
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_pub(bool is_valid_topic, uint8_t seqnum,
+                             const app_endpoint &reader,
+                             sedp_reader_tbl_t  *sedp_reader_tbl,
+                             app_endpoint        app_reader_tbl[APP_READER_MAX],
+                             sedp_reader_id_t    sedp_idx,
+                             app_reader_id_t     app_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, sedp_idx);
+
+    if (pubrd_rd_seqnum != seqnum) {
+        return;
+    }
+
+    pubrd_rd_seqnum++;
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ, tbl,
+                                 sedp_idx);
+
+    if (is_valid_topic) {
+        ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
+                                     sedp_idx, app_idx);
+    }
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_sub(bool is_valid_topic, uint8_t seqnum,
+                             const app_endpoint &reader,
+                             sedp_reader_tbl_t  *sedp_reader_tbl,
+                             app_endpoint        app_reader_tbl[APP_READER_MAX],
+                             sedp_reader_id_t    sedp_idx,
+                             app_reader_id_t     app_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, sedp_idx);
+
+    if (subrd_rd_seqnum != seqnum) {
+        return;
+    }
+
+    subrd_rd_seqnum++;
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ, tbl,
+                                 sedp_idx);
+
+    if (is_valid_topic) {
+        ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
+                                     sedp_idx, app_idx);
+    }
+}
+
+/* Cyber func=inline */
 void ros2_in(hls_stream<rtps_data_t> &in,
              sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
              app_endpoint             app_reader_tbl[APP_READER_MAX],
@@ -379,42 +468,20 @@ void ros2_in(hls_stream<rtps_data_t> &in,
         break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
     case RTPS_TYPE_SEDP_PUB:
+        reader.app_ep_type = APP_EP_SUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_pubrd_rd_seqnum == sn) {
-                participant.builtin_pubrd_rd_seqnum++;
-                participant.builtin_pubrd_acknack_req = true;
-                if ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
-                    && !is_app_endpoint_matched(participant.children,
-                                                reader.entity_id,
-                                                app_reader_tbl)) {
-                    reader.app_ep_type = APP_EP_SUB;
-                    app_reader_tbl[app_unused_idx] = reader;
-                    participant.children[app_unused_idx] = true;
-                }
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
+            ros2_in_sedp_pub(rtps_data.type == RTPS_TYPE_SEDP_PUB,
+                             rtps_data.data[11], sedp_reader_tbl,
+                             app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
     case RTPS_TYPE_SEDP_SUB_SN_ONLY:
     case RTPS_TYPE_SEDP_SUB:
+        reader.app_ep_type = APP_EP_PUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_subrd_rd_seqnum == sn) {
-                participant.builtin_subrd_rd_seqnum++;
-                participant.builtin_subrd_acknack_req = true;
-                if ((rtps_data.type == RTPS_TYPE_SEDP_SUB)
-                    && !is_app_endpoint_matched(participant.children,
-                                                reader.entity_id,
-                                                app_reader_tbl)) {
-                    reader.app_ep_type = APP_EP_PUB;
-                    app_reader_tbl[app_unused_idx] = reader;
-                    participant.children[app_unused_idx] = true;
-                }
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
+            ros2_in_sedp_sub(rtps_data.type == RTPS_TYPE_SEDP_SUB,
+                             rtps_data.data[11], sedp_reader_tbl,
+                             app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
     case RTPS_TYPE_RM_ENDPOINT:
