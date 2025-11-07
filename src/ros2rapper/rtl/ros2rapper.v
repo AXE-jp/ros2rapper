@@ -317,6 +317,40 @@ wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
+reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX-1];
+wire [$clog2(`ROS2_SEDP_READER_MAX)-1:0] ros2_sedp_reader_tbl_address;
+wire ros2_sedp_reader_tbl_ce;
+wire ros2_sedp_reader_tbl_we;
+wire [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_wdata;
+reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_rdata;
+
+integer j;
+`ifdef TARGET_XILINX
+always @(posedge clk) begin // Vivado could not infer BRAM if async reset is used.
+`else // !TARGET_XILINX
+always @(posedge clk or negedge rst_n) begin
+`endif // TARGET_XILINX
+    if (!rst_n) begin
+`ifndef TARGET_XILINX
+        for (j = 0; j < `ROS2_SEDP_READER_MAX; j = j + 1) begin
+`ifdef TARGET_SIM
+            ros2_sedp_reader_tbl[j] = {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+`else // !TARGET_SIM
+            ros2_sedp_reader_tbl[j] <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+`endif // TARGET_SIM
+        end
+`endif // TARGET_XILINX
+        ros2_sedp_reader_tbl_rdata <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+    end else begin
+        ros2_sedp_reader_tbl_rdata <= ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address];
+        if (ros2_sedp_reader_tbl_ce & ros2_sedp_reader_tbl_we) begin
+            ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address] <= ros2_sedp_reader_tbl_wdata;
+        end
+    end
+end
+`endif // ROS2_SEDP_READER_TBL_RAM
+
 ros2rapper_tx_counters #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
@@ -482,6 +516,14 @@ ros2_main
 ros2_main (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
+
+`ifdef ROS2_SEDP_READER_TBL_RAM
+    .sedp_reader_tbl_address0(ros2_sedp_reader_tbl_address),
+    .sedp_reader_tbl_ce0(ros2_sedp_reader_tbl_ce),
+    .sedp_reader_tbl_we0(ros2_sedp_reader_tbl_we),
+    .sedp_reader_tbl_d0(ros2_sedp_reader_tbl_wdata),
+    .sedp_reader_tbl_q0(ros2_sedp_reader_tbl_rdata),
+`endif
 
     .pub_enable(pub_enable),
     .sub_enable(sub_enable),
@@ -1168,10 +1210,10 @@ ros2_receiver (
 
   .sub_app_data_recv_we(sub_app_data_recv_valid),
   .sub_app_data_recv_wd(sub_app_data_recv),
-  .sub_app_data_req_we(sub_app_data_ip_req_valid),
-  .sub_app_data_req_wd(sub_app_data_ip_req),
-  .sub_app_data_rel_we(sub_app_data_ip_rel_valid),
-  .sub_app_data_rel_wd(sub_app_data_ip_rel),
+  .sub_app_data_req_we(ros2_sub_app_data_ip_req_valid),
+  .sub_app_data_req_wd(ros2_sub_app_data_ip_req),
+  .sub_app_data_rel_we(ros2_sub_app_data_ip_rel_valid),
+  .sub_app_data_rel_wd(ros2_sub_app_data_ip_rel),
   .sub_app_data_grant_rd(ros2_sub_app_data_ip_grant),
 
   .rawudp_rxbuf_rel_we(udp_rxbuf_ip_rel),
@@ -1187,12 +1229,20 @@ ros2_main (
   .clk(clk),
   .rst_n(rst_n),
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
+  .sedp_reader_tbl_AD1(ros2_sedp_reader_tbl_address),
+  .sedp_reader_tbl_CS1(ros2_sedp_reader_tbl_ce),
+  .sedp_reader_tbl_WE1(ros2_sedp_reader_tbl_we),
+  .sedp_reader_tbl_WD1(ros2_sedp_reader_tbl_wdata),
+  .sedp_reader_tbl_RD1(ros2_sedp_reader_tbl_rdata),
+`endif
+
   .pub_enable(pub_enable),
   .sub_enable(sub_enable),
 
   .in_TDATA(ros2_rtps_data),
   .in_TREADY(ros2_rtps_data_ready),
-  .in_TVALID(ros2_rtsp_data_valid),
+  .in_TVALID(ros2_rtps_data_valid),
 
   .out_TDATA(ros2_msg_metadata),
   .out_TREADY(ros2_msg_metadata_ready),

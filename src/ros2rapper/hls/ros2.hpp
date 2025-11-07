@@ -20,6 +20,9 @@ static_assert(MAX_APP_DATA_LEN <= 2047,
 // #define PUB_DATA_FF
 #define PUB_DATA_RAM
 
+// #define SEDP_READER_TBL_FF
+#define SEDP_READER_TBL_RAM
+
 #include "common.hpp"
 
 typedef struct {

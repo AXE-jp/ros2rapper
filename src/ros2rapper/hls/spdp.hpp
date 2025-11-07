@@ -24,13 +24,7 @@
 #define SPDP_WRITER_UDP_PKT_LEN  (UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
 #define SPDP_WRITER_IP_PKT_LEN   (IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
 
-void compare_guid_prefix_of_sedp_endpoint(
-    const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
-    bool unmatched[SEDP_READER_MAX]);
-
-void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]);
-void reset_app_unmatched(bool unmatched[APP_READER_MAX]);
-#define reset_sedp_endpoint_children reset_app_unmatched
+void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]);
 
 void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
                  hls_uint<1> enable, const uint8_t ip_addr[4],

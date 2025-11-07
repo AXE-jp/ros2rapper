@@ -13,33 +13,6 @@
 #include "util.hpp"
 
 /* Cyber func=inline */
-void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
-                                         const app_endpoint tbl[APP_READER_MAX],
-                                         const int          idx,
-                                         bool unmatched[APP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < APP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].guid_prefix[idx] != x)
-            unmatched[i] = true;
-    }
-}
-
-/* Cyber func=inline */
-static void compare_entity_id(const uint8_t      x,
-                              const app_endpoint tbl[APP_READER_MAX],
-                              const int idx, bool unmatched[APP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < APP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].entity_id[idx] != x)
-            unmatched[i] = true;
-    }
-}
-
-/* Cyber func=inline */
 static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
