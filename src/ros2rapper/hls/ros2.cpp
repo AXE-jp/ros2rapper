@@ -396,8 +396,7 @@ static void ros2_in_sedp_sub(bool is_valid_topic, uint8_t seqnum,
 }
 
 /* Cyber func=inline */
-void ros2_in(hls_stream<rtps_data_t> &in,
-             sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
              app_endpoint             app_reader_tbl[APP_READER_MAX],
              hls_uint<PUB_TOPICS_MAX> pub_enable,
              hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
@@ -890,9 +889,8 @@ static void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
 
 /* Cyber func=inline */
 static void ros2_out(
-    hls_stream<message_metadata_t> &out,
-    sedp_endpoint                   sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint                    app_reader_tbl[APP_READER_MAX],
+    hls_stream<message_metadata_t> &out, sedp_reader_tbl_t *sedp_reader_tbl,
+    app_endpoint             app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const config_t *conf, VOLATILE uint8_t *rawudp_txbuf_grant,
     hls_uint<1> cnt_interval_elapsed, VOLATILE uint8_t *cnt_interval_set,
@@ -1275,8 +1273,7 @@ void ros2_main(
     hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
 #ifdef SEDP_READER_TBL_RAM
-    sedp_endpoint
-        sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
+    sedp_reader_tbl_t *sedp_reader_tbl,
 #endif // SEDP_READER_TBL_RAM
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
@@ -1356,23 +1353,33 @@ void ros2_main(
 #pragma HLS interface mode = ap_none port = timestamp_i64
 
 #ifdef SEDP_READER_TBL_FF
-    static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-#pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
+    static sedp_reader_tbl_t sedp_reader_tbl;
+#pragma HLS array_partition variable = sedp_reader_tbl.ram complete dim = 0
 #endif
 
     static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
-    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64);
+    ros2_in(in,
+#ifdef SEDP_READER_TBL_FF
+            &sedp_reader_tbl,
+#else  // !SEDP_READR_TBL_FF
+            sedp_reader_tbl,
+#endif // SEDP_READER_TBL_FF
+            app_reader_tbl, pub_enable, sub_enable, timestamp_i64);
 
-    ros2_out(out, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, conf,
-             udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
-             cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
-             cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
-             cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
-             cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-             cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
-             cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, timestamp_i64);
+    ros2_out(
+        out,
+#ifdef SEDP_READER_TBL_FF
+        &sedp_reader_tbl,
+#else  // !SEDP_READR_TBL_FF
+        sedp_reader_tbl,
+#endif // SEDP_READER_TBL_FF
+        app_reader_tbl, pub_enable, sub_enable, conf, udp_txbuf_grant,
+        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
+        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
+        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
+        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
+        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set, timestamp_i64);
 }
