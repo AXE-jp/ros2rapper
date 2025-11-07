@@ -212,44 +212,59 @@ constexpr uint8_t test_update_liveliness_dead_data_5[] = {
 constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00};
 
-static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-static app_endpoint  app_reader_tbl[APP_READER_MAX];
+static sedp_reader_tbl_t sedp_reader_tbl;
+static app_endpoint      app_reader_tbl[APP_READER_MAX];
 
-static void setup_sedp_reader_tbl(sedp_reader_id_t target,
-                                  const uint8_t    test_data[],
-                                  sedp_endpoint    tbl[SEDP_READER_MAX]) {
+static bool is_sedp_endpoint_alive(const sedp_reader_tbl_t *tbl,
+                                   unsigned int             idx) {
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, idx, 0);
+    return ((data & SEDP_ENDPOINT_ALIVE) != 0);
+}
+
+static void setup_sedp_reader_tbl(sedp_reader_id_t   target,
+                                  const uint8_t      test_data[],
+                                  sedp_reader_tbl_t *tbl) {
+    uint64_t target_data_0 = SEDP_ENDPOINT_ALIVE;
+    uint64_t target_data_1 = 0;
+    uint64_t another_data_0 = SEDP_ENDPOINT_ALIVE;
+    uint64_t another_data_1 = 0;
+    for (auto k = 0; k < 4; k++) {
+        target_data_0
+            |= static_cast<uint64_t>(test_data[k + RTPS_HDR_OFFSET_GUID_PREFIX])
+               << (8 * (k + 4));
+    }
+    for (auto k = 0; k < 8; k++) {
+        target_data_1 |= static_cast<uint64_t>(
+                             test_data[k + 4 + RTPS_HDR_OFFSET_GUID_PREFIX])
+                         << (8 * k);
+    }
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        // setup GUID prefix
-        for (auto k = RTPS_HDR_OFFSET_GUID_PREFIX; k < RTPS_HDR_SIZE; k++) {
-            uint8_t data;
-            if (j == target) {
-                // Copy GUID prefix from test_data.
-                data = test_data[k];
-            } else {
-                // set GUID prefix to UNKNOWN.
-                data = 0;
-            }
-            tbl[j].guid_prefix[k - RTPS_HDR_OFFSET_GUID_PREFIX] = data;
+        if (j == target) {
+            set_sedp_reader_tbl(target_data_0, tbl, j, 0);
+            set_sedp_reader_tbl(target_data_1, tbl, j, 1);
+        } else {
+            set_sedp_reader_tbl(another_data_0, tbl, j, 0);
+            set_sedp_reader_tbl(another_data_1, tbl, j, 1);
         }
-        // setup liveliness
-        tbl[j].alive = true;
     }
 }
 
-static int
-check_sedp_reader_tbl_liveliness(sedp_reader_id_t target, bool target_alive,
-                                 sedp_endpoint tbl[SEDP_READER_MAX]) {
+static int check_sedp_reader_tbl_liveliness(sedp_reader_id_t   target,
+                                            bool               target_alive,
+                                            sedp_reader_tbl_t *tbl) {
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        bool alive = is_sedp_endpoint_alive(tbl, j);
         if ((target == j) && !target_alive) {
             // tbl[j] should be dead.
-            if (tbl[j].alive != false) {
+            if (alive != false) {
                 std::cout << "check_sedp_reader_tbl_alive: " << j
                           << "is not dead." << std::endl;
                 return 1;
             }
         } else {
             // tbl[j] shoud be alive.
-            if (tbl[j].alive != true) {
+            if (alive != true) {
                 std::cout << "check_sedp_reader_tbl_alive: " << j
                           << "is not alive." << std::endl;
                 return 1;
@@ -259,11 +274,10 @@ check_sedp_reader_tbl_liveliness(sedp_reader_id_t target, bool target_alive,
     return 0;
 }
 
-static void
-call_update_liveliness(const receiver_config_t *conf,
-                       sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                       int64_t timestamp_i64, const uint8_t test_data[],
-                       size_t length) {
+static void call_update_liveliness(const receiver_config_t *conf,
+                                   sedp_reader_tbl_t       *sedp_reader_tbl,
+                                   int64_t                  timestamp_i64,
+                                   const uint8_t test_data[], size_t length) {
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
     hls_stream<rtps_data_t>  stream;
@@ -286,16 +300,16 @@ static int test_update_liveliness_1(const receiver_config_t *conf,
                                     size_t        test_data_length,
                                     const char   *test_data_name) {
     // setup reader tables
-    setup_sedp_reader_tbl(target, test_data, sedp_reader_tbl);
+    setup_sedp_reader_tbl(target, test_data, &sedp_reader_tbl);
 
     // process test_data
     int64_t timestamp_i64 = 0;
-    call_update_liveliness(conf, sedp_reader_tbl, timestamp_i64, test_data,
+    call_update_liveliness(conf, &sedp_reader_tbl, timestamp_i64, test_data,
                            test_data_length);
 
     // check liveliness
     int result = check_sedp_reader_tbl_liveliness(target, target_alive,
-                                                  sedp_reader_tbl);
+                                                  &sedp_reader_tbl);
     if (result == 0) {
         return 0;
     } else {
@@ -349,31 +363,33 @@ static int test_remove_dead_endpoints_1() {
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             count++;
             int64_t lease_duration = count << 32;
-            sedp_reader_tbl[j].alive = true;
-            sedp_reader_tbl[j].lease_duration = lease_duration;
+            set_sedp_reader_tbl(SEDP_ENDPOINT_ALIVE, &sedp_reader_tbl, j, 0);
+            set_sedp_reader_tbl_lease_duration(lease_duration, &sedp_reader_tbl,
+                                               j);
             if ((1 << j) & sedp_pattern) {
                 // sedp_reader_tbl[j] should be alive.
-                sedp_reader_tbl[j].timestamp = timestamp_i64 - lease_duration;
+                set_sedp_reader_tbl_timestamp(timestamp_i64 - lease_duration,
+                                              &sedp_reader_tbl, j);
             } else {
                 // sedp_reader_tbl[j] should be dead.
-                sedp_reader_tbl[j].timestamp
-                    = timestamp_i64 - lease_duration - 1;
+                set_sedp_reader_tbl_timestamp(
+                    timestamp_i64 - lease_duration - 1, &sedp_reader_tbl, j);
             }
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+            remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
                                   timestamp_i64);
-            for (auto k = 0; k < SEDP_READER_MAX; k++) {
-                if (k > j) {
-                    // sedp_reader_tbl[k] shoud not be changed before
-                    // remove_dead_endpoints(k, ...) is called.
-                    assert(sedp_reader_tbl[k].alive);
-                } else if ((1 << j) & sedp_pattern) {
-                    assert(sedp_reader_tbl[j].alive);
-                } else {
-                    assert(!sedp_reader_tbl[j].alive);
-                }
+            bool j_alive = is_sedp_endpoint_alive(&sedp_reader_tbl, j);
+            if ((1 << j) & sedp_pattern) {
+                assert(j_alive);
+            } else {
+                assert(!j_alive);
+            }
+            for (auto k = j + 1; k < SEDP_READER_MAX; k++) {
+                // sedp_reader_tbl[k] shoud not be changed before
+                // remove_dead_endpoints(k, ...) is called.
+                assert(is_sedp_endpoint_alive(&sedp_reader_tbl, k));
             }
         }
     }
@@ -393,21 +409,23 @@ static int test_remove_dead_endpoints_2() {
         int64_t timestamp_i64 = static_cast<int64_t>(sedp_pattern + 1) << 32;
         // Initialize sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            sedp_reader_tbl[j].alive = true;
-            sedp_reader_tbl[j].lease_duration = lease_duration;
+            set_sedp_reader_tbl(SEDP_ENDPOINT_ALIVE, &sedp_reader_tbl, j, 0);
+            set_sedp_reader_tbl_lease_duration(lease_duration, &sedp_reader_tbl,
+                                               j);
             if ((1 << j) & sedp_pattern) {
-                sedp_reader_tbl[j].timestamp = timestamp_i64 - lease_duration;
+                set_sedp_reader_tbl_timestamp(timestamp_i64 - lease_duration,
+                                              &sedp_reader_tbl, j);
             } else {
-                sedp_reader_tbl[j].timestamp
-                    = timestamp_i64 - lease_duration - 1;
+                set_sedp_reader_tbl_timestamp(
+                    timestamp_i64 - lease_duration - 1, &sedp_reader_tbl, j);
             }
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, sedp_reader_tbl, app_reader_tbl,
+            remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
                                   timestamp_i64);
             for (auto k = 0; k < SEDP_READER_MAX; k++) {
-                assert(sedp_reader_tbl[j].alive);
+                assert(is_sedp_endpoint_alive(&sedp_reader_tbl, k));
             }
         }
     }
