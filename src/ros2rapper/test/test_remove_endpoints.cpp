@@ -222,30 +222,46 @@ static bool is_sedp_endpoint_alive(const sedp_reader_tbl_t *tbl,
     return ((data & SEDP_ENDPOINT_ALIVE) != 0);
 }
 
+static void set_sedp_reader_tbl_liveliness_and_guid_prefix(
+    bool alive, const uint8_t guid_prefix[12], sedp_reader_tbl_t *tbl,
+    unsigned int idx) {
+    uint64_t data_0 = alive ? SEDP_ENDPOINT_ALIVE : 0;
+    uint64_t data_1 = 0;
+    for (auto j = 0; j < 4; j++) {
+        data_0 |= static_cast<uint64_t>(guid_prefix[j]) << (8 * (j + 4));
+    }
+    for (auto j = 0; j < 8; j++) {
+        data_1 |= static_cast<uint64_t>(guid_prefix[j + 4]) << (8 * j);
+    }
+    set_sedp_reader_tbl(data_0, tbl, idx, 0);
+    set_sedp_reader_tbl(data_1, tbl, idx, 1);
+}
+
+static void set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+    bool alive, sedp_reader_tbl_t *tbl, unsigned int idx) {
+    uint64_t data_0 = alive ? SEDP_ENDPOINT_ALIVE : 0;
+    uint64_t data_1 = 0;
+    set_sedp_reader_tbl(data_0, tbl, idx, 0);
+    set_sedp_reader_tbl(data_1, tbl, idx, 1);
+}
+
+static void set_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> children,
+                                         sedp_reader_tbl_t       *tbl,
+                                         unsigned int             idx) {
+    set_sedp_reader_tbl(children & 0xffffffffffffffff, tbl, idx, 9);
+    set_sedp_reader_tbl(children >> 64, tbl, idx, 10);
+}
+
 static void setup_sedp_reader_tbl(sedp_reader_id_t   target,
                                   const uint8_t      test_data[],
                                   sedp_reader_tbl_t *tbl) {
-    uint64_t target_data_0 = SEDP_ENDPOINT_ALIVE;
-    uint64_t target_data_1 = 0;
-    uint64_t another_data_0 = SEDP_ENDPOINT_ALIVE;
-    uint64_t another_data_1 = 0;
-    for (auto k = 0; k < 4; k++) {
-        target_data_0
-            |= static_cast<uint64_t>(test_data[k + RTPS_HDR_OFFSET_GUID_PREFIX])
-               << (8 * (k + 4));
-    }
-    for (auto k = 0; k < 8; k++) {
-        target_data_1 |= static_cast<uint64_t>(
-                             test_data[k + 4 + RTPS_HDR_OFFSET_GUID_PREFIX])
-                         << (8 * k);
-    }
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         if (j == target) {
-            set_sedp_reader_tbl(target_data_0, tbl, j, 0);
-            set_sedp_reader_tbl(target_data_1, tbl, j, 1);
+            set_sedp_reader_tbl_liveliness_and_guid_prefix(
+                true, test_data + RTPS_HDR_OFFSET_GUID_PREFIX, tbl, j);
         } else {
-            set_sedp_reader_tbl(another_data_0, tbl, j, 0);
-            set_sedp_reader_tbl(another_data_1, tbl, j, 1);
+            set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(true, tbl,
+                                                                   j);
         }
     }
 }
@@ -276,7 +292,8 @@ static int check_sedp_reader_tbl_liveliness(sedp_reader_id_t   target,
 
 static void call_update_liveliness(const receiver_config_t *conf,
                                    sedp_reader_tbl_t       *sedp_reader_tbl,
-                                   int64_t                  timestamp_i64,
+                                   app_endpoint  app_reader_tbl[APP_READER_MAX],
+                                   int64_t       timestamp_i64,
                                    const uint8_t test_data[], size_t length) {
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
@@ -295,21 +312,23 @@ static void call_update_liveliness(const receiver_config_t *conf,
 }
 
 static int test_update_liveliness_1(const receiver_config_t *conf,
+                                    sedp_reader_tbl_t       *sedp_reader_tbl,
+                                    app_endpoint app_reader_tbl[APP_READER_MAX],
                                     unsigned int target, bool target_alive,
                                     const uint8_t test_data[],
                                     size_t        test_data_length,
                                     const char   *test_data_name) {
     // setup reader tables
-    setup_sedp_reader_tbl(target, test_data, &sedp_reader_tbl);
+    setup_sedp_reader_tbl(target, test_data, sedp_reader_tbl);
 
     // process test_data
     int64_t timestamp_i64 = 0;
-    call_update_liveliness(conf, &sedp_reader_tbl, timestamp_i64, test_data,
-                           test_data_length);
+    call_update_liveliness(conf, sedp_reader_tbl, app_reader_tbl, timestamp_i64,
+                           test_data, test_data_length);
 
     // check liveliness
     int result = check_sedp_reader_tbl_liveliness(target, target_alive,
-                                                  &sedp_reader_tbl);
+                                                  sedp_reader_tbl);
     if (result == 0) {
         return 0;
     } else {
@@ -320,7 +339,8 @@ static int test_update_liveliness_1(const receiver_config_t *conf,
 }
 
 #define TEST_UPDATE_LIVELINESS(conf, target, target_alive, test_data)          \
-    assert(test_update_liveliness_1(conf, target, target_alive, test_data,     \
+    assert(test_update_liveliness_1(conf, &sedp_reader_tbl, app_reader_tbl,    \
+                                    target, target_alive, test_data,           \
                                     sizeof(test_data), #test_data)             \
            == 0)
 
@@ -349,6 +369,47 @@ static int test_update_liveliness() {
         TEST_UPDATE_LIVELINESS(&conf, target, false,
                                test_update_liveliness_dead_data_5);
     }
+    return 0;
+}
+
+static int test_update_liveliness_2() {
+    receiver_config_t conf;
+    for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+        conf.guid_prefix[k] = test_update_liveliness_guid_prefix[k];
+    }
+    // sedp_reader_tbl[0] is dead and had a child app_reader_tbl[0].
+    set_sedp_reader_tbl_liveliness_and_guid_prefix(
+        false, test_update_liveliness_guid_prefix, &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_children(1, &sedp_reader_tbl, 0);
+
+    // sedp_reader_tbl[j] (j > 0) is not used in this test.
+    for (auto j = 1; j < SEDP_READER_MAX; j++) {
+        set_sedp_reader_tbl_liveliness_and_guid_prefix(
+            false, test_update_liveliness_guid_prefix, &sedp_reader_tbl, j);
+        clear_sedp_reader_tbl_children(&sedp_reader_tbl, j);
+    }
+
+    // app_reader_tbl[0] is alive.
+    app_reader_tbl[0].alive = true;
+
+    // sedp_reader_tbl[0] is already dead, so its children should not be removed
+    // by remove_dead_endpoints.
+    call_update_liveliness(&conf, &sedp_reader_tbl, app_reader_tbl, 0,
+                           test_update_liveliness_dead_data_1,
+                           sizeof(test_update_liveliness_dead_data_1));
+    assert(app_reader_tbl[0].alive);
+
+    // sedp_reader_tbl[0] is alive and has a child app_reader_tbl[0].
+    set_sedp_reader_tbl_liveliness_and_guid_prefix(
+        true, test_update_liveliness_guid_prefix, &sedp_reader_tbl, 0);
+    // sedp_reader_tbl[0] is alive, so its children should be removed by
+    // remove_dead_endpoints.
+    call_update_liveliness(&conf, &sedp_reader_tbl, app_reader_tbl, 0,
+                           test_update_liveliness_dead_data_1,
+                           sizeof(test_update_liveliness_dead_data_1));
+    assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+    assert(!app_reader_tbl[0].alive);
+
     return 0;
 }
 
@@ -432,9 +493,44 @@ static int test_remove_dead_endpoints_2() {
     return 0;
 }
 
+static int test_remove_dead_endpoints_3() {
+    // Set up tables.
+    // sedp_reader_tbl[0] is alive and has a child app_reader_tbl[0].
+    set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(true,
+                                                           &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_lease_duration(static_cast<int64_t>(20) << 32,
+                                       &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_children(1, &sedp_reader_tbl, 0);
+    // sedp_reader_tbl[0] is dead and had a child app_reader_tbl[0].
+    set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(false,
+                                                           &sedp_reader_tbl, 1);
+    set_sedp_reader_tbl_lease_duration(static_cast<int64_t>(20) << 32,
+                                       &sedp_reader_tbl, 1);
+    set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 1);
+    set_sedp_reader_tbl_children(1, &sedp_reader_tbl, 1);
+    // app_reader_tbl[0] is alive.
+    app_reader_tbl[0].alive = true;
+
+    int64_t timestamp_i64 = static_cast<int64_t>(30) << 32;
+    // sedp_reader_tbl[1] is already dead, so its children should not be removed
+    // by remove_dead_endpoints.
+    remove_dead_endpoints(1, &sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    assert(app_reader_tbl[0].alive);
+    // sedp_reader_tbl[0] is alive, so its children should be removed by
+    // remove_dead_endpoints.
+    remove_dead_endpoints(0, &sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+    assert(!app_reader_tbl[0].alive);
+
+    return 0;
+}
+
 int test_remove_endpoints() {
     assert(test_update_liveliness() == 0);
+    assert(test_update_liveliness_2() == 0);
     assert(test_remove_dead_endpoints_1() == 0);
     assert(test_remove_dead_endpoints_2() == 0);
+    assert(test_remove_dead_endpoints_3() == 0);
     return 0;
 }
