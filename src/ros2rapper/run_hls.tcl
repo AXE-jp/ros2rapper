@@ -3,6 +3,7 @@
 
 open_project -reset proj_ros2_main
 
+add_files hls/endpoint.cpp
 add_files hls/message_metadata.cpp
 add_files hls/remove_endpoints.cpp
 add_files hls/ros2.cpp
