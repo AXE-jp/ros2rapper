@@ -7,6 +7,7 @@
 #include "remove_endpoints.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
+#include "test_utils.hpp"
 #include "timestamp.hpp"
 #include <cassert>
 #include <cstdint>
@@ -214,43 +215,6 @@ constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
 
 static sedp_reader_tbl_t sedp_reader_tbl;
 static app_endpoint      app_reader_tbl[APP_READER_MAX];
-
-static bool is_sedp_endpoint_alive(const sedp_reader_tbl_t *tbl,
-                                   unsigned int             idx) {
-    uint64_t data;
-    get_sedp_reader_tbl(&data, tbl, idx, 0);
-    return ((data & SEDP_ENDPOINT_ALIVE) != 0);
-}
-
-static void set_sedp_reader_tbl_liveliness_and_guid_prefix(
-    bool alive, const uint8_t guid_prefix[12], sedp_reader_tbl_t *tbl,
-    unsigned int idx) {
-    uint64_t data_0 = alive ? SEDP_ENDPOINT_ALIVE : 0;
-    uint64_t data_1 = 0;
-    for (auto j = 0; j < 4; j++) {
-        data_0 |= static_cast<uint64_t>(guid_prefix[j]) << (8 * (j + 4));
-    }
-    for (auto j = 0; j < 8; j++) {
-        data_1 |= static_cast<uint64_t>(guid_prefix[j + 4]) << (8 * j);
-    }
-    set_sedp_reader_tbl(data_0, tbl, idx, 0);
-    set_sedp_reader_tbl(data_1, tbl, idx, 1);
-}
-
-static void set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
-    bool alive, sedp_reader_tbl_t *tbl, unsigned int idx) {
-    uint64_t data_0 = alive ? SEDP_ENDPOINT_ALIVE : 0;
-    uint64_t data_1 = 0;
-    set_sedp_reader_tbl(data_0, tbl, idx, 0);
-    set_sedp_reader_tbl(data_1, tbl, idx, 1);
-}
-
-static void set_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> children,
-                                         sedp_reader_tbl_t       *tbl,
-                                         unsigned int             idx) {
-    set_sedp_reader_tbl(children & 0xffffffffffffffff, tbl, idx, 9);
-    set_sedp_reader_tbl(children >> 64, tbl, idx, 10);
-}
 
 static void setup_sedp_reader_tbl(sedp_reader_id_t   target,
                                   const uint8_t      test_data[],

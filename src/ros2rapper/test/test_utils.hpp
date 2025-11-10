@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "endpoint.hpp"
 #include "ros2.hpp"
 #include <cstdint>
 
@@ -17,3 +18,15 @@ void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
                       uint8_t type_name_len[], const uint8_t topic_name_0[],
                       uint8_t topic_name_len_0, const uint8_t type_name_0[],
                       uint8_t type_name_len_0);
+
+bool is_sedp_endpoint_alive(const sedp_reader_tbl_t *tbl, unsigned int idx);
+
+void set_sedp_reader_tbl_liveliness_and_guid_prefix(
+    bool alive, const uint8_t guid_prefix[12], sedp_reader_tbl_t *tbl,
+    unsigned int idx);
+
+void set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+    bool alive, sedp_reader_tbl_t *tbl, unsigned int idx);
+
+void set_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> children,
+                                  sedp_reader_tbl_t *tbl, unsigned int idx);
