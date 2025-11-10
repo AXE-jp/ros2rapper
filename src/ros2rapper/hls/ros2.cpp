@@ -306,13 +306,13 @@ static void ros2_in_add_new_app_endpoint(
 #pragma HLS unroll
         uint64_t flag = static_cast<uint64_t>(1) << j;
         if (((children_0 & flag) != 0)
-            && !is_same_entity_id(app_reader_tbl[j].entity_id,
-                                  reader.entity_id)) {
+            && is_same_entity_id(app_reader_tbl[j].entity_id,
+                                 reader.entity_id)) {
             is_known_app_endpoint = true;
         }
         if (((children_1 & flag) != 0)
-            && !is_same_entity_id(app_reader_tbl[j + 64].entity_id,
-                                  reader.entity_id)) {
+            && is_same_entity_id(app_reader_tbl[j + 64].entity_id,
+                                 reader.entity_id)) {
             is_known_app_endpoint = true;
         }
     }
