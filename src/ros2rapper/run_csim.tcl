@@ -23,7 +23,7 @@ add_files -tb -cflags "-Ihls" test/test_message_metadata.cpp
 add_files -tb -cflags "-Ihls" test/test_multi_topic_subscription.cpp
 add_files -tb -cflags "-Ihls" test/test_remove_endpoints.cpp
 # add_files -tb -cflags "-Ihls" test/test_sedp_reader_2.cpp
-# add_files -tb -cflags "-Ihls" test/test_sedp_reader_heartbeat.cpp
+add_files -tb -cflags "-Ihls" test/test_sedp_reader_heartbeat.cpp
 add_files -tb -cflags "-Ihls" test/test_spdp_reader.cpp
 add_files -tb -cflags "-Ihls" test/test_udp.cpp
 add_files -tb -cflags "-Ihls" test/test_utils.cpp
