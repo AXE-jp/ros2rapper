@@ -174,18 +174,19 @@ static void ros2_in_spdp_new(const uint8_t ip_addr[4],
                              sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
 #pragma HLS inline
     // Set flags, initial_send_counter, UDP port and GUID prefix
-    uint64_t wdata_0
-        = SEDP_ENDPOINT_ALIVE | (udp_port[0] << 16) | (udp_port[1] << 24);
+    uint64_t wdata_0 = SEDP_ENDPOINT_ALIVE
+                       | (static_cast<uint64_t>(udp_port[0]) << 16)
+                       | (static_cast<uint64_t>(udp_port[1]) << 24);
     uint64_t wdata_1 = 0;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 4; j++) {
 #pragma HLS unroll
-        wdata_0 |= guid_prefix[j] << (8 * (j + 4));
+        wdata_0 |= static_cast<uint64_t>(guid_prefix[j]) << (8 * (j + 4));
     }
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
-        wdata_1 |= guid_prefix[j + 4] << (8 * j);
+        wdata_1 |= static_cast<uint64_t>(guid_prefix[j + 4]) << (8 * j);
     }
     set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
     set_sedp_reader_tbl(wdata_1, tbl, idx, 1);
