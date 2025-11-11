@@ -534,7 +534,7 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
     get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
                                                &sn_3, tbl, idx);
 
-    if (increment_initial_send_counter) {
+    if (increment_initial_send_counter && (initial_send_counter < 3)) {
         initial_send_counter++;
         uint64_t wdata = (data_0 & 0xffffffffffff00ff)
                          | (static_cast<uint64_t>(initial_send_counter) << 8);
