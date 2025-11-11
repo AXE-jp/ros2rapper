@@ -613,8 +613,7 @@ static int test_spdp_reader_4() {
 }
 
 static int test_update_timestamp() {
-    // Test whether ros2_in updates timestamps in sedp_reader_tbl
-    // correctly.
+    // Test whether ros2_in updates the UDP port and the timestamp correctly.
     constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t port_num_seed = 7400;
@@ -649,12 +648,17 @@ static int test_update_timestamp() {
                 sub_enable, timestamp_i64_new);
         // Check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            int64_t rdata;
-            get_sedp_reader_tbl_timestamp(&rdata, &sedp_reader_tbl, j);
+            int64_t timestamp_i64_out;
+            get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl, j);
             if (j == target) {
-                assert(rdata == timestamp_i64_new);
+                assert(timestamp_i64_out == timestamp_i64_new);
+                uint64_t rdata_0;
+                // Check UDP port
+                get_sedp_reader_tbl(&rdata_0, &sedp_reader_tbl, j, 0);
+                assert(((rdata_0 >> 16) & 0xff) == (7410 >> 8));
+                assert(((rdata_0 >> 24) & 0xff) == (7410 & 0xff));
             } else {
-                assert(rdata == timestamp_i64_orig);
+                assert(timestamp_i64_out == timestamp_i64_orig);
             }
         }
     }
