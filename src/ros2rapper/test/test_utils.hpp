@@ -21,16 +21,23 @@ void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
 
 bool is_sedp_endpoint_alive(const sedp_reader_tbl_t *tbl, unsigned int idx);
 
+// Get alive, builtin_pubrd_acknack_req and builtin_subrd_acknack_req
 void get_sedp_reader_tbl_flags(uint8_t *flags, const sedp_reader_tbl_t *tbl,
                                unsigned int idx);
 
+// These two functions also change
+// - builtin_pubrd_acknack_req,
+// - builtin_subrd_acknack_req,
+// - initial_send_counter, and
+// - udp_port
+// to zero.
 void set_sedp_reader_tbl_liveliness_and_guid_prefix(
     bool alive, const uint8_t guid_prefix[12], sedp_reader_tbl_t *tbl,
     unsigned int idx);
-
 void set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
     bool alive, sedp_reader_tbl_t *tbl, unsigned int idx);
 
+// These two functions do not work in CWB if APP_READER_MAX > 64.
 void get_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> *children,
                                   const sedp_reader_tbl_t  *tbl,
                                   unsigned int              idx);
