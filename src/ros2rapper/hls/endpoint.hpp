@@ -35,49 +35,50 @@ static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
 #define SEDP_ENDPOINT_PUBRD_ACKNACK_REQ 2
 #define SEDP_ENDPOINT_SUBRD_ACKNACK_REQ 4
 
-struct sedp_endpoint {
-    // Word 0, bit 0
-    bool        alive;
-    // Word 0, bit 1
-    bool        builtin_pubrd_acknack_req;
-    // Word 0, bit 2
-    bool        builtin_subrd_acknack_req;
-    // Word 0, bit 8 and 9
-    hls_uint<2> initial_send_counter;
-    // Word 0, bit 16 ... 31
-    uint8_t     udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    // Word 0, bit 32 ... 63
-    // Word 1
-    uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
-    // Word 2, bit 0 ... 31
-    uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
-    // Word 2, bit 32 ... 39
-    uint8_t     builtin_pubrd_wr_seqnum;
-    // Word 2, bit 40 ... 47
-    uint8_t     builtin_pubrd_rd_seqnum;
-    // Word 2, bit 48 ... 55
-    uint8_t     builtin_subrd_wr_seqnum;
-    // Word 2, bit 56 ... 63
-    uint8_t     builtin_subrd_rd_seqnum;
-    // Word 3
-    int64_t     builtin_pubwr_lastsn;
-    // Word 4
-    int64_t     builtin_subwr_lastsn;
-    // Word 5, bit 0 ... 31
-    uint32_t    pub_heartbeat_cnt;
-    // Word 5, bit 32 ... 63
-    uint32_t    sub_heartbeat_cnt;
-    // Word 6, bit 0 ... 31
-    uint32_t    pub_acknack_cnt;
-    // Word 6, bit 32 ... 63
-    uint32_t    sub_acknack_cnt;
-    // Word 7
-    int64_t     lease_duration;
-    // Word 8
-    int64_t     timestamp;
-    // Word 9 and 10
-    bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const */;
-};
+// struct sedp_endpoint {
+//     // Word 0, bit 0
+//     bool        alive;
+//     // Word 0, bit 1
+//     bool        builtin_pubrd_acknack_req;
+//     // Word 0, bit 2
+//     bool        builtin_subrd_acknack_req;
+//     // Word 0, bit 8 and 9
+//     hls_uint<2> initial_send_counter;
+//     // Word 0, bit 16 ... 31
+//     uint8_t     udp_port[2] /* Cyber array=EXPAND, array_index=const */;
+//     // Word 0, bit 32 ... 63
+//     // Word 1
+//     uint8_t     guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+//     // Word 2, bit 0 ... 31
+//     uint8_t     ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+//     // Word 2, bit 32 ... 39
+//     uint8_t     builtin_pubrd_wr_seqnum;
+//     // Word 2, bit 40 ... 47
+//     uint8_t     builtin_pubrd_rd_seqnum;
+//     // Word 2, bit 48 ... 55
+//     uint8_t     builtin_subrd_wr_seqnum;
+//     // Word 2, bit 56 ... 63
+//     uint8_t     builtin_subrd_rd_seqnum;
+//     // Word 3
+//     int64_t     builtin_pubwr_lastsn;
+//     // Word 4
+//     int64_t     builtin_subwr_lastsn;
+//     // Word 5, bit 0 ... 31
+//     uint32_t    pub_heartbeat_cnt;
+//     // Word 5, bit 32 ... 63
+//     uint32_t    sub_heartbeat_cnt;
+//     // Word 6, bit 0 ... 31
+//     uint32_t    pub_acknack_cnt;
+//     // Word 6, bit 32 ... 63
+//     uint32_t    sub_acknack_cnt;
+//     // Word 7
+//     int64_t     lease_duration;
+//     // Word 8
+//     int64_t     timestamp;
+//     // Word 9 and 10
+//     bool children[APP_READER_MAX] /* Cyber array=EXPAND, array_index=const
+//     */;
+// };
 
 static_assert(
     APP_READER_MAX == 128,

@@ -428,12 +428,6 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     find_unused_app_endpoint(app_reader_tbl, &is_app_reader_tbl_full,
                              &app_unused_idx);
 
-    sedp_endpoint participant;
-#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = participant.ip_addr complete dim = 1
-#pragma HLS array_partition variable = participant.udp_port complete dim = 1
-#pragma HLS array_partition variable = participant.children complete dim = 1
-
     app_endpoint reader;
 #pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = reader.ip_addr complete dim = 1
@@ -982,12 +976,6 @@ static void ros2_out(
     msg_metadata.now.seconds = static_cast<int32_t>(timestamp_i64 >> 32);
     msg_metadata.now.fraction
         = static_cast<uint32_t>(timestamp_i64 & 0xffffffff);
-
-    sedp_endpoint reader;
-#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
-#pragma HLS array_partition variable = reader.udp_port complete dim = 1
-#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = reader.children complete dim = 1
 
     if (!out.full()) {
         if (*rawudp_txbuf_grant == 1) {
