@@ -10,6 +10,7 @@
 #include "spdp.hpp"
 #include "test_utils.hpp"
 #include <cassert>
+#include <cstdio>
 
 // SPDP message sample with PID_PARTICIPANT_LEASE_DURATION.
 constexpr uint8_t test_spdp_reader_data_1[] = {
@@ -523,6 +524,94 @@ static int test_spdp_reader_3() {
     return 0;
 }
 
+static int test_spdp_reader_4() {
+    // Test ros2_in initializes sedp_endpoint correctly.
+    constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
+    constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
+    constexpr uint16_t port_num_seed = 7400;
+    constexpr int64_t  timestamp_i64_in = 0x1122334455667788;
+
+    static const hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    static const hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+
+    hls_stream<rtps_data_t> stream;
+    CALL_SPDP_READER(stream, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_1);
+    rtps_data_t rtps_data_1 = stream.read();
+
+    // Initialize sedp_reader_tbl
+    // Set dummy data at 0
+    set_sedp_reader_tbl(0, &sedp_reader_tbl, 0, 0);
+    for (auto j = 1; j < 11; j++) {
+        set_sedp_reader_tbl(0xffffffffffffffff, &sedp_reader_tbl, 0, j);
+    }
+    // sedp_reader_tbl[j] (j >= 1) is not used
+    for (auto j = 1; j < SEDP_READER_MAX; j++) {
+        set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+            false, &sedp_reader_tbl, 0);
+    }
+
+    // Update sedp_reader_tbl
+    stream.write(rtps_data_1);
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64_in);
+
+    // Check sedp_reader_tbl
+    uint64_t rdata_0, rdata_1;
+    get_sedp_reader_tbl(&rdata_0, &sedp_reader_tbl, 0, 0);
+    get_sedp_reader_tbl(&rdata_1, &sedp_reader_tbl, 0, 1);
+    // Check flags and initial_send_counter
+    assert((rdata_0 & 0xffff) == SEDP_ENDPOINT_ALIVE);
+    // Check UDP port
+    assert(((rdata_0 >> 16) & 0xff) == (7410 >> 8));
+    assert(((rdata_0 >> 24) & 0xff) == (7410 & 0xff));
+    // Check GUID prefix
+    for (auto j = 0; j < 4; j++) {
+        assert(((rdata_0 >> (8 * (j + 4))) & 0xff) == SOURCE_GUID_PREFIX[j]);
+    }
+    for (auto j = 0; j < 8; j++) {
+        assert(((rdata_1 >> (8 * j)) & 0xff) == SOURCE_GUID_PREFIX[j + 4]);
+    }
+    uint8_t  src_ip_addr[4];
+    uint8_t  pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    int64_t  pubwr_lastsn, subwr_lastsn;
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt, pub_acknack_cnt,
+        sub_acknack_cnt;
+    int64_t                  lease_duration, timestamp_i64_out;
+    hls_uint<APP_READER_MAX> children;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        src_ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt,
+                                    &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_lease_duration(&lease_duration, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_children(&children, &sedp_reader_tbl, 0);
+    assert(src_ip_addr[0] == 192);
+    assert(src_ip_addr[1] == 168);
+    assert(src_ip_addr[2] == 0);
+    assert(src_ip_addr[3] == 2);
+    assert(pubrd_wr_seqnum == 0);
+    assert(pubrd_rd_seqnum == 1);
+    assert(subrd_wr_seqnum == 0);
+    assert(subrd_rd_seqnum == 1);
+    assert(pubwr_lastsn == 0);
+    assert(subwr_lastsn == 0);
+    assert(pub_heartbeat_cnt == 0);
+    assert(sub_heartbeat_cnt == 0);
+    assert(pub_acknack_cnt == 0);
+    assert(sub_acknack_cnt == 0);
+    assert(lease_duration == (static_cast<int64_t>(20) << 32));
+    assert(timestamp_i64_out == timestamp_i64_in);
+    assert(children == 0);
+
+    return 0;
+}
+
 static int test_update_timestamp() {
     // Test whether ros2_in updates timestamps in sedp_reader_tbl
     // correctly.
@@ -577,6 +666,7 @@ int test_spdp_reader() {
     assert(test_spdp_reader_1() == 0);
     assert(test_spdp_reader_2() == 0);
     assert(test_spdp_reader_3() == 0);
+    assert(test_spdp_reader_4() == 0);
     assert(test_update_timestamp() == 0);
     return 0;
 }
