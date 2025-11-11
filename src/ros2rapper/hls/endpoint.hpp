@@ -80,11 +80,15 @@ static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
 //     */;
 // };
 
-static_assert(
-    APP_READER_MAX == 128,
-    "You have to modify sedp_reader_tbl_t, clear_sedp_reader_tbl_children, "
-    "ros2_in_sedp_pub, ros2_in_sedp_sub, remove_sedp_endpoint and tests when "
-    "you change APP_READER_MAX.");
+static_assert(APP_READER_MAX == 128,
+              "You have to modify\n"
+              "  - sedp_reader_tbl_t (in hls/endpoint.hpp),\n"
+              "  - clear_sedp_reader_tbl_children (in hls/endpoint.cpp),\n"
+              "  - ros2_in_sedp_pub, ros2_in_sedp_sub and remove_sedp_endpoint "
+              "(in hls/ros2.cpp),\n"
+              "  - get_sedp_reader_tbl_children and "
+              "set_sedp_reader_tbl_children (in test/test_utils.cpp)\n"
+              "when you change APP_READER_MAX.");
 typedef struct {
     uint64_t ram[11 * SEDP_READER_MAX]
 #ifdef SEDP_READER_TBL_FF
