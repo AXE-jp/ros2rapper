@@ -649,7 +649,8 @@ static int test_update_timestamp() {
         // Check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             int64_t timestamp_i64_out;
-            get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl, j);
+            get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl,
+                                          j);
             if (j == target) {
                 assert(timestamp_i64_out == timestamp_i64_new);
                 uint64_t rdata_0;
