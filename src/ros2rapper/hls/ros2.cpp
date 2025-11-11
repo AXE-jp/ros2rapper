@@ -150,8 +150,9 @@ static void ros2_in_spdp_update(const uint8_t ip_addr[4],
     // Update the UDP port
     uint64_t rdata_0;
     get_sedp_reader_tbl(&rdata_0, tbl, idx, 0);
-    uint64_t wdata_0 = (rdata_0 & 0xffffffff0000ffff) | (udp_port[0] << 16)
-                       | (udp_port[1] << 24);
+    uint64_t wdata_0 = (rdata_0 & 0xffffffff0000ffff)
+                       | (static_cast<uint64_t>(udp_port[0]) << 16)
+                       | (static_cast<uint64_t>(udp_port[1]) << 24);
     set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
 
     // Update the IP address

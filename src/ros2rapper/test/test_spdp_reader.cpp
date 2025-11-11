@@ -654,10 +654,17 @@ static int test_update_timestamp() {
             if (j == target) {
                 assert(timestamp_i64_out == timestamp_i64_new);
                 uint64_t rdata_0;
-                // Check UDP port
                 get_sedp_reader_tbl(&rdata_0, &sedp_reader_tbl, j, 0);
+                // Check flags and initial_send_counter
+                assert((rdata_0 & 0xffff) == SEDP_ENDPOINT_ALIVE);
+                // Check UDP port
                 assert(((rdata_0 >> 16) & 0xff) == (7410 >> 8));
                 assert(((rdata_0 >> 24) & 0xff) == (7410 & 0xff));
+                // Check GUID prefix
+                for (auto j = 0; j < 4; j++) {
+                    assert(((rdata_0 >> (8 * (j + 4))) & 0xff)
+                           == SOURCE_GUID_PREFIX[j]);
+                }
             } else {
                 assert(timestamp_i64_out == timestamp_i64_orig);
             }
