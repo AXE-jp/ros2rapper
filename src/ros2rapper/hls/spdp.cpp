@@ -7,7 +7,6 @@
 #include "ip.hpp"
 #include "ros2_receiver.hpp"
 #include "spdp.hpp"
-#include "util.hpp"
 
 /* Cyber func=inline */
 void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]) {

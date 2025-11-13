@@ -10,7 +10,6 @@
 #include "rtps.hpp"
 #include "sedp.hpp"
 #include "spdp.hpp"
-#include "util.hpp"
 
 /* Cyber func=inline */
 static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {

@@ -5,7 +5,6 @@
 
 #include "app.hpp"
 #include "ros2.hpp"
-#include "util.hpp"
 
 #define APP_HDR_SIZE APP_TOT_LEN(0)
 

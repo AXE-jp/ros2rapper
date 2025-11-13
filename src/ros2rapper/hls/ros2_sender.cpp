@@ -12,7 +12,6 @@
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
-#include "util.hpp"
 #include <cstdint>
 
 #define USE_FIFOIF_ETHERNET
