@@ -5,34 +5,12 @@
 
 #include "duration.hpp"
 #include "ip.hpp"
+#include "ros2_receiver.hpp"
 #include "spdp.hpp"
 #include "util.hpp"
 
 /* Cyber func=inline */
-void compare_guid_prefix_of_sedp_endpoint(
-    const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
-    bool unmatched[SEDP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < SEDP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].guid_prefix[idx] != x)
-            unmatched[i] = true;
-    }
-}
-
-/* Cyber func=inline */
-void reset_sedp_unmatched(bool unmatched[SEDP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-        unmatched[j] = false;
-    }
-}
-
-/* Cyber func=inline */
-void reset_app_unmatched(bool unmatched[APP_READER_MAX]) {
+void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (auto j = 0; j < APP_READER_MAX; j++) {
@@ -46,10 +24,9 @@ void reset_app_unmatched(bool unmatched[APP_READER_MAX]) {
 #define FLAGS_UNMATCH_DOMAIN 0x04
 
 /* Cyber func=inline */
-void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
+void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
                  hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
-                 int64_t timestamp_i64) {
+                 const uint8_t subnet_mask[4], uint16_t port_num_seed) {
 #pragma HLS inline
     static const uint8_t par_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PARTICIPANT_READER;
@@ -58,8 +35,6 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     static hls_uint<4> state;
     static uint16_t    offset;
     static hls_uint<3> flags;
-    static bool        unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = unmatched type = complete dim = 0
 
     static uint8_t  sbm_id;
     static bool     sbm_le;
@@ -67,31 +42,26 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     static uint16_t rep_id;
     static uint16_t param_id;
     static uint16_t param_len;
-    static uint16_t udp_port;
 
     static bool lease_duration_found;
+
+    static uint8_t spdp_guid_prefix
+        [GUID_PREFIX_SIZE] /* Cyber array=EXPAND, array_index=const */;
+#pragma HLS array_partition variable = spdp_guid_prefix complete dim = 1
+    static uint8_t spdp_ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = spdp_ip_addr complete dim = 1
+    static uint8_t spdp_udp_port[2] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = spdp_udp_port complete dim = 1
+    static uint8_t
+        spdp_lease_duration[8] /* Cyber array=EXPAND, array_index=const */;
+#pragma HLS array_partition variable = spdp_lease_duration complete dim = 1
 
     if (!enable) {
         return;
     }
 
-    // Find an unused point in reader_tbl.
-    sedp_reader_id_t unused_reader_id;
-    /* Cyber unroll_times=all */
-    for (unused_reader_id = 0; unused_reader_id < SEDP_READER_MAX;
-         unused_reader_id++) {
-#pragma HLS unroll
-        if (!reader_tbl[unused_reader_id].alive) {
-            break;
-        }
-    }
-    if (unused_reader_id == SEDP_READER_MAX) {
-        return;
-    }
-
-    sedp_endpoint &reader = reader_tbl[unused_reader_id];
-    uint8_t        data = in & 0xff;
-    bool           end = in & 0x100;
+    uint8_t data = in & 0xff;
+    bool    end = in & 0x100;
 
     switch (state) {
     case 0:
@@ -177,39 +147,41 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             if (param_id == PID_SENTINEL) {
                 hls_uint<3> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    // Test if the found node is unknown
-                    bool unknown = true;
+                    rtps_data_t rtps_data;
+#pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = rtps_data.data complete dim = 1
+                    rtps_data.type = RTPS_TYPE_SPDP;
                     /* Cyber unroll_times=all */
-                    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+                    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
-                        if (reader_tbl[j].alive && !unmatched[j]) {
-                            unknown = false;
-                        }
+                        rtps_data.guid_prefix[j] = spdp_guid_prefix[j];
                     }
-                    if (unknown) {
-                        // Validate and initialize sedp_endpoint.
-                        reader.builtin_pubrd_rd_seqnum = 1;
-                        reader.builtin_subrd_rd_seqnum = 1;
-                        reader.builtin_pubrd_wr_seqnum = 0;
-                        reader.builtin_subrd_wr_seqnum = 0;
-                        reader.builtin_pubrd_acknack_req = false;
-                        reader.builtin_subrd_acknack_req = false;
-                        reader.builtin_pubwr_lastsn = 0;
-                        reader.builtin_subwr_lastsn = 0;
-                        reader.initial_send_counter = 0;
-                        reader.pub_heartbeat_cnt = 0;
-                        reader.sub_heartbeat_cnt = 0;
-                        reader.pub_acknack_cnt = 0;
-                        reader.sub_acknack_cnt = 0;
-                        reader.alive = true;
-                        reset_sedp_endpoint_children(reader.children);
-                        if (!lease_duration_found) {
-                            reader.lease_duration = SPDP_LEASE_DURATION_DEFAULT;
-                        }
-                        reader.timestamp = timestamp_i64;
+                    /* Cyber unroll_times=all */
+                    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+                        rtps_data.data[j] = spdp_ip_addr[j];
                     }
+                    rtps_data.data[4] = spdp_udp_port[0];
+                    rtps_data.data[5] = spdp_udp_port[1];
+                    if (lease_duration_found) {
+                        /* Cyber unroll_times=all */
+                        for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+                            rtps_data.data[j + 6] = spdp_lease_duration[j];
+                        }
+                    } else {
+                        // Use default value 100 sec.
+                        rtps_data.data[6] = 0;
+                        rtps_data.data[7] = 0;
+                        rtps_data.data[8] = 0;
+                        rtps_data.data[9] = 0;
+                        rtps_data.data[10] = 100;
+                        rtps_data.data[11] = 0;
+                        rtps_data.data[12] = 0;
+                        rtps_data.data[13] = 0;
+                    }
+                    out.write(rtps_data);
                 }
-                reset_sedp_unmatched(unmatched);
                 flags = 0;
                 offset = 0;
                 lease_duration_found = false;
@@ -228,9 +200,7 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             if (flags & FLAGS_FOUND_GUID)
                 break;
             if (offset < 12) {
-                reader.guid_prefix[offset] = data;
-                compare_guid_prefix_of_sedp_endpoint(data, reader_tbl, offset,
-                                                     unmatched);
+                spdp_guid_prefix[offset] = data;
             }
             break;
         case PID_METATRAFFIC_UNICAST_LOCATOR:
@@ -241,51 +211,41 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             } else if (offset < 8) {
                 if (rep_id & SP_ID_CDR_LE) {
                     if (offset == 4) {
-                        udp_port = data;
-                        reader.udp_port[1] = data;
+                        spdp_udp_port[1] = data;
                     } else if (offset == 5) {
-                        udp_port |= data << 8;
-                        reader.udp_port[0] = data;
+                        spdp_udp_port[0] = data;
                     }
                 } else {
                     if (offset == 6) {
-                        udp_port = data << 8;
-                        reader.udp_port[0] = data;
+                        spdp_udp_port[0] = data;
                     } else if (offset == 7) {
-                        udp_port |= data;
-                        reader.udp_port[1] = data;
+                        spdp_udp_port[1] = data;
                     }
                 }
             } else if (offset < 20) {
                 ; // do nothing
             } else if (offset == 20) {
-                reader.ip_addr[0] = data;
+                spdp_ip_addr[0] = data;
             } else if (offset == 21) {
-                reader.ip_addr[1] = data;
+                spdp_ip_addr[1] = data;
             } else if (offset == 22) {
-                reader.ip_addr[2] = data;
+                spdp_ip_addr[2] = data;
             } else if (offset == 23) {
-                reader.ip_addr[3] = data;
+                spdp_ip_addr[3] = data;
             }
             break;
         case PID_PARTICIPANT_LEASE_DURATION:
             if (offset < 8) {
-                if (offset == 0) {
-                    reader.lease_duration = 0;
-                }
                 if (rep_id & SP_ID_CDR_LE) {
                     if (offset < 4) {
                         // Read the seconds of the lease duration.
-                        reader.lease_duration |= static_cast<int64_t>(data)
-                                                 << (32 + 8 * offset);
+                        spdp_lease_duration[offset + 4] = data;
                     } else {
                         // Read the fractional part of the lease duration.
-                        reader.lease_duration |= static_cast<int64_t>(data)
-                                                 << (8 * offset - 32);
+                        spdp_lease_duration[offset - 4] = data;
                     }
                 } else {
-                    reader.lease_duration |= static_cast<int64_t>(data)
-                                             << (56 - 8 * offset);
+                    spdp_lease_duration[7 - offset] = data;
                 }
             }
             break;
@@ -295,9 +255,10 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
             if (param_id == PID_PARTICIPANT_GUID) {
                 flags |= (hls_uint<3>)FLAGS_FOUND_GUID;
             } else if (param_id == PID_METATRAFFIC_UNICAST_LOCATOR) {
+                uint16_t udp_port = (spdp_udp_port[0] << 8) | spdp_udp_port[1];
                 if (udp_port >= port_num_seed
                     && udp_port - port_num_seed < DG) {
-                    if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
+                    if (is_same_subnet(spdp_ip_addr, ip_addr, subnet_mask)) {
                         flags |= (hls_uint<3>)FLAGS_FOUND_LOCATOR;
                     }
                 }
@@ -319,7 +280,6 @@ void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
     }
 
     if (end) {
-        reset_sedp_unmatched(unmatched);
         flags = 0;
         offset = 0;
         lease_duration_found = false;

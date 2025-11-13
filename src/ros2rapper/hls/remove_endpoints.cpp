@@ -2,22 +2,31 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "remove_endpoints.hpp"
+#include "endpoint.hpp"
+#include "hls.hpp"
+#include "ros2_receiver.hpp"
+#include <cstdint>
 
 /* Cyber func=inline */
-static void remove_sedp_endpoint(sedp_reader_id_t id,
-                                 sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                                 app_endpoint  app_reader_tbl[APP_READER_MAX]) {
+void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
+                          sedp_reader_tbl_t *sedp_reader_tbl,
+                          app_endpoint       app_reader_tbl[APP_READER_MAX]) {
 #pragma HLS inline
-    if (id < SEDP_READER_MAX) {
-        // Remove sedp_reader_tbl[id].
-        sedp_reader_tbl[id].alive = false;
-        // Remove the children of sedp_reader_tbl[id].
-        /* Cyber unroll_times=all */
-        for (auto j = 0; j < APP_READER_MAX; j++) {
+    uint64_t children_0, children_1;
+    get_sedp_reader_tbl(&children_0, sedp_reader_tbl, sedp_idx, 9);
+    get_sedp_reader_tbl(&children_1, sedp_reader_tbl, sedp_idx, 10);
+    // Remove sedp_endpoint
+    set_sedp_reader_tbl(0, sedp_reader_tbl, sedp_idx, 0);
+    // Remove the children of the sedp_endpoint
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 64; j++) {
 #pragma HLS unroll
-            if (sedp_reader_tbl[id].children[j]) {
-                app_reader_tbl[j].alive = false;
-            }
+        uint64_t flag = static_cast<uint64_t>(1) << j;
+        if ((children_0 & flag) != 0) {
+            app_reader_tbl[j].alive = false;
+        }
+        if ((children_1 & flag) != 0) {
+            app_reader_tbl[j + 64].alive = false;
         }
     }
 }
@@ -38,19 +47,11 @@ typedef enum {
 } update_liveliness_state_t;
 
 /* Cyber func=inline */
-void update_liveliness(hls_uint<9>   in,
-                       const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
-                       sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-                       app_endpoint  app_reader_tbl[APP_READER_MAX],
-                       bool *reading_rtps_message, int64_t timestamp_i64) {
-    // 1. Change reading_rtps_message to tell whether or not the garbage
-    //    collector can change the endpoint tables. When reading_rtps_message is
-    //    true, the endpoint tables should not be changed.
-    // 2. When the ros2rapper gets a message which tells disposed or
-    //    unregistered, remove (i.e. set the member '.alive' false) the endpoint
-    //    which sent the message.
-    // 3. When the ros2rapper gets a message from a known participant, update
-    //    timestamp of its data.
+void update_liveliness(hls_uint<9> in, hls_stream<rtps_data_t> &out,
+                       const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE]) {
+    // When the ros2rapper gets a message which tells disposed or unregistered,
+    // remove (i.e. set the member '.alive' false) the endpoint which sent the
+    // message.
 #pragma HLS inline
     static update_liveliness_state_t state;
     static uint16_t                  offset;
@@ -63,8 +64,9 @@ void update_liveliness(hls_uint<9>   in,
     static uint16_t param_id;
     static uint16_t param_len;
 
-    static bool sedp_unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = sedp_unmatched type = complete dim = 1
+    static uint8_t inline_qos_guid_prefix
+        [GUID_PREFIX_SIZE] /* Cyber array=EXPAND, array_index=const */;
+#pragma HLS array_partition variable = inline_qos_guid_prefix complete dim = 1
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -83,24 +85,14 @@ void update_liveliness(hls_uint<9>   in,
         break;
     case STATE_READ_HDR_GUID_PREFIX:
         if (offset < GUID_PREFIX_SIZE) {
-            compare_guid_prefix_of_sedp_endpoint(data, sedp_reader_tbl, offset,
-                                                 sedp_unmatched);
+            inline_qos_guid_prefix[offset] = data;
         }
         // Tell the garbage collector not to change the endpoint tables
         // because the ros2rapper uses them to process a RTPS message.
-        *reading_rtps_message = true;
         offset++;
         if (offset == GUID_PREFIX_SIZE) {
             offset = 0;
             state = STATE_READ_SBM_HDR;
-            // Update timestamps of matched endpoints in sedp_reader_tbl.
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-                if (!sedp_unmatched[j]) {
-                    sedp_reader_tbl[j].timestamp = timestamp_i64;
-                }
-            }
         }
         break;
     case STATE_READ_SBM_HDR:
@@ -217,14 +209,15 @@ void update_liveliness(hls_uint<9>   in,
         if (offset == 3) {
             if ((data & 3) != 0) {
                 // disposed (0x01) or unregistered (0x02)
+                rtps_data_t rtps_data;
+#pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
+                rtps_data.type = RTPS_TYPE_RM_ENDPOINT;
                 /* Cyber unroll_times=all */
-                for (auto j = 0; j < SEDP_READER_MAX; j++) {
+                for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
-                    if (!sedp_unmatched[j]) {
-                        remove_sedp_endpoint(j, sedp_reader_tbl,
-                                             app_reader_tbl);
-                    }
+                    rtps_data.guid_prefix[j] = inline_qos_guid_prefix[j];
                 }
+                out.write(rtps_data);
             }
         }
         offset++;
@@ -245,25 +238,30 @@ void update_liveliness(hls_uint<9>   in,
     }
 
     if (end) {
-        // Allow the garbage collector to change the endpoint tables.
-        *reading_rtps_message = false;
-        reset_sedp_unmatched(sedp_unmatched);
         offset = 0;
         state = STATE_READ_RTPS_HDR;
     }
 }
 
 /* Cyber func=inline */
-void remove_dead_endpoints(sedp_reader_id_t id,
-                           sedp_endpoint    sedp_reader_tbl[SEDP_READER_MAX],
-                           app_endpoint     app_reader_tbl[APP_READER_MAX],
-                           int64_t          timestamp_i64) {
+void remove_dead_endpoints(sedp_reader_id_t   id,
+                           sedp_reader_tbl_t *sedp_reader_tbl,
+                           app_endpoint       app_reader_tbl[APP_READER_MAX],
+                           int64_t            timestamp_i64) {
 #pragma HLS inline
     // Check timeout
     if (id < SEDP_READER_MAX) {
-        if ((timestamp_i64 - sedp_reader_tbl[id].timestamp)
-            > sedp_reader_tbl[id].lease_duration) {
-            remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
+        uint64_t flags;
+        get_sedp_reader_tbl(&flags, sedp_reader_tbl, id, 0);
+        if ((flags & SEDP_ENDPOINT_ALIVE) != 0) {
+            int64_t lease_duration, last_spdp_timestamp;
+            get_sedp_reader_tbl_lease_duration(&lease_duration, sedp_reader_tbl,
+                                               id);
+            get_sedp_reader_tbl_timestamp(&last_spdp_timestamp, sedp_reader_tbl,
+                                          id);
+            if ((timestamp_i64 - last_spdp_timestamp) > lease_duration) {
+                remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
+            }
         }
     }
 }

@@ -5,9 +5,11 @@ open_project -reset proj_ros2test
 
 add_files hls/app.cpp
 add_files hls/checksum.cpp
+add_files hls/endpoint.cpp
 add_files hls/ip.cpp
 add_files hls/message_metadata.cpp
 add_files hls/remove_endpoints.cpp
+add_files hls/ros2_receiver.cpp
 add_files hls/ros2_sender.cpp
 add_files hls/ros2.cpp
 add_files hls/rtps.cpp
@@ -24,6 +26,7 @@ add_files -tb -cflags "-Ihls" test/test_sedp_reader_2.cpp
 add_files -tb -cflags "-Ihls" test/test_sedp_reader_heartbeat.cpp
 add_files -tb -cflags "-Ihls" test/test_spdp_reader.cpp
 add_files -tb -cflags "-Ihls" test/test_udp.cpp
+add_files -tb -cflags "-Ihls" test/test_utils.cpp
 
 open_solution -reset solution1
 

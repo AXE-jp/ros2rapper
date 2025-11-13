@@ -6,37 +6,11 @@
 #include "duration.hpp"
 #include "endpoint.hpp"
 #include "ip.hpp"
+#include "ros2_receiver.hpp"
 #include "rtps.hpp"
 #include "sedp.hpp"
 #include "spdp.hpp"
 #include "util.hpp"
-
-/* Cyber func=inline */
-void compare_guid_prefix_of_app_endpoint(const uint8_t      x,
-                                         const app_endpoint tbl[APP_READER_MAX],
-                                         const int          idx,
-                                         bool unmatched[APP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < APP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].guid_prefix[idx] != x)
-            unmatched[i] = true;
-    }
-}
-
-/* Cyber func=inline */
-static void compare_entity_id(const uint8_t      x,
-                              const app_endpoint tbl[APP_READER_MAX],
-                              const int idx, bool unmatched[APP_READER_MAX]) {
-#pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < APP_READER_MAX; i++) {
-#pragma HLS unroll
-        if (tbl[i].entity_id[idx] != x)
-            unmatched[i] = true;
-    }
-}
 
 /* Cyber func=inline */
 static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
@@ -74,8 +48,7 @@ enum {
 
 /* Cyber func=inline */
 void sedp_reader(
-    hls_uint<9> in, sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint             app_reader_tbl[APP_READER_MAX],
+    hls_uint<9> in, hls_stream<rtps_data_t> &out,
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
     uint16_t port_num_seed, const uint8_t guid_prefix[12],
@@ -95,13 +68,9 @@ void sedp_reader(
         = ENTITYID_BUILTIN_SUBSCRIPTIONS_READER;
 #pragma HLS array_partition variable = sub_reader_id complete dim = 0
 
-    static hls_uint<4> state;
-    static uint16_t    offset;
-    static hls_uint<5> flags;
-    static bool        app_unmatched[APP_READER_MAX] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = app_unmatched complete dim = 1
-    static bool sedp_unmatched[SEDP_READER_MAX] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = sedp_unmatched complete dim = 1
+    static hls_uint<4>       state;
+    static uint16_t          offset;
+    static hls_uint<5>       flags;
     static builtin_ep_type_t ep_type;
 
     static hls_uint<PUB_TOPICS_MAX> pub_topics_unmatched;
@@ -118,41 +87,22 @@ void sedp_reader(
     static uint16_t rep_id;
     static uint16_t param_id;
     static uint16_t param_len;
-    static uint16_t udp_port;
     static uint32_t sp_len;
+
+    static uint8_t
+        sedp_guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
+#pragma HLS array_partition variable = sedp_guid_prefix complete dim = 1
+    static uint8_t sedp_ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = sedp_ip_addr complete dim = 1
+    static uint8_t sedp_udp_port[2] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = sedp_udp_port complete dim = 1
+    static uint8_t
+        sedp_entity_id[4] /* Cyber array=EXPAND, array_index=const */;
+#pragma HLS array_partition variable = sedp_entity_id complete dim = 1
 
     if ((pub_enable == 0) && (sub_enable == 0)) {
         return;
     }
-
-    // Find an unused point in app_reader_tbl.
-    app_reader_id_t unused_app_reader_id;
-    /* Cyber unroll_times=all */
-    for (unused_app_reader_id = 0; unused_app_reader_id < APP_READER_MAX;
-         unused_app_reader_id++) {
-#pragma HLS unroll
-        if (!app_reader_tbl[unused_app_reader_id].alive) {
-            break;
-        }
-    }
-    if (unused_app_reader_id == APP_READER_MAX) {
-        return;
-    }
-
-    app_endpoint &reader = app_reader_tbl[unused_app_reader_id];
-
-    sedp_reader_id_t sedp_matched_idx = 0;
-    bool             is_participant_matched = false;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS unroll
-        if (sedp_reader_tbl[j].alive && !sedp_unmatched[j]) {
-            sedp_matched_idx = j;
-            is_participant_matched = true;
-            break;
-        }
-    }
-    sedp_endpoint &participant = sedp_reader_tbl[sedp_matched_idx];
 
     uint8_t data = in & 0xff;
     bool    end = in & 0x100;
@@ -171,8 +121,7 @@ void sedp_reader(
         break;
     case SEDP_READ_HDR_GUID_PREFIX:
         if (offset < 12) {
-            compare_guid_prefix_of_sedp_endpoint(data, sedp_reader_tbl, offset,
-                                                 sedp_unmatched);
+            sedp_guid_prefix[offset] = data;
         }
         offset++;
         if (offset == RTPS_HDR_SIZE - RTPS_HDR_OFFSET_GUID_PREFIX) {
@@ -246,24 +195,22 @@ void sedp_reader(
         offset++;
 
         if (offset == sbm_len) {
-            if (is_participant_matched) {
-                if (ep_type & BUILTIN_EP_PUB) {
-                    if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0
-                        || participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_pubrd_acknack_req = true;
-                    if (participant.builtin_pubrd_rd_seqnum < sbm_sn_0)
-                        participant.builtin_pubrd_rd_seqnum = sbm_sn_0;
-                    if (participant.builtin_pubrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_pubrd_wr_seqnum = sbm_sn_1;
-                } else if (ep_type & BUILTIN_EP_SUB) {
-                    if (participant.builtin_subrd_rd_seqnum < sbm_sn_0
-                        || participant.builtin_subrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_subrd_acknack_req = true;
-                    if (participant.builtin_subrd_rd_seqnum < sbm_sn_0)
-                        participant.builtin_subrd_rd_seqnum = sbm_sn_0;
-                    if (participant.builtin_subrd_wr_seqnum < sbm_sn_1)
-                        participant.builtin_subrd_wr_seqnum = sbm_sn_1;
-                }
+            rtps_data_t rtps_data;
+#pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = rtps_data.data complete dim = 1
+            /* Cyber unroll_times=all */
+            for (auto j = 0; j < 12; j++) {
+#pragma HLS unroll
+                rtps_data.guid_prefix[j] = sedp_guid_prefix[j];
+            }
+            rtps_data.data[0] = sbm_sn_0;
+            rtps_data.data[1] = sbm_sn_1;
+            if (ep_type & BUILTIN_EP_PUB) {
+                rtps_data.type = RTPS_TYPE_SEDP_HEARTBEAT_PUB;
+                out.write(rtps_data);
+            } else if (ep_type & BUILTIN_EP_SUB) {
+                rtps_data.type = RTPS_TYPE_SEDP_HEARTBEAT_SUB;
+                out.write(rtps_data);
             }
             offset = 0;
             state = SEDP_READ_SBM_HDR;
@@ -291,29 +238,9 @@ void sedp_reader(
             break;
         }
         if (offset == SBM_DATA_HDR_SIZE) {
-            if (!is_participant_matched) {
-                state = SEDP_READ_SKIP_SBM;
-            } else if (ep_type & BUILTIN_EP_PUB) {
-                if (participant.builtin_pubrd_rd_seqnum == sbm_sn_0) {
-                    participant.builtin_pubrd_rd_seqnum++;
-                    participant.builtin_pubrd_acknack_req = true;
-                    sbm_len -= SBM_DATA_HDR_SIZE;
-                    offset = 0;
-                    state = SEDP_READ_SP_HDR;
-                } else {
-                    state = SEDP_READ_SKIP_SBM;
-                }
-            } else {
-                if (participant.builtin_subrd_rd_seqnum == sbm_sn_0) {
-                    participant.builtin_subrd_rd_seqnum++;
-                    participant.builtin_subrd_acknack_req = true;
-                    sbm_len -= SBM_DATA_HDR_SIZE;
-                    offset = 0;
-                    state = SEDP_READ_SP_HDR;
-                } else {
-                    state = SEDP_READ_SKIP_SBM;
-                }
-            }
+            sbm_len -= SBM_DATA_HDR_SIZE;
+            offset = 0;
+            state = SEDP_READ_SP_HDR;
         }
         break;
     case SEDP_READ_SP_HDR:
@@ -351,31 +278,45 @@ void sedp_reader(
         offset++;
         if (offset == sizeof(param_len)) {
             if (param_id == PID_SENTINEL) {
+                rtps_data_t rtps_data;
+#pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
+#pragma HLS array_partition variable = rtps_data.data complete dim = 1
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < 12; j++) {
+#pragma HLS unroll
+                    rtps_data.guid_prefix[j] = sedp_guid_prefix[j];
+                }
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+                    rtps_data.data[j] = sedp_ip_addr[j];
+                }
+                rtps_data.data[4] = sedp_udp_port[0];
+                rtps_data.data[5] = sedp_udp_port[1];
+                /* Cyber unroll_times=all */
+                for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+                    rtps_data.data[j + 6] = sedp_entity_id[j];
+                }
+                rtps_data.data[11] = sbm_sn_0;
+
                 hls_uint<5> found = FLAGS_FOUND_GUID | FLAGS_FOUND_LOCATOR;
                 if (flags == found) {
-                    // Test the found entity is unknown.
-                    bool unknown = true;
-                    /* Cyber unroll_times=all */
-                    for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-                        if (app_reader_tbl[j].alive && !app_unmatched[j]) {
-                            unknown = false;
-                        }
+                    if (ep_type & BUILTIN_EP_SUB) {
+                        rtps_data.data[10] = get_matched_pub_topic_id(
+                            ~pub_topics_unmatched & ~pub_types_unmatched);
+                        rtps_data.type = RTPS_TYPE_SEDP_SUB;
+                    } else {
+                        rtps_data.type = RTPS_TYPE_SEDP_PUB;
                     }
-                    if (unknown) {
-                        if (ep_type & BUILTIN_EP_SUB) {
-                            reader.app_ep_type = APP_EP_PUB;
-                            reader.topic_id = get_matched_pub_topic_id(
-                                ~pub_topics_unmatched & ~pub_types_unmatched);
-                        } else {
-                            reader.app_ep_type = APP_EP_SUB;
-                        }
-                        // Validate app_reader_tbl[unused_app_reader_id]
-                        participant.children[unused_app_reader_id] = true;
-                        app_reader_tbl[unused_app_reader_id].alive = true;
+                } else {
+                    if (ep_type & BUILTIN_EP_SUB) {
+                        rtps_data.type = RTPS_TYPE_SEDP_SUB_SN_ONLY;
+                    } else {
+                        rtps_data.type = RTPS_TYPE_SEDP_PUB_SN_ONLY;
                     }
                 }
-                reset_app_unmatched(app_unmatched);
+                out.write(rtps_data);
                 flags = 0;
                 pub_topics_unmatched = 0;
                 pub_types_unmatched = 0;
@@ -401,31 +342,27 @@ void sedp_reader(
             } else if (offset < 8) {
                 if (rep_id & SP_ID_CDR_LE) {
                     if (offset == 4) {
-                        udp_port = data;
-                        reader.udp_port[1] = data;
+                        sedp_udp_port[1] = data;
                     } else if (offset == 5) {
-                        udp_port |= data << 8;
-                        reader.udp_port[0] = data;
+                        sedp_udp_port[0] = data;
                     }
                 } else {
                     if (offset == 6) {
-                        udp_port = data << 8;
-                        reader.udp_port[0] = data;
+                        sedp_udp_port[0] = data;
                     } else if (offset == 7) {
-                        udp_port |= data;
-                        reader.udp_port[1] = data;
+                        sedp_udp_port[1] = data;
                     }
                 }
             } else if (offset < 20) {
                 ; // do nothing
             } else if (offset == 20) {
-                reader.ip_addr[0] = data;
+                sedp_ip_addr[0] = data;
             } else if (offset == 21) {
-                reader.ip_addr[1] = data;
+                sedp_ip_addr[1] = data;
             } else if (offset == 22) {
-                reader.ip_addr[2] = data;
+                sedp_ip_addr[2] = data;
             } else if (offset == 23) {
-                reader.ip_addr[3] = data;
+                sedp_ip_addr[3] = data;
             }
             break;
         case PID_TOPIC_NAME:
@@ -543,14 +480,8 @@ void sedp_reader(
         case PID_ENDPOINT_GUID:
             if (flags & FLAGS_FOUND_GUID)
                 break;
-            if (offset < 12) {
-                reader.guid_prefix[offset] = data;
-                compare_guid_prefix_of_app_endpoint(data, app_reader_tbl,
-                                                    offset, app_unmatched);
-            } else if (offset < 16) {
-                reader.entity_id[offset - 12] = data;
-                compare_entity_id(data, app_reader_tbl, offset - 12,
-                                  app_unmatched);
+            if ((offset >= 12) && (offset < 16)) {
+                sedp_entity_id[offset - 12] = data;
             }
         }
         offset++;
@@ -558,9 +489,10 @@ void sedp_reader(
             if (param_id == PID_ENDPOINT_GUID) {
                 flags |= (hls_uint<5>)FLAGS_FOUND_GUID;
             } else if (param_id == PID_UNICAST_LOCATOR) {
+                uint16_t udp_port = (sedp_udp_port[0] << 8) | sedp_udp_port[1];
                 if (udp_port >= port_num_seed
                     && udp_port - port_num_seed < DG) {
-                    if (is_same_subnet(reader.ip_addr, ip_addr, subnet_mask)) {
+                    if (is_same_subnet(sedp_ip_addr, ip_addr, subnet_mask)) {
                         flags |= (hls_uint<5>)FLAGS_FOUND_LOCATOR;
                     }
                 }
@@ -580,8 +512,6 @@ void sedp_reader(
     }
 
     if (end) {
-        reset_app_unmatched(app_unmatched);
-        reset_sedp_unmatched(sedp_unmatched);
         flags = 0;
         pub_topics_unmatched = 0;
         pub_types_unmatched = 0;

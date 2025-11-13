@@ -36,17 +36,25 @@ module top(
         .clk_in1(clk)      // input clk_in1
     );
 
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] pub_app_data;
-    wire pub_app_data_ap_vld;
-    wire pub_app_data_ap_ack;
+    wire pub_app_data_ap_start;
+    wire pub_app_data_ap_ready;
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-2:0] pub_app_data_addr;
+    wire pub_app_data_ce;
+    wire pub_app_data_we;
+    wire [15:0] pub_app_data_wdata;
     wire [15:0] pub_data_seed;
     hls_pub_0 hls_pub_inst (
-        .pub_app_data_ap_vld(pub_app_data_ap_vld),  // output wire pub_app_data_ap_vld
-        .pub_app_data_ap_ack(pub_app_data_ap_ack),  // input wire pub_app_data_ap_ack
-        .ap_clk(ros2_clk),                            // input wire ap_clk
-        .ap_rst_n(rst_n),                        // input wire ap_rst_n
-        .pub_data_seed(pub_data_seed),              // input wire [15 : 0] pub_data_seed
-        .pub_app_data(pub_app_data)                // output wire [8191 : 0] pub_app_data
+        .ap_clk(ros2_clk),
+        .ap_rst_n(rst_n),
+        .ap_start(pub_app_data_ap_start),
+        .ap_ready(pub_app_data_ap_ready),
+        .ap_idle(),
+        .ap_done(),
+        .pub_app_data_address0(pub_app_data_addr),
+        .pub_app_data_ce0(pub_app_data_ce),
+        .pub_app_data_we0(pub_app_data_we),
+        .pub_app_data_d0(pub_app_data_wdata),
+        .pub_data_seed(pub_data_seed)
     );
 
     wire sub_data_result;
@@ -91,9 +99,12 @@ module top(
         .led4(led4),
         .led5(led5),
 
-        .ros2_pub_app_data(pub_app_data),
-        .ros2_pub_app_data_ap_vld(pub_app_data_ap_vld),
-        .ros2_pub_app_data_ap_ack(pub_app_data_ap_ack),
+        .ros2_pub_app_data_ap_start(pub_app_data_ap_start),
+        .ros2_pub_app_data_ap_ready(pub_app_data_ap_ready),
+        .ros2_pub_app_data_addr0(pub_app_data_addr),
+        .ros2_pub_app_data_ce0(pub_app_data_ce),
+        .ros2_pub_app_data_we0(pub_app_data_we),
+        .ros2_pub_app_data_wdata0(pub_app_data_wdata),
         .pub_data_seed(pub_data_seed),
 
         .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
