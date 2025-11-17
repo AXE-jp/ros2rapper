@@ -90,8 +90,7 @@ typedef struct {
 
 #include "ros2_receiver.hpp"
 
-void ros2_in(hls_stream<rtps_data_t> &in,
-             sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
              app_endpoint             app_reader_tbl[APP_READER_MAX],
              hls_uint<PUB_TOPICS_MAX> pub_enable,
              hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64);

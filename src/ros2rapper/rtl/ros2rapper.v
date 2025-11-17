@@ -318,12 +318,12 @@ wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
-reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX-1];
-wire [$clog2(`ROS2_SEDP_READER_MAX)-1:0] ros2_sedp_reader_tbl_address;
+reg  [63:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX*11-1];
+wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] ros2_sedp_reader_tbl_address;
 wire ros2_sedp_reader_tbl_ce;
 wire ros2_sedp_reader_tbl_we;
-wire [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_wdata;
-reg  [`ROS2_SEDP_ENDPOINT_WIDTH-1:0] ros2_sedp_reader_tbl_rdata;
+wire [63:0] ros2_sedp_reader_tbl_wdata;
+reg  [63:0] ros2_sedp_reader_tbl_rdata;
 
 integer j;
 `ifdef TARGET_XILINX
@@ -335,13 +335,13 @@ always @(posedge clk or negedge rst_n) begin
 `ifndef TARGET_XILINX
         for (j = 0; j < `ROS2_SEDP_READER_MAX; j = j + 1) begin
 `ifdef TARGET_SIM
-            ros2_sedp_reader_tbl[j] = {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+            ros2_sedp_reader_tbl[j] = 64'd0;
 `else // !TARGET_SIM
-            ros2_sedp_reader_tbl[j] <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+            ros2_sedp_reader_tbl[j] <= 64'd0;
 `endif // TARGET_SIM
         end
 `endif // TARGET_XILINX
-        ros2_sedp_reader_tbl_rdata <= {`ROS2_SEDP_ENDPOINT_WIDTH{1'b0}};
+        ros2_sedp_reader_tbl_rdata <= 64'd0;
     end else begin
         ros2_sedp_reader_tbl_rdata <= ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address];
         if (ros2_sedp_reader_tbl_ce & ros2_sedp_reader_tbl_we) begin
@@ -1230,11 +1230,11 @@ ros2_main (
   .rst_n(rst_n),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
-  .sedp_reader_tbl_AD1(ros2_sedp_reader_tbl_address),
-  .sedp_reader_tbl_CS1(ros2_sedp_reader_tbl_ce),
-  .sedp_reader_tbl_WE1(ros2_sedp_reader_tbl_we),
-  .sedp_reader_tbl_WD1(ros2_sedp_reader_tbl_wdata),
-  .sedp_reader_tbl_RD1(ros2_sedp_reader_tbl_rdata),
+  .sedp_reader_tbl_ram_AD1(ros2_sedp_reader_tbl_address),
+  .sedp_reader_tbl_ram_CS1(ros2_sedp_reader_tbl_ce),
+  .sedp_reader_tbl_ram_WE1(ros2_sedp_reader_tbl_we),
+  .sedp_reader_tbl_ram_WD1(ros2_sedp_reader_tbl_wdata),
+  .sedp_reader_tbl_ram_RD1(ros2_sedp_reader_tbl_rdata),
 `endif
 
   .pub_enable(pub_enable),

@@ -3,7 +3,7 @@
 
 HLSDIR = hls
 #SRCS = $(wildcard $(HLSDIR)/*.cpp)
-SRCS_MAIN = hls/message_metadata.cpp hls/remove_endpoints.cpp hls/ros2.cpp hls/spdp.cpp
+SRCS_MAIN = hls/endpoint.cpp hls/message_metadata.cpp hls/remove_endpoints.cpp hls/ros2.cpp hls/spdp.cpp
 SRCS_RECEIVER = hls/app.cpp hls/checksum.cpp hls/ip.cpp hls/remove_endpoints.cpp hls/ros2_receiver.cpp hls/rtps.cpp hls/sedp.cpp hls/slip.cpp hls/spdp.cpp hls/udp.cpp
 SRCS_SENDER = hls/app.cpp hls/ip.cpp hls/message_metadata.cpp hls/ros2_sender.cpp hls/sedp.cpp hls/slip.cpp hls/spdp.cpp hls/udp.cpp hls/util.cpp
 HDRS = $(wildcard $(HLSDIR)/*.hpp)

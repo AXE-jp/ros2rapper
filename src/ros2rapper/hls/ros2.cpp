@@ -12,8 +12,8 @@
 
 /* Cyber func=inline */
 static void find_unused_and_matched_sedp_endpoint(
-    const uint8_t       guid_prefix[GUID_PREFIX_SIZE],
-    const sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX], bool *is_full_out,
+    const uint8_t            guid_prefix[GUID_PREFIX_SIZE],
+    const sedp_reader_tbl_t *sedp_reader_tbl, bool *is_full_out,
     bool *is_matched_out, sedp_reader_id_t *unused_idx_out,
     sedp_reader_id_t *matched_idx_out) {
 #pragma HLS inline
@@ -24,6 +24,8 @@ static void find_unused_and_matched_sedp_endpoint(
 
 #ifdef SEDP_READER_TBL_FF
     /* Cyber unroll_times=all */
+#else // !SEDP_READER_TBL_FF
+    /* Cyber folding=2 */
 #endif // SEDP_READER_TBL_FF
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #ifdef SEDP_READER_TBL_FF
@@ -31,18 +33,34 @@ static void find_unused_and_matched_sedp_endpoint(
 #else // !SEDP_READER_TBL_FF
 #pragma HLS pipeline
 #endif // SEDP_READER_TBL_FF
-        sedp_endpoint participant = sedp_reader_tbl[j];
-#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
-        bool j_matched = participant.alive;
+        uint64_t data_0, data_1;
+        get_sedp_reader_tbl(&data_0, sedp_reader_tbl, j, 0);
+        get_sedp_reader_tbl(&data_1, sedp_reader_tbl, j, 1);
+
+        bool    j_alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+        uint8_t j_guid_prefix[12];
+#pragma HLS array_partition variable = j_guid_prefix complete dim = 1
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+            j_guid_prefix[k] = (data_0 >> (8 * (k + 4)));
+        }
+        /* Cyber unroll_times=all */
+        for (auto k = 0; k < 8; k++) {
+#pragma HLS unroll
+            j_guid_prefix[k + 4] = (data_1 >> (8 * k));
+        }
+
+        bool j_matched = j_alive;
         /* Cyber unroll_times=all */
         for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
 #pragma HLS unroll
-            if (participant.guid_prefix[k] != guid_prefix[k]) {
+            if (j_guid_prefix[k] != guid_prefix[k]) {
                 j_matched = false;
             }
         }
 
-        if (is_full && !participant.alive) {
+        if (is_full && !j_alive) {
             is_full = false;
             unused_idx = j;
         } else if (!is_matched && j_matched) {
@@ -78,79 +96,27 @@ find_unused_app_endpoint(const app_endpoint app_reader_tbl[APP_READER_MAX],
 }
 
 /* Cyber func=inline */
-static bool is_same_entity_id(const uint8_t lhs[4], const uint8_t rhs[4]) {
-#pragma HLS inline
-    bool is_same = true;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        if (lhs[j] != rhs[j]) {
-            is_same = false;
-        }
-    }
-    return is_same;
-}
-
-/* Cyber func=inline */
-static bool
-is_app_endpoint_matched(const bool    guid_prefix_matched[APP_READER_MAX],
-                        const uint8_t entity_id[4],
-                        app_endpoint  app_reader_tbl[APP_READER_MAX]) {
-#pragma HLS inline
-    bool matched = false;
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-        if (guid_prefix_matched[j]
-            && is_same_entity_id(entity_id, app_reader_tbl[j].entity_id)) {
-            matched = true;
-        }
-    }
-    return matched;
-}
-
-/* Cyber func=inline */
-static void initialize_sedp_endpoint(sedp_endpoint *participant) {
-#pragma HLS inline
-    participant->builtin_pubrd_rd_seqnum = 1;
-    participant->builtin_subrd_rd_seqnum = 1;
-    participant->builtin_pubrd_wr_seqnum = 0;
-    participant->builtin_subrd_wr_seqnum = 0;
-    participant->builtin_pubrd_acknack_req = false;
-    participant->builtin_subrd_acknack_req = false;
-    participant->builtin_pubwr_lastsn = 0;
-    participant->builtin_subwr_lastsn = 0;
-    participant->initial_send_counter = 0;
-    participant->pub_heartbeat_cnt = 0;
-    participant->sub_heartbeat_cnt = 0;
-    participant->pub_acknack_cnt = 0;
-    participant->sub_acknack_cnt = 0;
-    reset_sedp_endpoint_children(participant->children);
-}
-
-/* Cyber func=inline */
 static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
-                                      sedp_endpoint     *participant) {
+                                      uint8_t ip_addr[4], uint8_t udp_port[2],
+                                      int64_t *lease_duration_out) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        participant->guid_prefix[j] = rtps_data.guid_prefix[j];
-    }
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 4; j++) {
 #pragma HLS unroll
-        participant->ip_addr[j] = rtps_data.data[j];
+        ip_addr[j] = rtps_data.data[j];
     }
-    participant->udp_port[0] = rtps_data.data[4];
-    participant->udp_port[1] = rtps_data.data[5];
-    participant->lease_duration = 0;
+
+    udp_port[0] = rtps_data.data[4];
+    udp_port[1] = rtps_data.data[5];
+
+    int64_t lease_duration = 0;
     /* Cyber unroll_times=all */
     for (auto j = 0; j < 8; j++) {
 #pragma HLS unroll
-        participant->lease_duration
-            |= static_cast<int64_t>(rtps_data.data[j + 6]) << (8 * j);
+        lease_duration |= static_cast<int64_t>(rtps_data.data[j + 6])
+                          << (8 * j);
     }
+    *lease_duration_out = lease_duration;
 }
 
 /* Cyber func=inline */
@@ -178,8 +144,263 @@ static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
 }
 
 /* Cyber func=inline */
-void ros2_in(hls_stream<rtps_data_t> &in,
-             sedp_endpoint            sedp_reader_tbl[SEDP_READER_MAX],
+static void ros2_in_spdp_update(const uint8_t ip_addr[4],
+                                const uint8_t udp_port[2],
+                                int64_t lease_duration, int64_t timestamp_i64,
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+#pragma HLS inline
+    // Update the UDP port
+    uint64_t rdata_0;
+    get_sedp_reader_tbl(&rdata_0, tbl, idx, 0);
+    uint64_t wdata_0 = (rdata_0 & 0xffffffff0000ffff)
+                       | (static_cast<uint64_t>(udp_port[0]) << 16)
+                       | (static_cast<uint64_t>(udp_port[1]) << 24);
+    set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
+
+    // Update the IP address
+    uint8_t old_ip_addr[4];
+    uint8_t sn_0, sn_1, sn_2, sn_3;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(old_ip_addr, &sn_0, &sn_1, &sn_2,
+                                               &sn_3, tbl, idx);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, sn_0, sn_1, sn_2, sn_3,
+                                               tbl, idx);
+
+    set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
+    set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
+}
+
+/* Cyber func=inline */
+static void ros2_in_spdp_new(const uint8_t ip_addr[4],
+                             const uint8_t udp_port[2],
+                             const uint8_t guid_prefix[12],
+                             int64_t lease_duration, int64_t timestamp_i64,
+                             sedp_reader_tbl_t *tbl, sedp_reader_id_t idx) {
+#pragma HLS inline
+    // Set flags, initial_send_counter, UDP port and GUID prefix
+    uint64_t wdata_0 = SEDP_ENDPOINT_ALIVE
+                       | (static_cast<uint64_t>(udp_port[0]) << 16)
+                       | (static_cast<uint64_t>(udp_port[1]) << 24);
+    uint64_t wdata_1 = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        wdata_0 |= static_cast<uint64_t>(guid_prefix[j]) << (8 * (j + 4));
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        wdata_1 |= static_cast<uint64_t>(guid_prefix[j + 4]) << (8 * j);
+    }
+    set_sedp_reader_tbl(wdata_0, tbl, idx, 0);
+    set_sedp_reader_tbl(wdata_1, tbl, idx, 1);
+
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, 0, 1, 0, 1, tbl, idx);
+    set_sedp_reader_tbl_pubwr_lastsn(0, tbl, idx);
+    set_sedp_reader_tbl_subwr_lastsn(0, tbl, idx);
+    set_sedp_reader_tbl_heartbeat_cnt(0, 0, tbl, idx);
+    set_sedp_reader_tbl_acknack_cnt(0, 0, tbl, idx);
+    set_sedp_reader_tbl_lease_duration(lease_duration, tbl, idx);
+    set_sedp_reader_tbl_timestamp(timestamp_i64, tbl, idx);
+    clear_sedp_reader_tbl_children(tbl, idx);
+}
+
+/* Cyber func=inline */
+static void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
+                         sedp_reader_tbl_t *tbl, bool is_matched,
+                         sedp_reader_id_t matched_idx, bool is_full,
+                         sedp_reader_id_t unused_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = udp_port complete dim = 1
+    int64_t lease_duration;
+    copy_sedp_endpoint_params(rtps_data, ip_addr, udp_port, &lease_duration);
+
+    if (is_matched) {
+        ros2_in_spdp_update(ip_addr, udp_port, lease_duration, timestamp_i64,
+                            tbl, matched_idx);
+    } else if (!is_full) {
+        ros2_in_spdp_new(ip_addr, udp_port, rtps_data.guid_prefix,
+                         lease_duration, timestamp_i64, tbl, unused_idx);
+    }
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_heartbeat_pub(uint8_t first_sn, uint8_t last_sn,
+                                       sedp_reader_tbl_t *tbl,
+                                       sedp_reader_id_t   idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+
+    if (pubrd_rd_seqnum < first_sn || pubrd_wr_seqnum < last_sn) {
+        enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ, tbl, idx);
+    }
+    if (pubrd_rd_seqnum < first_sn) {
+        pubrd_rd_seqnum = first_sn;
+    }
+    if (pubrd_wr_seqnum < last_sn) {
+        pubrd_wr_seqnum = last_sn;
+    }
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, idx);
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_heartbeat_sub(uint8_t first_sn, uint8_t last_sn,
+                                       sedp_reader_tbl_t *tbl,
+                                       sedp_reader_id_t   idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+
+    if (subrd_rd_seqnum < first_sn || subrd_wr_seqnum < last_sn) {
+        enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ, tbl, idx);
+    }
+    if (subrd_rd_seqnum < first_sn) {
+        subrd_rd_seqnum = first_sn;
+    }
+    if (subrd_wr_seqnum < last_sn) {
+        subrd_wr_seqnum = last_sn;
+    }
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, idx);
+}
+
+/* Cyber func=inline */
+static bool is_same_entity_id(const uint8_t lhs[4], const uint8_t rhs[4]) {
+#pragma HLS inline
+    bool is_same = true;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        if (lhs[j] != rhs[j]) {
+            is_same = false;
+        }
+    }
+    return is_same;
+}
+
+/* Cyber func=inline */
+static void ros2_in_add_new_app_endpoint(
+    const app_endpoint &reader, sedp_reader_tbl_t *sedp_reader_tbl,
+    app_endpoint app_reader_tbl[APP_READER_MAX], sedp_reader_id_t sedp_idx,
+    app_reader_id_t app_idx) {
+#pragma HLS inline
+    // Read children of sedp_endpoint.
+    uint64_t children_0, children_1;
+    get_sedp_reader_tbl(&children_0, sedp_reader_tbl, sedp_idx, 9);
+    get_sedp_reader_tbl(&children_1, sedp_reader_tbl, sedp_idx, 10);
+
+    // Check whether the found endpoint is known
+    bool is_known_app_endpoint = false;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 64; j++) {
+#pragma HLS unroll
+        uint64_t flag = static_cast<uint64_t>(1) << j;
+        if (((children_0 & flag) != 0)
+            && is_same_entity_id(app_reader_tbl[j].entity_id,
+                                 reader.entity_id)) {
+            is_known_app_endpoint = true;
+        }
+        if (((children_1 & flag) != 0)
+            && is_same_entity_id(app_reader_tbl[j + 64].entity_id,
+                                 reader.entity_id)) {
+            is_known_app_endpoint = true;
+        }
+    }
+
+    // Update the tables
+    if (!is_known_app_endpoint) {
+        app_reader_tbl[app_idx] = reader;
+        if (app_idx < 64) {
+            uint64_t data = children_0 | (static_cast<uint64_t>(1) << app_idx);
+            set_sedp_reader_tbl(data, sedp_reader_tbl, sedp_idx, 9);
+        } else {
+            uint64_t data
+                = children_1 | (static_cast<uint64_t>(1) << (app_idx - 64));
+            set_sedp_reader_tbl(data, sedp_reader_tbl, sedp_idx, 10);
+        }
+    }
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_pub(bool is_valid_topic, uint8_t seqnum,
+                             const app_endpoint &reader,
+                             sedp_reader_tbl_t  *sedp_reader_tbl,
+                             app_endpoint        app_reader_tbl[APP_READER_MAX],
+                             sedp_reader_id_t    sedp_idx,
+                             app_reader_id_t     app_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+
+    if (pubrd_rd_seqnum != seqnum) {
+        return;
+    }
+
+    pubrd_rd_seqnum++;
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum,
+        subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ,
+                                 sedp_reader_tbl, sedp_idx);
+
+    if (is_valid_topic) {
+        ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
+                                     sedp_idx, app_idx);
+    }
+}
+
+/* Cyber func=inline */
+static void ros2_in_sedp_sub(bool is_valid_topic, uint8_t seqnum,
+                             const app_endpoint &reader,
+                             sedp_reader_tbl_t  *sedp_reader_tbl,
+                             app_endpoint        app_reader_tbl[APP_READER_MAX],
+                             sedp_reader_id_t    sedp_idx,
+                             app_reader_id_t     app_idx) {
+#pragma HLS inline
+    uint8_t ip_addr[4];
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+
+    if (subrd_rd_seqnum != seqnum) {
+        return;
+    }
+
+    subrd_rd_seqnum++;
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum,
+        subrd_rd_seqnum, sedp_reader_tbl, sedp_idx);
+    enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ,
+                                 sedp_reader_tbl, sedp_idx);
+
+    if (is_valid_topic) {
+        ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
+                                     sedp_idx, app_idx);
+    }
+}
+
+/* Cyber func=inline */
+void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
              app_endpoint             app_reader_tbl[APP_READER_MAX],
              hls_uint<PUB_TOPICS_MAX> pub_enable,
              hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
@@ -210,12 +431,6 @@ void ros2_in(hls_stream<rtps_data_t> &in,
     find_unused_app_endpoint(app_reader_tbl, &is_app_reader_tbl_full,
                              &app_unused_idx);
 
-    sedp_endpoint participant;
-#pragma HLS array_partition variable = participant.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = participant.ip_addr complete dim = 1
-#pragma HLS array_partition variable = participant.udp_port complete dim = 1
-#pragma HLS array_partition variable = participant.children complete dim = 1
-
     app_endpoint reader;
 #pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = reader.ip_addr complete dim = 1
@@ -228,105 +443,107 @@ void ros2_in(hls_stream<rtps_data_t> &in,
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
-        if (is_participant_matched) {
-            participant = sedp_reader_tbl[sedp_matched_idx];
-        } else {
-            initialize_sedp_endpoint(&participant);
-        }
-        copy_sedp_endpoint_params(rtps_data, &participant);
-        participant.timestamp = timestamp_i64;
-        participant.alive = true;
-        if (is_participant_matched) {
-            sedp_reader_tbl[sedp_matched_idx] = participant;
-        } else if (!is_sedp_reader_tbl_full) {
-            sedp_reader_tbl[sedp_unused_idx] = participant;
-        }
+        ros2_in_spdp(rtps_data, timestamp_i64, sedp_reader_tbl,
+                     is_participant_matched, sedp_matched_idx,
+                     is_sedp_reader_tbl_full, sedp_unused_idx);
         break;
     case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_pubrd_rd_seqnum < first_sn
-                || participant.builtin_pubrd_wr_seqnum < last_sn)
-                participant.builtin_pubrd_acknack_req = true;
-            if (participant.builtin_pubrd_rd_seqnum < first_sn)
-                participant.builtin_pubrd_rd_seqnum = first_sn;
-            if (participant.builtin_pubrd_wr_seqnum < last_sn)
-                participant.builtin_pubrd_wr_seqnum = last_sn;
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            ros2_in_sedp_heartbeat_pub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
         }
         break;
     case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
         if (is_participant_matched) {
             uint8_t first_sn = rtps_data.data[0];
             uint8_t last_sn = rtps_data.data[1];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_subrd_rd_seqnum < first_sn
-                || participant.builtin_subrd_wr_seqnum < last_sn)
-                participant.builtin_subrd_acknack_req = true;
-            if (participant.builtin_subrd_rd_seqnum < first_sn)
-                participant.builtin_subrd_rd_seqnum = first_sn;
-            if (participant.builtin_subrd_wr_seqnum < last_sn)
-                participant.builtin_subrd_wr_seqnum = last_sn;
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            ros2_in_sedp_heartbeat_sub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
         }
         break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
     case RTPS_TYPE_SEDP_PUB:
+        reader.app_ep_type = APP_EP_SUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_pubrd_rd_seqnum == sn) {
-                participant.builtin_pubrd_rd_seqnum++;
-                participant.builtin_pubrd_acknack_req = true;
-                if ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
-                    && !is_app_endpoint_matched(participant.children,
-                                                reader.entity_id,
-                                                app_reader_tbl)) {
-                    reader.app_ep_type = APP_EP_SUB;
-                    app_reader_tbl[app_unused_idx] = reader;
-                    participant.children[app_unused_idx] = true;
-                }
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
+            ros2_in_sedp_pub(rtps_data.type == RTPS_TYPE_SEDP_PUB,
+                             rtps_data.data[11], reader, sedp_reader_tbl,
+                             app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
     case RTPS_TYPE_SEDP_SUB_SN_ONLY:
     case RTPS_TYPE_SEDP_SUB:
+        reader.app_ep_type = APP_EP_PUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            uint8_t sn = rtps_data.data[11];
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            if (participant.builtin_subrd_rd_seqnum == sn) {
-                participant.builtin_subrd_rd_seqnum++;
-                participant.builtin_subrd_acknack_req = true;
-                if ((rtps_data.type == RTPS_TYPE_SEDP_SUB)
-                    && !is_app_endpoint_matched(participant.children,
-                                                reader.entity_id,
-                                                app_reader_tbl)) {
-                    reader.app_ep_type = APP_EP_PUB;
-                    app_reader_tbl[app_unused_idx] = reader;
-                    participant.children[app_unused_idx] = true;
-                }
-                sedp_reader_tbl[sedp_matched_idx] = participant;
-            }
+            ros2_in_sedp_sub(rtps_data.type == RTPS_TYPE_SEDP_SUB,
+                             rtps_data.data[11], reader, sedp_reader_tbl,
+                             app_reader_tbl, sedp_matched_idx, app_unused_idx);
         }
         break;
     case RTPS_TYPE_RM_ENDPOINT:
         if (is_participant_matched) {
-            participant = sedp_reader_tbl[sedp_matched_idx];
-            participant.alive = false;
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < APP_READER_MAX; j++) {
-#pragma HLS unroll
-                if (participant.children[j]) {
-                    app_reader_tbl[j].alive = false;
-                }
-            }
-            sedp_reader_tbl[sedp_matched_idx] = participant;
+            remove_sedp_endpoint(sedp_matched_idx, sedp_reader_tbl,
+                                 app_reader_tbl);
         }
         break;
     }
+}
+
+/* Cyber func=inline */
+static bool get_ros2_out_spdp_info(const sedp_reader_tbl_t *tbl,
+                                   unsigned int             idx) {
+#pragma HLS inline
+    uint64_t data;
+    get_sedp_reader_tbl(&data, tbl, idx, 0);
+    bool        alive = ((data & SEDP_ENDPOINT_ALIVE) != 0);
+    hls_uint<2> initial_send_counter = ((data >> 8) & 3);
+    return alive && (initial_send_counter < 3);
+}
+
+/* Cyber func=inline */
+static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
+                                   bool    increment_initial_send_counter,
+                                   uint8_t ip_addr[4], uint8_t udp_port[2],
+                                   uint8_t            guid_prefix[12],
+                                   sedp_reader_tbl_t *tbl, unsigned int idx) {
+#pragma HLS inline
+    uint64_t data_0, data_1;
+    uint8_t  sn_0, sn_1, sn_2, sn_3;
+
+    get_sedp_reader_tbl(&data_0, tbl, idx, 0);
+    bool        alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    hls_uint<2> initial_send_counter = ((data_0 >> 8) & 3);
+    if (!alive || ((initial_send_counter == 3) && !cnt_elapsed)) {
+        return false;
+    }
+
+    udp_port[0] = (data_0 >> 16) & 0xff;
+    udp_port[1] = (data_0 >> 24) & 0xff;
+
+    get_sedp_reader_tbl(&data_1, tbl, idx, 1);
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
+    }
+
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
+                                               &sn_3, tbl, idx);
+
+    if (increment_initial_send_counter && (initial_send_counter < 3)) {
+        initial_send_counter++;
+        uint64_t wdata = (data_0 & 0xffffffffffff00ff)
+                         | (static_cast<uint64_t>(initial_send_counter) << 8);
+        set_sedp_reader_tbl(wdata, tbl, idx, 0);
+    }
+
+    return true;
 }
 
 /* Cyber func=inline */
@@ -369,10 +586,9 @@ static void sedp_heartbeat_out(message_type_t msg_type,
                                const uint8_t  dst_port[2],
                                const uint8_t  reader_guid_prefix[12],
                                const int64_t  first_seqnum,
-                               const int64_t last_seqnum, uint32_t &cnt,
+                               const int64_t last_seqnum, uint32_t cnt,
                                message_metadata_t *msg_metadata) {
 #pragma HLS inline
-    cnt++;
     set_common_message_metadata(msg_type, 0, dst_addr, dst_port, msg_metadata);
     serialize_sedp_heartbeat_metadata(reader_guid_prefix, first_seqnum,
                                       last_seqnum, cnt, msg_metadata);
@@ -383,9 +599,8 @@ static void sedp_acknack_out(message_type_t msg_type, const uint8_t dst_addr[4],
                              const uint8_t dst_port[2],
                              const uint8_t reader_guid_prefix[12],
                              uint8_t snstate_base, bool snstate_is_empty,
-                             uint32_t &cnt, message_metadata_t *msg_metadata) {
+                             uint32_t cnt, message_metadata_t *msg_metadata) {
 #pragma HLS inline
-    cnt++;
     set_common_message_metadata(msg_type, 0, dst_addr, dst_port, msg_metadata);
     serialize_sedp_acknack_metadata(reader_guid_prefix, snstate_base,
                                     snstate_is_empty, cnt, msg_metadata);
@@ -411,59 +626,245 @@ static void app_writer_out(topic_id_t    topic_id,
         spdp_writer_out(metatraffic_port, default_port, conf, &msg_metadata);  \
     } while (0)
 
-#define SEDP_PUB_WRITER_OUT(topic_id, reader)                                  \
-    do {                                                                       \
-        (reader).builtin_pubwr_lastsn++;                                       \
-        sedp_writer_out(MSG_TYPE_SEDP_PUB, topic_id, (reader).ip_addr,         \
-                        (reader).udp_port, (reader).guid_prefix,               \
-                        (reader).builtin_pubwr_lastsn, default_port,           \
-                        app_writer_entity_id_list[(topic_id)], &msg_metadata); \
-    } while (0)
+/* Cyber func=inline */
+static void SEDP_PUB_WRITER_OUT(hls_uint<1> cnt_elapsed, topic_id_t topic_id,
+                                const uint8_t      default_port[2],
+                                const uint8_t      entity_id[4],
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
 
-#define SEDP_SUB_WRITER_OUT(topic_id, reader)                                  \
-    do {                                                                       \
-        (reader).builtin_subwr_lastsn++;                                       \
-        sedp_writer_out(MSG_TYPE_SEDP_SUB, topic_id, (reader).ip_addr,         \
-                        (reader).udp_port, (reader).guid_prefix,               \
-                        (reader).builtin_subwr_lastsn, default_port,           \
-                        app_reader_entity_id_list[(topic_id)], &msg_metadata); \
-    } while (0)
+    int64_t pubwr_lastsn;
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, tbl, idx);
+    pubwr_lastsn++;
+    set_sedp_reader_tbl_pubwr_lastsn(pubwr_lastsn, tbl, idx);
 
-#define SEDP_PUB_HEARTBEAT_OUT(reader)                                         \
-    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, (reader).ip_addr,          \
-                       (reader).udp_port, (reader).guid_prefix,                \
-                       (reader).builtin_pubwr_lastsn + 1,                      \
-                       (reader).builtin_pubwr_lastsn,                          \
-                       (reader).pub_heartbeat_cnt, &msg_metadata)
+    sedp_writer_out(MSG_TYPE_SEDP_PUB, topic_id, ip_addr, udp_port, guid_prefix,
+                    pubwr_lastsn, default_port, entity_id, msg_metadata);
+}
 
-#define SEDP_SUB_HEARTBEAT_OUT(reader)                                         \
-    do {                                                                       \
-        sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, (reader).ip_addr,      \
-                           (reader).udp_port, (reader).guid_prefix,            \
-                           (reader).builtin_subwr_lastsn + 1,                  \
-                           (reader).builtin_subwr_lastsn,                      \
-                           (reader).sub_heartbeat_cnt, &msg_metadata);         \
-        if ((reader).initial_send_counter != 3)                                \
-            (reader).initial_send_counter++;                                   \
-    } while (0)
+/* Cyber func=inline */
+static void SEDP_SUB_WRITER_OUT(hls_uint<1> cnt_elapsed, topic_id_t topic_id,
+                                const uint8_t      default_port[2],
+                                const uint8_t      entity_id[4],
+                                sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
 
-#define SEDP_PUB_ACKNACK_OUT(reader)                                           \
-    do {                                                                       \
-        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, (reader).ip_addr,          \
-                         (reader).udp_port, (reader).guid_prefix,              \
-                         snstate_base, snstate_is_empty,                       \
-                         (reader).pub_acknack_cnt, &msg_metadata);             \
-        (reader).builtin_pubrd_acknack_req = false;                            \
-    } while (0)
+    int64_t subwr_lastsn;
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, tbl, idx);
+    subwr_lastsn++;
+    set_sedp_reader_tbl_subwr_lastsn(subwr_lastsn, tbl, idx);
 
-#define SEDP_SUB_ACKNACK_OUT(reader)                                           \
-    do {                                                                       \
-        sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, (reader).ip_addr,          \
-                         (reader).udp_port, (reader).guid_prefix,              \
-                         snstate_base, snstate_is_empty,                       \
-                         (reader).sub_acknack_cnt, &msg_metadata);             \
-        (reader).builtin_subrd_acknack_req = false;                            \
-    } while (0)
+    sedp_writer_out(MSG_TYPE_SEDP_SUB, topic_id, ip_addr, udp_port, guid_prefix,
+                    subwr_lastsn, default_port, entity_id, msg_metadata);
+}
+
+/* Cyber func=inline */
+static void SEDP_PUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
+                                   sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                   message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, false, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
+
+    int64_t pubwr_lastsn;
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, tbl, idx);
+
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt;
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      tbl, idx);
+    pub_heartbeat_cnt++;
+    set_sedp_reader_tbl_heartbeat_cnt(pub_heartbeat_cnt, sub_heartbeat_cnt, tbl,
+                                      idx);
+
+    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_PUB, ip_addr, udp_port,
+                       guid_prefix, pubwr_lastsn + 1, pubwr_lastsn,
+                       pub_heartbeat_cnt, msg_metadata);
+}
+
+/* Cyber func=inline */
+static void SEDP_SUB_HEARTBEAT_OUT(hls_uint<1>        cnt_elapsed,
+                                   sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                   message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+    if (!get_ros2_out_sedp_info(cnt_elapsed, true, ip_addr, udp_port,
+                                guid_prefix, tbl, idx)) {
+        return;
+    }
+
+    int64_t subwr_lastsn;
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, tbl, idx);
+
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt;
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      tbl, idx);
+    sub_heartbeat_cnt++;
+    set_sedp_reader_tbl_heartbeat_cnt(pub_heartbeat_cnt, sub_heartbeat_cnt, tbl,
+                                      idx);
+
+    sedp_heartbeat_out(MSG_TYPE_SEDP_HEARTBEAT_SUB, ip_addr, udp_port,
+                       guid_prefix, subwr_lastsn + 1, subwr_lastsn,
+                       sub_heartbeat_cnt, msg_metadata);
+}
+
+/* Cyber func=inline */
+static void SEDP_PUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
+                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                 message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    static const uint64_t req_flag_mask = SEDP_ENDPOINT_PUBRD_ACKNACK_REQ;
+
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, idx, 0);
+    bool alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    bool acknack_req = ((data_0 & req_flag_mask) != 0);
+    if (!alive || (!cnt_elapsed && !acknack_req)) {
+        return;
+    }
+
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+    uint8_t snstate_base = pubrd_rd_seqnum;
+    bool    snstate_is_empty = (pubrd_wr_seqnum < pubrd_rd_seqnum);
+    if (!cnt_elapsed && snstate_is_empty) {
+        return;
+    }
+
+    udp_port[0] = (data_0 >> 16) & 0xff;
+    udp_port[1] = (data_0 >> 24) & 0xff;
+
+    get_sedp_reader_tbl(&data_1, tbl, idx, 1);
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
+    }
+
+    uint32_t pub_acknack_cnt, sub_acknack_cnt;
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt, tbl,
+                                    idx);
+    pub_acknack_cnt++;
+    set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
+
+    sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_PUB, ip_addr, udp_port, guid_prefix,
+                     snstate_base, snstate_is_empty, pub_acknack_cnt,
+                     msg_metadata);
+
+    if (acknack_req) {
+        set_sedp_reader_tbl(data_0 & ~req_flag_mask, tbl, idx, 0);
+    }
+}
+
+/* Cyber func=inline */
+static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
+                                 sedp_reader_tbl_t *tbl, sedp_reader_id_t idx,
+                                 message_metadata_t *msg_metadata) {
+#pragma HLS inline
+    static const uint64_t req_flag_mask = SEDP_ENDPOINT_SUBRD_ACKNACK_REQ;
+
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t udp_port[2] /* Cyber array=EXPAND */;
+    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+#pragma HLS array_partition variable = udp_port complete dim = 1
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, idx, 0);
+    bool alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+    bool acknack_req = ((data_0 & req_flag_mask) != 0);
+    if (!alive || (!cnt_elapsed && !acknack_req)) {
+        return;
+    }
+
+    uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, tbl, idx);
+    uint8_t snstate_base = subrd_rd_seqnum;
+    bool    snstate_is_empty = (subrd_wr_seqnum < subrd_rd_seqnum);
+    if (!cnt_elapsed && snstate_is_empty) {
+        return;
+    }
+
+    udp_port[0] = (data_0 >> 16) & 0xff;
+    udp_port[1] = (data_0 >> 24) & 0xff;
+
+    get_sedp_reader_tbl(&data_1, tbl, idx, 1);
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 4; j++) {
+#pragma HLS unroll
+        guid_prefix[j] = (data_0 >> (8 * (j + 4))) & 0xff;
+    }
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < 8; j++) {
+#pragma HLS unroll
+        guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
+    }
+
+    uint32_t pub_acknack_cnt, sub_acknack_cnt;
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt, tbl,
+                                    idx);
+    sub_acknack_cnt++;
+    set_sedp_reader_tbl_acknack_cnt(pub_acknack_cnt, sub_acknack_cnt, tbl, idx);
+
+    sedp_acknack_out(MSG_TYPE_SEDP_ACKNACK_SUB, ip_addr, udp_port, guid_prefix,
+                     snstate_base, snstate_is_empty, sub_acknack_cnt,
+                     msg_metadata);
+
+    if (acknack_req) {
+        set_sedp_reader_tbl(data_0 & ~req_flag_mask, tbl, idx, 0);
+    }
+}
 
 /* Cyber func=inline */
 static void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
@@ -486,9 +887,8 @@ static void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
 
 /* Cyber func=inline */
 static void ros2_out(
-    hls_stream<message_metadata_t> &out,
-    sedp_endpoint                   sedp_reader_tbl[SEDP_READER_MAX],
-    app_endpoint                    app_reader_tbl[APP_READER_MAX],
+    hls_stream<message_metadata_t> &out, sedp_reader_tbl_t *sedp_reader_tbl,
+    app_endpoint             app_reader_tbl[APP_READER_MAX],
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
     const config_t *conf, VOLATILE uint8_t *rawudp_txbuf_grant,
     hls_uint<1> cnt_interval_elapsed, VOLATILE uint8_t *cnt_interval_set,
@@ -580,12 +980,6 @@ static void ros2_out(
     msg_metadata.now.fraction
         = static_cast<uint32_t>(timestamp_i64 & 0xffffffff);
 
-    sedp_endpoint reader;
-#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
-#pragma HLS array_partition variable = reader.udp_port complete dim = 1
-#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = reader.children complete dim = 1
-
     if (!out.full()) {
         if (*rawudp_txbuf_grant == 1) {
             msg_metadata.message_type = MSG_TYPE_RAWUDP;
@@ -600,13 +994,14 @@ static void ros2_out(
                 if (!send) {
 #ifdef SEDP_READER_TBL_FF
                     /* Cyber unroll_times=all */
+#else // !SEDP_READER_TBL_FF
+                    /* Cyber folding=1 */
 #endif // SEDP_READER_TBL_FF
                     for (auto j = 0; j < SEDP_READER_MAX; j++) {
 #ifdef SEDP_READER_TBL_FF
 #pragma HLS unroll
 #endif // SEDP_READER_TBL_FF
-                        reader = sedp_reader_tbl[j];
-                        if (reader.alive && (reader.initial_send_counter < 3)) {
+                        if (get_ros2_out_spdp_info(sedp_reader_tbl, j)) {
                             send = true;
                         }
                     }
@@ -653,13 +1048,11 @@ static void ros2_out(
                     }
                     // Send published topic data
                     if (tx_progress < SEDP_READER_MAX) {
-                        reader = sedp_reader_tbl[tx_progress];
-                        if (reader.alive
-                            && ((reader.initial_send_counter < 3)
-                                || cnt_sedp_pub_wr_elapsed)) {
-                            SEDP_PUB_WRITER_OUT(tx_topic_progress, reader);
-                            sedp_reader_tbl[tx_progress] = reader;
-                        }
+                        SEDP_PUB_WRITER_OUT(
+                            cnt_sedp_pub_wr_elapsed, tx_topic_progress,
+                            default_port,
+                            app_writer_entity_id_list[tx_topic_progress],
+                            sedp_reader_tbl, tx_progress, &msg_metadata);
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -700,13 +1093,11 @@ static void ros2_out(
                     }
                     // Send subscribed topic data
                     if (tx_progress < SEDP_READER_MAX) {
-                        reader = sedp_reader_tbl[tx_progress];
-                        if (reader.alive
-                            && ((reader.initial_send_counter < 3)
-                                || cnt_sedp_sub_wr_elapsed)) {
-                            SEDP_SUB_WRITER_OUT(tx_topic_progress, reader);
-                            sedp_reader_tbl[tx_progress] = reader;
-                        }
+                        SEDP_SUB_WRITER_OUT(
+                            cnt_sedp_sub_wr_elapsed, tx_topic_progress,
+                            default_port,
+                            app_reader_entity_id_list[tx_topic_progress],
+                            sedp_reader_tbl, tx_progress, &msg_metadata);
                     }
 
                     if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -721,13 +1112,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    if (reader.alive
-                        && ((reader.initial_send_counter < 3)
-                            || cnt_sedp_pub_hb_elapsed)) {
-                        SEDP_PUB_HEARTBEAT_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_PUB_HEARTBEAT_OUT(cnt_sedp_pub_hb_elapsed,
+                                           sedp_reader_tbl, tx_progress,
+                                           &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -751,13 +1138,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    if (reader.alive
-                        && ((reader.initial_send_counter < 3)
-                            || cnt_sedp_sub_hb_elapsed)) {
-                        SEDP_SUB_HEARTBEAT_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_SUB_HEARTBEAT_OUT(cnt_sedp_sub_hb_elapsed,
+                                           sedp_reader_tbl, tx_progress,
+                                           &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -781,19 +1164,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    uint8_t wr_seqnum = reader.builtin_pubrd_wr_seqnum;
-                    uint8_t rd_seqnum = reader.builtin_pubrd_rd_seqnum;
-                    bool    acknack_req = reader.builtin_pubrd_acknack_req;
-                    uint8_t snstate_base = rd_seqnum;
-                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-                    if (reader.alive
-                        && (cnt_sedp_pub_an_elapsed
-                            || (acknack_req && !snstate_is_empty))) {
-                        SEDP_PUB_ACKNACK_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_PUB_ACKNACK_OUT(cnt_sedp_pub_an_elapsed,
+                                         sedp_reader_tbl, tx_progress,
+                                         &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -817,19 +1190,9 @@ static void ros2_out(
                     tx_cnt_elapsed++;
 
                 if (tx_progress < SEDP_READER_MAX) {
-                    reader = sedp_reader_tbl[tx_progress];
-                    uint8_t wr_seqnum = reader.builtin_subrd_wr_seqnum;
-                    uint8_t rd_seqnum = reader.builtin_subrd_rd_seqnum;
-                    bool    acknack_req = reader.builtin_subrd_acknack_req;
-                    uint8_t snstate_base = rd_seqnum;
-                    bool    snstate_is_empty = (wr_seqnum < rd_seqnum);
-
-                    if (reader.alive
-                        && (cnt_sedp_sub_an_elapsed
-                            || (acknack_req && !snstate_is_empty))) {
-                        SEDP_SUB_ACKNACK_OUT(reader);
-                        sedp_reader_tbl[tx_progress] = reader;
-                    }
+                    SEDP_SUB_ACKNACK_OUT(cnt_sedp_sub_an_elapsed,
+                                         sedp_reader_tbl, tx_progress,
+                                         &msg_metadata);
                 }
 
                 if (tx_progress < (SEDP_READER_MAX - 1)) {
@@ -906,8 +1269,7 @@ void ros2_main(
     hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
     hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
 #ifdef SEDP_READER_TBL_RAM
-    sedp_endpoint
-        sedp_reader_tbl[SEDP_READER_MAX] /* Cyber mem_reg=1, packed */,
+    sedp_reader_tbl_t *sedp_reader_tbl,
 #endif // SEDP_READER_TBL_RAM
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
@@ -949,9 +1311,10 @@ void ros2_main(
 #pragma HLS interface mode = axis port = out
 
 #ifdef SEDP_READER_TBL_RAM
-#pragma HLS interface mode = ap_memory port = sedp_reader_tbl storage_type     \
-    = ram_1p                                                  latency = 1
-#endif
+#pragma HLS disaggregate variable = sedp_reader_tbl
+#pragma HLS interface mode = ap_memory port                                    \
+    = sedp_reader_tbl->ram storage_type = ram_1p latency = 1
+#endif // SEDP_READER_TBL_RAM
 
 #pragma HLS interface mode = ap_none port = pub_enable
 #pragma HLS interface mode = ap_none port = sub_enable
@@ -987,23 +1350,33 @@ void ros2_main(
 #pragma HLS interface mode = ap_none port = timestamp_i64
 
 #ifdef SEDP_READER_TBL_FF
-    static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-#pragma HLS array_partition variable = sedp_reader_tbl complete dim = 0
+    static sedp_reader_tbl_t sedp_reader_tbl;
+#pragma HLS array_partition variable = sedp_reader_tbl.ram complete dim = 0
 #endif
 
     static app_endpoint app_reader_tbl[APP_READER_MAX];
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
-    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64);
+    ros2_in(in,
+#ifdef SEDP_READER_TBL_FF
+            &sedp_reader_tbl,
+#else  // !SEDP_READR_TBL_FF
+            sedp_reader_tbl,
+#endif // SEDP_READER_TBL_FF
+            app_reader_tbl, pub_enable, sub_enable, timestamp_i64);
 
-    ros2_out(out, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable, conf,
-             udp_txbuf_grant, cnt_interval_elapsed, cnt_interval_set,
-             cnt_spdp_wr_elapsed, cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed,
-             cnt_sedp_pub_wr_set, cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set,
-             cnt_sedp_pub_hb_elapsed, cnt_sedp_pub_hb_set,
-             cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
-             cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
-             cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
-             cnt_app_wr_set, timestamp_i64);
+    ros2_out(
+        out,
+#ifdef SEDP_READER_TBL_FF
+        &sedp_reader_tbl,
+#else  // !SEDP_READR_TBL_FF
+        sedp_reader_tbl,
+#endif // SEDP_READER_TBL_FF
+        app_reader_tbl, pub_enable, sub_enable, conf, udp_txbuf_grant,
+        cnt_interval_elapsed, cnt_interval_set, cnt_spdp_wr_elapsed,
+        cnt_spdp_wr_set, cnt_sedp_pub_wr_elapsed, cnt_sedp_pub_wr_set,
+        cnt_sedp_sub_wr_elapsed, cnt_sedp_sub_wr_set, cnt_sedp_pub_hb_elapsed,
+        cnt_sedp_pub_hb_set, cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set,
+        cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed,
+        cnt_sedp_sub_an_set, cnt_app_wr_elapsed, cnt_app_wr_set, timestamp_i64);
 }

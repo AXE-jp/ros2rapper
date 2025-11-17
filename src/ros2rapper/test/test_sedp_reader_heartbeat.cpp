@@ -11,7 +11,7 @@
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "sedp.hpp"
-#include "test_sedp_reader.hpp"
+#include "test_utils.hpp"
 
 /*
 HEARTBEAT Message Content:
@@ -63,8 +63,8 @@ static void print_port(const uint8_t portval[]) {
     printf("%d\n", wval);
 }
 
-static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-static app_endpoint  app_reader_tbl[APP_READER_MAX];
+static sedp_reader_tbl_t sedp_reader_tbl;
+static app_endpoint      app_reader_tbl[APP_READER_MAX];
 
 int test_sedp_reader_heartbeat() {
     // hls_stream<hls_uint<9>> in;
@@ -81,29 +81,18 @@ int test_sedp_reader_heartbeat() {
     const uint8_t ip_addr[4] = {192, 168, 1, 200};
     const uint8_t subnet_mask[4] = {255, 255, 255, 0};
 
-    sedp_reader_tbl[0].guid_prefix[0] = 0x01;
-    sedp_reader_tbl[0].guid_prefix[1] = 0x0f;
-    sedp_reader_tbl[0].guid_prefix[2] = 0x70;
-    sedp_reader_tbl[0].guid_prefix[3] = 0x2e;
-    sedp_reader_tbl[0].guid_prefix[4] = 0x40;
-    sedp_reader_tbl[0].guid_prefix[5] = 0x1a;
-    sedp_reader_tbl[0].guid_prefix[6] = 0x13;
-    sedp_reader_tbl[0].guid_prefix[7] = 0x46;
-    sedp_reader_tbl[0].guid_prefix[8] = 0x00;
-    sedp_reader_tbl[0].guid_prefix[9] = 0x00;
-    sedp_reader_tbl[0].guid_prefix[10] = 0x00;
-    sedp_reader_tbl[0].guid_prefix[11] = 0x00;
-    sedp_reader_tbl[0].ip_addr[0] = 192;
-    sedp_reader_tbl[0].ip_addr[1] = 168;
-    sedp_reader_tbl[0].ip_addr[2] = 1;
-    sedp_reader_tbl[0].ip_addr[3] = 123;
-    sedp_reader_tbl[0].udp_port[0] = 45966 >> 8;
-    sedp_reader_tbl[0].udp_port[1] = 0x00FF & 45966;
-    sedp_reader_tbl[0].builtin_pubrd_rd_seqnum = 1;
-    sedp_reader_tbl[0].builtin_subrd_rd_seqnum = 1;
-    sedp_reader_tbl[0].builtin_pubrd_wr_seqnum = 0;
-    sedp_reader_tbl[0].builtin_subrd_wr_seqnum = 0;
-    sedp_reader_tbl[0].alive = true;
+    const uint8_t  src_ip_addr[4] = {192, 168, 1, 123};
+    const uint16_t src_udp_port = 45966;
+    const uint8_t  src_guid_prefix[12] = {0x01, 0x0f, 0x70, 0x2e, 0x40, 0x1a,
+                                          0x13, 0x46, 0x00, 0x00, 0x00, 0x00};
+    uint64_t       wdata_0 = SEDP_ENDPOINT_ALIVE
+                       | (static_cast<uint64_t>(src_udp_port) << 16)
+                       | (static_cast<uint64_t>(0x2e700f01) << 32);
+    uint64_t wdata_1 = 0x0000000046131a40;
+    set_sedp_reader_tbl(wdata_0, &sedp_reader_tbl, 0, 0);
+    set_sedp_reader_tbl(wdata_1, &sedp_reader_tbl, 0, 1);
+    set_sedp_reader_tbl_ip_addr_and_rd_seqnums(src_ip_addr, 0, 1, 0, 1,
+                                               &sedp_reader_tbl, 0);
 
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
@@ -164,25 +153,32 @@ int test_sedp_reader_heartbeat() {
                     sub_topic_name, sub_topic_name_len, sub_type_name,
                     sub_type_name_len);
     }
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
 
     unsigned int sedp_reader_cnt = 0;
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        if (sedp_reader_tbl[j].alive) {
+        if (is_sedp_endpoint_alive(&sedp_reader_tbl, j)) {
             sedp_reader_cnt++;
         }
     }
     std::cout << "reader_cnt = " << sedp_reader_cnt << std::endl;
     for (ii = 0; ii < SEDP_READER_MAX; ii++) {
-        if (sedp_reader_tbl[ii].alive) {
+        uint64_t rdata;
+        get_sedp_reader_tbl(&rdata, &sedp_reader_tbl, ii, 0);
+        if ((rdata & SEDP_ENDPOINT_ALIVE) != 0) {
+            bool subrd_acknack_req
+                = ((rdata & SEDP_ENDPOINT_SUBRD_ACKNACK_REQ) != 0);
+            uint8_t tmp_ip_addr[4];
+            uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum,
+                subrd_rd_seqnum;
+            get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+                tmp_ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum,
+                &subrd_wr_seqnum, &subrd_rd_seqnum, &sedp_reader_tbl, ii);
             printf("tbl[%d] ****\n", ii);
-            printf("builtin_subrd_wr_seqnum: %d\n",
-                   sedp_reader_tbl[ii].builtin_subrd_wr_seqnum);
-            printf("builtin_subrd_rd_seqnum: %d\n",
-                   sedp_reader_tbl[ii].builtin_subrd_rd_seqnum);
-            printf("builtin_subrd_acknack_req: %d\n",
-                   sedp_reader_tbl[ii].builtin_subrd_acknack_req);
+            printf("builtin_subrd_wr_seqnum: %d\n", subrd_wr_seqnum);
+            printf("builtin_subrd_rd_seqnum: %d\n", subrd_rd_seqnum);
+            printf("builtin_subrd_acknack_req: %d\n", subrd_acknack_req);
         }
     }
 

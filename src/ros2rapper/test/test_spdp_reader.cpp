@@ -8,7 +8,9 @@
 #include "ros2_receiver.hpp"
 #include "rtps.hpp"
 #include "spdp.hpp"
+#include "test_utils.hpp"
 #include <cassert>
+#include <cstdio>
 
 // SPDP message sample with PID_PARTICIPANT_LEASE_DURATION.
 constexpr uint8_t test_spdp_reader_data_1[] = {
@@ -317,8 +319,8 @@ static int test_spdp_reader_0() {
     return 0;
 }
 
-static sedp_endpoint sedp_reader_tbl[SEDP_READER_MAX];
-static app_endpoint  app_reader_tbl[APP_READER_MAX];
+static sedp_reader_tbl_t sedp_reader_tbl;
+static app_endpoint      app_reader_tbl[APP_READER_MAX];
 
 static int test_spdp_reader_1() {
     constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
@@ -340,29 +342,29 @@ static int test_spdp_reader_1() {
          first_n_alive++) {
         // Initialize sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            // Set liveliness
-            sedp_reader_tbl[j].alive = (j < first_n_alive);
-            // Set GUID prefix
-            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-                // If sedp_reader_tbl[j] is alive, set
-                // sedp_reader_tbl[j].guid_prefix UNKNOWN. If sedp_reader_tbl[j]
-                // is dead, set sedp_reader_tbl[j].guid_prefix
-                // SOURCE_GUID_PREFIX. Test whether spdp_reader find a new
-                // participant whose GUID prefix is the same as dead
-                // participants'.
-                sedp_reader_tbl[j].guid_prefix[k]
-                    = (j < first_n_alive) ? 0 : SOURCE_GUID_PREFIX[k];
+            // If sedp_reader_tbl[j] is alive, set
+            // sedp_reader_tbl[j].guid_prefix UNKNOWN. If sedp_reader_tbl[j] is
+            // dead, set sedp_reader_tbl[j].guid_prefix SOURCE_GUID_PREFIX. Test
+            // whether spdp_reader find a new participant whose GUID prefix is
+            // the same as dead participants'.
+            if (j < first_n_alive) {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+                    true, &sedp_reader_tbl, j);
+            } else {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix(
+                    false, SOURCE_GUID_PREFIX, &sedp_reader_tbl, j);
             }
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                timestamp_i64);
+        ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+                sub_enable, timestamp_i64);
         // Check sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             // spdp_reader should find a new participant, and
             // sedp_reader_tbl[first_n_alive] should become alive.
-            assert(sedp_reader_tbl[j].alive == (j <= first_n_alive));
+            assert(is_sedp_endpoint_alive(&sedp_reader_tbl, j)
+                   == (j <= first_n_alive));
         }
     }
 
@@ -371,27 +373,22 @@ static int test_spdp_reader_1() {
          known_participants++) {
         // Initialize sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            bool known = ((1 << j) & known_participants);
-            // Set liveliness
-            sedp_reader_tbl[j].alive = known;
-            // Set GUID prefix
-            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-                // If sedp_reader_tbl[j] is alive, set
-                // sedp_reader_tbl[j].guid_prefix SOURCE_GUID_PREFIX. If
-                // sedp_reader_tbl[j] is dead, set
-                // sedp_reader_tbl[j].guid_prefix UNKNOWN.
-                sedp_reader_tbl[j].guid_prefix[k]
-                    = known ? SOURCE_GUID_PREFIX[k] : 0;
+            if ((1 << j) & known_participants) {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix(
+                    true, SOURCE_GUID_PREFIX, &sedp_reader_tbl, j);
+            } else {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+                    false, &sedp_reader_tbl, j);
             }
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                timestamp_i64);
+        ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+                sub_enable, timestamp_i64);
         // Check sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             bool known = ((1 << j) & known_participants);
-            assert(sedp_reader_tbl[j].alive == known);
+            assert(is_sedp_endpoint_alive(&sedp_reader_tbl, j) == known);
         }
     }
 
@@ -416,56 +413,68 @@ static int test_spdp_reader_2() {
 
     int64_t timestamp_i64;
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        sedp_reader_tbl[j].alive = false;
+        set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+            false, &sedp_reader_tbl, j);
     }
+
+    int64_t r_lease_duration, r_timestamp_i64;
 
     // Test whether spdp_reader reads PID_PARTICIPANT_LEASE_DURATION and sets
     // timestamp correctly.
     // Initialize sedp_reader_tbl.
     timestamp_i64 = 0x0a00000000;
-    sedp_reader_tbl[0].lease_duration = 0;
-    sedp_reader_tbl[0].timestamp = 0;
-    sedp_reader_tbl[0].alive = false;
+    set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(false,
+                                                           &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_lease_duration(0, &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
     // Check sedp_reader_tbl.
-    assert(sedp_reader_tbl[0].alive);
-    assert(sedp_reader_tbl[0].lease_duration == 0x1400000000);
-    assert(sedp_reader_tbl[0].timestamp == timestamp_i64);
+    get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
+    assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+    assert(r_lease_duration == 0x1400000000);
+    assert(r_timestamp_i64 == timestamp_i64);
 
     // Test whether spdp_reader reset lease_duration before read from the
     // parameters.
     // Initialize sedp_reader_tbl.
     timestamp_i64 = 0x0a00000000;
-    sedp_reader_tbl[0].lease_duration = 0x7fffffffffffffff;
-    sedp_reader_tbl[0].timestamp = 0;
-    sedp_reader_tbl[0].alive = false;
+    set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(false,
+                                                           &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_lease_duration(0x7fffffffffffffff, &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
     // Check sedp_reader_tbl.
-    assert(sedp_reader_tbl[0].alive);
-    assert(sedp_reader_tbl[0].lease_duration == 0x1400000000);
-    assert(sedp_reader_tbl[0].timestamp == timestamp_i64);
+    get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
+    assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+    assert(r_lease_duration == 0x1400000000);
+    assert(r_timestamp_i64 == timestamp_i64);
 
     // Test whether spdp_reader sets default lease_duration value if SPDP
     // message does not have PID_PARTICIPANT_LEASE_DURATION.
     // Initialize sedp_reader_tbl.
     timestamp_i64 = 0x3200000000;
-    sedp_reader_tbl[0].lease_duration = 0;
-    sedp_reader_tbl[0].timestamp = 0;
-    sedp_reader_tbl[0].alive = false;
+    set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(false,
+                                                           &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_lease_duration(0, &sedp_reader_tbl, 0);
+    set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_2);
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
     // Check sedp_reader_tbl.
-    assert(sedp_reader_tbl[0].alive);
-    assert(sedp_reader_tbl[0].lease_duration == SPDP_LEASE_DURATION_DEFAULT);
-    assert(sedp_reader_tbl[0].timestamp == timestamp_i64);
+    get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
+    assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+    assert(r_lease_duration == SPDP_LEASE_DURATION_DEFAULT);
+    assert(r_timestamp_i64 == timestamp_i64);
 
     return 0;
 }
@@ -491,31 +500,120 @@ static int test_spdp_reader_3() {
     int64_t timestamp_i64 = 0;
 
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        sedp_reader_tbl[j].alive = false;
+        set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+            false, &sedp_reader_tbl, j);
     }
     // Update sedp_reader_tbl
     stream.write(rtps_data_3);
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
     // Test
-    assert(sedp_reader_tbl[0].alive);
+    assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
 
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-        sedp_reader_tbl[j].alive = false;
+        set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+            false, &sedp_reader_tbl, j);
     }
     // Update sedp_reader_tbl
     stream.write(rtps_data_4);
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
             timestamp_i64);
     // Test
-    assert(sedp_reader_tbl[0].alive);
+    assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
+
+    return 0;
+}
+
+static int test_spdp_reader_4() {
+    // Test ros2_in initializes sedp_endpoint correctly.
+    constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
+    constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
+    constexpr uint16_t port_num_seed = 7400;
+    constexpr int64_t  timestamp_i64_in = 0x1122334455667788;
+
+    static const hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    static const hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+
+    hls_stream<rtps_data_t> stream;
+    CALL_SPDP_READER(stream, ip_addr, subnet_mask, port_num_seed,
+                     test_spdp_reader_data_1);
+    rtps_data_t rtps_data_1 = stream.read();
+
+    // Initialize sedp_reader_tbl
+    // Set dummy data at 0
+    set_sedp_reader_tbl(0, &sedp_reader_tbl, 0, 0);
+    for (auto j = 1; j < 11; j++) {
+        set_sedp_reader_tbl(0xffffffffffffffff, &sedp_reader_tbl, 0, j);
+    }
+    // sedp_reader_tbl[j] (j >= 1) is not used
+    for (auto j = 1; j < SEDP_READER_MAX; j++) {
+        set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+            false, &sedp_reader_tbl, 0);
+    }
+
+    // Update sedp_reader_tbl
+    stream.write(rtps_data_1);
+    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64_in);
+
+    // Check sedp_reader_tbl
+    uint64_t rdata_0, rdata_1;
+    get_sedp_reader_tbl(&rdata_0, &sedp_reader_tbl, 0, 0);
+    get_sedp_reader_tbl(&rdata_1, &sedp_reader_tbl, 0, 1);
+    // Check flags and initial_send_counter
+    assert((rdata_0 & 0xffff) == SEDP_ENDPOINT_ALIVE);
+    // Check UDP port
+    assert(((rdata_0 >> 16) & 0xff) == (7410 >> 8));
+    assert(((rdata_0 >> 24) & 0xff) == (7410 & 0xff));
+    // Check GUID prefix
+    for (auto j = 0; j < 4; j++) {
+        assert(((rdata_0 >> (8 * (j + 4))) & 0xff) == SOURCE_GUID_PREFIX[j]);
+    }
+    for (auto j = 0; j < 8; j++) {
+        assert(((rdata_1 >> (8 * j)) & 0xff) == SOURCE_GUID_PREFIX[j + 4]);
+    }
+    uint8_t  src_ip_addr[4];
+    uint8_t  pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
+    int64_t  pubwr_lastsn, subwr_lastsn;
+    uint32_t pub_heartbeat_cnt, sub_heartbeat_cnt, pub_acknack_cnt,
+        sub_acknack_cnt;
+    int64_t                  lease_duration, timestamp_i64_out;
+    hls_uint<APP_READER_MAX> children;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
+        src_ip_addr, &pubrd_wr_seqnum, &pubrd_rd_seqnum, &subrd_wr_seqnum,
+        &subrd_rd_seqnum, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_pubwr_lastsn(&pubwr_lastsn, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_subwr_lastsn(&subwr_lastsn, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_heartbeat_cnt(&pub_heartbeat_cnt, &sub_heartbeat_cnt,
+                                      &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_acknack_cnt(&pub_acknack_cnt, &sub_acknack_cnt,
+                                    &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_lease_duration(&lease_duration, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl, 0);
+    get_sedp_reader_tbl_children(&children, &sedp_reader_tbl, 0);
+    assert(src_ip_addr[0] == 192);
+    assert(src_ip_addr[1] == 168);
+    assert(src_ip_addr[2] == 0);
+    assert(src_ip_addr[3] == 2);
+    assert(pubrd_wr_seqnum == 0);
+    assert(pubrd_rd_seqnum == 1);
+    assert(subrd_wr_seqnum == 0);
+    assert(subrd_rd_seqnum == 1);
+    assert(pubwr_lastsn == 0);
+    assert(subwr_lastsn == 0);
+    assert(pub_heartbeat_cnt == 0);
+    assert(sub_heartbeat_cnt == 0);
+    assert(pub_acknack_cnt == 0);
+    assert(sub_acknack_cnt == 0);
+    assert(lease_duration == (static_cast<int64_t>(20) << 32));
+    assert(timestamp_i64_out == timestamp_i64_in);
+    assert(children == 0);
 
     return 0;
 }
 
 static int test_update_timestamp() {
-    // Test whether ros2_in updates timestamps in sedp_reader_tbl
-    // correctly.
+    // Test whether ros2_in updates the UDP port and the timestamp correctly.
     constexpr uint8_t  ip_addr[4] = {192, 168, 0, 3};
     constexpr uint8_t  subnet_mask[4] = {255, 255, 255, 0};
     constexpr uint16_t port_num_seed = 7400;
@@ -533,25 +631,42 @@ static int test_update_timestamp() {
         int64_t timestamp_i64_new = static_cast<int64_t>(target + 1) << 32;
         // Initialize sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            sedp_reader_tbl[j].timestamp = timestamp_i64_orig;
-            sedp_reader_tbl[j].alive = true;
-            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-                sedp_reader_tbl[j].guid_prefix[k]
-                    = (j == target) ? test_spdp_reader_data_1
-                                          [k + RTPS_HDR_OFFSET_GUID_PREFIX]
-                                    : 0;
+            set_sedp_reader_tbl_timestamp(timestamp_i64_orig, &sedp_reader_tbl,
+                                          j);
+            if (j == target) {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix(
+                    true, test_spdp_reader_data_1 + RTPS_HDR_OFFSET_GUID_PREFIX,
+                    &sedp_reader_tbl, j);
+            } else {
+                set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
+                    true, &sedp_reader_tbl, j);
             }
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-                timestamp_i64_new);
+        ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+                sub_enable, timestamp_i64_new);
         // Check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
+            int64_t timestamp_i64_out;
+            get_sedp_reader_tbl_timestamp(&timestamp_i64_out, &sedp_reader_tbl,
+                                          j);
             if (j == target) {
-                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_new);
+                assert(timestamp_i64_out == timestamp_i64_new);
+                uint64_t rdata_0;
+                get_sedp_reader_tbl(&rdata_0, &sedp_reader_tbl, j, 0);
+                // Check flags and initial_send_counter
+                assert((rdata_0 & 0xffff) == SEDP_ENDPOINT_ALIVE);
+                // Check UDP port
+                assert(((rdata_0 >> 16) & 0xff) == (7410 >> 8));
+                assert(((rdata_0 >> 24) & 0xff) == (7410 & 0xff));
+                // Check GUID prefix
+                for (auto j = 0; j < 4; j++) {
+                    assert(((rdata_0 >> (8 * (j + 4))) & 0xff)
+                           == SOURCE_GUID_PREFIX[j]);
+                }
             } else {
-                assert(sedp_reader_tbl[j].timestamp == timestamp_i64_orig);
+                assert(timestamp_i64_out == timestamp_i64_orig);
             }
         }
     }
@@ -563,6 +678,7 @@ int test_spdp_reader() {
     assert(test_spdp_reader_1() == 0);
     assert(test_spdp_reader_2() == 0);
     assert(test_spdp_reader_3() == 0);
+    assert(test_spdp_reader_4() == 0);
     assert(test_update_timestamp() == 0);
     return 0;
 }
