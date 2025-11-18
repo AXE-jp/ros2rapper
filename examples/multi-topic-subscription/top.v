@@ -397,7 +397,6 @@ module top (
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),
-        .ros2_rx_udp_port(0),
         .ros2_port_num_seed(ros2_port_num_seed),
         .ros2_fragment_expiration(ros2_fragment_expiration),
         .ros2_guid_prefix(ros2_guid_prefix),
@@ -517,13 +516,6 @@ module top (
         .ros2_sub_app_data_rel(0),
         .ros2_sub_app_data_grant(),
         .ros2_sub_app_data_recv(),
-
-        .udp_rxbuf_rel(1'b1),
-        .udp_rxbuf_grant(),
-        .udp_rxbuf_addr(),
-        .udp_rxbuf_ce(),
-        .udp_rxbuf_we(),
-        .udp_rxbuf_wdata(),
 
         .udp_txbuf_rel(1'b0),
         .udp_txbuf_grant(),
