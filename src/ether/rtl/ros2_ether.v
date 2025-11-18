@@ -165,12 +165,6 @@ module ros2_ether #(
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
-    input  wire udp_txbuf_rel,
-    output wire udp_txbuf_grant,
-    output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
-    output wire udp_txbuf_ce,
-    input  wire [31:0] udp_txbuf_rdata,
-
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
     output wire ip_payloadsmem_we,
@@ -477,12 +471,6 @@ ros2rapper (
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
     .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
     .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
-
-    .udp_txbuf_rel(udp_txbuf_rel),
-    .udp_txbuf_grant(udp_txbuf_grant),
-    .udp_txbuf_addr(udp_txbuf_addr),
-    .udp_txbuf_ce(udp_txbuf_ce),
-    .udp_txbuf_rdata(udp_txbuf_rdata),
 
     .ip_payloadsmem_addr(ip_payloadsmem_addr),
     .ip_payloadsmem_ce(ip_payloadsmem_ce),

@@ -163,12 +163,6 @@ module ros2rapper #(
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
-    input  wire udp_txbuf_rel,
-    output wire udp_txbuf_grant,
-    output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
-    output wire udp_txbuf_ce,
-    input  wire [31:0] udp_txbuf_rdata,
-
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
     output wire ip_payloadsmem_we,
@@ -218,28 +212,6 @@ generate
         );
     end
 endgenerate
-
-// arbiter for sharing UDP TX buffer between user and ROS2rapper IP
-localparam UDP_TXBUF_GRANT_IP   = 1'b0;
-localparam UDP_TXBUF_GRANT_USER = 1'b1;
-
-reg r_udp_txbuf_grant;
-wire udp_txbuf_ip_rel, udp_txbuf_ip_grant;
-assign udp_txbuf_ip_grant = en & (~r_udp_txbuf_grant);
-assign udp_txbuf_grant = en & r_udp_txbuf_grant;
-
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        r_udp_txbuf_grant <= UDP_TXBUF_GRANT_USER;
-    end else begin
-        case (r_udp_txbuf_grant)
-            UDP_TXBUF_GRANT_IP:
-                if (udp_txbuf_ip_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_USER;
-            UDP_TXBUF_GRANT_USER:
-                if (udp_txbuf_rel) r_udp_txbuf_grant <= UDP_TXBUF_GRANT_IP;
-        endcase
-    end
-end
 
 // local_timestamp[63:32] is time in second and local_timestamp[31:0] is the fractional part.
 reg [63:0] local_timestamp;
@@ -537,9 +509,6 @@ ros2_main (
     .cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
     .cnt_app_wr_elapsed_ap_ack(),
 
-    .udp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
-    .udp_txbuf_grant_ap_ack(),
-
     .timestamp_i64(local_timestamp)
 );
 
@@ -555,15 +524,6 @@ ros2_sender (
     .out_r_din(tx_fifo_din),
     .out_r_full_n(~tx_fifo_full),
     .out_r_write(tx_fifo_wr_en),
-
-    .rawudp_txbuf_ce0(udp_txbuf_ce),
-    .rawudp_txbuf_address0(udp_txbuf_addr),
-    .rawudp_txbuf_q0(udp_txbuf_rdata),
-
-    .rawudp_txbuf_rel_ap_vld(udp_txbuf_ip_rel),
-    .rawudp_txbuf_rel(),
-    .rawudp_txbuf_grant({7'b0, udp_txbuf_ip_grant}),
-    .rawudp_txbuf_grant_ap_ack(),
 
     .conf_ip_addr(ip_addr),
     .conf_node_name(ros2_node_name),
@@ -1230,8 +1190,6 @@ ros2_main (
   .cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
   .cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
 
-  .udp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
-
   .timestamp_i64(local_timestamp)
 );
 
@@ -1247,14 +1205,6 @@ ros2_sender (
   .out_din(tx_fifo_din),
   .out_full(tx_fifo_full),
   .out_wreq(tx_fifo_wr_en),
-
-  .rawudp_txbuf_CS1(udp_txbuf_ce),
-  .rawudp_txbuf_AD1(udp_txbuf_addr),
-  .rawudp_txbuf_RD1(udp_txbuf_rdata),
-
-  .rawudp_txbuf_rel_we(udp_txbuf_ip_rel),
-  .rawudp_txbuf_rel_wd(),
-  .rawudp_txbuf_grant_rd({7'b0, udp_txbuf_ip_grant}),
 
   .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
