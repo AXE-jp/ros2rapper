@@ -16,16 +16,8 @@
 #define TARGET_CLOCK_FREQ     80000000 // Arty A7-100T: 80 MHz
 #define TARGET_PARTICIPANT_ID 1
 
-#define RAWUDP_RXBUF_LEN 256
-#define RAWUDP_TXBUF_LEN 256
-
-#define MAX_RAWUDP_OUT_PAYLOAD_LEN (RAWUDP_TXBUF_LEN - 12)
-#define MAX_RAWUDP_OUT_UDP_PKT_LEN (UDP_HDR_SIZE + MAX_RAWUDP_OUT_PAYLOAD_LEN)
-#define MAX_RAWUDP_OUT_IP_PKT_LEN  (IP_HDR_SIZE + MAX_RAWUDP_OUT_UDP_PKT_LEN)
-
 #define TX_BUF_LEN                                                             \
-    (MAX(MAX(MAX(MAX(MAX(MAX_RAWUDP_OUT_IP_PKT_LEN, SPDP_WRITER_IP_PKT_LEN),   \
-                     SEDP_WRITER_IP_PKT_LEN),                                  \
+    (MAX(MAX(MAX(MAX(SPDP_WRITER_IP_PKT_LEN, SEDP_WRITER_IP_PKT_LEN),          \
                  SEDP_HEARTBEAT_IP_PKT_LEN),                                   \
              SEDP_ACKNACK_IP_PKT_LEN),                                         \
          APP_WRITER_IP_PKT_LEN(MAX_APP_DATA_LEN)))
