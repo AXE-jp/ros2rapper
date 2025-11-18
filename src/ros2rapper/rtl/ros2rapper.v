@@ -41,7 +41,6 @@ module ros2rapper #(
     input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input  wire [7:0] ros2_node_name_len,
     input  wire [15:0] ros2_node_udp_port,
-    input  wire [15:0] ros2_rx_udp_port,
     input  wire [15:0] ros2_port_num_seed,
 
     input  wire [31:0] ros2_fragment_expiration,
@@ -164,13 +163,6 @@ module ros2rapper #(
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
-    input  wire udp_rxbuf_rel,
-    output wire udp_rxbuf_grant,
-    output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
-    output wire udp_rxbuf_ce,
-    output wire udp_rxbuf_we,
-    output wire [31:0] udp_rxbuf_wdata,
-
     input  wire udp_txbuf_rel,
     output wire udp_txbuf_grant,
     output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
@@ -226,28 +218,6 @@ generate
         );
     end
 endgenerate
-
-// arbiter for sharing UDP RX buffer between user and ROS2rapper IP
-localparam UDP_RXBUF_GRANT_IP   = 1'b0;
-localparam UDP_RXBUF_GRANT_USER = 1'b1;
-
-reg r_udp_rxbuf_grant;
-wire udp_rxbuf_ip_rel, udp_rxbuf_ip_grant;
-assign udp_rxbuf_ip_grant = en & (~r_udp_rxbuf_grant);
-assign udp_rxbuf_grant = en & r_udp_rxbuf_grant;
-
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
-    end else begin
-        case (r_udp_rxbuf_grant)
-            UDP_RXBUF_GRANT_IP:
-                if (udp_rxbuf_ip_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_USER;
-            UDP_RXBUF_GRANT_USER:
-                if (udp_rxbuf_rel) r_udp_rxbuf_grant <= UDP_RXBUF_GRANT_IP;
-        endcase
-    end
-end
 
 // arbiter for sharing UDP TX buffer between user and ROS2rapper IP
 localparam UDP_TXBUF_GRANT_IP   = 1'b0;
@@ -405,11 +375,6 @@ ros2_receiver (
     .out_r_TREADY(ros2_rtps_data_ready),
     .out_r_TVALID(ros2_rtps_data_valid),
 
-    .rawudp_rxbuf_address0(udp_rxbuf_addr),
-    .rawudp_rxbuf_ce0(udp_rxbuf_ce),
-    .rawudp_rxbuf_we0(udp_rxbuf_we),
-    .rawudp_rxbuf_d0(udp_rxbuf_wdata),
-
     .ip_payloads_address0(ip_payloadsmem_addr),
     .ip_payloads_ce0(ip_payloadsmem_ce),
     .ip_payloads_we0(ip_payloadsmem_we),
@@ -418,7 +383,6 @@ ros2_receiver (
 
     .conf_ip_addr(ip_addr),
     .conf_subnet_mask(subnet_mask),
-    .conf_rx_udp_port({ros2_rx_udp_port[7:0], ros2_rx_udp_port[15:8]}),
     .conf_port_num_seed(ros2_port_num_seed),
 
     .conf_fragment_expiration(ros2_fragment_expiration),
@@ -502,11 +466,6 @@ ros2_receiver (
     .sub_app_data_rel(ros2_sub_app_data_ip_rel),
     .sub_app_data_grant(ros2_sub_app_data_ip_grant),
     .sub_app_data_grant_ap_ack(),
-
-    .rawudp_rxbuf_rel_ap_vld(udp_rxbuf_ip_rel),
-    .rawudp_rxbuf_rel(),
-    .rawudp_rxbuf_grant({7'b0, udp_rxbuf_ip_grant}),
-    .rawudp_rxbuf_grant_ap_ack(),
 
     .xout(),
     .xout_ap_vld()
@@ -737,11 +696,6 @@ ros2_receiver (
   .out_TREADY(ros2_rtps_data_ready),
   .out_TVALID(ros2_rtps_data_valid),
 
-  .rawudp_rxbuf_CS1(udp_rxbuf_ce),
-  .rawudp_rxbuf_AD1(udp_rxbuf_addr),
-  .rawudp_rxbuf_WE1(udp_rxbuf_we),
-  .rawudp_rxbuf_WD1(udp_rxbuf_wdata),
-
   .ip_payloads_CS1(ip_payloadsmem_ce),
   .ip_payloads_AD1(ip_payloadsmem_addr),
   .ip_payloads_WE1(ip_payloadsmem_we),
@@ -752,7 +706,6 @@ ros2_receiver (
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
   .conf_subnet_mask_0(subnet_mask[7:0]), .conf_subnet_mask_1(subnet_mask[15:8]),
   .conf_subnet_mask_2(subnet_mask[23:16]), .conf_subnet_mask_3(subnet_mask[31:24]),
-  .conf_rx_udp_port_1(ros2_rx_udp_port[7:0]), .conf_rx_udp_port_0(ros2_rx_udp_port[15:8]),
   .conf_port_num_seed(ros2_port_num_seed),
 
   .conf_fragment_expiration(ros2_fragment_expiration),
@@ -1215,10 +1168,6 @@ ros2_receiver (
   .sub_app_data_rel_we(ros2_sub_app_data_ip_rel_valid),
   .sub_app_data_rel_wd(ros2_sub_app_data_ip_rel),
   .sub_app_data_grant_rd(ros2_sub_app_data_ip_grant),
-
-  .rawudp_rxbuf_rel_we(udp_rxbuf_ip_rel),
-  .rawudp_rxbuf_rel_wd(),
-  .rawudp_rxbuf_grant_rd({7'b0, udp_rxbuf_ip_grant}),
 
   .xout_i(9'h0),
   .xout_o()
