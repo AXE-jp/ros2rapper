@@ -94,8 +94,6 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_none port = conf->ip_addr
 #pragma HLS array_reshape variable = conf->subnet_mask type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->subnet_mask
-#pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->rx_udp_port
 #pragma HLS interface mode = ap_none port = conf->port_num_seed
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
