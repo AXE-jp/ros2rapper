@@ -54,8 +54,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 void ros2_receiver(
     hls_stream<uint8_t>     &in /* Cyber port_mode=cw_fifo */,
     hls_stream<rtps_data_t> &out /* Cyber port_mode=axi_stream */,
-    uint32_t rawudp_rxbuf[RAWUDP_RXBUF_LEN / 4] /* Cyber mem_reg=1 */,
-    uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
+    uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
     const receiver_config_t *conf /* Cyber port_mode=in, stable_input */,
@@ -83,15 +82,10 @@ void ros2_receiver(
         sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
                                                port_mode=shared, volatile=yes */
     ,
-    VOLATILE uint8_t
-        *rawudp_rxbuf_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-                *rawudp_rxbuf_grant /* Cyber port_mode=shared, volatile=YES */,
     hls_uint<9> *xout) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = axis port = out
-#pragma HLS interface mode = ap_memory port = rawudp_rxbuf
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = pub_enable
 #pragma HLS interface mode = ap_none port = sub_enable
@@ -100,8 +94,6 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_none port = conf->ip_addr
 #pragma HLS array_reshape variable = conf->subnet_mask type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->subnet_mask
-#pragma HLS array_reshape variable = conf->rx_udp_port type = complete dim = 0
-#pragma HLS interface mode = ap_none port = conf->rx_udp_port
 #pragma HLS interface mode = ap_none port = conf->port_num_seed
 #pragma HLS interface mode = ap_none port = conf->fragment_expiration
 #pragma HLS array_reshape variable = conf->guid_prefix type = complete dim = 0
@@ -152,8 +144,6 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
 #pragma HLS interface mode = ap_ack port = sub_app_data_grant
-#pragma HLS interface mode = ap_vld port = rawudp_rxbuf_rel
-#pragma HLS interface mode = ap_ack port = rawudp_rxbuf_grant
 
     static bool ip_parity_error = false;
     static bool udp_parity_error = false;
@@ -183,8 +173,7 @@ void ros2_receiver(
 #endif // USE_FIFOIF_ETHERNET
     ip_in(s1, s2, ip_payloads, conf->fragment_expiration,
           conf->ignore_ip_checksum, ip_parity_error);
-    udp_in(s2, s3, enable, conf->rx_udp_port, rawudp_rxbuf, rawudp_rxbuf_rel,
-           rawudp_rxbuf_grant, udp_parity_error);
+    udp_in(s2, s3, enable, udp_parity_error);
 
     if (!s3.read_nb(x))
         return;

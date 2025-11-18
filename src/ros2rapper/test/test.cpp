@@ -3,7 +3,6 @@
 
 #include <cassert>
 
-int test_udp();
 int test_sedp_reader_heartbeat();
 int test_spdp_reader();
 int test_sedp_reader_2();
@@ -12,7 +11,6 @@ int test_multi_topic_subscription();
 int test_message_metadata();
 
 int main() {
-    assert(test_udp() == 0);
     assert(test_sedp_reader_heartbeat() == 0);
     assert(test_spdp_reader() == 0);
     assert(test_sedp_reader_2() == 0);

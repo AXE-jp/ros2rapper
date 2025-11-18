@@ -20,7 +20,6 @@ typedef hls_uint<4> message_type_t;
 #define MSG_TYPE_SEDP_ACKNACK_PUB   6
 #define MSG_TYPE_SEDP_ACKNACK_SUB   7
 #define MSG_TYPE_APP                8
-#define MSG_TYPE_RAWUDP             9
 
 typedef struct {
     message_type_t message_type;

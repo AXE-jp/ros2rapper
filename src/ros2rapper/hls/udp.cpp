@@ -31,23 +31,16 @@
 
 #define UDP_IN_STATE_READ_HEADER 0
 #define UDP_IN_STATE_OUT_RTPS    1
-#define UDP_IN_STATE_OUT_UDP     2
-#define UDP_IN_STATE_DISCARD     3
-
-#define MAX_RAWUDP_RXBUF_PAYLOAD_LEN (RAWUDP_RXBUF_LEN - 8)
+#define UDP_IN_STATE_DISCARD     2
 
 #define QUAD_UINT8(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 
 /* Cyber func=inline */
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-            hls_uint<1> &enable, const uint8_t rx_udp_port[2],
-            uint32_t          rawudp_rxbuf[RAWUDP_RXBUF_LEN / 4],
-            VOLATILE uint8_t *rawudp_rxbuf_rel,
-            VOLATILE uint8_t *rawudp_rxbuf_grant, bool &parity_error) {
+            hls_uint<1> &enable, bool &parity_error) {
 #pragma HLS inline
     static hls_uint<2> state;
     static uint16_t    offset;
-    static uint16_t    ram_offset;
     static uint16_t    sum = PRE_CHECKSUM;
     static uint8_t     src_addr[4];
     static uint8_t     src_port[2];
@@ -116,22 +109,10 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
         offset++;
         if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
-            if (dst_port[0] == rx_udp_port[0]
-                && dst_port[1] == rx_udp_port[1]) {
-                uint16_t payload_len
-                    = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
-                if (*rawudp_rxbuf_grant == 1
-                    && payload_len <= MAX_RAWUDP_RXBUF_PAYLOAD_LEN) {
-                    state = UDP_IN_STATE_OUT_UDP;
-                } else {
-                    state = UDP_IN_STATE_DISCARD;
-                }
+            if (enable) {
+                state = UDP_IN_STATE_OUT_RTPS;
             } else {
-                if (enable) {
-                    state = UDP_IN_STATE_OUT_RTPS;
-                } else {
-                    state = UDP_IN_STATE_DISCARD;
-                }
+                state = UDP_IN_STATE_DISCARD;
             }
         }
         break;
@@ -140,29 +121,6 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
         out.write(x);
         offset++;
-        break;
-    case UDP_IN_STATE_OUT_UDP:
-        switch (ram_offset) {
-        case 0:
-            rawudp_rxbuf[ram_offset++] = QUAD_UINT8(src_addr[0], src_addr[1],
-                                                    src_addr[2], src_addr[3]);
-            return;
-        case 1:
-            rawudp_rxbuf[ram_offset++]
-                = QUAD_UINT8(src_port[1], src_port[0], tot_len[1], tot_len[0]);
-            return;
-        default:
-            READ_AND_CHECKSUM;
-
-            data_buf[data_pos] = data;
-            if (data_pos == 3 || end)
-                rawudp_rxbuf[ram_offset++] = QUAD_UINT8(
-                    data_buf[0], data_buf[1], data_buf[2], data_buf[3]);
-            data_pos++;
-
-            offset++;
-            break;
-        }
         break;
     case UDP_IN_STATE_DISCARD:
         READ_AND_CHECKSUM;
@@ -175,11 +133,7 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         if (!no_checksum && sum != 0xffff)
             parity_error = true;
 
-        if (state == UDP_IN_STATE_OUT_UDP)
-            *rawudp_rxbuf_rel = 0; /*write dummy value to assert ap_vld*/
-
         offset = 0;
-        ram_offset = 0;
         data_buf[0] = 0;
         data_buf[1] = 0;
         data_buf[2] = 0;
