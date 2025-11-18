@@ -24,7 +24,7 @@ static void find_unused_and_matched_sedp_endpoint(
 
 #ifdef SEDP_READER_TBL_FF
     /* Cyber unroll_times=all */
-#else // !SEDP_READER_TBL_FF
+#else  // !SEDP_READER_TBL_FF
     /* Cyber folding=2 */
 #endif // SEDP_READER_TBL_FF
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
@@ -994,7 +994,7 @@ static void ros2_out(
                 if (!send) {
 #ifdef SEDP_READER_TBL_FF
                     /* Cyber unroll_times=all */
-#else // !SEDP_READER_TBL_FF
+#else  // !SEDP_READER_TBL_FF
                     /* Cyber folding=1 */
 #endif // SEDP_READER_TBL_FF
                     for (auto j = 0; j < SEDP_READER_MAX; j++) {
