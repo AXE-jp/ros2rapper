@@ -118,6 +118,8 @@ void app_writer(const uint8_t writer_guid_prefix[12],
 
 #ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#else // !PUB_DATA_FF
+    /* Cyber folding=4 */
 #endif // PUB_DATA_FF
     for (auto j = 0; j < (MAX_APP_DATA_LEN / 4); j++) {
 #ifdef PUB_DATA_FF

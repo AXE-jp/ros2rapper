@@ -199,6 +199,7 @@ rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
 #pragma HLS inline
     static const uint16_t rawudp_txbuf_offset = 3;
 
+    /* Cyber folding=4 */
     for (auto i = 0; i < (MAX_RAWUDP_OUT_PAYLOAD_LEN / 4); i++) {
 #pragma HLS PIPELINE II = 4
         if ((4 * i) >= udp_payload_len) {
