@@ -258,7 +258,7 @@ static void rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
     rawudp_copy_payload(rawudp_txbuf, udp_payload_len, out);
 }
 
-/* Cyber func=process, bdltran_option=-s, process_valid=NO */
+/* Cyber func=process, bdltran_option=-s, process_valid=NO, async_reset_port=rst_n- */
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=axi_stream */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
