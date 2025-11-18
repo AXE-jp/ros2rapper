@@ -209,84 +209,11 @@ app_data_request_section: {
     }
 }
 
-/* Cyber func=inline */
-static void
-rawudp_copy_payload(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
-                    uint16_t       udp_payload_len,
-                    uint8_t        tx_buf[MAX_TX_UDP_PAYLOAD_LEN]) {
-#pragma HLS inline
-    static const uint16_t rawudp_txbuf_offset = 3;
-
-    for (auto i = 0; i < (MAX_RAWUDP_OUT_PAYLOAD_LEN / 4); i++) {
-#ifdef PUB_DATA_RAM
-#pragma HLS pipeline II = 2
-#endif // PUB_DATA_RAM
-        uint32_t ram_read_buf = rawudp_txbuf[i + rawudp_txbuf_offset];
-        tx_buf[4 * i] = ((4 * i) < udp_payload_len) ? (ram_read_buf & 0xff) : 0;
-        tx_buf[(4 * i) + 1] = (((4 * i) + 1) < udp_payload_len)
-                                  ? ((ram_read_buf >> 8) & 0xff)
-                                  : 0;
-        tx_buf[(4 * i) + 2] = (((4 * i) + 2) < udp_payload_len)
-                                  ? ((ram_read_buf >> 16) & 0xff)
-                                  : 0;
-        tx_buf[(4 * i) + 3] = (((4 * i) + 3) < udp_payload_len)
-                                  ? ((ram_read_buf >> 24) & 0xff)
-                                  : 0;
-    }
-
-    clear_txbuf(tx_buf, MAX_RAWUDP_OUT_PAYLOAD_LEN, MAX_TX_UDP_PAYLOAD_LEN);
-}
-
-/* Cyber func=inline */
-static uint16_t rawudp_out(const uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4],
-                           const sender_config_t *conf,
-                           uint8_t                tx_buf[TX_BUF_LEN]) {
-    uint32_t ram_read_buf;
-    uint8_t  dst_addr[4] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = dst_addr type = complete dim = 1
-    uint8_t dst_port[2] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = dst_port type = complete dim = 1
-    uint8_t src_port[2] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = src_port type = complete dim = 1
-    uint16_t udp_payload_len;
-
-    ram_read_buf = rawudp_txbuf[0];
-    dst_addr[0] = ram_read_buf & 0xff;
-    dst_addr[1] = (ram_read_buf >> 8) & 0xff;
-    dst_addr[2] = (ram_read_buf >> 16) & 0xff;
-    dst_addr[3] = (ram_read_buf >> 24) & 0xff;
-
-    ram_read_buf = rawudp_txbuf[1];
-    dst_port[1] = ram_read_buf & 0xff;
-    dst_port[0] = (ram_read_buf >> 8) & 0xff;
-    src_port[1] = (ram_read_buf >> 16) & 0xff;
-    src_port[0] = (ram_read_buf >> 24) & 0xff;
-
-    ram_read_buf = rawudp_txbuf[2];
-    udp_payload_len = ram_read_buf & 0xffff;
-    // padding 2byte
-
-    ip_set_header(conf->ip_addr, dst_addr, IP_HDR_TTL_UNICAST,
-                  udp_payload_len + UDP_HDR_SIZE, tx_buf);
-
-    udp_set_header(src_port, dst_port, udp_payload_len, tx_buf + IP_HDR_SIZE);
-
-    rawudp_copy_payload(rawudp_txbuf, udp_payload_len,
-                        tx_buf + IP_HDR_SIZE + UDP_HDR_SIZE);
-
-    return IP_HDR_SIZE + UDP_HDR_SIZE + udp_payload_len;
-}
-
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=axi_stream */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
-    uint32_t rawudp_txbuf[RAWUDP_TXBUF_LEN / 4] /* Cyber mem_reg=1 */,
-    VOLATILE uint8_t
-        *rawudp_txbuf_rel /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE uint8_t
-        *rawudp_txbuf_grant /* Cyber port_mode=shared, volatile=YES */,
-    const sender_config_t *conf /* Cyber port_mode=in, stable_input */,
+    const sender_config_t          *conf /* Cyber port_mode=in, stable_input */,
 
 #ifdef PUB_DATA_FF
     VOLATILE
@@ -358,11 +285,7 @@ void ros2_sender(
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = ap_fifo port = out
-#pragma HLS interface mode = ap_memory port = rawudp_txbuf storage_type        \
-    = rom_1p                                               latency = 1
-#pragma HLS interface mode = ap_vld port = rawudp_txbuf_rel
-#pragma HLS interface mode = ap_ack port = rawudp_txbuf_grant
-#pragma HLS disaggregate            variable = conf
+#pragma HLS disaggregate             variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
 #pragma HLS array_reshape variable = conf->node_name type = complete dim = 0
@@ -541,10 +464,6 @@ void ros2_sender(
                                         &msg_metadata, tx_buf);
             break;
         }
-    } else if ((msg_metadata.message_type == MSG_TYPE_RAWUDP)
-               && (*rawudp_txbuf_grant != 0)) {
-        tx_buf_len = rawudp_out(rawudp_txbuf, conf, tx_buf);
-        *rawudp_txbuf_rel = 0 /* write dummy value to assert ap_vld */;
     }
 
     if ((tx_buf_len == 0) || (tx_buf_len > TX_BUF_LEN)) {
