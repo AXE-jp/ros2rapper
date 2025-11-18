@@ -405,12 +405,6 @@ module ros2_module #(
         .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
         .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
-        .udp_txbuf_rel(1'b0),
-        .udp_txbuf_grant(),
-        .udp_txbuf_addr(),
-        .udp_txbuf_ce(),
-        .udp_txbuf_rdata(32'b0),
-
         .ip_payloadsmem_addr(payloadsmem_addr),
         .ip_payloadsmem_ce(payloadsmem_cs),
         .ip_payloadsmem_we(payloadsmem_we),
