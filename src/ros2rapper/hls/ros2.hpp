@@ -28,7 +28,6 @@ static_assert(MAX_APP_DATA_LEN <= 2047,
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;
     uint8_t  subnet_mask[4] /* Cyber array=EXPAND */;
-    uint8_t  rx_udp_port[2] /* Cyber array=EXPAND */;
     uint16_t port_num_seed;
     uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
