@@ -17,7 +17,6 @@ add_files hls/sedp.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
 add_files hls/udp.cpp
-add_files hls/util.cpp
 add_files -tb -cflags "-Ihls" test/test.cpp
 add_files -tb -cflags "-Ihls" test/test_message_metadata.cpp
 add_files -tb -cflags "-Ihls" test/test_multi_topic_subscription.cpp

@@ -5,6 +5,7 @@
 #define APP_HPP
 
 #include "endpoint.hpp"
+#include "hls.hpp"
 #include "ros2.hpp"
 #include "rtps.hpp"
 #include "timestamp.hpp"
@@ -30,7 +31,7 @@ void app_writer(const uint8_t writer_guid_prefix[12],
                 VOLATILE
 #endif // PUB_DATA_FF
                 const uint32_t app_data[MAX_APP_DATA_LEN / 4],
-                uint32_t app_data_len, uint8_t buf[], timestamp now);
+                uint32_t app_data_len, hls_stream<uint8_t> &out, timestamp now);
 
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],

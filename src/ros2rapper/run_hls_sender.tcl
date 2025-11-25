@@ -11,7 +11,6 @@ add_files hls/sedp.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
 add_files hls/udp.cpp
-add_files hls/util.cpp
 
 set_top ros2_sender
 

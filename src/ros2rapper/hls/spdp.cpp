@@ -7,7 +7,6 @@
 #include "ip.hpp"
 #include "ros2_receiver.hpp"
 #include "spdp.hpp"
-#include "util.hpp"
 
 /* Cyber func=inline */
 void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]) {
@@ -292,7 +291,7 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
-                 duration lease_duration, uint8_t buf[],
+                 duration lease_duration, hls_stream<uint8_t> &out,
                  const uint8_t entity_name[MAX_NODE_NAME_LEN],
                  uint8_t entity_name_len, timestamp now) {
 #pragma HLS inline
@@ -336,282 +335,235 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     int32_t  seqnum_h = seqnum >> 32;
     uint32_t seqnum_l = seqnum & 0xffffffff;
 
-#if MAX_NODE_NAME_LEN == 32
-    buf[0] = 'R';
-    buf[1] = 'T';
-    buf[2] = 'P';
-    buf[3] = 'S';
-    buf[4] = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[5] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[6] = RTPS_HDR_VENDOR_ID >> 8;
-    buf[7] = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[8] = writer_guid_prefix[0];
-    buf[9] = writer_guid_prefix[1];
-    buf[10] = writer_guid_prefix[2];
-    buf[11] = writer_guid_prefix[3];
-    buf[12] = writer_guid_prefix[4];
-    buf[13] = writer_guid_prefix[5];
-    buf[14] = writer_guid_prefix[6];
-    buf[15] = writer_guid_prefix[7];
-    buf[16] = writer_guid_prefix[8];
-    buf[17] = writer_guid_prefix[9];
-    buf[18] = writer_guid_prefix[10];
-    buf[19] = writer_guid_prefix[11];
-    buf[20] = SBM_ID_INFO_TS;
-    buf[21] = sbm_flags;
-    buf[22] = S_BYTE0(TIMESTAMP_SIZE);
-    buf[23] = S_BYTE1(TIMESTAMP_SIZE);
-    buf[24] = L_BYTE0(now.seconds);
-    buf[25] = L_BYTE1(now.seconds);
-    buf[26] = L_BYTE2(now.seconds);
-    buf[27] = L_BYTE3(now.seconds);
-    buf[28] = L_BYTE0(now.fraction);
-    buf[29] = L_BYTE1(now.fraction);
-    buf[30] = L_BYTE2(now.fraction);
-    buf[31] = L_BYTE3(now.fraction);
-    buf[32] = SBM_ID_DATA;
-    buf[33] = sbm_flags | SBM_FLAGS_DATA;
-    buf[34] = S_BYTE0(octets_to_next_header);
-    buf[35] = S_BYTE1(octets_to_next_header);
-    buf[36] = ext_flags >> 8;
-    buf[37] = ext_flags & 0xff;
-    buf[38] = S_BYTE0(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
-    buf[39] = S_BYTE1(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS);
-    buf[40] = reader_entity_id[0];
-    buf[41] = reader_entity_id[1];
-    buf[42] = reader_entity_id[2];
-    buf[43] = reader_entity_id[3];
-    buf[44] = writer_entity_id[0];
-    buf[45] = writer_entity_id[1];
-    buf[46] = writer_entity_id[2];
-    buf[47] = writer_entity_id[3];
-    buf[48] = L_BYTE0(seqnum_h);
-    buf[49] = L_BYTE1(seqnum_h);
-    buf[50] = L_BYTE2(seqnum_h);
-    buf[51] = L_BYTE3(seqnum_h);
-    buf[52] = L_BYTE0(seqnum_l);
-    buf[53] = L_BYTE1(seqnum_l);
-    buf[54] = L_BYTE2(seqnum_l);
-    buf[55] = L_BYTE3(seqnum_l);
-    buf[56] = rep_id >> 8;
-    buf[57] = rep_id & 0xff;
-    buf[58] = rep_opt >> 8;
-    buf[59] = rep_opt & 0xff;
-    buf[60] = S_BYTE0(PID_PROTOCOL_VERSION);
-    buf[61] = S_BYTE1(PID_PROTOCOL_VERSION);
-    buf[62] = S_BYTE0(PID_PROTOCOL_VERSION_SIZE);
-    buf[63] = S_BYTE1(PID_PROTOCOL_VERSION_SIZE);
-    buf[64] = RTPS_HDR_PROTOCOL_VERSION >> 8;
-    buf[65] = RTPS_HDR_PROTOCOL_VERSION & 0xff;
-    buf[66] = 0; // padding
-    buf[67] = 0; // padding
-    buf[68] = S_BYTE0(PID_VENDOR_ID);
-    buf[69] = S_BYTE1(PID_VENDOR_ID);
-    buf[70] = S_BYTE0(PID_VENDOR_ID_SIZE);
-    buf[71] = S_BYTE1(PID_VENDOR_ID_SIZE);
-    buf[72] = RTPS_HDR_VENDOR_ID >> 8;
-    buf[73] = RTPS_HDR_VENDOR_ID & 0xff;
-    buf[74] = 0; // padding
-    buf[75] = 0; // padding
-    buf[76] = S_BYTE0(PID_PARTICIPANT_GUID);
-    buf[77] = S_BYTE1(PID_PARTICIPANT_GUID);
-    buf[78] = S_BYTE0(PID_PARTICIPANT_GUID_SIZE);
-    buf[79] = S_BYTE1(PID_PARTICIPANT_GUID_SIZE);
-    buf[80] = writer_guid_prefix[0];
-    buf[81] = writer_guid_prefix[1];
-    buf[82] = writer_guid_prefix[2];
-    buf[83] = writer_guid_prefix[3];
-    buf[84] = writer_guid_prefix[4];
-    buf[85] = writer_guid_prefix[5];
-    buf[86] = writer_guid_prefix[6];
-    buf[87] = writer_guid_prefix[7];
-    buf[88] = writer_guid_prefix[8];
-    buf[89] = writer_guid_prefix[9];
-    buf[90] = writer_guid_prefix[10];
-    buf[91] = writer_guid_prefix[11];
-    buf[92] = participant_entity_id[0];
-    buf[93] = participant_entity_id[1];
-    buf[94] = participant_entity_id[2];
-    buf[95] = participant_entity_id[3];
-    buf[96] = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR);
-    buf[97] = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR);
-    buf[98] = S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
-    buf[99] = S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE);
-    buf[100] = L_BYTE0(LOCATOR_KIND_UDPv4);
-    buf[101] = L_BYTE1(LOCATOR_KIND_UDPv4);
-    buf[102] = L_BYTE2(LOCATOR_KIND_UDPv4);
-    buf[103] = L_BYTE3(LOCATOR_KIND_UDPv4);
+    out.write('R');
+    out.write('T');
+    out.write('P');
+    out.write('S');
+    out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
+    out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
+    out.write(RTPS_HDR_VENDOR_ID >> 8);
+    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(writer_guid_prefix[0]);
+    out.write(writer_guid_prefix[1]);
+    out.write(writer_guid_prefix[2]);
+    out.write(writer_guid_prefix[3]);
+    out.write(writer_guid_prefix[4]);
+    out.write(writer_guid_prefix[5]);
+    out.write(writer_guid_prefix[6]);
+    out.write(writer_guid_prefix[7]);
+    out.write(writer_guid_prefix[8]);
+    out.write(writer_guid_prefix[9]);
+    out.write(writer_guid_prefix[10]);
+    out.write(writer_guid_prefix[11]);
+    out.write(SBM_ID_INFO_TS);
+    out.write(sbm_flags);
+    out.write(S_BYTE0(TIMESTAMP_SIZE));
+    out.write(S_BYTE1(TIMESTAMP_SIZE));
+    out.write(L_BYTE0(now.seconds));
+    out.write(L_BYTE1(now.seconds));
+    out.write(L_BYTE2(now.seconds));
+    out.write(L_BYTE3(now.seconds));
+    out.write(L_BYTE0(now.fraction));
+    out.write(L_BYTE1(now.fraction));
+    out.write(L_BYTE2(now.fraction));
+    out.write(L_BYTE3(now.fraction));
+    out.write(SBM_ID_DATA);
+    out.write(sbm_flags | SBM_FLAGS_DATA);
+    out.write(S_BYTE0(octets_to_next_header));
+    out.write(S_BYTE1(octets_to_next_header));
+    out.write(ext_flags >> 8);
+    out.write(ext_flags & 0xff);
+    out.write(S_BYTE0(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS));
+    out.write(S_BYTE1(SBM_DATA_HDR_OCTETS_TO_INLINE_QOS));
+    out.write(reader_entity_id[0]);
+    out.write(reader_entity_id[1]);
+    out.write(reader_entity_id[2]);
+    out.write(reader_entity_id[3]);
+    out.write(writer_entity_id[0]);
+    out.write(writer_entity_id[1]);
+    out.write(writer_entity_id[2]);
+    out.write(writer_entity_id[3]);
+    out.write(L_BYTE0(seqnum_h));
+    out.write(L_BYTE1(seqnum_h));
+    out.write(L_BYTE2(seqnum_h));
+    out.write(L_BYTE3(seqnum_h));
+    out.write(L_BYTE0(seqnum_l));
+    out.write(L_BYTE1(seqnum_l));
+    out.write(L_BYTE2(seqnum_l));
+    out.write(L_BYTE3(seqnum_l));
+    out.write(rep_id >> 8);
+    out.write(rep_id & 0xff);
+    out.write(rep_opt >> 8);
+    out.write(rep_opt & 0xff);
+    out.write(S_BYTE0(PID_PROTOCOL_VERSION));
+    out.write(S_BYTE1(PID_PROTOCOL_VERSION));
+    out.write(S_BYTE0(PID_PROTOCOL_VERSION_SIZE));
+    out.write(S_BYTE1(PID_PROTOCOL_VERSION_SIZE));
+    out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
+    out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
+    out.write(0); // padding
+    out.write(0); // padding
+    out.write(S_BYTE0(PID_VENDOR_ID));
+    out.write(S_BYTE1(PID_VENDOR_ID));
+    out.write(S_BYTE0(PID_VENDOR_ID_SIZE));
+    out.write(S_BYTE1(PID_VENDOR_ID_SIZE));
+    out.write(RTPS_HDR_VENDOR_ID >> 8);
+    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(0); // padding
+    out.write(0); // padding
+    out.write(S_BYTE0(PID_PARTICIPANT_GUID));
+    out.write(S_BYTE1(PID_PARTICIPANT_GUID));
+    out.write(S_BYTE0(PID_PARTICIPANT_GUID_SIZE));
+    out.write(S_BYTE1(PID_PARTICIPANT_GUID_SIZE));
+    out.write(writer_guid_prefix[0]);
+    out.write(writer_guid_prefix[1]);
+    out.write(writer_guid_prefix[2]);
+    out.write(writer_guid_prefix[3]);
+    out.write(writer_guid_prefix[4]);
+    out.write(writer_guid_prefix[5]);
+    out.write(writer_guid_prefix[6]);
+    out.write(writer_guid_prefix[7]);
+    out.write(writer_guid_prefix[8]);
+    out.write(writer_guid_prefix[9]);
+    out.write(writer_guid_prefix[10]);
+    out.write(writer_guid_prefix[11]);
+    out.write(participant_entity_id[0]);
+    out.write(participant_entity_id[1]);
+    out.write(participant_entity_id[2]);
+    out.write(participant_entity_id[3]);
+    out.write(S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR));
+    out.write(S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR));
+    out.write(S_BYTE0(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE));
+    out.write(S_BYTE1(PID_METATRAFFIC_UNICAST_LOCATOR_SIZE));
+    out.write(L_BYTE0(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE1(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE2(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE3(LOCATOR_KIND_UDPv4));
 #ifdef SBM_ENDIAN_LITTLE
-    buf[104] = metatraffic_port[1];
-    buf[105] = metatraffic_port[0];
-    buf[106] = 0;
-    buf[107] = 0;
+    out.write(metatraffic_port[1]);
+    out.write(metatraffic_port[0]);
+    out.write(0);
+    out.write(0);
 #endif // SBM_ENDIAN_LITTLE
 #ifdef SBM_ENDIAN_BIG
-    buf[104] = 0;
-    buf[105] = 0;
-    buf[106] = metatraffic_port[0];
-    buf[107] = metatraffic_port[1];
+    out.write(0);
+    out.write(0);
+    out.write(metatraffic_port[0]);
+    out.write(metatraffic_port[1]);
 #endif // SBM_ENDIAN_BIG
-    buf[108] = 0;
-    buf[109] = 0;
-    buf[110] = 0;
-    buf[111] = 0;
-    buf[112] = 0;
-    buf[113] = 0;
-    buf[114] = 0;
-    buf[115] = 0;
-    buf[116] = 0;
-    buf[117] = 0;
-    buf[118] = 0;
-    buf[119] = 0;
-    buf[120] = metatraffic_addr[0];
-    buf[121] = metatraffic_addr[1];
-    buf[122] = metatraffic_addr[2];
-    buf[123] = metatraffic_addr[3];
-    buf[124] = S_BYTE0(PID_DEFAULT_UNICAST_LOCATOR);
-    buf[125] = S_BYTE1(PID_DEFAULT_UNICAST_LOCATOR);
-    buf[126] = S_BYTE0(PID_DEFAULT_UNICAST_LOCATOR_SIZE);
-    buf[127] = S_BYTE1(PID_DEFAULT_UNICAST_LOCATOR_SIZE);
-    buf[128] = L_BYTE0(LOCATOR_KIND_UDPv4);
-    buf[129] = L_BYTE1(LOCATOR_KIND_UDPv4);
-    buf[130] = L_BYTE2(LOCATOR_KIND_UDPv4);
-    buf[131] = L_BYTE3(LOCATOR_KIND_UDPv4);
+    /* Cyber unroll_times = all */
+    for (auto j = 0; j < 12; j++) {
+#pragma HLS unroll
+        out.write(0);
+    }
+    out.write(metatraffic_addr[0]);
+    out.write(metatraffic_addr[1]);
+    out.write(metatraffic_addr[2]);
+    out.write(metatraffic_addr[3]);
+    out.write(S_BYTE0(PID_DEFAULT_UNICAST_LOCATOR));
+    out.write(S_BYTE1(PID_DEFAULT_UNICAST_LOCATOR));
+    out.write(S_BYTE0(PID_DEFAULT_UNICAST_LOCATOR_SIZE));
+    out.write(S_BYTE1(PID_DEFAULT_UNICAST_LOCATOR_SIZE));
+    out.write(L_BYTE0(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE1(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE2(LOCATOR_KIND_UDPv4));
+    out.write(L_BYTE3(LOCATOR_KIND_UDPv4));
 #ifdef SBM_ENDIAN_LITTLE
-    buf[132] = default_port[1];
-    buf[133] = default_port[0];
-    buf[134] = 0;
-    buf[135] = 0;
+    out.write(default_port[1]);
+    out.write(default_port[0]);
+    out.write(0);
+    out.write(0);
 #endif // SBM_ENDIAN_LITTLE
 #ifdef SBM_ENDIAN_BIG
-    buf[132] = 0;
-    buf[133] = 0;
-    buf[134] = default_port[0];
-    buf[135] = default_port[1];
+    out.write(0);
+    out.write(0);
+    out.write(default_port[0]);
+    out.write(default_port[1]);
 #endif // SBM_ENDIAN_BIG
-    buf[136] = 0;
-    buf[137] = 0;
-    buf[138] = 0;
-    buf[139] = 0;
-    buf[140] = 0;
-    buf[141] = 0;
-    buf[142] = 0;
-    buf[143] = 0;
-    buf[144] = 0;
-    buf[145] = 0;
-    buf[146] = 0;
-    buf[147] = 0;
-    buf[148] = default_addr[0];
-    buf[149] = default_addr[1];
-    buf[150] = default_addr[2];
-    buf[151] = default_addr[3];
-    buf[152] = S_BYTE0(PID_PARTICIPANT_LEASE_DURATION);
-    buf[153] = S_BYTE1(PID_PARTICIPANT_LEASE_DURATION);
-    buf[154] = S_BYTE0(PID_PARTICIPANT_LEASE_DURATION_SIZE);
-    buf[155] = S_BYTE1(PID_PARTICIPANT_LEASE_DURATION_SIZE);
-    buf[156] = L_BYTE0(lease_duration.seconds);
-    buf[157] = L_BYTE1(lease_duration.seconds);
-    buf[158] = L_BYTE2(lease_duration.seconds);
-    buf[159] = L_BYTE3(lease_duration.seconds);
-    buf[160] = L_BYTE0(lease_duration.fraction);
-    buf[161] = L_BYTE1(lease_duration.fraction);
-    buf[162] = L_BYTE2(lease_duration.fraction);
-    buf[163] = L_BYTE3(lease_duration.fraction);
-    buf[164] = S_BYTE0(PID_BUILTIN_ENDPOINT_SET);
-    buf[165] = S_BYTE1(PID_BUILTIN_ENDPOINT_SET);
-    buf[166] = S_BYTE0(PID_BUILTIN_ENDPOINT_SET_SIZE);
-    buf[167] = S_BYTE1(PID_BUILTIN_ENDPOINT_SET_SIZE);
-    buf[168] = L_BYTE0(endpoint_set);
-    buf[169] = L_BYTE1(endpoint_set);
-    buf[170] = L_BYTE2(endpoint_set);
-    buf[171] = L_BYTE3(endpoint_set);
-    buf[172] = S_BYTE0(PID_ENTITY_NAME);
-    buf[173] = S_BYTE1(PID_ENTITY_NAME);
-    buf[174] = S_BYTE0(pid_entity_name_size);
-    buf[175] = S_BYTE1(pid_entity_name_size);
-    buf[176] = L_BYTE0(entity_name_len);
-    buf[177] = L_BYTE1(entity_name_len);
-    buf[178] = L_BYTE2(entity_name_len);
-    buf[179] = L_BYTE3(entity_name_len);
-    buf[180] = entity_name[0];
-    buf[181] = entity_name[1];
-    buf[182] = entity_name[2];
-    buf[183] = entity_name[3];
-    buf[184] = entity_name[4];
-    buf[185] = entity_name[5];
-    buf[186] = entity_name[6];
-    buf[187] = entity_name[7];
-    buf[188] = entity_name[8];
-    buf[189] = entity_name[9];
-    buf[190] = entity_name[10];
-    buf[191] = entity_name[11];
-    buf[192] = entity_name[12];
-    buf[193] = entity_name[13];
-    buf[194] = entity_name[14];
-    buf[195] = entity_name[15];
-    buf[196] = entity_name[16];
-    buf[197] = entity_name[17];
-    buf[198] = entity_name[18];
-    buf[199] = entity_name[19];
-    buf[200] = entity_name[20];
-    buf[201] = entity_name[21];
-    buf[202] = entity_name[22];
-    buf[203] = entity_name[23];
-    buf[204] = entity_name[24];
-    buf[205] = entity_name[25];
-    buf[206] = entity_name[26];
-    buf[207] = entity_name[27];
-    buf[208] = entity_name[28];
-    buf[209] = entity_name[29];
-    buf[210] = entity_name[30];
-    buf[211] = entity_name[31];
+    /* Cyber unroll_times = all */
+    for (auto j = 0; j < 12; j++) {
+#pragma HLS unroll
+        out.write(0);
+    }
+    out.write(default_addr[0]);
+    out.write(default_addr[1]);
+    out.write(default_addr[2]);
+    out.write(default_addr[3]);
+    out.write(S_BYTE0(PID_PARTICIPANT_LEASE_DURATION));
+    out.write(S_BYTE1(PID_PARTICIPANT_LEASE_DURATION));
+    out.write(S_BYTE0(PID_PARTICIPANT_LEASE_DURATION_SIZE));
+    out.write(S_BYTE1(PID_PARTICIPANT_LEASE_DURATION_SIZE));
+    out.write(L_BYTE0(lease_duration.seconds));
+    out.write(L_BYTE1(lease_duration.seconds));
+    out.write(L_BYTE2(lease_duration.seconds));
+    out.write(L_BYTE3(lease_duration.seconds));
+    out.write(L_BYTE0(lease_duration.fraction));
+    out.write(L_BYTE1(lease_duration.fraction));
+    out.write(L_BYTE2(lease_duration.fraction));
+    out.write(L_BYTE3(lease_duration.fraction));
+    out.write(S_BYTE0(PID_BUILTIN_ENDPOINT_SET));
+    out.write(S_BYTE1(PID_BUILTIN_ENDPOINT_SET));
+    out.write(S_BYTE0(PID_BUILTIN_ENDPOINT_SET_SIZE));
+    out.write(S_BYTE1(PID_BUILTIN_ENDPOINT_SET_SIZE));
+    out.write(L_BYTE0(endpoint_set));
+    out.write(L_BYTE1(endpoint_set));
+    out.write(L_BYTE2(endpoint_set));
+    out.write(L_BYTE3(endpoint_set));
+    out.write(S_BYTE0(PID_ENTITY_NAME));
+    out.write(S_BYTE1(PID_ENTITY_NAME));
+    out.write(S_BYTE0(pid_entity_name_size));
+    out.write(S_BYTE1(pid_entity_name_size));
+    out.write(L_BYTE0(entity_name_len));
+    out.write(L_BYTE1(entity_name_len));
+    out.write(L_BYTE2(entity_name_len));
+    out.write(L_BYTE3(entity_name_len));
+    /* Cyber unroll_times = all */
+    for (auto j = 0; j < MAX_NODE_NAME_LEN; j++) {
+#pragma HLS unroll
+        out.write(entity_name[j]);
+    }
     // TODO: Store node and namespace name in user data (cf.
     // https://github.com/ros2/ros2/issues/438)
     /*
-    buf[] = S_BYTE0(PID_USER_DATA);
-    buf[] = S_BYTE1(PID_USER_DATA);
-    buf[] = S_BYTE0(pid_user_data_size);
-    buf[] = S_BYTE1(pid_user_data_size);
-    buf[] = L_BYTE0(user_data_len);
-    buf[] = L_BYTE1(user_data_len);
-    buf[] = L_BYTE2(user_data_len);
-    buf[] = L_BYTE3(user_data_len);
-    buf[] = 'n';
-    buf[] = 'a';
-    buf[] = 'm';
-    buf[] = 'e';
-    buf[] = '=';
-    buf[] = 't';
-    buf[] = 'a';
-    buf[] = 'l';
-    buf[] = 'k';
-    buf[] = 'e';
-    buf[] = 'r';
-    buf[] = ';';
-    buf[] = 'n';
-    buf[] = 'a';
-    buf[] = 'm';
-    buf[] = 'e';
-    buf[] = 's';
-    buf[] = 'p';
-    buf[] = 'a';
-    buf[] = 'c';
-    buf[] = 'e';
-    buf[] = '=';
-    buf[] = '/';
-    buf[] = ';';
-    buf[] = '\0';
-    buf[] = 0; // padding
-    buf[] = 0; // padding
-    buf[] = 0; // padding
+    out.write(S_BYTE0(PID_USER_DATA));
+    out.write(S_BYTE1(PID_USER_DATA));
+    out.write(S_BYTE0(pid_user_data_size));
+    out.write(S_BYTE1(pid_user_data_size));
+    out.write(L_BYTE0(user_data_len));
+    out.write(L_BYTE1(user_data_len));
+    out.write(L_BYTE2(user_data_len));
+    out.write(L_BYTE3(user_data_len));
+    out.write('n');
+    out.write('a');
+    out.write('m');
+    out.write('e');
+    out.write('=');
+    out.write('t');
+    out.write('a');
+    out.write('l');
+    out.write('k');
+    out.write('e');
+    out.write('r');
+    out.write(';');
+    out.write('n');
+    out.write('a');
+    out.write('m');
+    out.write('e');
+    out.write('s');
+    out.write('p');
+    out.write('a');
+    out.write('c');
+    out.write('e');
+    out.write('=');
+    out.write('/');
+    out.write(';');
+    out.write('\0');
+    out.write(0); // padding
+    out.write(0); // padding
+    out.write(0); // padding
     */
-    buf[212] = S_BYTE0(PID_SENTINEL);
-    buf[213] = S_BYTE1(PID_SENTINEL);
-    buf[214] = 0; // PID_SENTINEL_SIZE
-    buf[215] = 0; // PID_SENTINEL_SIZE
-#else
-#error "not implemented!"
-#endif
-
-    clear_txbuf(buf, SPDP_WRITER_TOT_LEN, MAX_TX_UDP_PAYLOAD_LEN);
+    out.write(S_BYTE0(PID_SENTINEL));
+    out.write(S_BYTE1(PID_SENTINEL));
+    out.write(0); // PID_SENTINEL_SIZE
+    out.write(0); // PID_SENTINEL_SIZE
 }

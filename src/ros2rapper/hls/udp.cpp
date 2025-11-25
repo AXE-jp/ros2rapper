@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "checksum.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 #include "udp.hpp"
 
@@ -232,18 +233,18 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
 
 /* Cyber func=inline */
 void udp_set_header(const uint8_t src_port[2], const uint8_t dst_port[2],
-                    const uint16_t udp_data_len, uint8_t udp_hdr[]) {
+                    const uint16_t udp_data_len, hls_stream<uint8_t> &out) {
 #pragma HLS inline
     uint16_t tot_len = UDP_HDR_SIZE + udp_data_len;
 
-    udp_hdr[0] = src_port[0];
-    udp_hdr[1] = src_port[1];
-    udp_hdr[2] = dst_port[0];
-    udp_hdr[3] = dst_port[1];
-    udp_hdr[4] = tot_len >> 8;
-    udp_hdr[5] = tot_len & 0xff;
-    udp_hdr[6] = 0;
-    udp_hdr[7] = 0;
+    out.write(src_port[0]);
+    out.write(src_port[1]);
+    out.write(dst_port[0]);
+    out.write(dst_port[1]);
+    out.write(tot_len >> 8);
+    out.write(tot_len & 0xff);
+    out.write(0);
+    out.write(0);
 }
 
 /* Cyber func=inline */

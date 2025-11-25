@@ -12,15 +12,14 @@
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
-#include "util.hpp"
 #include <cstdint>
 
 #define USE_FIFOIF_ETHERNET
 
 /* Cyber func=inline */
-static uint16_t spdp_writer_out(const sender_config_t    *conf,
-                                const message_metadata_t *msg_metadata,
-                                uint8_t                   tx_buf[]) {
+static void spdp_writer_out(const sender_config_t    *conf,
+                            const message_metadata_t *msg_metadata,
+                            hls_stream<uint8_t>      &out) {
     uint8_t metatraffic_port[2] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = metatraffic_port type = complete dim = 1
     uint8_t default_port[2] /* Cyber array=EXPAND */;
@@ -31,26 +30,25 @@ static uint16_t spdp_writer_out(const sender_config_t    *conf,
                               msg_metadata);
 
     ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_MULTICAST,
-                  SPDP_WRITER_UDP_PKT_LEN, tx_buf);
+                  SPDP_WRITER_UDP_PKT_LEN, out);
 
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
-                   SPDP_WRITER_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+                   SPDP_WRITER_RTPS_PKT_LEN, out);
 
     spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
-                conf->ip_addr, default_port, lease_duration,
-                tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE), conf->node_name,
-                conf->node_name_len, msg_metadata->now);
-
-    return SPDP_WRITER_IP_PKT_LEN;
+                conf->ip_addr, default_port, lease_duration, out,
+                conf->node_name, conf->node_name_len, msg_metadata->now);
 }
 
 /* Cyber func=inline */
-static uint16_t
-sedp_writer_out(const uint8_t writer_entity_id[4],
-                const uint8_t reader_entity_id[4], const uint8_t topic_name[],
-                uint8_t topic_name_len, const uint8_t topic_type_name[],
-                uint8_t topic_type_name_len, const sender_config_t *conf,
-                const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
+static void sedp_writer_out(const uint8_t writer_entity_id[4],
+                            const uint8_t reader_entity_id[4],
+                            const uint8_t topic_name[], uint8_t topic_name_len,
+                            const uint8_t             topic_type_name[],
+                            uint8_t                   topic_type_name_len,
+                            const sender_config_t    *conf,
+                            const message_metadata_t *msg_metadata,
+                            hls_stream<uint8_t>      &out) {
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -64,26 +62,23 @@ sedp_writer_out(const uint8_t writer_entity_id[4],
                               app_entity_id, msg_metadata);
 
     ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
-                  SEDP_WRITER_UDP_PKT_LEN, tx_buf);
+                  SEDP_WRITER_UDP_PKT_LEN, out);
 
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
-                   SEDP_WRITER_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+                   SEDP_WRITER_RTPS_PKT_LEN, out);
 
     sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
                 reader_entity_id, seqnum, conf->ip_addr, usertraffic_port,
-                app_entity_id, tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE),
-                topic_name, topic_name_len, topic_type_name,
+                app_entity_id, out, topic_name, topic_name_len, topic_type_name,
                 topic_type_name_len, msg_metadata->now);
-
-    return SEDP_WRITER_IP_PKT_LEN;
 }
 
 /* Cyber func=inline */
-static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
-                                   const uint8_t          reader_entity_id[4],
-                                   const sender_config_t *conf,
-                                   const message_metadata_t *msg_metadata,
-                                   uint8_t                   tx_buf[]) {
+static void sedp_heartbeat_out(const uint8_t             writer_entity_id[4],
+                               const uint8_t             reader_entity_id[4],
+                               const sender_config_t    *conf,
+                               const message_metadata_t *msg_metadata,
+                               hls_stream<uint8_t>      &out) {
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -95,24 +90,21 @@ static uint16_t sedp_heartbeat_out(const uint8_t          writer_entity_id[4],
                                         &last_seqnum, &cnt, msg_metadata);
 
     ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
-                  SEDP_HEARTBEAT_UDP_PKT_LEN, tx_buf);
+                  SEDP_HEARTBEAT_UDP_PKT_LEN, out);
 
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
-                   SEDP_HEARTBEAT_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+                   SEDP_HEARTBEAT_RTPS_PKT_LEN, out);
 
     sedp_heartbeat(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                   reader_entity_id, first_seqnum, last_seqnum, cnt,
-                   tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
-
-    return SEDP_HEARTBEAT_IP_PKT_LEN;
+                   reader_entity_id, first_seqnum, last_seqnum, cnt, out);
 }
 
 /* Cyber func=inline */
-static uint16_t sedp_acknack_out(const uint8_t             writer_entity_id[4],
-                                 const uint8_t             reader_entity_id[4],
-                                 const sender_config_t    *conf,
-                                 const message_metadata_t *msg_metadata,
-                                 uint8_t                   tx_buf[]) {
+static void sedp_acknack_out(const uint8_t             writer_entity_id[4],
+                             const uint8_t             reader_entity_id[4],
+                             const sender_config_t    *conf,
+                             const message_metadata_t *msg_metadata,
+                             hls_stream<uint8_t>      &out) {
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -124,26 +116,23 @@ static uint16_t sedp_acknack_out(const uint8_t             writer_entity_id[4],
                                       &snstate_empty, &cnt, msg_metadata);
 
     ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
-                  SEDP_ACKNACK_UDP_PKT_LEN, tx_buf);
+                  SEDP_ACKNACK_UDP_PKT_LEN, out);
 
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
-                   SEDP_ACKNACK_RTPS_PKT_LEN, tx_buf + IP_HDR_SIZE);
+                   SEDP_ACKNACK_RTPS_PKT_LEN, out);
 
     sedp_acknack(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                 reader_entity_id, snstate_base, snstate_empty, cnt,
-                 tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE));
-
-    return SEDP_ACKNACK_IP_PKT_LEN;
+                 reader_entity_id, snstate_base, snstate_empty, cnt, out);
 }
 
 /* Cyber func=inline */
-static uint16_t app_writer_out(
+static void app_writer_out(
 #ifdef PUB_DATA_FF
     VOLATILE
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data[MAX_APP_DATA_LEN / 4],
     app_data_len_t pub_app_data_len, const sender_config_t *conf,
-    const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
+    const message_metadata_t *msg_metadata, hls_stream<uint8_t> &out) {
     uint8_t reader_guid_prefix[12] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = reader_guid_prefix type = complete dim  \
     = 1
@@ -157,21 +146,18 @@ static uint16_t app_writer_out(
                              writer_entity_id, &seqnum, msg_metadata);
 
     ip_set_header(conf->ip_addr, msg_metadata->dst_addr, IP_HDR_TTL_UNICAST,
-                  APP_WRITER_UDP_PKT_LEN(pub_app_data_len), tx_buf);
+                  APP_WRITER_UDP_PKT_LEN(pub_app_data_len), out);
 
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
-                   APP_WRITER_RTPS_PKT_LEN(pub_app_data_len),
-                   tx_buf + IP_HDR_SIZE);
+                   APP_WRITER_RTPS_PKT_LEN(pub_app_data_len), out);
 
     app_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-               reader_entity_id, seqnum, pub_app_data, pub_app_data_len,
-               tx_buf + (IP_HDR_SIZE + UDP_HDR_SIZE), msg_metadata->now);
-
-    return APP_WRITER_IP_PKT_LEN(pub_app_data_len);
+               reader_entity_id, seqnum, pub_app_data, pub_app_data_len, out,
+               msg_metadata->now);
 }
 
 /* Cyber func=inline */
-static uint16_t APP_WRITER_OUT(
+static void APP_WRITER_OUT(
 #ifdef PUB_DATA_FF
     VOLATILE
 #endif // PUB_DATA_FF
@@ -179,7 +165,7 @@ static uint16_t APP_WRITER_OUT(
     VOLATILE const app_data_len_t *pub_app_data_len,
     VOLATILE uint8_t *pub_app_data_req, VOLATILE uint8_t *pub_app_data_rel,
     VOLATILE uint8_t *pub_app_data_grant, const sender_config_t *conf,
-    const message_metadata_t *msg_metadata, uint8_t tx_buf[]) {
+    const message_metadata_t *msg_metadata, hls_stream<uint8_t> &out) {
 #pragma HLS inline
     uint8_t grant;
     /* Cyber scheduling_block = non-transparent */
@@ -191,11 +177,9 @@ app_data_request_section: {
     grant = *pub_app_data_grant;
 }
 
-    if (grant == 0) {
-        return 0;
-    } else {
-        uint16_t tx_buf_len = app_writer_out(pub_app_data, *pub_app_data_len,
-                                             conf, msg_metadata, tx_buf);
+    if (grant != 0) {
+        app_writer_out(pub_app_data, *pub_app_data_len, conf, msg_metadata,
+                       out);
 
         /* Cyber scheduling_block = non-transparent */
     app_data_release_section: {
@@ -205,11 +189,11 @@ app_data_request_section: {
         CLOCK_BOUNDARY;
         CLOCK_BOUNDARY;
     }
-        return tx_buf_len;
     }
 }
 
-/* Cyber func=process, bdltran_option=-s, process_valid=NO */
+/* Cyber func=process, bdltran_option=-s, process_valid=NO,
+   async_reset_port=rst_n- */
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=axi_stream */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
@@ -389,105 +373,56 @@ void ros2_sender(
 #pragma HLS array_partition variable = msg_metadata.rtps_data type             \
     = complete                                                dim = 1
 
-    uint8_t tx_buf[TX_BUF_LEN]
-#ifdef PUB_DATA_FF
-    /* Cyber array=EXPAND, array_index=const */
-#endif // PUB_DATA_FF
-        ;
-#ifdef PUB_DATA_FF
-#pragma HLS array_partition variable = tx_buf complete dim = 0
-#endif // PUB_DATA_FF
-#ifdef PUB_DATA_RAM
-#pragma HLS bind_storage variable = tx_buf type = ram_t2p
-#endif // PUB_DATA_RAM
-
-    uint16_t tx_buf_len = 0;
-
     if (msg_metadata.message_type == MSG_TYPE_SPDP) {
-        tx_buf_len = spdp_writer_out(conf, &msg_metadata, tx_buf);
+        spdp_writer_out(conf, &msg_metadata, out);
     } else if ((msg_metadata.message_type == MSG_TYPE_SEDP_PUB)
                && (topic_id < PUB_TOPICS_MAX)) {
-        tx_buf_len = sedp_writer_out(pub_writer_entity_id, pub_reader_entity_id,
-                                     conf->pub_topic_name[topic_id],
-                                     conf->pub_topic_name_len[topic_id],
-                                     conf->pub_topic_type_name[topic_id],
-                                     conf->pub_topic_type_name_len[topic_id],
-                                     conf, &msg_metadata, tx_buf);
+        sedp_writer_out(
+            pub_writer_entity_id, pub_reader_entity_id,
+            conf->pub_topic_name[topic_id], conf->pub_topic_name_len[topic_id],
+            conf->pub_topic_type_name[topic_id],
+            conf->pub_topic_type_name_len[topic_id], conf, &msg_metadata, out);
     } else if ((msg_metadata.message_type == MSG_TYPE_SEDP_SUB)
                && (topic_id < SUB_TOPICS_MAX)) {
-        tx_buf_len = sedp_writer_out(sub_writer_entity_id, sub_reader_entity_id,
-                                     conf->sub_topic_name[topic_id],
-                                     conf->sub_topic_name_len[topic_id],
-                                     conf->sub_topic_type_name[topic_id],
-                                     conf->sub_topic_type_name_len[topic_id],
-                                     conf, &msg_metadata, tx_buf);
+        sedp_writer_out(
+            sub_writer_entity_id, sub_reader_entity_id,
+            conf->sub_topic_name[topic_id], conf->sub_topic_name_len[topic_id],
+            conf->sub_topic_type_name[topic_id],
+            conf->sub_topic_type_name_len[topic_id], conf, &msg_metadata, out);
     } else if (msg_metadata.message_type == MSG_TYPE_SEDP_HEARTBEAT_PUB) {
-        tx_buf_len
-            = sedp_heartbeat_out(pub_writer_entity_id, pub_reader_entity_id,
-                                 conf, &msg_metadata, tx_buf);
+        sedp_heartbeat_out(pub_writer_entity_id, pub_reader_entity_id, conf,
+                           &msg_metadata, out);
     } else if (msg_metadata.message_type == MSG_TYPE_SEDP_HEARTBEAT_SUB) {
-        tx_buf_len
-            = sedp_heartbeat_out(sub_writer_entity_id, sub_reader_entity_id,
-                                 conf, &msg_metadata, tx_buf);
+        sedp_heartbeat_out(sub_writer_entity_id, sub_reader_entity_id, conf,
+                           &msg_metadata, out);
     } else if (msg_metadata.message_type == MSG_TYPE_SEDP_ACKNACK_PUB) {
-        tx_buf_len
-            = sedp_acknack_out(pub_writer_entity_id, pub_reader_entity_id, conf,
-                               &msg_metadata, tx_buf);
+        sedp_acknack_out(pub_writer_entity_id, pub_reader_entity_id, conf,
+                         &msg_metadata, out);
     } else if (msg_metadata.message_type == MSG_TYPE_SEDP_ACKNACK_SUB) {
-        tx_buf_len
-            = sedp_acknack_out(sub_writer_entity_id, sub_reader_entity_id, conf,
-                               &msg_metadata, tx_buf);
+        sedp_acknack_out(sub_writer_entity_id, sub_reader_entity_id, conf,
+                         &msg_metadata, out);
     } else if (msg_metadata.message_type == MSG_TYPE_APP) {
         switch (topic_id) {
         case 0:
-            tx_buf_len = APP_WRITER_OUT(pub_app_data_0, pub_app_data_len_0,
-                                        pub_app_data_req_0, pub_app_data_rel_0,
-                                        pub_app_data_grant_0, conf,
-                                        &msg_metadata, tx_buf);
+            APP_WRITER_OUT(pub_app_data_0, pub_app_data_len_0,
+                           pub_app_data_req_0, pub_app_data_rel_0,
+                           pub_app_data_grant_0, conf, &msg_metadata, out);
             break;
         case 1:
-            tx_buf_len = APP_WRITER_OUT(pub_app_data_1, pub_app_data_len_1,
-                                        pub_app_data_req_1, pub_app_data_rel_1,
-                                        pub_app_data_grant_1, conf,
-                                        &msg_metadata, tx_buf);
+            APP_WRITER_OUT(pub_app_data_1, pub_app_data_len_1,
+                           pub_app_data_req_1, pub_app_data_rel_1,
+                           pub_app_data_grant_1, conf, &msg_metadata, out);
             break;
         case 2:
-            tx_buf_len = APP_WRITER_OUT(pub_app_data_2, pub_app_data_len_2,
-                                        pub_app_data_req_2, pub_app_data_rel_2,
-                                        pub_app_data_grant_2, conf,
-                                        &msg_metadata, tx_buf);
+            APP_WRITER_OUT(pub_app_data_2, pub_app_data_len_2,
+                           pub_app_data_req_2, pub_app_data_rel_2,
+                           pub_app_data_grant_2, conf, &msg_metadata, out);
             break;
         case 3:
-            tx_buf_len = APP_WRITER_OUT(pub_app_data_3, pub_app_data_len_3,
-                                        pub_app_data_req_3, pub_app_data_rel_3,
-                                        pub_app_data_grant_3, conf,
-                                        &msg_metadata, tx_buf);
+            APP_WRITER_OUT(pub_app_data_3, pub_app_data_len_3,
+                           pub_app_data_req_3, pub_app_data_rel_3,
+                           pub_app_data_grant_3, conf, &msg_metadata, out);
             break;
         }
-    }
-
-    if ((tx_buf_len == 0) || (tx_buf_len > TX_BUF_LEN)) {
-        return;
-    }
-
-    ip_set_checksum(tx_buf);
-    udp_set_checksum(tx_buf);
-
-#ifndef USEF_FIFOIF_ETHERNET
-    hls_stream<hls_uint<9>> s /* Cyber fifo_size=2 */;
-#pragma HLS stream variable = s depth = 2
-#endif // !USE_FIFOIF_ETHERNET
-
-    for (uint16_t i = 0; i < tx_buf_len; i++) {
-#ifdef USE_FIFOIF_ETHERNET
-        out.write(tx_buf[i]);
-#else  // !USE_FIFOIF_ETHERNET
-        hls_uint<9> x = tx_buf[i];
-        if (i == (tx_buf_len - 1)) {
-            x |= 0x100;
-        }
-        s.write(x);
-        slip_out(s, out);
-#endif // USE_FIFOIF_ETHERNET
     }
 }

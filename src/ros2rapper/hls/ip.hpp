@@ -54,7 +54,7 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
 
 void ip_set_header(const uint8_t src_addr[4], const uint8_t dst_addr[4],
                    const uint8_t ttl, const uint16_t ip_data_real_len,
-                   uint8_t ip_hdr[]);
+                   hls_stream<uint8_t> &out);
 
 void ip_set_checksum(uint8_t ip_hdr[]);
 

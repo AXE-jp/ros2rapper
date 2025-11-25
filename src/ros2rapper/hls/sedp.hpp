@@ -52,26 +52,29 @@ void sedp_reader(
     const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
     const uint8_t sub_type_name_len[SUB_TOPICS_MAX]);
 
-void sedp_writer(
-    const uint8_t writer_guid_prefix[12], const uint8_t writer_entity_id[4],
-    const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
-    int64_t seqnum, const uint8_t usertraffic_addr[4],
-    const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
-    uint8_t buf[], const uint8_t topic_name[], uint8_t topic_name_len,
-    const uint8_t type_name[], uint8_t type_name_len, timestamp now);
+void sedp_writer(const uint8_t writer_guid_prefix[12],
+                 const uint8_t writer_entity_id[4],
+                 const uint8_t reader_guid_prefix[12],
+                 const uint8_t reader_entity_id[4], int64_t seqnum,
+                 const uint8_t usertraffic_addr[4],
+                 const uint8_t usertraffic_port[2],
+                 const uint8_t app_entity_id[4], hls_stream<uint8_t> &out,
+                 const uint8_t topic_name[], uint8_t topic_name_len,
+                 const uint8_t type_name[], uint8_t type_name_len,
+                 timestamp now);
 
 void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
                     const uint8_t writer_entity_id[4],
                     const uint8_t reader_guid_prefix[12],
                     const uint8_t reader_entity_id[4],
                     const int64_t first_seqnum, const int64_t last_seqnum,
-                    const uint32_t cnt, uint8_t buf[SEDP_HEARTBEAT_TOT_LEN]);
+                    const uint32_t cnt, hls_stream<uint8_t> &out);
 
 void sedp_acknack(const uint8_t writer_guid_prefix[12],
                   const uint8_t writer_entity_id[4],
                   const uint8_t reader_guid_prefix[12],
                   const uint8_t reader_entity_id[4], uint8_t snstate_base,
                   bool snstate_is_empty, const uint32_t cnt,
-                  uint8_t buf[SEDP_ACKNACK_TOT_LEN]);
+                  hls_stream<uint8_t> &out);
 
 #endif // !SEDP_HPP

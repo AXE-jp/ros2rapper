@@ -4,6 +4,7 @@
 #include "common.hpp"
 
 #include "checksum.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 
 #ifdef __SYNTHESIS__
@@ -669,32 +670,32 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
 /* Cyber func=inline */
 void ip_set_header(const uint8_t src_addr[4], const uint8_t dst_addr[4],
                    const uint8_t ttl, const uint16_t ip_data_real_len,
-                   uint8_t ip_hdr[]) {
+                   hls_stream<uint8_t> &out) {
 #pragma HLS inline
     static uint16_t id;
 
     uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
 
-    ip_hdr[0] = IP_HDR_VERSION_IHL;
-    ip_hdr[1] = IP_HDR_TOS;
-    ip_hdr[2] = tot_real_len >> 8;
-    ip_hdr[3] = tot_real_len & 0xff;
-    ip_hdr[4] = id >> 8;
-    ip_hdr[5] = id & 0xff;
-    ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
-    ip_hdr[7] = IP_HDR_FLAG_OFF & 0xff;
-    ip_hdr[8] = ttl;
-    ip_hdr[9] = IP_HDR_PROTOCOL;
-    ip_hdr[10] = 0;
-    ip_hdr[11] = 0;
-    ip_hdr[12] = src_addr[0];
-    ip_hdr[13] = src_addr[1];
-    ip_hdr[14] = src_addr[2];
-    ip_hdr[15] = src_addr[3];
-    ip_hdr[16] = dst_addr[0];
-    ip_hdr[17] = dst_addr[1];
-    ip_hdr[18] = dst_addr[2];
-    ip_hdr[19] = dst_addr[3];
+    out.write(IP_HDR_VERSION_IHL);
+    out.write(IP_HDR_TOS);
+    out.write(tot_real_len >> 8);
+    out.write(tot_real_len & 0xff);
+    out.write(id >> 8);
+    out.write(id & 0xff);
+    out.write(IP_HDR_FLAG_OFF >> 8);
+    out.write(IP_HDR_FLAG_OFF & 0xff);
+    out.write(ttl);
+    out.write(IP_HDR_PROTOCOL);
+    out.write(0);
+    out.write(0);
+    out.write(src_addr[0]);
+    out.write(src_addr[1]);
+    out.write(src_addr[2]);
+    out.write(src_addr[3]);
+    out.write(dst_addr[0]);
+    out.write(dst_addr[1]);
+    out.write(dst_addr[2]);
+    out.write(dst_addr[3]);
 
     id++;
 }
