@@ -225,6 +225,29 @@ module ros2_module #(
     assign ros2_sub_app_data_rel[0] = ros2_sub_app_data_rel_0;
     assign ros2_sub_app_data_grant_0 = ros2_sub_app_data_grant[0];
 
+    // --- SEDP Reader Table Memory
+`ifdef ROS2_SEDP_READER_TBL_RAM
+    wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr;
+    wire sedp_reader_tbl_mem_cs;
+    wire sedp_reader_tbl_mem_we;
+    wire [63:0] sedp_reader_tbl_mem_wdata;
+    wire [63:0] sedp_reader_tbl_mem_rdata;
+    ram_1rw #(
+        .DEPTH(`PAYLOADSMEM_DEPTH),
+        .DWIDTH(64)
+    )
+    sedp_reader_tbl_mem (
+        .i_clk(clk_int),
+        .i_rst_n(rst_n_int),
+        .i_cs_n(~sedp_reader_tbl_mem_cs),
+        .i_we_n(~sedp_reader_tbl_mem_we),
+        .i_wmask(8'b11111111),
+        .i_addr(sedp_reader_tbl_mem_addr),
+        .i_wdata(sedp_reader_tbl_mem_wdata),
+        .o_rdata(sedp_reader_tbl_mem_rdata)
+    );
+`endif
+
     // --- IP Payload Memory
     wire payloadsmem_cs;
     wire payloadsmem_we;
@@ -404,6 +427,14 @@ module ros2_module #(
         .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
         .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
         .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
+
+`ifdef ROS2_SEDP_READER_TBL_RAM
+        .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
+        .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_cs),
+        .sedp_reader_tbl_mem_we(sedp_reader_tbl_mem_we),
+        .sedp_reader_tbl_mem_wdata(sedp_reader_tbl_mem_wdata),
+        .sedp_reader_tbl_mem_rdata(sedp_reader_tbl_mem_rdata),
+`endif
 
         .ip_payloadsmem_addr(payloadsmem_addr),
         .ip_payloadsmem_ce(payloadsmem_cs),
