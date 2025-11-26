@@ -412,6 +412,13 @@ module top (
         .ip_payloadsmem_wdata(payloadsmem_wdata),
         .ip_payloadsmem_rdata(payloadsmem_rdata),
 
+        .tx_raw_eth_data_addr(),
+        .tx_raw_eth_data_ce(),
+        .tx_raw_eth_data_rdata(32'd0),
+        .tx_raw_eth_data_len(0),
+        .tx_raw_eth_kick(1'b0),
+        .tx_raw_eth_complete(),
+
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
         .arp_req_timeout(ARP_REQUEST_TIMEOUT)
