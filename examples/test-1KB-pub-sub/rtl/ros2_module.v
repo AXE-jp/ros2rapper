@@ -237,8 +237,8 @@ module ros2_module #(
         .DWIDTH(64)
     )
     sedp_reader_tbl_mem (
-        .i_clk(clk_int),
-        .i_rst_n(rst_n_int),
+        .i_clk(clk),
+        .i_rst_n(rst_n),
         .i_cs_n(~sedp_reader_tbl_mem_cs),
         .i_we_n(~sedp_reader_tbl_mem_we),
         .i_wmask(8'b11111111),
