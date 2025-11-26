@@ -197,18 +197,23 @@ app_data_request_section: {
 void ros2_sender(
     hls_stream<message_metadata_t> &in /* Cyber port_mode=axi_stream */,
     hls_stream<uint8_t>            &out /* Cyber port_mode=cw_fifo */,
-    const sender_config_t          *conf /* Cyber port_mode=in, stable_input */,
+    const sender_config_t          *conf /* Cyber port_mode=in, stable_input,
+                                            port_synchronizer=INPUT_PORT_SYNC_REGS */
+    ,
 
 #ifdef PUB_DATA_FF
     VOLATILE
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_0[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES,
+ * port_synchronizer=INPUT_PORT_SYNC_REGS */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
-        *pub_app_data_len_0 /* Cyber port_mode=cw_fifo, volatile=YES */,
+        *pub_app_data_len_0 /* Cyber port_mode=cw_fifo, volatile=YES,
+                               port_synchronizer=INPUT_PORT_SYNC_REGS */
+    ,
     VOLATILE uint8_t
         *pub_app_data_req_0 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
@@ -221,11 +226,14 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_1[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES,
+ * port_synchronizer=INPUT_PORT_SYNC_REGS */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
-        *pub_app_data_len_1 /* Cyber port_mode=cw_fifo, volatile=YES */,
+        *pub_app_data_len_1 /* Cyber port_mode=cw_fifo, volatile=YES,
+                               port_synchronizer=INPUT_PORT_SYNC_REGS */
+    ,
     VOLATILE uint8_t
         *pub_app_data_req_1 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
@@ -238,11 +246,14 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_2[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES,
+ * port_synchronizer=INPUT_PORT_SYNC_REGS */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
-        *pub_app_data_len_2 /* Cyber port_mode=cw_fifo, volatile=YES */,
+        *pub_app_data_len_2 /* Cyber port_mode=cw_fifo, volatile=YES,
+                               port_synchronizer=INPUT_PORT_SYNC_REGS */
+    ,
     VOLATILE uint8_t
         *pub_app_data_req_2 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t
@@ -255,11 +266,14 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_3[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array=EXPAND, port_mode=shared, volatile=YES,
+ * port_synchronizer=INPUT_PORT_SYNC_REGS */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
-        *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES */,
+        *pub_app_data_len_3 /* Cyber port_mode=cw_fifo, volatile=YES,
+                               port_synchronizer=INPUT_PORT_SYNC_REGS */
+    ,
     VOLATILE uint8_t
         *pub_app_data_req_3 /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t

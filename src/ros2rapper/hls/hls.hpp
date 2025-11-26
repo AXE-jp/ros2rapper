@@ -40,6 +40,8 @@ template <int W> using hls_uint = sc_uint<W>;
 // volatile qualifier with SystemC types is not allowed.
 #define VOLATILE
 
+#define INPUT_PORT_SYNC_REGS 2 // For port_synchronizer=# attribute
+
 #endif // CWB_HLS
 
 #endif // !HLS_HPP
