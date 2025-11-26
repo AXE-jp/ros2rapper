@@ -60,6 +60,13 @@ module verilog_ethernet (
     output wire        rx_ip_payload_axis_tlast,
     output wire        rx_ip_payload_axis_tuser,
 
+    input  wire        tx_raw_eth_kick,
+    input  wire        tx_raw_eth_complete,
+    input  wire [7:0]  tx_raw_eth_tdata,
+    input  wire        tx_raw_eth_tvalid,
+    output wire        tx_raw_eth_tready,
+    input  wire        tx_raw_eth_tlast,
+
     input  wire [47:0] local_mac,
     input  wire [31:0] local_ip,
     input  wire [31:0] gateway_ip,
@@ -81,6 +88,12 @@ wire tx_axis_tvalid;
 wire tx_axis_tready;
 wire tx_axis_tlast;
 wire tx_axis_tuser;
+
+wire [7:0] tx_ros2_axis_tdata;
+wire tx_ros2_axis_tvalid;
+wire tx_ros2_axis_tready;
+wire tx_ros2_axis_tlast;
+wire tx_ros2_axis_tuser;
 
 wire rx_eth_hdr_ready;
 wire rx_eth_hdr_valid;
@@ -201,14 +214,65 @@ eth_axis_tx_inst (
     .s_eth_payload_axis_tlast(tx_eth_payload_axis_tlast),
     .s_eth_payload_axis_tuser(tx_eth_payload_axis_tuser),
 
-    .m_axis_tdata(tx_axis_tdata),
-    .m_axis_tvalid(tx_axis_tvalid),
-    .m_axis_tready(tx_axis_tready),
-    .m_axis_tlast(tx_axis_tlast),
-    .m_axis_tuser(tx_axis_tuser),
+    .m_axis_tdata(tx_ros2_axis_tdata),
+    .m_axis_tvalid(tx_ros2_axis_tvalid),
+    .m_axis_tready(tx_ros2_axis_tready),
+    .m_axis_tlast(tx_ros2_axis_tlast),
+    .m_axis_tuser(tx_ros2_axis_tuser),
     .m_axis_tkeep(),
 
     .busy()
+);
+
+reg axis_mux_select;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        axis_mux_select <= 1'b0;
+    end else begin
+        if (tx_raw_eth_complete) begin
+            axis_mux_select <= 1'b0;
+        end else if (tx_raw_eth_kick) begin
+            axis_mux_select <= 1'b1;
+        end
+    end
+end
+
+axis_mux #(
+    .S_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+axis_mux_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_axis_tdata({tx_raw_eth_axis_tdata, tx_ros2_axis_tdata}),
+    .s_axis_tkeep(2'd0),
+    .s_axis_tvalid({tx_raw_eth_axis_tvalid, tx_ros2_axis_tvalid}),
+    .s_axis_tready({tx_raw_eth_axis_tready, tx_ros2_axis_tready}),
+    .s_axis_tlast({tx_raw_eth_axis_tlast, tx_ros2_axis_tlast}),
+    .s_axis_tid(16'd0),
+    .s_axis_tdest(16'd0),
+    .s_axis_tuser({1'b0, tx_ros2_axis_tuser}),
+
+    .m_axis_tdata(tx_axis_tdata),
+    .m_axis_tkeep(),
+    .m_axis_tvalid(tx_axis_tvalid),
+    .m_axis_tready(tx_axis_tready),
+    .m_axis_tlast(tx_axis_tlast),
+    .m_axis_tid(),
+    .m_axis_tdest(),
+    .m_axis_tuser(tx_axis_tuser),
+
+    .enable(enable),
+    .select(axis_mux_select)
 );
 
 wire        udp_hdr_valid;
