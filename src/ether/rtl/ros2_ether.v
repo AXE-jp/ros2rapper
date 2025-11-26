@@ -171,6 +171,13 @@ module ros2_ether #(
     output wire [7:0] ip_payloadsmem_wdata,
     input  wire [7:0] ip_payloadsmem_rdata,
 
+    output wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr,
+    output wire tx_raw_eth_data_ce,
+    input  wire [31:0] tx_raw_eth_data_rdata,
+    input  wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len,
+    input  wire tx_raw_eth_kick,
+    output wire tx_raw_eth_complete,
+
     input  wire [5:0] arp_req_retry_count,
     input  wire [35:0] arp_req_retry_interval,
     input  wire [35:0] arp_req_timeout
@@ -213,6 +220,11 @@ wire [7:0] rx_ip_payload_axis_tdata;
 wire rx_ip_payload_axis_tvalid;
 wire rx_ip_payload_axis_tready;
 wire rx_ip_payload_axis_tlast;
+
+wire tx_raw_eth_axis_tdata;
+wire tx_raw_eth_axis_tvalid;
+wire tx_raw_eth_axis_tready;
+wire tx_raw_eth_axis_tlast;
 
 verilog_ethernet verilog_ethernet_inst (
     .clk(clk),
@@ -267,6 +279,13 @@ verilog_ethernet verilog_ethernet_inst (
     .rx_ip_payload_axis_tready(rx_ip_payload_axis_tready),
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
+
+    .tx_raw_eth_kick(tx_raw_eth_kick),
+    .tx_raw_eth_complete(tx_raw_eth_complete),
+    .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
+    .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
+    .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
+    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
 
     .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
     .local_ip({32{ether_en}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
@@ -545,6 +564,22 @@ ros2_eth_rx_adapter (
     .i_rx_payload_tlast(rx_ip_payload_axis_tlast),
     .i_rx_payload_tkeep(1'b1),
     .i_rx_payload_tstrb(1'b1)
+);
+
+raw_eth_tx_adapter
+raw_eth_tx_adapter_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .enable(ether_en),
+    .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
+    .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
+    .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+    .tx_raw_eth_kick(tx_raw_eth_kick),
+    .tx_raw_eth_complete(tx_raw_eth_complete),
+    .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
+    .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
+    .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
+    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast)
 );
 
 endmodule
