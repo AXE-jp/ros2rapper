@@ -221,7 +221,7 @@ wire rx_ip_payload_axis_tvalid;
 wire rx_ip_payload_axis_tready;
 wire rx_ip_payload_axis_tlast;
 
-wire tx_raw_eth_axis_tdata;
+wire [7:0] tx_raw_eth_axis_tdata;
 wire tx_raw_eth_axis_tvalid;
 wire tx_raw_eth_axis_tready;
 wire tx_raw_eth_axis_tlast;
@@ -574,6 +574,7 @@ raw_eth_tx_adapter_inst (
     .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
     .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
     .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+    .tx_raw_eth_data_len(tx_raw_eth_data_len),
     .tx_raw_eth_kick(tx_raw_eth_kick),
     .tx_raw_eth_complete(tx_raw_eth_complete),
     .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),

@@ -1,7 +1,7 @@
 // Copyright (c) 2021-2024 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-`include "ros2_eth_config.v"
+`include "ros2_ether_config.vh"
 `default_nettype none
 
 module raw_eth_tx_adapter (
@@ -16,26 +16,26 @@ module raw_eth_tx_adapter (
     input  wire tx_raw_eth_kick,
     output wire tx_raw_eth_complete,
 
-    output wire [7:0] tx_raw_eth_axis_tdata,
-    output wire tx_raw_eth_axis_tvalid,
+    output reg  [7:0] tx_raw_eth_axis_tdata,
+    output reg  tx_raw_eth_axis_tvalid,
     input  wire tx_raw_eth_axis_tready,
-    output wire tx_raw_eth_axis_tlast
-)
-    reg  [2:0] r_state;
-    wire [2:0] w_next_state;
+    output reg  tx_raw_eth_axis_tlast
+);
+    reg [2:0] r_state;
+    reg [2:0] w_state_next;
     localparam [2:0] IDLE = 3'd0;
     localparam [2:0] WRITE_0 = 3'd1;
     localparam [2:0] WRITE_1 = 3'd2;
     localparam [2:0] WRITE_2 = 3'd3;
     localparam [2:0] WRITE_3 = 3'd4;
 
-    reg  r_complete;
-    wire w_complete_next;
+    reg r_complete;
+    reg w_complete_next;
     assign tx_raw_eth_complete = r_complete;
 
     wire [31:0] w_rdata_new;
     wire w_rdata_new_valid;
-    wire w_rdata_new_ready;
+    reg  w_rdata_new_ready;
 
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
@@ -50,29 +50,30 @@ module raw_eth_tx_adapter (
         .rom_rdata(tx_raw_eth_data_rdata),
         .out_tdata(w_rdata_new),
         .out_tvalid(w_rdata_new_valid),
-        .out_tready(r_rdata_new_ready)
+        .out_tready(w_rdata_new_ready)
     );
 
-    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_DATA_LEN);
-    reg  [COUNT_WIDTH-1:0] r_count;
-    wire [COUNT_WIDTH-1:0] w_count_next;
-    reg  [31:0] r_rdata;
-    wire [31:0] w_rdata_next;
-
-    assign tx_raw_eth_axis_tlast = (r_count == {COUNT_WIDTH{1'b0}});
+    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
+    reg [COUNT_WIDTH-1:0] r_count;
+    reg [COUNT_WIDTH-1:0] w_count_next;
+    reg [31:0] r_rdata;
+    reg [31:0] w_rdata_next;
 
     always @* begin
+        tx_raw_eth_axis_tlast = (r_count == {COUNT_WIDTH{1'b0}});
+
         w_state_next = r_state;
         w_count_next = r_count;
         w_rdata_next = r_rdata;
 
         w_complete_next = 1'b0;
+        w_rdata_new_ready = 1'b0;
         tx_raw_eth_axis_tdata = 8'd0;
         tx_raw_eth_axis_tvalid = 1'b0;
 
         if (r_state == IDLE) begin
             if (tx_raw_eth_kick) begin
-                if ((tx_raw_eth_data_len != 0) && (tx_raw_eth_data_len <= ROS2_MAX_RAW_ETH_TX_DATA_LEN)) begin
+                if ((tx_raw_eth_data_len != 0) && (tx_raw_eth_data_len <= `ROS2_MAX_RAW_ETH_TX_DATA_LEN)) begin
                     w_count_next = tx_raw_eth_data_len - 1'b1;
                     w_state_next = WRITE_0;
                 end else begin
@@ -106,8 +107,8 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (r_state == WRITE_2) begin
-            w_out_tdata_next = r_rdata[23:16];
-            w_out_tvalid_next = 1'b1;
+            tx_raw_eth_axis_tdata = r_rdata[23:16];
+            tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     w_complete_next = 1'b1;
@@ -118,8 +119,8 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (r_state == WRITE_3) begin
-            w_out_tdata_next = r_rdata[31:24];
-            w_out_tvalid_next = 1'b1;
+            tx_raw_eth_axis_tdata = r_rdata[31:24];
+            tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     w_complete_next = 1'b1;
@@ -155,11 +156,11 @@ module raw_eth_tx_adapter (
 endmodule
 
 // Read data from a ROM
-module #(
+module raw_eth_tx_adapter_read #(
     parameter ADDR_WIDTH = 9,
     parameter DATA_WIDTH = 32
 )
-raw_eth_tx_adapter_read (
+(
     input  wire clk,
     input  wire rst_n,
 
@@ -171,7 +172,7 @@ raw_eth_tx_adapter_read (
     input  wire addr_valid,
     output wire [DATA_WIDTH-1:0] rdata,
     output wire rdata_valid
-)
+);
     reg [ADDR_WIDTH-1:0] r_rom_addr;
     reg r_rom_ce;
     reg r_rdata_valid;
@@ -195,11 +196,11 @@ raw_eth_tx_adapter_read (
 endmodule
 
 // Read data from a ROM, and output it.
-module #(
+module raw_eth_tx_adapter_fifo #(
     parameter MAX_DATA_LEN=400,
     parameter DATA_WIDTH=32
 )
-raw_eth_tx_adapter_fifo (
+(
     input  wire clk,
     input  wire rst_n,
     input  wire enable,
@@ -210,14 +211,14 @@ raw_eth_tx_adapter_fifo (
     input  wire [DATA_WIDTH-1:0] rom_rdata,
 
     // AXIS ports
-    output wire [DATA_WIDTH-1] out_tdata,
-    output wire out_tvalid,
+    output reg  [DATA_WIDTH-1:0] out_tdata,
+    output reg  out_tvalid,
     input  wire out_tready
-)
+);
     localparam ADDR_WIDTH = $clog2(MAX_DATA_LEN);
 
     reg  [ADDR_WIDTH-1:0] r_addr;
-    wire w_addr_valid;
+    reg  w_addr_valid;
     wire [DATA_WIDTH-1:0] w_rdata_new;
     wire w_rdata_new_valid;
 
@@ -241,11 +242,11 @@ raw_eth_tx_adapter_fifo (
     reg [DATA_WIDTH-1:0] r_rdata [0:1];
     reg [1:0] r_rdata_valid;
 
-    wire [DATA_WIDTH-1:0] w_rdata_next [0:1];
-    wire [1:0] w_rdata_next_valid;
+    reg [DATA_WIDTH-1:0] w_rdata_next [0:1];
+    reg [1:0] w_rdata_next_valid;
 
     always @* begin
-        if (r_data_valid[1]) begin
+        if (r_rdata_valid[1]) begin
             out_tdata  = r_rdata[1];
             out_tvalid = r_rdata_valid[1];
         end else begin
@@ -258,7 +259,7 @@ raw_eth_tx_adapter_fifo (
         w_rdata_next[0]       = r_rdata[0];
         w_rdata_next_valid[0] = r_rdata_valid[0];
         if (!out_tready) begin
-            case (r_data_valid) begin
+            case (r_rdata_valid)
                 2'b00: begin
                     w_rdata_next[1]       = w_rdata_new;
                     w_rdata_next_valid[1] = w_rdata_new_valid;
@@ -267,9 +268,9 @@ raw_eth_tx_adapter_fifo (
                     w_rdata_next[0]       = w_rdata_new;
                     w_rdata_next_valid[0] = w_rdata_new_valid;
                 end
-            end
+            endcase
         end else begin
-            case (rdata_valid) begin
+            case (r_rdata_valid)
                 2'b10: begin
                     w_rdata_next[1]       = w_rdata_new;
                     w_rdata_next_valid[1] = w_rdata_new_valid;
@@ -280,7 +281,7 @@ raw_eth_tx_adapter_fifo (
                     w_rdata_next[0]       = w_rdata_new;
                     w_rdata_next_valid[0] = w_rdata_new_valid;
                 end
-            end
+            endcase
         end
 
         // w_addr_valid is enabled if and only if

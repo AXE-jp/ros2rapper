@@ -62,10 +62,10 @@ module verilog_ethernet (
 
     input  wire        tx_raw_eth_kick,
     input  wire        tx_raw_eth_complete,
-    input  wire [7:0]  tx_raw_eth_tdata,
-    input  wire        tx_raw_eth_tvalid,
-    output wire        tx_raw_eth_tready,
-    input  wire        tx_raw_eth_tlast,
+    input  wire [7:0]  tx_raw_eth_axis_tdata,
+    input  wire        tx_raw_eth_axis_tvalid,
+    output wire        tx_raw_eth_axis_tready,
+    input  wire        tx_raw_eth_axis_tlast,
 
     input  wire [47:0] local_mac,
     input  wire [31:0] local_ip,
