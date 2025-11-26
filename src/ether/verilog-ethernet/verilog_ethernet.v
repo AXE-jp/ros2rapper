@@ -225,14 +225,16 @@ eth_axis_tx_inst (
 );
 
 reg axis_mux_select;
+localparam AXIS_MUX_SELECT_ROS2 = 1'b0;
+localparam AXIS_MUX_SELECT_RAW_ETH = 1'b1;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        axis_mux_select <= 1'b0;
+        axis_mux_select <= AXIS_MUX_SELECT_ROS2;
     end else begin
         if (tx_raw_eth_complete) begin
-            axis_mux_select <= 1'b0;
+            axis_mux_select <= AXIS_MUX_SELECT_ROS2;
         end else if (tx_raw_eth_kick) begin
-            axis_mux_select <= 1'b1;
+            axis_mux_select <= AXIS_MUX_SELECT_RAW_ETH;
         end
     end
 end
