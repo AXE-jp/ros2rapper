@@ -1113,11 +1113,11 @@ ros2_main (
   .rst_n(rst_n),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
-  .sedp_reader_tbl_ram_AD1(sedp_reader_tbl_addr),
-  .sedp_reader_tbl_ram_CS1(sedp_reader_tbl_ce),
-  .sedp_reader_tbl_ram_WE1(sedp_reader_tbl_we),
-  .sedp_reader_tbl_ram_WD1(sedp_reader_tbl_wdata),
-  .sedp_reader_tbl_ram_RD1(sedp_reader_tbl_rdata),
+  .sedp_reader_tbl_ram_AD1(sedp_reader_tbl_mem_addr),
+  .sedp_reader_tbl_ram_CS1(sedp_reader_tbl_mem_ce),
+  .sedp_reader_tbl_ram_WE1(sedp_reader_tbl_mem_we),
+  .sedp_reader_tbl_ram_WD1(sedp_reader_tbl_mem_wdata),
+  .sedp_reader_tbl_ram_RD1(sedp_reader_tbl_mem_rdata),
 `endif
 
   .pub_enable(pub_enable),
