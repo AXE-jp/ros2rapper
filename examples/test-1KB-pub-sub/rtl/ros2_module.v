@@ -271,6 +271,7 @@ module ros2_module #(
     // --- ROS2rapper with Ethernet
     localparam PRESCALER_DIV = 64;
     ros2_ether #(
+        .SET_TX_PERIOD_BY_PARAMETER (1),
         .PRESCALER_DIV              (PRESCALER_DIV),
         .ROS2CLK_HZ                 (ROS2CLK_HZ),
         .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),

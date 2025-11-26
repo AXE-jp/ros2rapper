@@ -7,6 +7,7 @@
 `include "ros2_config.vh"
 
 module ros2rapper #(
+    parameter SET_TX_PERIOD_BY_PARAMETER  = 0,
     parameter PRESCALER_DIV               = 64,
     parameter ROS2CLK_HZ                  = 100_000_000,
     parameter TX_INTERVAL_COUNT           = (ROS2CLK_HZ / PRESCALER_DIV) / 100,
@@ -163,6 +164,28 @@ module ros2rapper #(
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
+`ifndef SET_TX_PERIOD_BY_PARAMETER
+    output wire ros2_cnt_interval_set,
+    output wire ros2_cnt_spdp_wr_set,
+    output wire ros2_cnt_sedp_pub_wr_set,
+    output wire ros2_cnt_sedp_sub_wr_set,
+    output wire ros2_cnt_sedp_pub_hb_set,
+    output wire ros2_cnt_sedp_sub_hb_set,
+    output wire ros2_cnt_sedp_pub_an_set,
+    output wire ros2_cnt_sedp_sub_an_set,
+    output wire ros2_cnt_app_wr_set,
+
+    input wire ros2_cnt_interval_elapsed,
+    input wire ros2_cnt_spdp_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_wr_elapsed,
+    input wire ros2_cnt_sedp_sub_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_hb_elapsed,
+    input wire ros2_cnt_sedp_sub_hb_elapsed,
+    input wire ros2_cnt_sedp_pub_an_elapsed,
+    input wire ros2_cnt_sedp_sub_an_elapsed,
+    input wire ros2_cnt_app_wr_elapsed,
+`endif
+
 `ifdef ROS2_SEDP_READER_TBL_RAM
     output wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr,
     output wire sedp_reader_tbl_mem_ce,
@@ -239,6 +262,7 @@ wire [`ROS2_SUB_TOPICS_MAX-1:0] sub_app_data_recv;
 wire sub_app_data_recv_valid;
 assign ros2_sub_app_data_recv = sub_app_data_recv_valid ? sub_app_data_recv : 0;
 
+`ifdef SET_TX_PERIOD_BY_PARAMETER
 wire ros2_cnt_interval_set;
 wire ros2_cnt_spdp_wr_set;
 wire ros2_cnt_sedp_pub_wr_set;
@@ -258,6 +282,7 @@ wire ros2_cnt_sedp_sub_hb_elapsed;
 wire ros2_cnt_sedp_pub_an_elapsed;
 wire ros2_cnt_sedp_sub_an_elapsed;
 wire ros2_cnt_app_wr_elapsed;
+`endif
 
 wire [`ROS2_RTPS_DATA_WIDTH-1:0] ros2_rtps_data;
 wire ros2_rtps_data_valid;
@@ -267,6 +292,7 @@ wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
 
+`ifdef SET_TX_PERIOD_BY_PARAMETER
 ros2rapper_tx_counters #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
@@ -303,6 +329,7 @@ ros2rapper_tx_counters (
     .o_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
     .o_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed)
 );
+`endif
 
 `ifdef ROS2RAPPER_HLS_VITIS
 ros2_receiver

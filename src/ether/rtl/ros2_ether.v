@@ -8,6 +8,7 @@
 `include "ros2_ether_config.vh"
 
 module ros2_ether #(
+    parameter SET_TX_PERIOD_BY_PARAMETER  = 0,
     parameter PRESCALER_DIV               = 64,
     parameter ROS2CLK_HZ                  = 100_000_000,
     parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
@@ -164,6 +165,28 @@ module ros2_ether #(
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
+
+`ifndef SET_TX_PERIOD_BY_PARAMETER
+    output wire ros2_cnt_interval_set,
+    output wire ros2_cnt_spdp_wr_set,
+    output wire ros2_cnt_sedp_pub_wr_set,
+    output wire ros2_cnt_sedp_sub_wr_set,
+    output wire ros2_cnt_sedp_pub_hb_set,
+    output wire ros2_cnt_sedp_sub_hb_set,
+    output wire ros2_cnt_sedp_pub_an_set,
+    output wire ros2_cnt_sedp_sub_an_set,
+    output wire ros2_cnt_app_wr_set,
+
+    input wire ros2_cnt_interval_elapsed,
+    input wire ros2_cnt_spdp_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_wr_elapsed,
+    input wire ros2_cnt_sedp_sub_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_hb_elapsed,
+    input wire ros2_cnt_sedp_sub_hb_elapsed,
+    input wire ros2_cnt_sedp_pub_an_elapsed,
+    input wire ros2_cnt_sedp_sub_an_elapsed,
+    input wire ros2_cnt_app_wr_elapsed,
+`endif
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
     output wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr,
@@ -333,6 +356,7 @@ rx_fifo (
 );
 
 ros2rapper #(
+    .SET_TX_PERIOD_BY_PARAMETER (SET_TX_PERIOD_BY_PARAMETER ),
     .PRESCALER_DIV              (PRESCALER_DIV              ),
     .ROS2CLK_HZ                 (ROS2CLK_HZ                 ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
@@ -487,6 +511,28 @@ ros2rapper (
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
     .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
     .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
+
+`ifndef SET_TX_PERIOD_BY_PARAMETER
+    .ros2_cnt_interval_set(ros2_cnt_interval_set),
+    .ros2_cnt_spdp_wr_set(ros2_cnt_spdp_wr_set),
+    .ros2_cnt_sedp_pub_wr_set(ros2_cnt_sedp_pub_wr_set),
+    .ros2_cnt_sedp_sub_wr_set(ros2_cnt_sedp_sub_wr_set),
+    .ros2_cnt_sedp_pub_hb_set(ros2_cnt_sedp_pub_hb_set),
+    .ros2_cnt_sedp_sub_hb_set(ros2_cnt_sedp_sub_hb_set),
+    .ros2_cnt_sedp_pub_an_set(ros2_cnt_sedp_pub_an_set),
+    .ros2_cnt_sedp_sub_an_set(ros2_cnt_sedp_sub_an_set),
+    .ros2_cnt_app_wr_set(ros2_cnt_app_wr_set),
+
+    .ros2_cnt_interval_elapsed(ros2_cnt_interval_elapsed),
+    .ros2_cnt_spdp_wr_elapsed(ros2_cnt_spdp_wr_elapsed),
+    .ros2_cnt_sedp_pub_wr_elapsed(ros2_cnt_sedp_pub_wr_elapsed),
+    .ros2_cnt_sedp_sub_wr_elapsed(ros2_cnt_sedp_sub_wr_elapsed),
+    .ros2_cnt_sedp_pub_hb_elapsed(ros2_cnt_sedp_pub_hb_elapsed),
+    .ros2_cnt_sedp_sub_hb_elapsed(ros2_cnt_sedp_sub_hb_elapsed),
+    .ros2_cnt_sedp_pub_an_elapsed(ros2_cnt_sedp_pub_an_elapsed),
+    .ros2_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
+    .ros2_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
+`endif
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
     .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
