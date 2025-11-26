@@ -163,6 +163,14 @@ module ros2rapper #(
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
+`ifdef ROS2_SEDP_READER_TBL_RAM
+    output wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr,
+    output wire sedp_reader_tbl_mem_ce,
+    output wire sedp_reader_tbl_mem_we,
+    output wire [63:0] sedp_reader_tbl_mem_wdata,
+    input  wire [63:0] sedp_reader_tbl_mem_rdata,
+`endif
+
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
     output wire ip_payloadsmem_we,
@@ -258,40 +266,6 @@ wire ros2_rtps_data_ready;
 wire [`ROS2_MESSAGE_METADATA_WIDTH-1:0] ros2_msg_metadata;
 wire ros2_msg_metadata_valid;
 wire ros2_msg_metadata_ready;
-
-`ifdef ROS2_SEDP_READER_TBL_RAM
-reg  [63:0] ros2_sedp_reader_tbl[0:`ROS2_SEDP_READER_MAX*11-1];
-wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] ros2_sedp_reader_tbl_address;
-wire ros2_sedp_reader_tbl_ce;
-wire ros2_sedp_reader_tbl_we;
-wire [63:0] ros2_sedp_reader_tbl_wdata;
-reg  [63:0] ros2_sedp_reader_tbl_rdata;
-
-integer j;
-`ifdef TARGET_XILINX
-always @(posedge clk) begin // Vivado could not infer BRAM if async reset is used.
-`else // !TARGET_XILINX
-always @(posedge clk or negedge rst_n) begin
-`endif // TARGET_XILINX
-    if (!rst_n) begin
-`ifndef TARGET_XILINX
-        for (j = 0; j < `ROS2_SEDP_READER_MAX; j = j + 1) begin
-`ifdef TARGET_SIM
-            ros2_sedp_reader_tbl[j] = 64'd0;
-`else // !TARGET_SIM
-            ros2_sedp_reader_tbl[j] <= 64'd0;
-`endif // TARGET_SIM
-        end
-`endif // TARGET_XILINX
-        ros2_sedp_reader_tbl_rdata <= 64'd0;
-    end else begin
-        ros2_sedp_reader_tbl_rdata <= ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address];
-        if (ros2_sedp_reader_tbl_ce & ros2_sedp_reader_tbl_we) begin
-            ros2_sedp_reader_tbl[ros2_sedp_reader_tbl_address] <= ros2_sedp_reader_tbl_wdata;
-        end
-    end
-end
-`endif // ROS2_SEDP_READER_TBL_RAM
 
 ros2rapper_tx_counters #(
     .PRESCALER_DIV              (PRESCALER_DIV              ),
@@ -449,11 +423,11 @@ ros2_main (
     .ap_rst_n(rst_n),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
-    .sedp_reader_tbl_address0(ros2_sedp_reader_tbl_address),
-    .sedp_reader_tbl_ce0(ros2_sedp_reader_tbl_ce),
-    .sedp_reader_tbl_we0(ros2_sedp_reader_tbl_we),
-    .sedp_reader_tbl_d0(ros2_sedp_reader_tbl_wdata),
-    .sedp_reader_tbl_q0(ros2_sedp_reader_tbl_rdata),
+    .sedp_reader_tbl_address0(sedp_reader_tbl_mem_addr),
+    .sedp_reader_tbl_ce0(sedp_reader_tbl_mem_ce),
+    .sedp_reader_tbl_we0(sedp_reader_tbl_mem_we),
+    .sedp_reader_tbl_d0(sedp_reader_tbl_mem_wdata),
+    .sedp_reader_tbl_q0(sedp_reader_tbl_mem_rdata),
 `endif
 
     .pub_enable(pub_enable),
@@ -1139,11 +1113,11 @@ ros2_main (
   .rst_n(rst_n),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
-  .sedp_reader_tbl_ram_AD1(ros2_sedp_reader_tbl_address),
-  .sedp_reader_tbl_ram_CS1(ros2_sedp_reader_tbl_ce),
-  .sedp_reader_tbl_ram_WE1(ros2_sedp_reader_tbl_we),
-  .sedp_reader_tbl_ram_WD1(ros2_sedp_reader_tbl_wdata),
-  .sedp_reader_tbl_ram_RD1(ros2_sedp_reader_tbl_rdata),
+  .sedp_reader_tbl_ram_AD1(sedp_reader_tbl_addr),
+  .sedp_reader_tbl_ram_CS1(sedp_reader_tbl_ce),
+  .sedp_reader_tbl_ram_WE1(sedp_reader_tbl_we),
+  .sedp_reader_tbl_ram_WD1(sedp_reader_tbl_wdata),
+  .sedp_reader_tbl_ram_RD1(sedp_reader_tbl_rdata),
 `endif
 
   .pub_enable(pub_enable),
