@@ -121,6 +121,8 @@ module ros2rapper #(
 
     input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_req,
     input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_rel,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ack,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_nack,
     output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_grant,
 
     output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_0_addr,
@@ -161,6 +163,8 @@ module ros2rapper #(
 
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_req,
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_ack,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_nack,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
@@ -218,6 +222,8 @@ generate
             .o_app_data_ip_grant(ros2_pub_app_data_ip_grant[iter]),
             .i_app_data_user_req(ros2_pub_app_data_req[iter]),
             .i_app_data_user_rel(ros2_pub_app_data_rel[iter]),
+            .o_app_data_user_ack(ros2_pub_app_data_ack[iter]),
+            .o_app_data_user_nack(ros2_pub_app_data_nack[iter]),
             .o_app_data_user_grant(ros2_pub_app_data_grant[iter])
         );
     end
@@ -239,6 +245,8 @@ generate
             .o_app_data_ip_grant(ros2_sub_app_data_ip_grant[iter]),
             .i_app_data_user_req(ros2_sub_app_data_req[iter]),
             .i_app_data_user_rel(ros2_sub_app_data_rel[iter]),
+            .o_app_data_user_ack(ros2_sub_app_data_ack[iter]),
+            .o_app_data_user_nack(ros2_sub_app_data_nack[iter]),
             .o_app_data_user_grant(ros2_sub_app_data_grant[iter])
         );
     end
@@ -3753,6 +3761,31 @@ ros2_sender (
 
 endmodule
 
+module synchronizer #(
+    parameter WIDTH = 1,
+    parameter INIT_VALUE = 0
+)(
+    input  wire              i_clk,
+    input  wire              i_rst_n,
+    input  wire [WIDTH-1:0]  i_data,
+    output wire [WIDTH-1:0]  o_data
+);
+    (* ASYNC_REG = "TRUE" *) reg [WIDTH-1:0] reg_0;
+    (* ASYNC_REG = "TRUE" *) reg [WIDTH-1:0] reg_1;
+
+    assign o_data = reg_1;
+
+    always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            reg_0 <= INIT_VALUE;
+            reg_1 <= INIT_VALUE;
+        end else begin
+            reg_0 <= i_data;
+            reg_1 <= reg_0;
+        end
+    end
+
+endmodule
 
 // arbiter for sharing app_data between user and IP
 module app_data_arbiter (
@@ -3767,6 +3800,8 @@ module app_data_arbiter (
 
     input  wire i_app_data_user_req,
     input  wire i_app_data_user_rel,
+    output wire o_app_data_user_ack,
+    output wire o_app_data_user_nack,
     output wire o_app_data_user_grant
 );
     localparam [1:0]
@@ -3778,17 +3813,28 @@ module app_data_arbiter (
     assign o_app_data_ip_grant = i_en & r_app_data_grant[0];
     assign o_app_data_user_grant = i_en & r_app_data_grant[1];
 
+    reg r_user_ack, r_user_nack;
+    reg r_last_user_req_sync;
+
+    assign o_app_data_user_ack = r_user_ack | i_app_data_user_rel;
+    assign o_app_data_user_nack = r_user_nack;
+
     always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
             r_app_data_grant <= APP_DATA_GRANT_NONE;
+            r_user_ack <= 0;
+            r_user_nack <= 0;
+            r_last_user_req_sync <= 0;
         end else begin
+            r_last_user_req_sync <= i_app_data_user_req;
+
             case (r_app_data_grant)
                 APP_DATA_GRANT_NONE: begin
                     case ({i_app_data_ip_req, i_app_data_user_req})
                         2'b00: r_app_data_grant <= APP_DATA_GRANT_NONE;
-                        2'b01: r_app_data_grant <= APP_DATA_GRANT_USER;
+                        2'b01: {r_app_data_grant, r_user_ack} <= {APP_DATA_GRANT_USER, 1'b1};
                         2'b10: r_app_data_grant <= APP_DATA_GRANT_IP;
-                        2'b11: r_app_data_grant <= APP_DATA_GRANT_IP;
+                        2'b11: {r_app_data_grant, r_user_nack} <= {APP_DATA_GRANT_IP, 1'b1};
                     endcase
                 end
                 APP_DATA_GRANT_IP:
@@ -3798,6 +3844,11 @@ module app_data_arbiter (
                 default:
                     r_app_data_grant <= APP_DATA_GRANT_NONE;
             endcase
+
+            if (r_last_user_req_sync & ~i_app_data_user_req) begin
+                r_user_ack <= 0;
+                r_user_nack <= 0;
+            end
         end
     end
 endmodule
