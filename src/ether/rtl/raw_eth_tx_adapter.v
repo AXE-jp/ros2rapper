@@ -218,7 +218,7 @@ module raw_eth_tx_adapter_fifo #(
     localparam ADDR_WIDTH = $clog2(MAX_DATA_LEN);
 
     reg  [ADDR_WIDTH-1:0] r_addr;
-    reg  w_addr_valid;
+    wire w_addr_valid;
     wire [DATA_WIDTH-1:0] w_rdata_new;
     wire w_rdata_new_valid;
 
@@ -283,20 +283,10 @@ module raw_eth_tx_adapter_fifo #(
                 end
             endcase
         end
-
-        // w_addr_valid is enabled if and only if
-        // r_rdata_valid[0] is guaranteed to be 1'b0
-        // after two clock cycles.
-        if (!enable) begin
-            w_addr_valid = 1'b0;
-        end else if (!out_tready && !r_rdata_valid[1]) begin
-            w_addr_valid = 1'b1;
-        end else if (out_tready && !r_rdata_valid[0]) begin
-            w_addr_valid = 1'b1;
-        end else begin
-            w_addr_valid = 1'b0;
-        end
     end
+    // w_addr_valid is enabled if and only if
+    // r_rdata_valid[0] is guaranteed to be 1'b0 after two clock cycles.
+    assign w_addr_valid = enable & ~w_rdata_next_valid[1];
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
