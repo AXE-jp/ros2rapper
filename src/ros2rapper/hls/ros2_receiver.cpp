@@ -67,8 +67,6 @@ void ros2_receiver(
                                      port_synchronizer=INPUT_PORT_SYNC_REGS */
     ,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
-            *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_rel /* Cyber port_mode=shared, volatile=YES */,
@@ -82,15 +80,8 @@ void ros2_receiver(
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     uint8_t sub_app_data_3
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    VOLATILE app_data_len_t
-        sub_app_data_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                            port_mode=shared, volatile=yes */
-    ,
-    VOLATILE uint16_t
-        sub_app_data_rep_id[SUB_TOPICS_MAX] /* Cyber array=EXPAND,
-                                               port_mode=shared, volatile=yes */
-    ,
-    hls_uint<9> *xout) {
+    hls_stream<uint64_t> &sub_app_data_recv_info /* Cyber port_mode=cw_fifo */,
+    hls_uint<9>          *xout) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = axis port = out
@@ -144,11 +135,7 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_memory port = sub_app_data_2
 #pragma HLS interface mode = ap_memory port = sub_app_data_3
 #pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
-#pragma HLS interface mode = ap_vld port = sub_app_data_len
-#pragma HLS array_partition variable = sub_app_data_rep_id type = complete dim \
-    = 1
-#pragma HLS interface mode = ap_vld port = sub_app_data_rep_id
-#pragma HLS interface mode = ap_vld port = sub_app_data_recv
+#pragma HLS interface mode = ap_fifo port = sub_app_data_recv_info
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
 #pragma HLS interface mode = ap_ack port = sub_app_data_grant
@@ -200,10 +187,9 @@ void ros2_receiver(
 
     if (sub_enable != 0) {
         app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,
-                   sub_app_data_recv, sub_app_data_req, sub_app_data_rel,
-                   sub_app_data_grant, sub_app_data_0, sub_app_data_1,
-                   sub_app_data_2, sub_app_data_3, sub_app_data_len,
-                   sub_app_data_rep_id);
+                   sub_app_data_req, sub_app_data_rel, sub_app_data_grant,
+                   sub_app_data_0, sub_app_data_1, sub_app_data_2,
+                   sub_app_data_3, sub_app_data_recv_info);
     }
 
     *xout = x; // Workaround for CWB: FIFO read request will not be

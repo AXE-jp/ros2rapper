@@ -153,16 +153,14 @@ enum {
 void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
                 hls_uint<SUB_TOPICS_MAX> sub_enabled,
-                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
                 VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
                 VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
                 VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_grant,
-                uint8_t                 sub_app_data_0[MAX_APP_DATA_LEN],
-                uint8_t                 sub_app_data_1[MAX_APP_DATA_LEN],
-                uint8_t                 sub_app_data_2[MAX_APP_DATA_LEN],
-                uint8_t                 sub_app_data_3[MAX_APP_DATA_LEN],
-                VOLATILE app_data_len_t sub_app_data_len[SUB_TOPICS_MAX],
-                VOLATILE uint16_t       sub_app_data_rep_id[SUB_TOPICS_MAX]) {
+                uint8_t               sub_app_data_0[MAX_APP_DATA_LEN],
+                uint8_t               sub_app_data_1[MAX_APP_DATA_LEN],
+                uint8_t               sub_app_data_2[MAX_APP_DATA_LEN],
+                uint8_t               sub_app_data_3[MAX_APP_DATA_LEN],
+                hls_stream<uint64_t> &sub_app_data_recv_info) {
 #pragma HLS inline
 
     static hls_uint<3> state;
@@ -286,23 +284,8 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         }
         offset++;
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
-            /* Cyber scheduling_block=non-transparent */
-        sub_app_data_section: {
-#pragma HLS protocol fixed
-            /* Cyber unroll_times=all */
-            for (auto j = 0; j < SUB_TOPICS_MAX; j++) {
-#pragma HLS unroll
-                if (!topics_unmatched[j]) {
-                    sub_app_data_len[j] = sbm_len;
-                    sub_app_data_rep_id[j] = rep_id;
-                }
-            }
-            *sub_app_data_rel = ~topics_unmatched;
-            CLOCK_BOUNDARY;
-            // Delay the asserting sub_app_data_recv by one clock cycle to wait
-            // for the recieved data to be stored.
-            *sub_app_data_recv = ~topics_unmatched;
-        }
+            sub_app_data_recv_info.write(sbm_len | (rep_id << 16)
+                                         | ((~topics_unmatched) << 32));
             state = STATE_WAIT_END;
         }
         break;
