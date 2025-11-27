@@ -167,7 +167,8 @@ module top (
 
     wire [3:0] ros2_pub_app_data_req;
     wire [3:0] ros2_pub_app_data_rel;
-    wire [3:0] ros2_pub_app_data_grant;
+    wire [3:0] ros2_pub_app_data_ack;
+    wire [3:0] ros2_pub_app_data_nack;
 
     // Published messages
     wire [7:0] msg_number[0:3];
@@ -198,7 +199,9 @@ module top (
                 .change_msg(change_msg[iter]),
                 .ros2_pub_app_data_req(ros2_pub_app_data_req[iter]),
                 .ros2_pub_app_data_rel(ros2_pub_app_data_rel[iter]),
-                .ros2_pub_app_data_grant(ros2_pub_app_data_grant[iter])
+                .ros2_pub_app_data_ack(ros2_pub_app_data_ack[iter]),
+                .ros2_pub_app_data_nack(ros2_pub_app_data_nack[iter]),
+                .ros2_pub_app_data_grant()
             );
         end
     endgenerate
@@ -428,7 +431,9 @@ module top (
 
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
+        .ros2_pub_app_data_ack(ros2_pub_app_data_ack),
+        .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
+        .ros2_pub_app_data_grant(),
 
         .ros2_sub_app_data_0_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
@@ -468,6 +473,8 @@ module top (
 
         .ros2_sub_app_data_req(0),
         .ros2_sub_app_data_rel(0),
+        .ros2_sub_app_data_ack(),
+        .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
         .ros2_sub_app_data_recv(),
 
@@ -502,6 +509,8 @@ module pub_msg_ctrl(
 
     output reg ros2_pub_app_data_req,
     output reg ros2_pub_app_data_rel,
+    input wire ros2_pub_app_data_ack,
+    input wire ros2_pub_app_data_nack,
     input wire ros2_pub_app_data_grant
 );
 
@@ -511,13 +520,16 @@ module pub_msg_ctrl(
             ros2_pub_app_data_req <= 1'b0;
             ros2_pub_app_data_rel <= 1'b0;
         end else begin
-            ros2_pub_app_data_rel <= 1'b0;
             if (change_msg) begin
                 ros2_pub_app_data_req <= 1'b1;
-            end else if (ros2_pub_app_data_req && ros2_pub_app_data_grant) begin
+            end else if (ros2_pub_app_data_req && ros2_pub_app_data_ack) begin
                 msg_number <= (msg_number == 8'd57) ? 8'd48 : (msg_number + 1'b1);
                 ros2_pub_app_data_req <= 1'b0;
                 ros2_pub_app_data_rel <= 1'b1;
+            end else if (ros2_pub_app_data_req && ros2_pub_app_data_nack) begin
+                ros2_pub_app_data_req <= 1'b0;
+            end else if (ros2_pub_app_data_rel && ros2_pub_app_data_ack) begin
+                ros2_pub_app_data_rel <= 1'b0;
             end
         end
     end

@@ -143,7 +143,8 @@ module ros2_module #(
 
     reg  ros2_pub_app_data_req_0;
     wire ros2_pub_app_data_rel_0;
-    wire ros2_pub_app_data_grant_0;
+    wire ros2_pub_app_data_ack_0;
+    wire ros2_pub_app_data_nack_0;
 
     assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_ready;
 
@@ -154,14 +155,17 @@ module ros2_module #(
             ros2_pub_app_data_ap_start <= 1'b0;
         end else begin
             if (pub_state == STATE_WAIT_GRANT) begin
-                if (ros2_pub_app_data_grant_0) begin
+                if (ros2_pub_app_data_ack_0) begin
                     pub_state <= STATE_WAIT_VALID;
+                    ros2_pub_app_data_req_0 <= 1'b0;
                     ros2_pub_app_data_ap_start <= 1'b1;
+                end else if (ros2_pub_app_data_nack_0) begin
+                    pub_state <= STATE_IDLE;
+                    ros2_pub_app_data_req_0 <= 1'b0;
                 end
             end else if (pub_state == STATE_WAIT_VALID) begin
                 if (ros2_pub_app_data_ap_ready) begin
                     pub_state <= STATE_IDLE;
-                    ros2_pub_app_data_req_0 <= 1'b0;
                     ros2_pub_app_data_ap_start <= 1'b0;
                 end
             end else begin  // pub_state == STATE_IDLE
@@ -175,19 +179,22 @@ module ros2_module #(
 
     wire [3:0] ros2_pub_app_data_req;
     wire [3:0] ros2_pub_app_data_rel;
-    wire [3:0] ros2_pub_app_data_grant;
+    wire [3:0] ros2_pub_app_data_ack;
+    wire [3:0] ros2_pub_app_data_nack;
 
     assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
     assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
-    assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
+    assign ros2_pub_app_data_ack_0 = ros2_pub_app_data_ack[0];
+    assign ros2_pub_app_data_nack_0 = ros2_pub_app_data_nack[0];
 
     // --- ROS2 Subscriber message control
     reg  ros2_sub_app_data_req_0;
     wire ros2_sub_app_data_rel_0;
-    wire ros2_sub_app_data_grant_0;
+    wire ros2_sub_app_data_ack_0;
+    wire ros2_sub_app_data_nack_0;
     wire [3:0] ros2_sub_app_data_recv;
 
-    assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant_0;
+    assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_ack_0;
     assign ros2_sub_app_data_rel_0 = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
 
     always @(posedge clk or negedge rst_n) begin
@@ -198,13 +205,16 @@ module ros2_module #(
             led5 <= 1'b0;
         end else begin
             if (sub_state == STATE_WAIT_GRANT) begin
-                if (ros2_sub_app_data_grant_0) begin
+                if (ros2_sub_app_data_ack_0) begin
                     sub_state <= STATE_WAIT_VALID;
+                    ros2_sub_app_data_req_0 <= 1'b0;
+                end else if (ros2_sub_app_data_nack_0) begin
+                    sub_state <= STATE_IDLE;
+                    ros2_sub_app_data_req_0 <= 1'b0;
                 end
             end else if (sub_state == STATE_WAIT_VALID) begin
                 if (sub_data_result_ap_vld) begin
                     sub_state <= STATE_IDLE;
-                    ros2_sub_app_data_req_0 <= 1'b0;
                     led4 <= sub_data_result;
                     led5 <= ~sub_data_result;
                 end
@@ -219,11 +229,13 @@ module ros2_module #(
 
     wire [3:0] ros2_sub_app_data_req;
     wire [3:0] ros2_sub_app_data_rel;
-    wire [3:0] ros2_sub_app_data_grant;
+    wire [3:0] ros2_sub_app_data_ack;
+    wire [3:0] ros2_sub_app_data_nack;
 
     assign ros2_sub_app_data_req[0] = ros2_sub_app_data_req_0;
     assign ros2_sub_app_data_rel[0] = ros2_sub_app_data_rel_0;
-    assign ros2_sub_app_data_grant_0 = ros2_sub_app_data_grant[0];
+    assign ros2_sub_app_data_ack_0 = ros2_sub_app_data_ack[0];
+    assign ros2_sub_app_data_nack_0 = ros2_sub_app_data_nack[0];
 
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
@@ -386,7 +398,9 @@ module ros2_module #(
 
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
+        .ros2_pub_app_data_ack(ros2_pub_app_data_ack),
+        .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
+        .ros2_pub_app_data_grant(),
 
         .ros2_sub_app_data_0_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
@@ -426,7 +440,9 @@ module ros2_module #(
 
         .ros2_sub_app_data_req(ros2_sub_app_data_req),
         .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
-        .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
+        .ros2_sub_app_data_ack(ros2_sub_app_data_ack),
+        .ros2_sub_app_data_nack(ros2_sub_app_data_nack),
+        .ros2_sub_app_data_grant(),
         .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
