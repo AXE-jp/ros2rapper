@@ -1,0 +1,484 @@
+// Copyright (c) 2021-2024 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+`resetall
+`default_nettype none
+
+`include "ros2_config.vh"
+`include "ros2_ether_config.vh"
+
+module top (
+    input  wire       clk,
+    input  wire       rst_n,
+
+    output wire       phy_ref_clk,
+    input  wire       phy_rx_clk,
+    input  wire [3:0] phy_rxd,
+    input  wire       phy_rx_dv,
+    input  wire       phy_rx_er,
+    input  wire       phy_tx_clk,
+    output wire [3:0] phy_txd,
+    output wire       phy_tx_en,
+    output wire       phy_rst_n,
+
+    output wire       led4,
+    output wire       led5,
+    output wire       led6,
+    output wire       led7
+);
+
+    // --- Clock & Reset
+    wire clk_int;
+    wire clk_25mhz_int;
+    wire rst_n_int;
+    wire mmcm_locked;
+    wire mmcm_clkfb;
+
+    assign phy_ref_clk = clk_25mhz_int;
+
+    localparam ROS2CLK_HZ = 80_000_000;
+    MMCME2_BASE #(
+        .BANDWIDTH("OPTIMIZED"),
+        .CLKOUT0_DIVIDE_F(12.5),
+        .CLKOUT0_DUTY_CYCLE(0.5),
+        .CLKOUT0_PHASE(0),
+        .CLKOUT1_DIVIDE(40),
+        .CLKOUT1_DUTY_CYCLE(0.5),
+        .CLKOUT1_PHASE(0),
+        .CLKOUT2_DIVIDE(1),
+        .CLKOUT2_DUTY_CYCLE(0.5),
+        .CLKOUT2_PHASE(0),
+        .CLKOUT3_DIVIDE(1),
+        .CLKOUT3_DUTY_CYCLE(0.5),
+        .CLKOUT3_PHASE(0),
+        .CLKOUT4_DIVIDE(1),
+        .CLKOUT4_DUTY_CYCLE(0.5),
+        .CLKOUT4_PHASE(0),
+        .CLKOUT5_DIVIDE(1),
+        .CLKOUT5_DUTY_CYCLE(0.5),
+        .CLKOUT5_PHASE(0),
+        .CLKOUT6_DIVIDE(1),
+        .CLKOUT6_DUTY_CYCLE(0.5),
+        .CLKOUT6_PHASE(0),
+        .CLKFBOUT_MULT_F(10),
+        .CLKFBOUT_PHASE(0),
+        .DIVCLK_DIVIDE(1),
+        .REF_JITTER1(0.010),
+        .CLKIN1_PERIOD(10.0),
+        .STARTUP_WAIT("FALSE"),
+        .CLKOUT4_CASCADE("FALSE")
+    )
+    clk_mmcm_inst (
+        .CLKIN1(clk),
+        .CLKFBIN(mmcm_clkfb),
+        .RST(~rst_n),
+        .PWRDWN(1'b0),
+        .CLKOUT0(clk_int),
+        .CLKOUT0B(),
+        .CLKOUT1(clk_25mhz_int),
+        .CLKOUT1B(),
+        .CLKOUT2(),
+        .CLKOUT2B(),
+        .CLKOUT3(),
+        .CLKOUT3B(),
+        .CLKOUT4(),
+        .CLKOUT5(),
+        .CLKOUT6(),
+        .CLKFBOUT(mmcm_clkfb),
+        .CLKFBOUTB(),
+        .LOCKED(mmcm_locked)
+    );
+
+    reg [3:0] sync_rst_reg;
+    assign rst_n_int = sync_rst_reg[3];
+
+    always @(posedge clk_int or negedge rst_n) begin
+        if (!rst_n) begin
+            sync_rst_reg <= 0;
+        end else begin
+            sync_rst_reg <= {sync_rst_reg[2:0], mmcm_locked};
+        end
+    end
+
+    // --- Ethernet Configuration
+    wire [47:0] mac_addr         = 48'h00_00_00_00_00_02;
+    wire [31:0] ip_addr          = {8'd100, 8'd1, 8'd168, 8'd192};
+    wire [31:0] gateway_ip_addr  = {8'd1, 8'd1, 8'd168, 8'd192};
+    wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
+
+    // --- ARP Configuration
+    localparam ARP_REQUEST_RETRY_COUNT = 4;
+    localparam ARP_REQUEST_RETRY_INTERVAL = (125000000*2);
+    localparam ARP_REQUEST_TIMEOUT = (125000000*30);
+
+    // --- ROS2 Node Configuration
+    wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
+    wire [7:0] ros2_node_name_len = 8'd19;
+    wire [15:0] ros2_node_udp_port = 16'd52000;
+    wire [15:0] ros2_port_num_seed = 16'd7400;
+    wire [31:0] ros2_fragment_expiration = 32'd3333333333;
+    wire [95:0] ros2_guid_prefix = 96'h00_00_00_01_00_00_09_de_ad_37_0f_01;
+    wire [31:0] ros2_participant_lease_duration_seconds = 32'd20;
+    wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
+
+    // --- ROS2 Pubisher Configuration
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "bbb/tr";
+    wire [7:0] ros2_pub_topic_name_len = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
+    reg [7:0] msg_number;
+
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
+    localparam [`ROS2_APP_DATA_LEN_WIDTH-1:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
+`ifdef ROS2_PUB_DATA_RAM
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr;
+    wire ros2_pub_app_data_ce;
+    reg  [31:0] ros2_pub_app_data_rdata;
+    always @(posedge clk_int) begin
+        if (ros2_pub_app_data_ce) begin
+            if (ros2_pub_app_data_addr == 0) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[31:0];
+            end else if (ros2_pub_app_data_addr == 1) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[63:32];
+            end else if (ros2_pub_app_data_addr == 2) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[95:64];
+            end else if (ros2_pub_app_data_addr == 3) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[127:96];
+            end else if (ros2_pub_app_data_addr == 4) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[159:128];
+            end else if (ros2_pub_app_data_addr == 5) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[191:160];
+            end else if (ros2_pub_app_data_addr == 6) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[223:192];
+            end else begin
+                ros2_pub_app_data_rdata <= 32'd0;
+            end
+        end
+    end
+`endif
+
+    // --- ROS2 Publisher Message Control
+    reg ros2_pub_app_data_req_0;
+    reg ros2_pub_app_data_rel_0;
+    wire ros2_pub_app_data_grant_0;
+    reg [27:0] msg_change_counter;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            msg_number <= 8'd48; // '0'
+            ros2_pub_app_data_req_0 <= 0;
+            ros2_pub_app_data_rel_0 <= 0;
+            msg_change_counter <= 0;
+        end else begin
+            msg_change_counter <= msg_change_counter + 1;
+            ros2_pub_app_data_rel_0 <= 0;
+
+            if (ros2_pub_app_data_req_0 && ros2_pub_app_data_grant_0) begin
+                msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
+                ros2_pub_app_data_rel_0 <= 1;
+                ros2_pub_app_data_req_0 <= 0;
+                msg_change_counter <= 0;
+            end else if (msg_change_counter[27]) begin
+                ros2_pub_app_data_req_0 <= 1;
+            end
+        end
+    end
+
+    wire [3:0] ros2_pub_app_data_req;
+    wire [3:0] ros2_pub_app_data_rel;
+    wire [3:0] ros2_pub_app_data_grant;
+    assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
+    assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
+    assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
+
+    // Raw Ether TX message
+    wire [47:0] dest_mac_addr = 48'h01_00_00_00_00_02;
+    wire [31:0] dest_ip_addr  = {8'd2, 8'd1, 8'd168, 8'd192}; 
+    wire [15:0] udp_src_port  = 16'd1111;
+    wire [15:0] udp_dest_port = 16'd1234;
+    
+    // Ether header
+    wire [15:0] eth_type = {8'h00, 8'h08}; // IPv4
+    wire [111:0] raw_eth_hdr = {eth_type, mac_addr, dest_mac_addr};
+
+    // IP header
+    wire [7:0]  ip_ver_ihl = 8'h45;
+    wire [7:0]  ip_tos = 8'h00;
+    wire [15:0] ip_total_length = 16'd44;
+    wire [15:0] ip_identification = 16'd0;
+    wire [7:0]  ip_flags = 8'h40; // Don't fragment
+    wire [7:0]  ip_fragment_offset = 8'd0;
+    wire [7:0]  ip_ttl = 8'd64;
+    wire [7:0]  ip_protocol = 8'd17; // UDP
+    wire [15:0] ip_checksum;
+    wire [159:0] raw_eth_ip_hdr = {
+        dest_ip_addr, ip_addr, ip_checksum, ip_protocol, ip_ttl, ip_fragment_offset, ip_flags,
+        ip_identification[7:0], ip_identification[15:8], ip_total_length[7:0], ip_total_length[15:8], ip_tos, ip_ver_ihl
+        };
+
+    wire [31:0] ip_checksum_0 =
+        raw_eth_ip_hdr[15:0] + raw_eth_ip_hdr[31:16] + raw_eth_ip_hdr[47:32] + raw_eth_ip_hdr[63:48] + raw_eth_ip_hdr[79:64]
+        + raw_eth_ip_hdr[111:96] + raw_eth_ip_hdr[127:112] + raw_eth_ip_hdr[143:128] + raw_eth_ip_hdr[159:144];
+    wire [31:0] ip_checksum_1 = ip_checksum_0[15:0] + ip_checksum_0[31:16];
+    assign ip_checksum = ~(ip_checksum_1[15:0] + ip_checksum_1[31:16]);
+
+    // UDP
+    wire [15:0] udp_length = 16'd24;
+    wire [15:0] udp_checksum = 16'd0; // No checksum
+    wire [127:0] udp_payload = {8'h00, "\ntset rehte war"};
+    wire [191:0] raw_eth_udp_packet = {
+        udp_payload, udp_checksum[7:0], udp_checksum[15:8], udp_length[7:0], udp_length[15:8],
+        udp_dest_port[7:0], udp_dest_port[15:8], udp_src_port[7:0], udp_src_port[15:8]
+        };
+
+    wire [479:0] tx_raw_eth_data = {16'd0, raw_eth_udp_packet, raw_eth_ip_hdr, raw_eth_hdr};
+    wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr;
+    wire tx_raw_eth_data_ce;
+    reg  [31:0] tx_raw_eth_data_rdata;
+    wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len = 58;
+
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            tx_raw_eth_data_rdata <= 32'd0;
+        end else begin
+            if (tx_raw_eth_data_addr < 15) begin
+                tx_raw_eth_data_rdata <= tx_raw_eth_data[32*tx_raw_eth_data_addr +: 32];
+            end else begin
+                tx_raw_eth_data_rdata <= 32'd0;
+            end
+        end
+    end
+
+    // Kick & complete of raw ether TX
+    reg [26:0] count;
+    wire [26:0] count_next = count + 1'b1;
+    wire tx_raw_eth_kick = ~count[26] & count_next[26]; // Rising edge of count[26]
+    wire tx_raw_eth_complete;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            count <= 27'd0;
+        end else begin
+            count <= count_next;
+        end
+    end
+
+    // Monitor raw ether
+    reg led_tx_raw_eth_kick;
+    reg led_tx_raw_eth_complete;
+    assign led4 = led_tx_raw_eth_kick;
+    assign led5 = led_tx_raw_eth_complete;
+    assign led6 = 1'b0;
+    assign led7 = 1'b0;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            led_tx_raw_eth_kick <= 1'b0;
+            led_tx_raw_eth_complete <= 1'b0;
+        end else begin
+            if (tx_raw_eth_kick)
+                led_tx_raw_eth_kick <= ~led_tx_raw_eth_kick;
+            if (tx_raw_eth_complete)
+                led_tx_raw_eth_complete <= ~led_tx_raw_eth_complete;
+        end
+    end
+
+    // --- IP Payload Memory
+    wire payloadsmem_cs;
+    wire payloadsmem_we;
+    wire [`PAYLOADSMEM_AWIDTH-1:0] payloadsmem_addr;
+    wire [7:0] payloadsmem_wdata, payloadsmem_rdata;
+    ram_1rw #(
+        .DEPTH(`PAYLOADSMEM_DEPTH),
+        .DWIDTH(8)
+    )
+    payloadsmem (
+        .i_clk(clk_int),
+        .i_rst_n(rst_n_int),
+        .i_cs_n(~payloadsmem_cs),
+        .i_we_n(~payloadsmem_we),
+        .i_wmask(4'b1111),
+        .i_addr(payloadsmem_addr),
+        .i_wdata(payloadsmem_wdata),
+        .o_rdata(payloadsmem_rdata)
+    );
+
+    // --- ROS2rapper with Ethernet
+    localparam PRESCALER_DIV = 64;
+    ros2_ether #(
+        .PRESCALER_DIV              (PRESCALER_DIV),
+        .ROS2CLK_HZ                 (ROS2CLK_HZ),
+        .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
+        .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_HB_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_PUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_SEDP_SUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
+        .TX_PERIOD_APP_WR_COUNT     ((ROS2CLK_HZ / PRESCALER_DIV) * 3)
+    )
+    ros2 (
+        .clk(clk_int),
+        .rst_n(rst_n_int),
+
+        .ether_en(1'b1),
+        .ros2pub_en(1),
+        .ros2sub_en(0),
+
+        .phy_rx_clk(phy_rx_clk),
+        .phy_rxd(phy_rxd),
+        .phy_rx_dv(phy_rx_dv),
+        .phy_rx_er(phy_rx_er),
+        .phy_tx_clk(phy_tx_clk),
+        .phy_txd(phy_txd),
+        .phy_tx_en(phy_tx_en),
+        .phy_rst_n(phy_rst_n),
+
+        .mac_addr(mac_addr),
+        .ip_addr(ip_addr),
+        .gateway_ip_addr(gateway_ip_addr),
+        .subnet_mask(subnet_mask),
+
+        .ros2_node_name(ros2_node_name),
+        .ros2_node_name_len(ros2_node_name_len),
+        .ros2_node_udp_port(ros2_node_udp_port),
+        .ros2_port_num_seed(ros2_port_num_seed),
+        .ros2_fragment_expiration(ros2_fragment_expiration),
+        .ros2_guid_prefix(ros2_guid_prefix),
+        .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+        .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
+
+        .ros2_pub_topic_name_0(ros2_pub_topic_name),
+        .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len),
+        .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name),
+        .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len),
+
+        .ros2_pub_topic_name_1(0),
+        .ros2_pub_topic_name_len_1(0),
+        .ros2_pub_topic_type_name_1(0),
+        .ros2_pub_topic_type_name_len_1(0),
+
+        .ros2_pub_topic_name_2(0),
+        .ros2_pub_topic_name_len_2(0),
+        .ros2_pub_topic_type_name_2(0),
+        .ros2_pub_topic_type_name_len_2(0),
+
+        .ros2_pub_topic_name_3(0),
+        .ros2_pub_topic_name_len_3(0),
+        .ros2_pub_topic_type_name_3(0),
+        .ros2_pub_topic_type_name_len_3(0),
+
+        .ros2_sub_topic_name_0(0),
+        .ros2_sub_topic_name_len_0(0),
+        .ros2_sub_topic_type_name_0(0),
+        .ros2_sub_topic_type_name_len_0(0),
+
+        .ros2_sub_topic_name_1(0),
+        .ros2_sub_topic_name_len_1(0),
+        .ros2_sub_topic_type_name_1(0),
+        .ros2_sub_topic_type_name_len_1(0),
+
+        .ros2_sub_topic_name_2(0),
+        .ros2_sub_topic_name_len_2(0),
+        .ros2_sub_topic_type_name_2(0),
+        .ros2_sub_topic_type_name_len_2(0),
+
+        .ros2_sub_topic_name_3(0),
+        .ros2_sub_topic_name_len_3(0),
+        .ros2_sub_topic_type_name_3(0),
+        .ros2_sub_topic_type_name_len_3(0),
+
+`ifdef ROS2_PUB_DATA_FF
+        .ros2_pub_app_data_0(ros2_pub_app_data),
+        .ros2_pub_app_data_1(0),
+        .ros2_pub_app_data_2(0),
+        .ros2_pub_app_data_3(0),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+        .ros2_pub_app_data_0_addr(ros2_pub_app_data_addr),
+        .ros2_pub_app_data_0_ce(ros2_pub_app_data_ce),
+        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_rdata),
+
+        .ros2_pub_app_data_1_addr(),
+        .ros2_pub_app_data_1_ce(),
+        .ros2_pub_app_data_1_rdata(0),
+
+        .ros2_pub_app_data_2_addr(),
+        .ros2_pub_app_data_2_ce(),
+        .ros2_pub_app_data_2_rdata(0),
+
+        .ros2_pub_app_data_3_addr(),
+        .ros2_pub_app_data_3_ce(),
+        .ros2_pub_app_data_3_rdata(0),
+`endif
+
+        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
+        .ros2_pub_app_data_len_1(0),
+        .ros2_pub_app_data_len_2(0),
+        .ros2_pub_app_data_len_3(0),
+
+        .ros2_pub_app_data_req(ros2_pub_app_data_req),
+        .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
+
+        .ros2_sub_app_data_0_addr(),
+        .ros2_sub_app_data_0_ce(),
+        .ros2_sub_app_data_0_we(),
+        .ros2_sub_app_data_0_wdata(),
+        .ros2_sub_app_data_len_0_valid(),
+        .ros2_sub_app_data_len_0(),
+        .ros2_sub_app_data_rep_id_0_valid(),
+        .ros2_sub_app_data_rep_id_0(),
+
+        .ros2_sub_app_data_1_addr(),
+        .ros2_sub_app_data_1_ce(),
+        .ros2_sub_app_data_1_we(),
+        .ros2_sub_app_data_1_wdata(),
+        .ros2_sub_app_data_len_1_valid(),
+        .ros2_sub_app_data_len_1(),
+        .ros2_sub_app_data_rep_id_1_valid(),
+        .ros2_sub_app_data_rep_id_1(),
+
+        .ros2_sub_app_data_2_addr(),
+        .ros2_sub_app_data_2_ce(),
+        .ros2_sub_app_data_2_we(),
+        .ros2_sub_app_data_2_wdata(),
+        .ros2_sub_app_data_len_2_valid(),
+        .ros2_sub_app_data_len_2(),
+        .ros2_sub_app_data_rep_id_2_valid(),
+        .ros2_sub_app_data_rep_id_2(),
+
+        .ros2_sub_app_data_3_addr(),
+        .ros2_sub_app_data_3_ce(),
+        .ros2_sub_app_data_3_we(),
+        .ros2_sub_app_data_3_wdata(),
+        .ros2_sub_app_data_len_3_valid(),
+        .ros2_sub_app_data_len_3(),
+        .ros2_sub_app_data_rep_id_3_valid(),
+        .ros2_sub_app_data_rep_id_3(),
+
+        .ros2_sub_app_data_req(0),
+        .ros2_sub_app_data_rel(0),
+        .ros2_sub_app_data_grant(),
+        .ros2_sub_app_data_recv(),
+
+        .ip_payloadsmem_addr(payloadsmem_addr),
+        .ip_payloadsmem_ce(payloadsmem_cs),
+        .ip_payloadsmem_we(payloadsmem_we),
+        .ip_payloadsmem_wdata(payloadsmem_wdata),
+        .ip_payloadsmem_rdata(payloadsmem_rdata),
+
+        .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
+        .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
+        .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+        .tx_raw_eth_data_len(tx_raw_eth_data_len),
+        .tx_raw_eth_kick(tx_raw_eth_kick),
+        .tx_raw_eth_complete(tx_raw_eth_complete),
+
+        .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
+        .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
+        .arp_req_timeout(ARP_REQUEST_TIMEOUT)
+    );
+
+endmodule
+
+`resetall
