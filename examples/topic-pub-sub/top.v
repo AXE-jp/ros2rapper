@@ -234,7 +234,7 @@ module top (
     wire [63:0] sedp_reader_tbl_mem_wdata;
     wire [63:0] sedp_reader_tbl_mem_rdata;
     ram_1rw #(
-        .DEPTH(`PAYLOADSMEM_DEPTH),
+        .DEPTH(`ROS2_SEDP_READER_MAX*11),
         .DWIDTH(64)
     )
     sedp_reader_tbl_mem (
