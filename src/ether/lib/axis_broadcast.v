@@ -58,7 +58,7 @@ module axis_broadcast #
 )
 (
     input  wire                          clk,
-    input  wire                          rst,
+    input  wire                          rst_n,
 
     /*
      * AXI input
@@ -85,26 +85,26 @@ module axis_broadcast #
     output wire [M_COUNT*USER_WIDTH-1:0] m_axis_tuser
 );
 
-parameter CL_M_COUNT = $clog2(M_COUNT);
+localparam CL_M_COUNT = $clog2(M_COUNT);
 
 // datapath registers
-reg s_axis_tready_reg = 1'b0, s_axis_tready_next;
+reg s_axis_tready_reg, s_axis_tready_next;
 
-reg [DATA_WIDTH-1:0] m_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] m_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg [M_COUNT-1:0]    m_axis_tvalid_reg = {M_COUNT{1'b0}}, m_axis_tvalid_next;
-reg                  m_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   m_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] m_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] m_axis_tkeep_reg;
+reg [M_COUNT-1:0]    m_axis_tvalid_reg, m_axis_tvalid_next;
+reg                  m_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   m_axis_tid_reg;
+reg [DEST_WIDTH-1:0] m_axis_tdest_reg;
+reg [USER_WIDTH-1:0] m_axis_tuser_reg;
 
-reg [DATA_WIDTH-1:0] temp_m_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg                  temp_m_axis_tvalid_reg = 1'b0, temp_m_axis_tvalid_next;
-reg                  temp_m_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   temp_m_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] temp_m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] temp_m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] temp_m_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg;
+reg                  temp_m_axis_tvalid_reg, temp_m_axis_tvalid_next;
+reg                  temp_m_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   temp_m_axis_tid_reg;
+reg [DEST_WIDTH-1:0] temp_m_axis_tdest_reg;
+reg [USER_WIDTH-1:0] temp_m_axis_tuser_reg;
 
 // // datapath control
 reg store_axis_input_to_output;
@@ -152,41 +152,55 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
-    s_axis_tready_reg <= s_axis_tready_early;
-    m_axis_tvalid_reg <= m_axis_tvalid_next;
-    temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
-
-    // datapath
-    if (store_axis_input_to_output) begin
-        m_axis_tdata_reg <= s_axis_tdata;
-        m_axis_tkeep_reg <= s_axis_tkeep;
-        m_axis_tlast_reg <= s_axis_tlast;
-        m_axis_tid_reg   <= s_axis_tid;
-        m_axis_tdest_reg <= s_axis_tdest;
-        m_axis_tuser_reg <= s_axis_tuser;
-    end else if (store_axis_temp_to_output) begin
-        m_axis_tdata_reg <= temp_m_axis_tdata_reg;
-        m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
-        m_axis_tlast_reg <= temp_m_axis_tlast_reg;
-        m_axis_tid_reg   <= temp_m_axis_tid_reg;
-        m_axis_tdest_reg <= temp_m_axis_tdest_reg;
-        m_axis_tuser_reg <= temp_m_axis_tuser_reg;
-    end
-
-    if (store_axis_input_to_temp) begin
-        temp_m_axis_tdata_reg <= s_axis_tdata;
-        temp_m_axis_tkeep_reg <= s_axis_tkeep;
-        temp_m_axis_tlast_reg <= s_axis_tlast;
-        temp_m_axis_tid_reg   <= s_axis_tid;
-        temp_m_axis_tdest_reg <= s_axis_tdest;
-        temp_m_axis_tuser_reg <= s_axis_tuser;
-    end
-
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         s_axis_tready_reg <= 1'b0;
         m_axis_tvalid_reg <= {M_COUNT{1'b0}};
         temp_m_axis_tvalid_reg <= {M_COUNT{1'b0}};
+
+        m_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
+        m_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
+        m_axis_tlast_reg  = 1'b0;
+        m_axis_tid_reg    = {ID_WIDTH{1'b0}};
+        m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
+        m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+
+        temp_m_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
+        temp_m_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
+        temp_m_axis_tlast_reg  = 1'b0;
+        temp_m_axis_tid_reg    = {ID_WIDTH{1'b0}};
+        temp_m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
+        temp_m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+    end else begin
+        s_axis_tready_reg <= s_axis_tready_early;
+        m_axis_tvalid_reg <= m_axis_tvalid_next;
+        temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
+
+        // datapath
+        if (store_axis_input_to_output) begin
+            m_axis_tdata_reg <= s_axis_tdata;
+            m_axis_tkeep_reg <= s_axis_tkeep;
+            m_axis_tlast_reg <= s_axis_tlast;
+            m_axis_tid_reg   <= s_axis_tid;
+            m_axis_tdest_reg <= s_axis_tdest;
+            m_axis_tuser_reg <= s_axis_tuser;
+        end else if (store_axis_temp_to_output) begin
+            m_axis_tdata_reg <= temp_m_axis_tdata_reg;
+            m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
+            m_axis_tlast_reg <= temp_m_axis_tlast_reg;
+            m_axis_tid_reg   <= temp_m_axis_tid_reg;
+            m_axis_tdest_reg <= temp_m_axis_tdest_reg;
+            m_axis_tuser_reg <= temp_m_axis_tuser_reg;
+        end
+
+        if (store_axis_input_to_temp) begin
+            temp_m_axis_tdata_reg <= s_axis_tdata;
+            temp_m_axis_tkeep_reg <= s_axis_tkeep;
+            temp_m_axis_tlast_reg <= s_axis_tlast;
+            temp_m_axis_tid_reg   <= s_axis_tid;
+            temp_m_axis_tdest_reg <= s_axis_tdest;
+            temp_m_axis_tuser_reg <= s_axis_tuser;
+        end
     end
 end
 
