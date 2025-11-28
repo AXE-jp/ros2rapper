@@ -158,6 +158,8 @@ module raw_eth_tx_adapter (
             if (!enable) begin
                 r_state <= IDLE;
                 r_completed <= 1'b0;
+                r_count <= {COUNT_WIDTH{1'b0}};
+                r_rdata <= 32'd0;
             end else begin
                 r_state <= w_state_next;
                 // deassert completed when frame_ready is deasserted
@@ -312,6 +314,8 @@ module raw_eth_tx_adapter_fifo #(
             if (!enable) begin
                 r_addr <= {ADDR_WIDTH{1'b0}};
                 r_rdata_valid <= 2'd0;
+                r_rdata[0] <= {DATA_WIDTH{1'b0}};
+                r_rdata[1] <= {DATA_WIDTH{1'b0}};
             end else begin
                 if (w_addr_valid) begin
                     if (r_addr + 1'b1 == MAX_DATA_LEN) begin
