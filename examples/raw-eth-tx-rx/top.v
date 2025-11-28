@@ -192,7 +192,7 @@ module top (
     assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
 
     // Raw Ether TX message
-    wire [47:0] dest_mac_addr = 48'h01_00_00_00_00_02;
+    wire [47:0] dest_mac_addr = 48'hff_ff_ff_ff_ff_ff; // broadcast
     wire [31:0] dest_ip_addr  = {8'd2, 8'd1, 8'd168, 8'd192};
     wire [15:0] udp_src_port  = 16'd1111;
     wire [15:0] udp_dest_port = 16'd1234;
@@ -250,7 +250,7 @@ module top (
     end
 
     // Raw Ether TX handshake
-    reg [26:0] count;
+    reg  [26:0] count;
     wire tx_raw_eth_frame_ready = count[26];
     wire tx_raw_eth_completed;
     always @(posedge clk_int or negedge rst_n_int) begin
@@ -267,7 +267,7 @@ module top (
 
     reg  tx_raw_eth_frame_ready_before;
     always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n) begin
+        if (!rst_n_int) begin
             tx_raw_eth_frame_ready_before <= 1'b0;
         end else begin
             tx_raw_eth_frame_ready_before <= tx_raw_eth_frame_ready;
@@ -482,8 +482,8 @@ module top (
         .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
         .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
         .tx_raw_eth_data_len(tx_raw_eth_data_len),
-        .tx_raw_eth_kick(tx_raw_eth_kick),
-        .tx_raw_eth_complete(tx_raw_eth_complete),
+        .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
+        .tx_raw_eth_completed(tx_raw_eth_completed),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
