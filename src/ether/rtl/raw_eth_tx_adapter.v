@@ -300,7 +300,7 @@ module raw_eth_tx_adapter_fifo #(
             endcase
         end
     end
-    // w_addr_valid is enabled if and only if
+    // w_addr_valid is asserted if and only if
     // r_rdata_valid[0] is guaranteed to be 1'b0 after two clock cycles.
     assign w_addr_valid = enable & ~w_rdata_next_valid[1];
 
