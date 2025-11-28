@@ -61,7 +61,7 @@ module raw_eth_rx_adapter (
 
     reg  frame_ready_reg;
     wire frame_ready_next = (frame_ready_reg & ~rx_raw_eth_data_ack) | (state_reg == FINISH);
-    assign rx_eth_raw_data_frame_ready = frame_ready_reg;
+    assign rx_raw_eth_data_frame_ready = frame_ready_reg;
 
     reg axis_tready_reg;
     wire axis_tready_next = (state_next == IDLE) | (state_next == READING) | (state_next == SENDING_STREAM) | (state_next == COUNT_ONLY) | (state_next == WAIT_LAST);
@@ -81,7 +81,7 @@ module raw_eth_rx_adapter (
                 data_mem[iter] <= 8'd0;
             end
         end else begin
-            if ((state == READING) && (count_reg < DATA_MEM_SIZE)) begin
+            if ((state_reg == READING) && (count_reg < DATA_MEM_SIZE)) begin
                 data_mem[count_reg] <= rx_raw_eth_axis_tdata;
             end
         end
@@ -143,10 +143,10 @@ module raw_eth_rx_adapter (
     reg [3:0] ram_we_next;
     reg [31:0] ram_wdata_reg;
     reg [31:0] ram_wdata_next;
-    assign rx_eth_raw_data_addr  = ram_addr_reg;
-    assign rx_eth_raw_data_ce    = ram_ce_reg;
-    assign rx_eth_raw_data_we    = ram_we_reg;
-    assign rx_eth_raw_data_wdata = ram_wdata_reg;
+    assign rx_raw_eth_data_addr  = ram_addr_reg;
+    assign rx_raw_eth_data_ce    = ram_ce_reg;
+    assign rx_raw_eth_data_we    = ram_we_reg;
+    assign rx_raw_eth_data_wdata = ram_wdata_reg;
     always @* begin
         ram_addr_next = {ADDR_WIDTH{1'b0}};
         ram_ce_next = 1'b0;
@@ -174,7 +174,7 @@ module raw_eth_rx_adapter (
         end else if (state_reg == SENDING_STREAM) begin
             ram_addr_next = count_reg[COUNT_WIDTH-1:2] + 1'b1;
             ram_ce_next = 1'b1;
-            case (count_reg[1:0]) begin
+            case (count_reg[1:0])
                 2'd0: ram_we_next = 4'b0001;
                 2'd1: ram_we_next = 4'b0010;
                 2'd2: ram_we_next = 4'b0100;
@@ -195,16 +195,16 @@ module raw_eth_rx_adapter (
 
         if (state_reg == IDLE) begin
             count_next = {COUNT_WIDTH{1'b0}};
-            if (rx_raw_eth_tx_tvalid) begin
+            if (rx_raw_eth_axis_tvalid) begin
                 // If state_reg is IDLE, axis_tready_reg should be 1'b1.
                 if (frame_ready_reg) begin
                     // rx_raw_eth_data is not available
-                    if (!rx_raw_eth_tx_last) begin
+                    if (!rx_raw_eth_axis_tlast) begin
                         state_next = WAIT_LAST;
                     end
                 end else begin
                     count_next = 1;
-                    if (rx_raw_eth_tx_tlast) begin
+                    if (rx_raw_eth_axis_tlast) begin
                         state_next = SENDING_SHORT_PACKET_00;
                     end else begin
                         state_next = READING;
@@ -212,10 +212,10 @@ module raw_eth_rx_adapter (
                 end
             end
         end else if (state_reg == READING) begin
-            if (rx_raw_eth_tx_valid) begin
+            if (rx_raw_eth_axis_tvalid) begin
                 // If state_reg is READING, axis_tready_reg should be 1'b1.
                 count_next = count_reg + 1'b1;
-                if (rx_raw_eth_tx_last) begin
+                if (rx_raw_eth_axis_tlast) begin
                     state_next = SENDING_SHORT_PACKET_00;
                 end else if (count_next == DATA_MEM_SIZE) begin
                     state_next = IDENTIFY_PACKET_TYPE;
@@ -226,10 +226,10 @@ module raw_eth_rx_adapter (
                 state_next = SENDING_STREAM;
             end
         end else if (state_reg == SENDING_STREAM) begin
-            if (rx_raw_eth_tx_valid) begin
+            if (rx_raw_eth_axis_tvalid) begin
                 // If state_reg is SENDING_STREAM, axis_tready_reg should be 1'b1.
                 count_next = count_reg + 1'b1;
-                if (rx_raw_eth_tx_last) begin
+                if (rx_raw_eth_axis_tlast) begin
                     state_next = SENDING_MEM_DATA_00;
                 end else if (count_next == (`ROS2_MAX_RAW_ETH_RX_DATA_LEN - 4)) begin
                     // The packet is too long, so count length only.
@@ -237,10 +237,10 @@ module raw_eth_rx_adapter (
                 end
             end
         end else if (state_reg == COUNT_ONLY) begin
-            if (rx_raw_eth_tx_valid) begin
+            if (rx_raw_eth_axis_tvalid) begin
                 // If state_reg is COUNT_ONLY, axis_tready_reg should be 1'b1.
                 count_next = count_reg + 1'b1;
-                if (rx_raw_eth_tx_last) begin
+                if (rx_raw_eth_axis_tlast) begin
                     state_next = SENDING_MEM_DATA_00;
                 end
             end
@@ -248,7 +248,7 @@ module raw_eth_rx_adapter (
             count_next = {COUNT_WIDTH{1'b0}};
             state_next = IDLE;
         end else if (state_reg == WAIT_LAST) begin
-            if (rx_raw_eth_tx_valid & rx_raw_eth_tx_last) begin
+            if (rx_raw_eth_axis_tvalid & rx_raw_eth_axis_tlast) begin
                 // If state_reg is WAIT_LAST, axis_tready_reg should be 1'b1.
                 count_next = {COUNT_WIDTH{1'b0}};
                 state_next = IDLE;
