@@ -161,7 +161,8 @@ module top (
     // --- ROS2 Publisher Message Control
     reg ros2_pub_app_data_req_0;
     reg ros2_pub_app_data_rel_0;
-    wire ros2_pub_app_data_grant_0;
+    wire ros2_pub_app_data_ack_0;
+    wire ros2_pub_app_data_nack_0;
     reg [27:0] msg_change_counter;
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
@@ -173,11 +174,15 @@ module top (
             msg_change_counter <= msg_change_counter + 1;
             ros2_pub_app_data_rel_0 <= 0;
 
-            if (ros2_pub_app_data_req_0 && ros2_pub_app_data_grant_0) begin
+            if (ros2_pub_app_data_req_0 & ros2_pub_app_data_ack_0) begin
                 msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
                 ros2_pub_app_data_rel_0 <= 1;
                 ros2_pub_app_data_req_0 <= 0;
                 msg_change_counter <= 0;
+            end else if (ros2_pub_app_data_req_0 & ros2_pub_app_data_nack_0) begin
+                ros2_pub_app_data_req_0 <= 0;
+            end else if (ros2_pub_app_data_rel_0 & ros2_pub_app_data_ack_0) begin
+                ros2_pub_app_data_rel_0 <= 0;
             end else if (msg_change_counter[27]) begin
                 ros2_pub_app_data_req_0 <= 1;
             end
@@ -186,10 +191,12 @@ module top (
 
     wire [3:0] ros2_pub_app_data_req;
     wire [3:0] ros2_pub_app_data_rel;
-    wire [3:0] ros2_pub_app_data_grant;
+    wire [3:0] ros2_pub_app_data_ack;
+    wire [3:0] ros2_pub_app_data_nack;
     assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
     assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
-    assign ros2_pub_app_data_grant_0 = ros2_pub_app_data_grant[0];
+    assign ros2_pub_app_data_ack_0 = ros2_pub_app_data_ack[0];
+    assign ros2_pub_app_data_nack_0 = ros2_pub_app_data_nack[0];
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
@@ -387,7 +394,9 @@ module top (
 
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
-        .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
+        .ros2_pub_app_data_ack(ros2_pub_app_data_ack),
+        .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
+        .ros2_pub_app_data_grant(),
 
         .ros2_sub_app_data_0_addr(ros2_sub_app_data_addr),
         .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
@@ -427,6 +436,8 @@ module top (
 
         .ros2_sub_app_data_req(0),
         .ros2_sub_app_data_rel(0),
+        .ros2_sub_app_data_ack(),
+        .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
         .ros2_sub_app_data_recv(),
 

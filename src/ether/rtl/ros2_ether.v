@@ -123,6 +123,8 @@ module ros2_ether #(
 
     input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_req,
     input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_rel,
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ack,
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_nack,
     output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_grant,
 
     output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_0_addr,
@@ -163,6 +165,8 @@ module ros2_ether #(
 
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_req,
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_ack,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_nack,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
     output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_recv,
 
@@ -467,6 +471,8 @@ ros2rapper (
 
     .ros2_pub_app_data_req(ros2_pub_app_data_req),
     .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+    .ros2_pub_app_data_ack(ros2_pub_app_data_ack),
+    .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
     .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
     .ros2_sub_app_data_0_addr(ros2_sub_app_data_0_addr),
@@ -507,6 +513,8 @@ ros2rapper (
 
     .ros2_sub_app_data_req(ros2_sub_app_data_req),
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
+    .ros2_sub_app_data_ack(ros2_sub_app_data_ack),
+    .ros2_sub_app_data_nack(ros2_sub_app_data_nack),
     .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
     .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
