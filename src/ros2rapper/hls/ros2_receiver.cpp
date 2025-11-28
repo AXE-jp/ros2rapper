@@ -134,7 +134,6 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_memory port = sub_app_data_1
 #pragma HLS interface mode = ap_memory port = sub_app_data_2
 #pragma HLS interface mode = ap_memory port = sub_app_data_3
-#pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
 #pragma HLS interface mode = ap_fifo port = sub_app_data_recvinfo
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
