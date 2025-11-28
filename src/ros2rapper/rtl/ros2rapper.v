@@ -288,64 +288,66 @@ wire cnt_sedp_pub_an_elapsed;
 wire cnt_sedp_sub_an_elapsed;
 wire cnt_app_wr_elapsed;
 
-`ifdef SET_TX_PERIOD_BY_PARAMETER
-ros2rapper_tx_counters #(
-    .PRESCALER_DIV              (PRESCALER_DIV              ),
-    .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
-    .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
-    .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
-    .TX_PERIOD_SEDP_SUB_WR_COUNT(TX_PERIOD_SEDP_SUB_WR_COUNT),
-    .TX_PERIOD_SEDP_PUB_HB_COUNT(TX_PERIOD_SEDP_PUB_HB_COUNT),
-    .TX_PERIOD_SEDP_SUB_HB_COUNT(TX_PERIOD_SEDP_SUB_HB_COUNT),
-    .TX_PERIOD_SEDP_PUB_AN_COUNT(TX_PERIOD_SEDP_PUB_AN_COUNT),
-    .TX_PERIOD_SEDP_SUB_AN_COUNT(TX_PERIOD_SEDP_SUB_AN_COUNT),
-    .TX_PERIOD_APP_WR_COUNT     (TX_PERIOD_APP_WR_COUNT     )
-)
-ros2rapper_tx_counters (
-    .i_clk(clk),
-    .i_rst_n(rst_n),
+generate
+    if (SET_TX_PERIOD_BY_PARAMETER) begin
+        ros2rapper_tx_counters #(
+            .PRESCALER_DIV              (PRESCALER_DIV              ),
+            .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
+            .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
+            .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
+            .TX_PERIOD_SEDP_SUB_WR_COUNT(TX_PERIOD_SEDP_SUB_WR_COUNT),
+            .TX_PERIOD_SEDP_PUB_HB_COUNT(TX_PERIOD_SEDP_PUB_HB_COUNT),
+            .TX_PERIOD_SEDP_SUB_HB_COUNT(TX_PERIOD_SEDP_SUB_HB_COUNT),
+            .TX_PERIOD_SEDP_PUB_AN_COUNT(TX_PERIOD_SEDP_PUB_AN_COUNT),
+            .TX_PERIOD_SEDP_SUB_AN_COUNT(TX_PERIOD_SEDP_SUB_AN_COUNT),
+            .TX_PERIOD_APP_WR_COUNT     (TX_PERIOD_APP_WR_COUNT     )
+        )
+        ros2rapper_tx_counters (
+            .i_clk(clk),
+            .i_rst_n(rst_n),
 
-    .i_cnt_interval_set(cnt_interval_set),
-    .i_cnt_spdp_wr_set(cnt_spdp_wr_set),
-    .i_cnt_sedp_pub_wr_set(cnt_sedp_pub_wr_set),
-    .i_cnt_sedp_sub_wr_set(cnt_sedp_sub_wr_set),
-    .i_cnt_sedp_pub_hb_set(cnt_sedp_pub_hb_set),
-    .i_cnt_sedp_sub_hb_set(cnt_sedp_sub_hb_set),
-    .i_cnt_sedp_pub_an_set(cnt_sedp_pub_an_set),
-    .i_cnt_sedp_sub_an_set(cnt_sedp_sub_an_set),
-    .i_cnt_app_wr_set(cnt_app_wr_set),
+            .i_cnt_interval_set(cnt_interval_set),
+            .i_cnt_spdp_wr_set(cnt_spdp_wr_set),
+            .i_cnt_sedp_pub_wr_set(cnt_sedp_pub_wr_set),
+            .i_cnt_sedp_sub_wr_set(cnt_sedp_sub_wr_set),
+            .i_cnt_sedp_pub_hb_set(cnt_sedp_pub_hb_set),
+            .i_cnt_sedp_sub_hb_set(cnt_sedp_sub_hb_set),
+            .i_cnt_sedp_pub_an_set(cnt_sedp_pub_an_set),
+            .i_cnt_sedp_sub_an_set(cnt_sedp_sub_an_set),
+            .i_cnt_app_wr_set(cnt_app_wr_set),
 
-    .o_cnt_interval_elapsed(cnt_interval_elapsed),
-    .o_cnt_spdp_wr_elapsed(cnt_spdp_wr_elapsed),
-    .o_cnt_sedp_pub_wr_elapsed(cnt_sedp_pub_wr_elapsed),
-    .o_cnt_sedp_sub_wr_elapsed(cnt_sedp_sub_wr_elapsed),
-    .o_cnt_sedp_pub_hb_elapsed(cnt_sedp_pub_hb_elapsed),
-    .o_cnt_sedp_sub_hb_elapsed(cnt_sedp_sub_hb_elapsed),
-    .o_cnt_sedp_pub_an_elapsed(cnt_sedp_pub_an_elapsed),
-    .o_cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
-    .o_cnt_app_wr_elapsed(cnt_app_wr_elapsed)
-);
-`else
-assign ros2_cnt_interval_set = cnt_interval_set;
-assign ros2_cnt_spdp_wr_set = cnt_spdp_wr_set;
-assign ros2_cnt_sedp_pub_wr_set = cnt_sedp_pub_wr_set;
-assign ros2_cnt_sedp_sub_wr_set = cnt_sedp_sub_wr_set;
-assign ros2_cnt_sedp_pub_hb_set = cnt_sedp_pub_hb_set;
-assign ros2_cnt_sedp_sub_hb_set = cnt_sedp_sub_hb_set;
-assign ros2_cnt_sedp_pub_an_set = cnt_sedp_pub_an_set;
-assign ros2_cnt_sedp_sub_an_set = cnt_sedp_sub_an_set;
-assign ros2_cnt_app_wr_set = cnt_app_wr_set;
+            .o_cnt_interval_elapsed(cnt_interval_elapsed),
+            .o_cnt_spdp_wr_elapsed(cnt_spdp_wr_elapsed),
+            .o_cnt_sedp_pub_wr_elapsed(cnt_sedp_pub_wr_elapsed),
+            .o_cnt_sedp_sub_wr_elapsed(cnt_sedp_sub_wr_elapsed),
+            .o_cnt_sedp_pub_hb_elapsed(cnt_sedp_pub_hb_elapsed),
+            .o_cnt_sedp_sub_hb_elapsed(cnt_sedp_sub_hb_elapsed),
+            .o_cnt_sedp_pub_an_elapsed(cnt_sedp_pub_an_elapsed),
+            .o_cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
+            .o_cnt_app_wr_elapsed(cnt_app_wr_elapsed)
+        );
+    end else begin
+        assign ros2_cnt_interval_set = cnt_interval_set;
+        assign ros2_cnt_spdp_wr_set = cnt_spdp_wr_set;
+        assign ros2_cnt_sedp_pub_wr_set = cnt_sedp_pub_wr_set;
+        assign ros2_cnt_sedp_sub_wr_set = cnt_sedp_sub_wr_set;
+        assign ros2_cnt_sedp_pub_hb_set = cnt_sedp_pub_hb_set;
+        assign ros2_cnt_sedp_sub_hb_set = cnt_sedp_sub_hb_set;
+        assign ros2_cnt_sedp_pub_an_set = cnt_sedp_pub_an_set;
+        assign ros2_cnt_sedp_sub_an_set = cnt_sedp_sub_an_set;
+        assign ros2_cnt_app_wr_set = cnt_app_wr_set;
 
-assign cnt_interval_elapsed = ros2_cnt_interval_elapsed;
-assign cnt_spdp_wr_elapsed = ros2_cnt_spdp_wr_elapsed;
-assign cnt_sedp_pub_wr_elapsed = ros2_cnt_sedp_pub_wr_elapsed;
-assign cnt_sedp_sub_wr_elapsed = ros2_cnt_sedp_sub_wr_elapsed;
-assign cnt_sedp_pub_hb_elapsed = ros2_cnt_sedp_pub_hb_elapsed;
-assign cnt_sedp_sub_hb_elapsed = ros2_cnt_sedp_sub_hb_elapsed;
-assign cnt_sedp_pub_an_elapsed = ros2_cnt_sedp_pub_an_elapsed;
-assign cnt_sedp_sub_an_elapsed = ros2_cnt_sedp_sub_an_elapsed;
-assign cnt_app_wr_elapsed = ros2_cnt_app_wr_elapsed;
-`endif
+        assign cnt_interval_elapsed = ros2_cnt_interval_elapsed;
+        assign cnt_spdp_wr_elapsed = ros2_cnt_spdp_wr_elapsed;
+        assign cnt_sedp_pub_wr_elapsed = ros2_cnt_sedp_pub_wr_elapsed;
+        assign cnt_sedp_sub_wr_elapsed = ros2_cnt_sedp_sub_wr_elapsed;
+        assign cnt_sedp_pub_hb_elapsed = ros2_cnt_sedp_pub_hb_elapsed;
+        assign cnt_sedp_sub_hb_elapsed = ros2_cnt_sedp_sub_hb_elapsed;
+        assign cnt_sedp_pub_an_elapsed = ros2_cnt_sedp_pub_an_elapsed;
+        assign cnt_sedp_sub_an_elapsed = ros2_cnt_sedp_sub_an_elapsed;
+        assign cnt_app_wr_elapsed = ros2_cnt_app_wr_elapsed;
+    end
+endgenerate
 
 `ifdef ROS2RAPPER_HLS_VITIS
 ros2_receiver
