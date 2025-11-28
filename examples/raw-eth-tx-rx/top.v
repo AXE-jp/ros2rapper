@@ -287,6 +287,9 @@ module top (
         end
     end
 
+    wire rx_raw_eth_data_frame_ready;
+    wire rx_raw_eth_data_ack = rx_raw_eth_data_frame_ready;
+
     assign led4 = led_tx_raw_eth_send;
     assign led5 = 1'b0;
     assign led6 = 1'b0;
@@ -484,6 +487,13 @@ module top (
         .tx_raw_eth_data_len(tx_raw_eth_data_len),
         .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
         .tx_raw_eth_completed(tx_raw_eth_completed),
+
+        .rx_raw_eth_data_addr(),
+        .rx_raw_eth_data_ce(),
+        .rx_raw_eth_data_we(),
+        .rx_raw_eth_data_wdata(),
+        .rx_raw_eth_data_frame_ready(rx_raw_eth_frame_ready),
+        .rx_raw_eth_data_ack(rx_raw_eth_ack),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
