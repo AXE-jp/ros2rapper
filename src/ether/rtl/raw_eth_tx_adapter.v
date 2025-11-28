@@ -88,6 +88,7 @@ module raw_eth_tx_adapter (
                     w_count_next = tx_raw_eth_data_len - 1'b1;
                     w_state_next = WRITE_0;
                 end else begin
+                    // Do nothing whe tx_raw_eth_data_len is invalid
                     w_completed_next = 1'b1;
                 end
             end
