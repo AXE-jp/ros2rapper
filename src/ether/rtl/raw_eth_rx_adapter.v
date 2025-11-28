@@ -9,10 +9,10 @@ module raw_eth_rx_adapter (
     input  wire rst_n,
     input  wire enable,
 
-    output wire [7:0] rx_raw_eth_axis_tdata,
-    output wire rx_raw_eth_axis_tvalid,
-    input  wire rx_raw_eth_axis_tready,
-    output wire rx_raw_eth_axis_tlast,
+    input  wire [7:0] rx_raw_eth_axis_tdata,
+    input  wire rx_raw_eth_axis_tvalid,
+    output wire rx_raw_eth_axis_tready,
+    input  wire rx_raw_eth_axis_tlast,
 
     output wire [$clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN)-3:0] rx_raw_eth_data_addr,
     output wire rx_raw_eth_data_ce,

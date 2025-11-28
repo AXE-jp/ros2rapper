@@ -492,8 +492,8 @@ module top (
         .rx_raw_eth_data_ce(),
         .rx_raw_eth_data_we(),
         .rx_raw_eth_data_wdata(),
-        .rx_raw_eth_data_frame_ready(rx_raw_eth_frame_ready),
-        .rx_raw_eth_data_ack(rx_raw_eth_ack),
+        .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+        .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),

@@ -182,8 +182,8 @@ module ros2_ether #(
     output wire rx_raw_eth_data_ce,
     output wire [3:0] rx_raw_eth_data_we,
     output wire [31:0] rx_raw_eth_data_wdata,
-    output wire rx_raw_eth_frame_ready,
-    input  wire rx_raw_eth_ack,
+    output wire rx_raw_eth_data_frame_ready,
+    input  wire rx_raw_eth_data_ack,
 
     input  wire [5:0] arp_req_retry_count,
     input  wire [35:0] arp_req_retry_interval,
@@ -299,10 +299,10 @@ verilog_ethernet verilog_ethernet_inst (
     .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
     .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
 
-    .rx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
-    .rx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
-    .rx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
-    .rx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
     .rx_raw_eth_axis_tuser(),
 
     .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
@@ -601,21 +601,21 @@ raw_eth_tx_adapter_inst (
     .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast)
 );
 
-raw_eth_tx_adapter
-raw_eth_tx_adapter_inst (
+raw_eth_rx_adapter
+raw_eth_rx_adapter_inst (
     .clk(clk),
     .rst_n(rst_n),
     .enable(ether_en),
     .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
     .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
-    .rx_raw_eth_data_rdata(rx_raw_eth_data_rdata),
-    .rx_raw_eth_data_len(rx_raw_eth_data_len),
-    .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
-    .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
     .rx_raw_eth_data_we(rx_raw_eth_data_we),
     .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
-    .rx_raw_eth_frame_ready(rx_raw_eth_frame_ready),
-    .rx_raw_eth_ack(rx_raw_eth_ack),
+    .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+    .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
     .ip_addr(ip_addr),
     .subnet_mask(subnet_mask)
 );
