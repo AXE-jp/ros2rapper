@@ -55,7 +55,7 @@ module raw_eth_tx_adapter (
     raw_eth_tx_adapter_fifo_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .enable(r_state != IDLE),
+        .start(r_state != IDLE),
         .rom_addr(tx_raw_eth_data_addr),
         .rom_ce(tx_raw_eth_data_ce),
         .rom_rdata(tx_raw_eth_data_rdata),
@@ -219,7 +219,7 @@ module raw_eth_tx_adapter_fifo #(
 (
     input  wire clk,
     input  wire rst_n,
-    input  wire enable,
+    input  wire start,
 
     // ROM ports
     output wire [$clog2(MAX_DATA_LEN)-1:0] rom_addr,
@@ -311,7 +311,7 @@ module raw_eth_tx_adapter_fifo #(
             r_rdata[0] <= {DATA_WIDTH{1'b0}};
             r_rdata[1] <= {DATA_WIDTH{1'b0}};
         end else begin
-            if (!enable) begin
+            if (!start) begin
                 r_addr <= {ADDR_WIDTH{1'b0}};
                 r_rdata_valid <= 2'd0;
                 r_rdata[0] <= {DATA_WIDTH{1'b0}};
