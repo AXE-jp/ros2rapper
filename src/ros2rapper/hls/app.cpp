@@ -160,7 +160,7 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 uint8_t               sub_app_data_1[MAX_APP_DATA_LEN],
                 uint8_t               sub_app_data_2[MAX_APP_DATA_LEN],
                 uint8_t               sub_app_data_3[MAX_APP_DATA_LEN],
-                hls_stream<uint64_t> &sub_app_data_recvmsginfo) {
+                hls_stream<uint64_t> &sub_app_data_recvinfo) {
 #pragma HLS inline
 
     static hls_uint<3> state;
@@ -284,8 +284,10 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
         }
         offset++;
         if (offset == MAX_APP_DATA_LEN || offset == sbm_len) {
-            sub_app_data_recvmsginfo.write(sbm_len | (rep_id << 16)
-                                           | ((~topics_unmatched) << 32));
+            *sub_app_data_rel = ~topics_unmatched;
+            uint64_t info = (uint64_t)sbm_len | ((uint64_t)rep_id << 16)
+                            | ((uint64_t)(~topics_unmatched) << 32);
+            sub_app_data_recvinfo.write(info);
             state = STATE_WAIT_END;
         }
         break;

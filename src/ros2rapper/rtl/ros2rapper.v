@@ -143,9 +143,9 @@ module ros2rapper #(
     output wire ros2_sub_app_data_3_we,
     output wire [7:0] ros2_sub_app_data_3_wdata,
 
-    output wire [63:0] ros2_sub_app_data_recvmsginfo_out_din,
-    input  wire ros2_sub_app_data_recvmsginfo_out_full_n,
-    output wire ros2_sub_app_data_recvmsginfo_out_write,
+    output wire [63:0] ros2_sub_app_data_recvinfo_out_din,
+    input  wire ros2_sub_app_data_recvinfo_out_full_n,
+    output wire ros2_sub_app_data_recvinfo_out_write,
 
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_req,
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
@@ -402,9 +402,9 @@ ros2_receiver (
     .sub_app_data_3_we0(ros2_sub_app_data_3_we),
     .sub_app_data_3_d0(ros2_sub_app_data_3_wdata),
 
-    .sub_app_data_recvmsginfo_out_din(ros2_sub_app_data_recvmsginfo_out_din),
-    .sub_app_data_recvmsginfo_out_full_n(ros2_sub_app_data_recvmsginfo_out_full_n),
-    .sub_app_data_recvmsginfo_out_write(ros2_sub_app_data_recvmsginfo_out_write),
+    .sub_app_data_recvinfo_out_din(ros2_sub_app_data_recvinfo_out_din),
+    .sub_app_data_recvinfo_out_full_n(ros2_sub_app_data_recvinfo_out_full_n),
+    .sub_app_data_recvinfo_out_write(ros2_sub_app_data_recvinfo_out_write),
 
     .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req_valid),
     .sub_app_data_req(ros2_sub_app_data_ip_req),
@@ -1079,9 +1079,9 @@ ros2_receiver (
   .sub_app_data_3_WE1(ros2_sub_app_data_3_we),
   .sub_app_data_3_WD1(ros2_sub_app_data_3_wdata),
 
-  .sub_app_data_recvmsginfo_out_din(ros2_sub_app_data_recvmsginfo_out_din),
-  .sub_app_data_recvmsginfo_out_full(~ros2_sub_app_data_recvmsginfo_out_full_n),
-  .sub_app_data_recvmsginfo_out_wreq(ros2_sub_app_data_recvmsginfo_out_write),
+  .sub_app_data_recvinfo_out_din(ros2_sub_app_data_recvinfo_out_din),
+  .sub_app_data_recvinfo_out_full(~ros2_sub_app_data_recvinfo_out_full_n),
+  .sub_app_data_recvinfo_out_wreq(ros2_sub_app_data_recvinfo_out_write),
 
   .sub_app_data_req_we(ros2_sub_app_data_ip_req_valid),
   .sub_app_data_req_wd(ros2_sub_app_data_ip_req),

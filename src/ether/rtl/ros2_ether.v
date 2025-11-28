@@ -161,9 +161,9 @@ module ros2_ether #(
     output wire ros2_sub_app_data_rep_id_3_valid,
     output wire [15:0] ros2_sub_app_data_rep_id_3,
 
-    output wire [63:0] ros2_sub_app_data_recvmsginfo_out_din,
-    input  wire ros2_sub_app_data_recvmsginfo_out_full_n,
-    output wire ros2_sub_app_data_recvmsginfo_out_write,
+    output wire [63:0] ros2_sub_app_data_recvinfo_out_din,
+    input  wire ros2_sub_app_data_recvinfo_out_full_n,
+    output wire ros2_sub_app_data_recvinfo_out_write,
 
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_req,
     input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
@@ -511,9 +511,9 @@ ros2rapper (
     .ros2_sub_app_data_rep_id_3_valid(ros2_sub_app_data_rep_id_3_valid),
     .ros2_sub_app_data_rep_id_3(ros2_sub_app_data_rep_id_3),
 
-    .ros2_sub_app_data_recvmsginfo_out_din(ros2_sub_app_data_recvmsginfo_out_din),
-    .ros2_sub_app_data_recvmsginfo_out_full_n(ros2_sub_app_data_recvmsginfo_out_full_n),
-    .ros2_sub_app_data_recvmsginfo_out_write(ros2_sub_app_data_recvmsginfo_out_write),
+    .ros2_sub_app_data_recvinfo_out_din(ros2_sub_app_data_recvinfo_out_din),
+    .ros2_sub_app_data_recvinfo_out_full_n(ros2_sub_app_data_recvinfo_out_full_n),
+    .ros2_sub_app_data_recvinfo_out_write(ros2_sub_app_data_recvinfo_out_write),
 
     .ros2_sub_app_data_req(ros2_sub_app_data_req),
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
