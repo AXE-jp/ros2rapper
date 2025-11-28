@@ -13,8 +13,8 @@ module raw_eth_tx_adapter (
     output wire tx_raw_eth_data_ce,
     input  wire [31:0] tx_raw_eth_data_rdata,
     input  wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len,
-    input  wire tx_raw_eth_kick,
-    output wire tx_raw_eth_complete,
+    input  wire tx_raw_eth_frame_ready,
+    output wire tx_raw_eth_completed,
 
     output reg  [7:0] tx_raw_eth_axis_tdata,
     output reg  tx_raw_eth_axis_tvalid,
@@ -29,9 +29,20 @@ module raw_eth_tx_adapter (
     localparam [2:0] WRITE_2 = 3'd3;
     localparam [2:0] WRITE_3 = 3'd4;
 
-    reg r_complete;
-    reg w_complete_next;
-    assign tx_raw_eth_complete = r_complete;
+    reg tx_raw_eth_frame_ready_before;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            tx_raw_eth_frame_ready_before <= 1'b0;
+        end else begin
+            tx_raw_eth_frame_ready_before <= tx_raw_eth_frame_ready;
+        end
+    end
+    // The rising edge of tx_raw_eth_frame_ready
+    wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
+
+    reg r_completed;
+    reg w_completed_next;
+    assign tx_raw_eth_completed = r_completed;
 
     wire [31:0] w_rdata_new;
     wire w_rdata_new_valid;
@@ -63,10 +74,10 @@ module raw_eth_tx_adapter (
         tx_raw_eth_axis_tlast = (r_count == {COUNT_WIDTH{1'b0}});
 
         w_state_next = r_state;
+        w_completed_next = r_completed;
         w_count_next = r_count;
         w_rdata_next = r_rdata;
 
-        w_complete_next = 1'b0;
         w_rdata_new_ready = 1'b0;
         tx_raw_eth_axis_tdata = 8'd0;
         tx_raw_eth_axis_tvalid = 1'b0;
@@ -77,7 +88,7 @@ module raw_eth_tx_adapter (
                     w_count_next = tx_raw_eth_data_len - 1'b1;
                     w_state_next = WRITE_0;
                 end else begin
-                    w_complete_next = 1'b1;
+                    w_completed_next = 1'b1;
                 end
             end
         end else if (r_state == WRITE_0) begin
@@ -87,7 +98,7 @@ module raw_eth_tx_adapter (
             tx_raw_eth_axis_tvalid = w_rdata_new_valid;
             if (w_rdata_new_valid && tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_complete_next = 1'b1;
+                    w_completed_next = 1'b1;
                     w_state_next = IDLE;
                 end else begin
                     w_count_next = r_count - 1'b1;
@@ -99,7 +110,7 @@ module raw_eth_tx_adapter (
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_complete_next = 1'b1;
+                    w_completed_next = 1'b1;
                     w_state_next = IDLE;
                 end else begin
                     w_count_next = r_count - 1'b1;
@@ -111,7 +122,7 @@ module raw_eth_tx_adapter (
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_complete_next = 1'b1;
+                    w_completed_next = 1'b1;
                     w_state_next = IDLE;
                 end else begin
                     w_count_next = r_count - 1'b1;
@@ -123,7 +134,7 @@ module raw_eth_tx_adapter (
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_complete_next = 1'b1;
+                    w_completed_next = 1'b1;
                     w_state_next = IDLE;
                 end else begin
                     w_count_next = r_count - 1'b1;
@@ -131,7 +142,7 @@ module raw_eth_tx_adapter (
                 end
             end
         end else begin
-            w_complete_next = 1'b1;
+            w_completed_next = 1'b1;
             w_state_next = IDLE;
         end
     end
@@ -139,15 +150,17 @@ module raw_eth_tx_adapter (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             r_state <= IDLE;
-            r_complete <= 1'b0;
+            r_completed <= 1'b0;
             r_count <= {COUNT_WIDTH{1'b0}};
             r_rdata <= 32'd0;
         end else begin
             if (!enable) begin
                 r_state <= IDLE;
+                r_completed <= 1'b0;
             end else begin
                 r_state <= w_state_next;
-                r_complete <= w_complete_next;
+                // deassert completed when frame_ready is deasserted
+                r_completed <= w_completed_next & tx_raw_eth_frame_ready;
                 r_count <= w_count_next;
                 r_rdata <= w_rdata_next;
             end

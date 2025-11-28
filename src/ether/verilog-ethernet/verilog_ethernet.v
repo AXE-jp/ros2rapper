@@ -60,8 +60,8 @@ module verilog_ethernet (
     output wire        rx_ip_payload_axis_tlast,
     output wire        rx_ip_payload_axis_tuser,
 
-    input  wire        tx_raw_eth_kick,
-    input  wire        tx_raw_eth_complete,
+    input  wire        tx_raw_eth_frame_ready,
+    input  wire        tx_raw_eth_completed,
     input  wire [7:0]  tx_raw_eth_axis_tdata,
     input  wire        tx_raw_eth_axis_tvalid,
     output wire        tx_raw_eth_axis_tready,
@@ -224,21 +224,8 @@ eth_axis_tx_inst (
     .busy()
 );
 
-reg axis_mux_select;
-localparam AXIS_MUX_SELECT_ROS2 = 1'b0;
-localparam AXIS_MUX_SELECT_RAW_ETH = 1'b1;
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        axis_mux_select <= AXIS_MUX_SELECT_ROS2;
-    end else begin
-        if (tx_raw_eth_complete) begin
-            axis_mux_select <= AXIS_MUX_SELECT_ROS2;
-        end else if (tx_raw_eth_kick) begin
-            axis_mux_select <= AXIS_MUX_SELECT_RAW_ETH;
-        end
-    end
-end
-
+// 0: ROS2rapper, 1: raw ether
+wire axis_mux_select = tx_raw_eth_frame_ready & ~tx_raw_eth_completed;
 axis_mux #(
     .S_COUNT(2),
     .DATA_WIDTH(8),

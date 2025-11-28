@@ -193,10 +193,10 @@ module top (
 
     // Raw Ether TX message
     wire [47:0] dest_mac_addr = 48'h01_00_00_00_00_02;
-    wire [31:0] dest_ip_addr  = {8'd2, 8'd1, 8'd168, 8'd192}; 
+    wire [31:0] dest_ip_addr  = {8'd2, 8'd1, 8'd168, 8'd192};
     wire [15:0] udp_src_port  = 16'd1111;
     wire [15:0] udp_dest_port = 16'd1234;
-    
+
     // Ether header
     wire [15:0] eth_type = {8'h00, 8'h08}; // IPv4
     wire [111:0] raw_eth_hdr = {eth_type, mac_addr, dest_mac_addr};
@@ -249,37 +249,48 @@ module top (
         end
     end
 
-    // Kick & complete of raw ether TX
+    // Raw Ether TX handshake
     reg [26:0] count;
-    wire [26:0] count_next = count + 1'b1;
-    wire tx_raw_eth_kick = ~count[26] & count_next[26]; // Rising edge of count[26]
-    wire tx_raw_eth_complete;
+    wire tx_raw_eth_frame_ready = count[26];
+    wire tx_raw_eth_completed;
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
             count <= 27'd0;
         end else begin
-            count <= count_next;
+            if (tx_raw_eth_completed) begin
+                count <= 27'd0;
+            end else if (!tx_raw_eth_frame_ready) begin
+                count <= count + 1'b1;
+            end
         end
     end
 
-    // Monitor raw ether
-    reg led_tx_raw_eth_kick;
-    reg led_tx_raw_eth_complete;
-    assign led4 = led_tx_raw_eth_kick;
-    assign led5 = led_tx_raw_eth_complete;
-    assign led6 = 1'b0;
-    assign led7 = 1'b0;
+    reg  tx_raw_eth_frame_ready_before;
     always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n_int) begin
-            led_tx_raw_eth_kick <= 1'b0;
-            led_tx_raw_eth_complete <= 1'b0;
+        if (!rst_n) begin
+            tx_raw_eth_frame_ready_before <= 1'b0;
         end else begin
-            if (tx_raw_eth_kick)
-                led_tx_raw_eth_kick <= ~led_tx_raw_eth_kick;
-            if (tx_raw_eth_complete)
-                led_tx_raw_eth_complete <= ~led_tx_raw_eth_complete;
+            tx_raw_eth_frame_ready_before <= tx_raw_eth_frame_ready;
         end
     end
+    // The rising edge of tx_raw_eth_frame_ready
+    wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
+
+    // Monitor raw ether
+    reg  led_tx_raw_eth_send; // Blink when a raw ether packet is sent
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            led_tx_raw_eth_send <= 1'b0;
+        end else begin
+            if (tx_raw_eth_kick)
+                led_tx_raw_eth_send <= ~led_tx_raw_eth_send;
+        end
+    end
+
+    assign led4 = led_tx_raw_eth_send;
+    assign led5 = 1'b0;
+    assign led6 = 1'b0;
+    assign led7 = 1'b0;
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
