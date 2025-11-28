@@ -1261,17 +1261,9 @@ void ros2_main(
 #ifdef SEDP_READER_TBL_RAM
     sedp_reader_tbl_t *sedp_reader_tbl,
 #endif // SEDP_READER_TBL_RAM
-    hls_uint<PUB_TOPICS_MAX>
-        pub_enable /* Cyber port_mode=in, port_synchronizer=INPUT_PORT_SYNC_REGS
-                    */
-    ,
-    hls_uint<SUB_TOPICS_MAX>
-        sub_enable /* Cyber port_mode=in, port_synchronizer=INPUT_PORT_SYNC_REGS
-                    */
-    ,
-    const config_t *conf /* Cyber port_mode=in, stable_input,
-                            port_synchronizer=INPUT_PORT_SYNC_REGS */
-    ,
+    hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
+    hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
+    const config_t          *conf /* Cyber port_mode=in, stable_input */,
 
     hls_uint<1> cnt_interval_elapsed /* Cyber port_mode=in */,
     hls_uint<1> cnt_spdp_wr_elapsed /* Cyber port_mode=in */,

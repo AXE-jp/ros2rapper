@@ -55,18 +55,10 @@ void ros2_receiver(
     hls_stream<uint8_t>     &in /* Cyber port_mode=cw_fifo */,
     hls_stream<rtps_data_t> &out /* Cyber port_mode=axi_stream */,
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    hls_uint<PUB_TOPICS_MAX>
-        pub_enable /* Cyber port_mode=in, port_synchronizer=INPUT_PORT_SYNC_REGS
-                    */
-    ,
-    hls_uint<SUB_TOPICS_MAX>
-        sub_enable /* Cyber port_mode=in, port_synchronizer=INPUT_PORT_SYNC_REGS
-                    */
-    ,
-    const receiver_config_t *conf /* Cyber port_mode=in, stable_input,
-                                     port_synchronizer=INPUT_PORT_SYNC_REGS */
-    ,
-    VOLATILE hls_uint<SUB_TOPICS_MAX>
+    hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
+    hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,
+    const receiver_config_t *conf /* Cyber port_mode=in, stable_input */,
+    VOLATILE                 hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_recv /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE hls_uint<SUB_TOPICS_MAX>
             *sub_app_data_req /* Cyber port_mode=shared, volatile=YES */,
