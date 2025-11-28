@@ -186,7 +186,7 @@ module ros2_module #(
     wire ros2_sub_app_data_rel_0;
     wire ros2_sub_app_data_grant_0;
 
-    wire recvinfo_din;
+    wire [63:0] recvinfo_din;
     wire recvinfo_write;
 
     assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_grant_0;
