@@ -43,6 +43,6 @@ void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
                 uint8_t               sub_app_data_1[MAX_APP_DATA_LEN],
                 uint8_t               sub_app_data_2[MAX_APP_DATA_LEN],
                 uint8_t               sub_app_data_3[MAX_APP_DATA_LEN],
-                hls_stream<uint64_t> &sub_app_data_recv_info);
+                hls_stream<uint64_t> &sub_app_data_recvmsginfo);
 
 #endif // !APP_HPP

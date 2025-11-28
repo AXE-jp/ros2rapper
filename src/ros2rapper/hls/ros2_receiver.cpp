@@ -80,8 +80,9 @@ void ros2_receiver(
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
     uint8_t sub_app_data_3
         [MAX_APP_DATA_LEN] /* Cyber array=RAM, port_mode=shared, mem_reg=1 */,
-    hls_stream<uint64_t> &sub_app_data_recv_info /* Cyber port_mode=cw_fifo */,
-    hls_uint<9>          *xout) {
+    hls_stream<uint64_t>
+                &sub_app_data_recvmsginfo /* Cyber port_mode=cw_fifo */,
+    hls_uint<9> *xout) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = ap_fifo port = in
 #pragma HLS interface mode = axis port = out
@@ -135,7 +136,7 @@ void ros2_receiver(
 #pragma HLS interface mode = ap_memory port = sub_app_data_2
 #pragma HLS interface mode = ap_memory port = sub_app_data_3
 #pragma HLS array_partition variable = sub_app_data_len type = complete dim = 1
-#pragma HLS interface mode = ap_fifo port = sub_app_data_recv_info
+#pragma HLS interface mode = ap_fifo port = sub_app_data_recvmsginfo
 #pragma HLS interface mode = ap_vld port = sub_app_data_req
 #pragma HLS interface mode = ap_vld port = sub_app_data_rel
 #pragma HLS interface mode = ap_ack port = sub_app_data_grant
@@ -189,7 +190,7 @@ void ros2_receiver(
         app_reader(x, conf->guid_prefix, app_reader_entity_id_list, sub_enable,
                    sub_app_data_req, sub_app_data_rel, sub_app_data_grant,
                    sub_app_data_0, sub_app_data_1, sub_app_data_2,
-                   sub_app_data_3, sub_app_data_recv_info);
+                   sub_app_data_3, sub_app_data_recvmsginfo);
     }
 
     *xout = x; // Workaround for CWB: FIFO read request will not be
