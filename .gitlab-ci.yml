@@ -12,6 +12,11 @@ hsynth:
   script:
     - make -C src/ros2rapper -f Makefile.vitis synth
 
+hsynth-au25p:
+  stage: build
+  script:
+    - make -C src/ros2rapper -f Makefile.vitis.au25p synth
+
 synth-examples:
   stage: build
   script:
