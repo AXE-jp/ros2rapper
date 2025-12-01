@@ -174,7 +174,6 @@ module ros2_ether #(
     output wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr,
     output wire tx_raw_eth_data_ce,
     input  wire [31:0] tx_raw_eth_data_rdata,
-    input  wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len,
     input  wire tx_raw_eth_frame_ready,
     output wire tx_raw_eth_completed,
 
@@ -574,7 +573,6 @@ raw_eth_tx_adapter_inst (
     .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
     .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
     .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
-    .tx_raw_eth_data_len(tx_raw_eth_data_len),
     .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
     .tx_raw_eth_completed(tx_raw_eth_completed),
     .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
