@@ -227,8 +227,8 @@ module raw_eth_tx_adapter_fifo #(
     input  wire [DATA_WIDTH-1:0] rom_rdata,
 
     // AXIS ports
-    output reg  [DATA_WIDTH-1:0] out_tdata,
-    output reg  out_tvalid,
+    output wire [DATA_WIDTH-1:0] out_tdata,
+    output wire out_tvalid,
     input  wire out_tready
 );
     localparam ADDR_WIDTH = $clog2(MAX_DATA_LEN);
@@ -254,68 +254,61 @@ module raw_eth_tx_adapter_fifo #(
         .rdata_valid(w_rdata_new_valid)
     );
 
-    // FIFO (w_rdata_new -> r_rdata[0] -> r_rdata[1] -> out)
-    reg [DATA_WIDTH-1:0] r_rdata [0:1];
-    reg [1:0] r_rdata_valid;
+    // FIFO (w_rdata_new -> rdata_reg[0] -> rdata_reg[1] -> out)
+    reg [DATA_WIDTH-1:0] rdata_reg [0:1];
+    reg [DATA_WIDTH-1:0] rdata_next [0:1];
+    reg [1:0] rdata_valid_reg;
+    reg [1:0] rdata_valid_next;
 
-    reg [DATA_WIDTH-1:0] w_rdata_next [0:1];
-    reg [1:0] w_rdata_next_valid;
-
+    assign out_tdata  = rdata_valid_reg[1] ? rdata_reg[1] : w_rdata_new;
+    assign out_tvalid = rdata_valid_reg[1] ? 1'b1         : w_rdata_new_valid;
     always @* begin
-        if (r_rdata_valid[1]) begin
-            out_tdata  = r_rdata[1];
-            out_tvalid = r_rdata_valid[1];
-        end else begin
-            out_tdata  = w_rdata_new;
-            out_tvalid = w_rdata_new_valid;
-        end
-
-        w_rdata_next[1]       = r_rdata[1];
-        w_rdata_next_valid[1] = r_rdata_valid[1];
-        w_rdata_next[0]       = r_rdata[0];
-        w_rdata_next_valid[0] = r_rdata_valid[0];
+        rdata_next[1]       = rdata_reg[1];
+        rdata_valid_next[1] = rdata_valid_reg[1];
+        rdata_next[0]       = rdata_reg[0];
+        rdata_valid_next[0] = rdata_valid_reg[0];
         if (!out_tready) begin
-            case (r_rdata_valid)
+            case (rdata_valid_reg)
                 2'b00: begin
-                    w_rdata_next[1]       = w_rdata_new;
-                    w_rdata_next_valid[1] = w_rdata_new_valid;
+                    rdata_next[1]       = w_rdata_new;
+                    rdata_valid_next[1] = w_rdata_new_valid;
                 end
                 2'b10: begin
-                    w_rdata_next[0]       = w_rdata_new;
-                    w_rdata_next_valid[0] = w_rdata_new_valid;
+                    rdata_next[0]       = w_rdata_new;
+                    rdata_valid_next[0] = w_rdata_new_valid;
                 end
             endcase
         end else begin
-            case (r_rdata_valid)
+            case (rdata_valid_reg)
                 2'b10: begin
-                    w_rdata_next[1]       = w_rdata_new;
-                    w_rdata_next_valid[1] = w_rdata_new_valid;
+                    rdata_next[1]       = w_rdata_new;
+                    rdata_valid_next[1] = w_rdata_new_valid;
                 end
                 2'b11: begin
-                    w_rdata_next[1]       = r_rdata[0];
-                    w_rdata_next_valid[1] = 1'b1;
-                    w_rdata_next[0]       = w_rdata_new;
-                    w_rdata_next_valid[0] = w_rdata_new_valid;
+                    rdata_next[1]       = rdata_reg[0];
+                    rdata_valid_next[1] = 1'b1;
+                    rdata_next[0]       = w_rdata_new;
+                    rdata_valid_next[0] = w_rdata_new_valid;
                 end
             endcase
         end
     end
     // w_addr_valid is asserted if and only if
-    // r_rdata_valid[0] is guaranteed to be 1'b0 after two clock cycles.
-    assign w_addr_valid = start & ~w_rdata_next_valid[1];
+    // rdata_valid_reg[0] is guaranteed to be 1'b0 after two clock cycles.
+    assign w_addr_valid = start & ~rdata_valid_next[1];
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             r_addr <= {ADDR_WIDTH{1'b0}};
-            r_rdata_valid <= 2'd0;
-            r_rdata[0] <= {DATA_WIDTH{1'b0}};
-            r_rdata[1] <= {DATA_WIDTH{1'b0}};
+            rdata_valid_reg <= 2'd0;
+            rdata_reg[0] <= {DATA_WIDTH{1'b0}};
+            rdata_reg[1] <= {DATA_WIDTH{1'b0}};
         end else begin
             if (!start) begin
                 r_addr <= {ADDR_WIDTH{1'b0}};
-                r_rdata_valid <= 2'd0;
-                r_rdata[0] <= {DATA_WIDTH{1'b0}};
-                r_rdata[1] <= {DATA_WIDTH{1'b0}};
+                rdata_valid_reg <= 2'd0;
+                rdata_reg[0] <= {DATA_WIDTH{1'b0}};
+                rdata_reg[1] <= {DATA_WIDTH{1'b0}};
             end else begin
                 if (w_addr_valid) begin
                     if (r_addr + 1'b1 == MAX_DATA_LEN) begin
@@ -324,9 +317,9 @@ module raw_eth_tx_adapter_fifo #(
                         r_addr <= r_addr + 1'b1;
                     end
                 end
-                r_rdata_valid <= w_rdata_next_valid;
-                r_rdata[0] <= w_rdata_next[0];
-                r_rdata[1] <= w_rdata_next[1];
+                rdata_valid_reg <= rdata_valid_next;
+                rdata_reg[0] <= rdata_next[0];
+                rdata_reg[1] <= rdata_next[1];
             end
         end
     end
