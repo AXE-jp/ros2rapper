@@ -21,8 +21,8 @@ module raw_eth_tx_adapter (
     input  wire tx_raw_eth_axis_tready,
     output reg  tx_raw_eth_axis_tlast
 );
-    reg [2:0] r_state;
-    reg [2:0] w_state_next;
+    reg [2:0] state_reg;
+    reg [2:0] state_next;
     localparam [2:0] IDLE = 3'd0;
     localparam [2:0] WRITE_0 = 3'd1;
     localparam [2:0] WRITE_1 = 3'd2;
@@ -40,13 +40,13 @@ module raw_eth_tx_adapter (
     // The rising edge of tx_raw_eth_frame_ready
     wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
 
-    reg r_completed;
-    reg w_completed_next;
-    assign tx_raw_eth_completed = r_completed;
+    reg completed_reg;
+    reg completed_next;
+    assign tx_raw_eth_completed = completed_reg;
 
-    wire [31:0] w_rdata_new;
-    wire w_rdata_new_valid;
-    reg  w_rdata_new_ready;
+    wire [31:0] rdata_new;
+    wire rdata_new_valid;
+    reg  rdata_new_ready;
 
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
@@ -55,117 +55,117 @@ module raw_eth_tx_adapter (
     raw_eth_tx_adapter_fifo_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .start(r_state != IDLE),
+        .start(state_reg != IDLE),
         .rom_addr(tx_raw_eth_data_addr),
         .rom_ce(tx_raw_eth_data_ce),
         .rom_rdata(tx_raw_eth_data_rdata),
-        .out_tdata(w_rdata_new),
-        .out_tvalid(w_rdata_new_valid),
-        .out_tready(w_rdata_new_ready)
+        .out_tdata(rdata_new),
+        .out_tvalid(rdata_new_valid),
+        .out_tready(rdata_new_ready)
     );
 
     localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
-    reg [COUNT_WIDTH-1:0] r_count;
-    reg [COUNT_WIDTH-1:0] w_count_next;
-    reg [31:0] r_rdata;
-    reg [31:0] w_rdata_next;
+    reg [COUNT_WIDTH-1:0] count_reg;
+    reg [COUNT_WIDTH-1:0] count_next;
+    reg [31:0] rdata_reg;
+    reg [31:0] rdata_next;
 
     always @* begin
-        tx_raw_eth_axis_tlast = (r_count == {COUNT_WIDTH{1'b0}});
+        tx_raw_eth_axis_tlast = (count_reg == {COUNT_WIDTH{1'b0}});
 
-        w_state_next = r_state;
-        w_completed_next = r_completed;
-        w_count_next = r_count;
-        w_rdata_next = r_rdata;
+        state_next = state_reg;
+        completed_next = completed_reg;
+        count_next = count_reg;
+        rdata_next = rdata_reg;
 
-        w_rdata_new_ready = 1'b0;
+        rdata_new_ready = 1'b0;
         tx_raw_eth_axis_tdata = 8'd0;
         tx_raw_eth_axis_tvalid = 1'b0;
 
-        if (r_state == IDLE) begin
+        if (state_reg == IDLE) begin
             if (tx_raw_eth_kick) begin
                 if ((tx_raw_eth_data_len != 0) && (tx_raw_eth_data_len <= `ROS2_MAX_RAW_ETH_TX_DATA_LEN)) begin
-                    w_count_next = tx_raw_eth_data_len - 1'b1;
-                    w_state_next = WRITE_0;
+                    count_next = tx_raw_eth_data_len - 1'b1;
+                    state_next = WRITE_0;
                 end else begin
                     // Do nothing whe tx_raw_eth_data_len is invalid
-                    w_completed_next = 1'b1;
+                    completed_next = 1'b1;
                 end
             end
-        end else if (r_state == WRITE_0) begin
-            w_rdata_new_ready = tx_raw_eth_axis_tready;
-            w_rdata_next = w_rdata_new;
-            tx_raw_eth_axis_tdata = w_rdata_new[7:0];
-            tx_raw_eth_axis_tvalid = w_rdata_new_valid;
-            if (w_rdata_new_valid && tx_raw_eth_axis_tready) begin
+        end else if (state_reg == WRITE_0) begin
+            rdata_new_ready = tx_raw_eth_axis_tready;
+            rdata_next = rdata_new;
+            tx_raw_eth_axis_tdata = rdata_new[7:0];
+            tx_raw_eth_axis_tvalid = rdata_new_valid;
+            if (rdata_new_valid && tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_completed_next = 1'b1;
-                    w_state_next = IDLE;
+                    completed_next = 1'b1;
+                    state_next = IDLE;
                 end else begin
-                    w_count_next = r_count - 1'b1;
-                    w_state_next = WRITE_1;
+                    count_next = count_reg - 1'b1;
+                    state_next = WRITE_1;
                 end
             end
-        end else if (r_state == WRITE_1) begin
-            tx_raw_eth_axis_tdata = r_rdata[15:8];
+        end else if (state_reg == WRITE_1) begin
+            tx_raw_eth_axis_tdata = rdata_reg[15:8];
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_completed_next = 1'b1;
-                    w_state_next = IDLE;
+                    completed_next = 1'b1;
+                    state_next = IDLE;
                 end else begin
-                    w_count_next = r_count - 1'b1;
-                    w_state_next = WRITE_2;
+                    count_next = count_reg - 1'b1;
+                    state_next = WRITE_2;
                 end
             end
-        end else if (r_state == WRITE_2) begin
-            tx_raw_eth_axis_tdata = r_rdata[23:16];
+        end else if (state_reg == WRITE_2) begin
+            tx_raw_eth_axis_tdata = rdata_reg[23:16];
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_completed_next = 1'b1;
-                    w_state_next = IDLE;
+                    completed_next = 1'b1;
+                    state_next = IDLE;
                 end else begin
-                    w_count_next = r_count - 1'b1;
-                    w_state_next = WRITE_3;
+                    count_next = count_reg - 1'b1;
+                    state_next = WRITE_3;
                 end
             end
-        end else if (r_state == WRITE_3) begin
-            tx_raw_eth_axis_tdata = r_rdata[31:24];
+        end else if (state_reg == WRITE_3) begin
+            tx_raw_eth_axis_tdata = rdata_reg[31:24];
             tx_raw_eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
-                    w_completed_next = 1'b1;
-                    w_state_next = IDLE;
+                    completed_next = 1'b1;
+                    state_next = IDLE;
                 end else begin
-                    w_count_next = r_count - 1'b1;
-                    w_state_next = WRITE_0;
+                    count_next = count_reg - 1'b1;
+                    state_next = WRITE_0;
                 end
             end
         end else begin
-            w_completed_next = 1'b1;
-            w_state_next = IDLE;
+            completed_next = 1'b1;
+            state_next = IDLE;
         end
     end
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            r_state <= IDLE;
-            r_completed <= 1'b0;
-            r_count <= {COUNT_WIDTH{1'b0}};
-            r_rdata <= 32'd0;
+            state_reg <= IDLE;
+            completed_reg <= 1'b0;
+            count_reg <= {COUNT_WIDTH{1'b0}};
+            rdata_reg <= 32'd0;
         end else begin
             if (!enable) begin
-                r_state <= IDLE;
-                r_completed <= 1'b0;
-                r_count <= {COUNT_WIDTH{1'b0}};
-                r_rdata <= 32'd0;
+                state_reg <= IDLE;
+                completed_reg <= 1'b0;
+                count_reg <= {COUNT_WIDTH{1'b0}};
+                rdata_reg <= 32'd0;
             end else begin
-                r_state <= w_state_next;
+                state_reg <= state_next;
                 // deassert completed when frame_ready is deasserted
-                r_completed <= w_completed_next & tx_raw_eth_frame_ready;
-                r_count <= w_count_next;
-                r_rdata <= w_rdata_next;
+                completed_reg <= completed_next & tx_raw_eth_frame_ready;
+                count_reg <= count_next;
+                rdata_reg <= rdata_next;
             end
         end
     end
