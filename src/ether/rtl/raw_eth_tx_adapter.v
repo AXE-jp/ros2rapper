@@ -16,10 +16,10 @@ module raw_eth_tx_adapter (
     input  wire tx_raw_eth_frame_ready,
     output wire tx_raw_eth_completed,
 
-    output reg  [7:0] tx_raw_eth_axis_tdata,
-    output reg  tx_raw_eth_axis_tvalid,
+    output wire [7:0] tx_raw_eth_axis_tdata,
+    output wire tx_raw_eth_axis_tvalid,
     input  wire tx_raw_eth_axis_tready,
-    output reg  tx_raw_eth_axis_tlast
+    output wire tx_raw_eth_axis_tlast
 );
     reg [2:0] state_reg;
     reg [2:0] state_next;
@@ -48,6 +48,12 @@ module raw_eth_tx_adapter (
     wire rdata_new_valid;
     reg  rdata_new_ready;
 
+    reg  [7:0] eth_axis_tdata;
+    reg  eth_axis_tvalid;
+    assign tx_raw_eth_axis_tdata = eth_axis_tdata;
+    assign tx_raw_eth_axis_tvalid = eth_axis_tvalid;
+    assign tx_raw_eth_axis_tlast = (count_reg == {COUNT_WIDTH{1'b0}});
+
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
         .DATA_WIDTH(32)
@@ -71,7 +77,6 @@ module raw_eth_tx_adapter (
     reg [31:0] rdata_next;
 
     always @* begin
-        tx_raw_eth_axis_tlast = (count_reg == {COUNT_WIDTH{1'b0}});
 
         state_next = state_reg;
         completed_next = completed_reg;
@@ -79,8 +84,8 @@ module raw_eth_tx_adapter (
         rdata_next = rdata_reg;
 
         rdata_new_ready = 1'b0;
-        tx_raw_eth_axis_tdata = 8'd0;
-        tx_raw_eth_axis_tvalid = 1'b0;
+        eth_axis_tdata = 8'd0;
+        eth_axis_tvalid = 1'b0;
 
         if (state_reg == IDLE) begin
             if (tx_raw_eth_kick) begin
@@ -95,8 +100,8 @@ module raw_eth_tx_adapter (
         end else if (state_reg == WRITE_0) begin
             rdata_new_ready = tx_raw_eth_axis_tready;
             rdata_next = rdata_new;
-            tx_raw_eth_axis_tdata = rdata_new[7:0];
-            tx_raw_eth_axis_tvalid = rdata_new_valid;
+            eth_axis_tdata = rdata_new[7:0];
+            eth_axis_tvalid = rdata_new_valid;
             if (rdata_new_valid && tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     completed_next = 1'b1;
@@ -107,8 +112,8 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_1) begin
-            tx_raw_eth_axis_tdata = rdata_reg[15:8];
-            tx_raw_eth_axis_tvalid = 1'b1;
+            eth_axis_tdata = rdata_reg[15:8];
+            eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     completed_next = 1'b1;
@@ -119,8 +124,8 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_2) begin
-            tx_raw_eth_axis_tdata = rdata_reg[23:16];
-            tx_raw_eth_axis_tvalid = 1'b1;
+            eth_axis_tdata = rdata_reg[23:16];
+            eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     completed_next = 1'b1;
@@ -131,8 +136,8 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_3) begin
-            tx_raw_eth_axis_tdata = rdata_reg[31:24];
-            tx_raw_eth_axis_tvalid = 1'b1;
+            eth_axis_tdata = rdata_reg[31:24];
+            eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
                 if (tx_raw_eth_axis_tlast) begin
                     completed_next = 1'b1;
