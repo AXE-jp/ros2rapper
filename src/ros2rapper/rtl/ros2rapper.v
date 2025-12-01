@@ -3734,32 +3734,6 @@ ros2_sender (
 
 endmodule
 
-module synchronizer #(
-    parameter WIDTH = 1,
-    parameter INIT_VALUE = 0
-)(
-    input  wire              i_clk,
-    input  wire              i_rst_n,
-    input  wire [WIDTH-1:0]  i_data,
-    output wire [WIDTH-1:0]  o_data
-);
-    (* ASYNC_REG = "TRUE" *) reg [WIDTH-1:0] reg_0;
-    (* ASYNC_REG = "TRUE" *) reg [WIDTH-1:0] reg_1;
-
-    assign o_data = reg_1;
-
-    always @(posedge i_clk or negedge i_rst_n) begin
-        if (!i_rst_n) begin
-            reg_0 <= INIT_VALUE;
-            reg_1 <= INIT_VALUE;
-        end else begin
-            reg_0 <= i_data;
-            reg_1 <= reg_0;
-        end
-    end
-
-endmodule
-
 // arbiter for sharing app_data between user and IP
 module app_data_arbiter (
     input wire i_clk,
