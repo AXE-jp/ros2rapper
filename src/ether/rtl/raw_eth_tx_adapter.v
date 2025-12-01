@@ -12,7 +12,6 @@ module raw_eth_tx_adapter (
     output wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr,
     output wire tx_raw_eth_data_ce,
     input  wire [31:0] tx_raw_eth_data_rdata,
-    input  wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len,
     input  wire tx_raw_eth_frame_ready,
     output wire tx_raw_eth_completed,
 
@@ -23,11 +22,12 @@ module raw_eth_tx_adapter (
 );
     reg [2:0] state_reg;
     reg [2:0] state_next;
-    localparam [2:0] IDLE = 3'd0;
-    localparam [2:0] WRITE_0 = 3'd1;
-    localparam [2:0] WRITE_1 = 3'd2;
-    localparam [2:0] WRITE_2 = 3'd3;
-    localparam [2:0] WRITE_3 = 3'd4;
+    localparam [2:0] IDLE         = 3'd0;
+    localparam [2:0] CHECK_LENGTH = 3'd1;
+    localparam [2:0] WRITE_0      = 3'd2;
+    localparam [2:0] WRITE_1      = 3'd3;
+    localparam [2:0] WRITE_2      = 3'd4;
+    localparam [2:0] WRITE_3      = 3'd5;
 
     reg tx_raw_eth_frame_ready_before;
     always @(posedge clk or negedge rst_n) begin
@@ -52,7 +52,7 @@ module raw_eth_tx_adapter (
     reg  eth_axis_tvalid;
     assign tx_raw_eth_axis_tdata = eth_axis_tdata;
     assign tx_raw_eth_axis_tvalid = eth_axis_tvalid;
-    assign tx_raw_eth_axis_tlast = (count_reg == {COUNT_WIDTH{1'b0}});
+    assign tx_raw_eth_axis_tlast = (count_reg == 0);
 
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
@@ -77,7 +77,6 @@ module raw_eth_tx_adapter (
     reg [31:0] rdata_next;
 
     always @* begin
-
         state_next = state_reg;
         completed_next = completed_reg;
         count_next = count_reg;
@@ -89,21 +88,31 @@ module raw_eth_tx_adapter (
 
         if (state_reg == IDLE) begin
             if (tx_raw_eth_kick) begin
-                if ((tx_raw_eth_data_len != 0) && (tx_raw_eth_data_len <= `ROS2_MAX_RAW_ETH_TX_DATA_LEN)) begin
-                    count_next = tx_raw_eth_data_len - 1'b1;
-                    state_next = WRITE_0;
+                state_next = CHECK_LENGTH;
+            end
+        end else if (state_reg == CHECK_LENGTH) begin
+            // Read from raw_eth_tx_adapter_fifo
+            rdata_new_ready = 1'b1;
+            rdata_next = rdata_new;
+            if (rdata_new_valid) begin
+                // Check frame data length
+                if ((rdata_new[15:0] != 0) && (rdata_new[15:0] <= (`ROS2_MAX_RAW_ETH_TX_DATA_LEN - 2))) begin
+                    count_next = rdata_new[15:0] - 1'b1;
+                    state_next = WRITE_2;
                 end else begin
-                    // Do nothing whe tx_raw_eth_data_len is invalid
+                    // Do nothing if tx_raw_eth_data_len is invalid
                     completed_next = 1'b1;
+                    state_next = IDLE;
                 end
             end
         end else if (state_reg == WRITE_0) begin
+            // Read 32bit data from raw_eth_tx_adapter_fifo
             rdata_new_ready = tx_raw_eth_axis_tready;
             rdata_next = rdata_new;
             eth_axis_tdata = rdata_new[7:0];
             eth_axis_tvalid = rdata_new_valid;
             if (rdata_new_valid && tx_raw_eth_axis_tready) begin
-                if (tx_raw_eth_axis_tlast) begin
+                if (count_reg == 0) begin
                     completed_next = 1'b1;
                     state_next = IDLE;
                 end else begin
@@ -115,7 +124,7 @@ module raw_eth_tx_adapter (
             eth_axis_tdata = rdata_reg[15:8];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
-                if (tx_raw_eth_axis_tlast) begin
+                if (count_reg == 0) begin
                     completed_next = 1'b1;
                     state_next = IDLE;
                 end else begin
@@ -127,7 +136,7 @@ module raw_eth_tx_adapter (
             eth_axis_tdata = rdata_reg[23:16];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
-                if (tx_raw_eth_axis_tlast) begin
+                if (count_reg == 0) begin
                     completed_next = 1'b1;
                     state_next = IDLE;
                 end else begin
@@ -139,7 +148,7 @@ module raw_eth_tx_adapter (
             eth_axis_tdata = rdata_reg[31:24];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
-                if (tx_raw_eth_axis_tlast) begin
+                if (count_reg == 0) begin
                     completed_next = 1'b1;
                     state_next = IDLE;
                 end else begin
@@ -167,7 +176,7 @@ module raw_eth_tx_adapter (
                 rdata_reg <= 32'd0;
             end else begin
                 state_reg <= state_next;
-                // deassert completed when frame_ready is deasserted
+                // deassert completed_reg when frame_ready is deasserted
                 completed_reg <= completed_next & tx_raw_eth_frame_ready;
                 count_reg <= count_next;
                 rdata_reg <= rdata_next;
