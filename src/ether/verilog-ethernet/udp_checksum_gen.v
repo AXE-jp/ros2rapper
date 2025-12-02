@@ -495,6 +495,7 @@ assign s_udp_hdr_ready = s_udp_hdr_ready_reg;
 
 assign busy = busy_reg;
 
+/* verilator lint_off LATCH */
 always @* begin
     state_next = STATE_IDLE;
 
@@ -575,6 +576,7 @@ always @* begin
         end
     endcase
 end
+/* verilator lint_on LATCH */
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
