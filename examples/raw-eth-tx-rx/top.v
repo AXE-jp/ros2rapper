@@ -231,11 +231,12 @@ module top (
         udp_dest_port[7:0], udp_dest_port[15:8], udp_src_port[7:0], udp_src_port[15:8]
         };
 
-    wire [479:0] tx_raw_eth_data = {16'd0, raw_eth_udp_packet, raw_eth_ip_hdr, raw_eth_hdr};
+    wire [463:0] raw_eth_packet = {raw_eth_udp_packet, raw_eth_ip_hdr, raw_eth_hdr};
+    wire [15:0]  raw_eth_packet_len = 58;
+    wire [479:0] tx_raw_eth_data = {raw_eth_packet, raw_eth_packet_len};
     wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr;
     wire tx_raw_eth_data_ce;
     reg  [31:0] tx_raw_eth_data_rdata;
-    wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN+1)-1:0] tx_raw_eth_data_len = 58;
 
     always @(posedge clk_int or negedge rst_n_int) begin
         if (!rst_n_int) begin
@@ -484,7 +485,6 @@ module top (
         .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
         .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
         .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
-        .tx_raw_eth_data_len(tx_raw_eth_data_len),
         .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
         .tx_raw_eth_completed(tx_raw_eth_completed),
 
