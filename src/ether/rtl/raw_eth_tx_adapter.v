@@ -106,9 +106,11 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_0) begin
-            // Read 32bit data from raw_eth_tx_adapter_fifo
+            // Read 1 word (32 bit) data from raw_eth_tx_adapter_fifo
+            // and set it to rdata_reg
             rdata_new_ready = tx_raw_eth_axis_tready;
             rdata_next = rdata_new;
+            // Write the first byte of rdata_new
             eth_axis_tdata = rdata_new[7:0];
             eth_axis_tvalid = rdata_new_valid;
             if (rdata_new_valid && tx_raw_eth_axis_tready) begin
@@ -121,6 +123,7 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_1) begin
+            // Write the second byte of rdata_reg
             eth_axis_tdata = rdata_reg[15:8];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
@@ -133,6 +136,7 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_2) begin
+            // Write the third byte of rdata_reg
             eth_axis_tdata = rdata_reg[23:16];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
@@ -145,6 +149,7 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == WRITE_3) begin
+            // Write the last byte of rdata_reg
             eth_axis_tdata = rdata_reg[31:24];
             eth_axis_tvalid = 1'b1;
             if (tx_raw_eth_axis_tready) begin
