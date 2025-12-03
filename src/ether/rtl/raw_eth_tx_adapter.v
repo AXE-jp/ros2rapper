@@ -29,6 +29,10 @@ module raw_eth_tx_adapter (
     localparam [2:0] WRITE_2      = 3'd4;
     localparam [2:0] WRITE_3      = 3'd5;
 
+    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
+    reg [COUNT_WIDTH-1:0] count_reg;
+    reg [COUNT_WIDTH-1:0] count_next;
+
     reg tx_raw_eth_frame_ready_before;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -70,9 +74,6 @@ module raw_eth_tx_adapter (
         .out_tready(rdata_new_ready)
     );
 
-    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
-    reg [COUNT_WIDTH-1:0] count_reg;
-    reg [COUNT_WIDTH-1:0] count_next;
     reg [31:0] rdata_reg;
     reg [31:0] rdata_next;
 
