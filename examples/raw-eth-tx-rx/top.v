@@ -277,6 +277,23 @@ module top (
     // The rising edge of tx_raw_eth_frame_ready
     wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
 
+    // Raw Ether RX
+    wire [$clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN)-3:0] rx_raw_eth_data_addr;
+    wire rx_raw_eth_data_ce;
+    wire [3:0] rx_raw_eth_data_we;
+    wire [31:0] rx_raw_eth_data_wdata;
+    reg  [31:0] rx_raw_eth_data [0:(`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4)-1];
+    wire rx_raw_eth_data_frame_ready;
+    wire rx_raw_eth_data_ack = rx_raw_eth_data_frame_ready;
+    always @(posedge clk_int) begin
+        if (rx_raw_eth_data_ce) begin
+            if (rx_raw_eth_data_we[0]) rx_raw_eth_data[rx_raw_eth_data_addr][7:0]   <= rx_raw_eth_data_wdata[7:0];
+            if (rx_raw_eth_data_we[1]) rx_raw_eth_data[rx_raw_eth_data_addr][15:8]  <= rx_raw_eth_data_wdata[15:8];
+            if (rx_raw_eth_data_we[2]) rx_raw_eth_data[rx_raw_eth_data_addr][23:16] <= rx_raw_eth_data_wdata[23:16];
+            if (rx_raw_eth_data_we[3]) rx_raw_eth_data[rx_raw_eth_data_addr][31:24] <= rx_raw_eth_data_wdata[31:24];
+        end
+    end
+
     // Monitor raw ether
     reg  led_tx_raw_eth_send; // Blink when a raw ether packet is sent
     always @(posedge clk_int or negedge rst_n_int) begin
@@ -288,13 +305,11 @@ module top (
         end
     end
 
-    wire rx_raw_eth_data_frame_ready;
-    wire rx_raw_eth_data_ack = rx_raw_eth_data_frame_ready;
+
 
     assign led4 = led_tx_raw_eth_send;
-    assign led5 = 1'b0;
-    assign led6 = 1'b0;
-    assign led7 = 1'b0;
+    // UDP packet length % 8
+    assign {led7, led6, led5} = rx_raw_eth_data[39][3:0];
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -488,10 +503,10 @@ module top (
         .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
         .tx_raw_eth_completed(tx_raw_eth_completed),
 
-        .rx_raw_eth_data_addr(),
-        .rx_raw_eth_data_ce(),
-        .rx_raw_eth_data_we(),
-        .rx_raw_eth_data_wdata(),
+        .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
+        .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
+        .rx_raw_eth_data_we(rx_raw_eth_data_we),
+        .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
         .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
         .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
 
