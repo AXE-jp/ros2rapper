@@ -200,7 +200,6 @@ reg [ADDR_WIDTH:0] rd_ptr_reg;
 
 (* ramstyle = "no_rw_check" *)
 reg [WIDTH-1:0] mem[(2**ADDR_WIDTH)-1:0];
-reg mem_read_data_valid_reg = 1'b0;
 
 (* shreg_extract = "no" *)
 reg [WIDTH-1:0] m_axis_pipe_reg[RAM_PIPELINE+1-1:0];
