@@ -12,4 +12,4 @@ synth:
 
 clean:
 	rm -f *.jou *.log *.xpr
-	rm -rf ros2rapper-pubsub
+	rm -rf ros2rapper-raw-eth
