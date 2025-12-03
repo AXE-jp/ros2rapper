@@ -335,8 +335,6 @@ module top (
         end
     end
 
-
-
     assign led4 = led_tx_raw_eth_send;
     // UDP packet length % 8
     assign {led7, led6, led5} = rx_raw_eth_data[39][3:0];
