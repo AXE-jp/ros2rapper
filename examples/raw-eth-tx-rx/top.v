@@ -470,7 +470,7 @@ module top (
         .ros2_pub_app_data_3_rdata(0),
 `endif
 
-        .ros2_pub_app_data_len_0(0),
+        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
         .ros2_pub_app_data_len_1(0),
         .ros2_pub_app_data_len_2(0),
         .ros2_pub_app_data_len_3(0),
