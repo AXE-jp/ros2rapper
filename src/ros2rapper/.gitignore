@@ -1,6 +1,9 @@
 proj_ros2_main/
 proj_ros2_receiver/
 proj_ros2_sender/
+proj_ros2_main_au25p/
+proj_ros2_receiver_au25p/
+proj_ros2_sender_au25p/
 proj_ros2test/
 *.log
 *.jou

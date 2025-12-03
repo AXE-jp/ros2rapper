@@ -354,7 +354,7 @@ always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         header_fifo_wr_ptr_reg <= {HEADER_FIFO_ADDR_WIDTH+1{1'b0}};
 `ifndef TARGET_XILINX
-        for (i=0; i<(2**HEADER_FIFO_ADDR_ADDR_WIDTH); i=i+1) begin
+        for (i=0; i<(2**HEADER_FIFO_ADDR_WIDTH); i=i+1) begin
 `ifdef TARGET_SIM
             eth_dest_mac_mem[i] = 48'd0;
             eth_src_mac_mem[i] = 48'd0;
@@ -495,6 +495,7 @@ assign s_udp_hdr_ready = s_udp_hdr_ready_reg;
 
 assign busy = busy_reg;
 
+/* verilator lint_off LATCH */
 always @* begin
     state_next = STATE_IDLE;
 
@@ -575,6 +576,7 @@ always @* begin
         end
     endcase
 end
+/* verilator lint_on LATCH */
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin

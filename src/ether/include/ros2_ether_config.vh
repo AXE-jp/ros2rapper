@@ -11,9 +11,19 @@
   // Use BUFIO2 for Spartan-6
 
   //`define XILINX_CLKIN_STYLE_BUFG
-  `define XILINX_CLKIN_STYLE_BUFR
+  //`define XILINX_CLKIN_STYLE_BUFR
   //`define XILINX_CLKIN_STYLE_BUFIO
   //`define XILINX_CLKIN_STYLE_BUFIO2
+
+  `ifndef XILINX_CLKIN_STYLE_BUFG
+    `ifndef XILINX_CLKIN_STYLE_BUFR
+      `ifndef XILINX_CLKIN_STYLE_BUFIO
+        `ifndef XILINX_CLKIN_STYLE_BUFIO2
+          "Error: Define Clock Input Style!"
+        `endif
+      `endif
+    `endif
+  `endif
 `endif
 
 `define MAC_TX_FIFO_DEPTH  2048
