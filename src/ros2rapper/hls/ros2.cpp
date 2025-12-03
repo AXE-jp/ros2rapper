@@ -1256,8 +1256,9 @@ static void ros2_out(
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_main(
-    hls_stream<rtps_data_t>        &in /* Cyber port_mode=axi_stream */,
-    hls_stream<message_metadata_t> &out /* Cyber port_mode=axi_stream */,
+    hls_stream<rtps_data_t> &in /* Cyber port_mode=axi_stream */,
+    hls_stream<message_metadata_t>
+        &out /* Cyber port_mode=axi_stream:reg_both */,
 #ifdef SEDP_READER_TBL_RAM
     sedp_reader_tbl_t *sedp_reader_tbl,
 #endif // SEDP_READER_TBL_RAM

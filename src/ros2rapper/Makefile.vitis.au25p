@@ -1,0 +1,47 @@
+# Copyright (c) 2021-2024 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+HLSDIR = hls
+TBDIR = test
+
+SRCS   = $(wildcard $(HLSDIR)/*.cpp)
+HDRS   = $(wildcard $(HLSDIR)/*.hpp)
+TBSRCS = $(wildcard $(TBDIR)/*.cpp)
+
+VERILOGTOP_MAIN = proj_ros2_main_au25p/solution1/syn/verilog/ros2_main.v
+VERILOGTOP_RECEIVER = proj_ros2_receiver_au25p/solution1/syn/verilog/ros2_receiver.v
+VERILOGTOP_SENDER = proj_ros2_sender_au25p/solution1/syn/verilog/ros2_sender.v
+
+.PHONY: synth synth_main synth_sender clean csim format
+synth: synth_main synth_receiver synth_sender
+synth_main: $(VERILOGTOP_MAIN)
+synth_receiver: $(VERILOGTOP_RECEIVER)
+synth_sender: $(VERILOGTOP_SENDER)
+
+$(VERILOGTOP_MAIN): $(SRCS) $(HDRS) run_hls_au25p.tcl
+	vitis_hls run_hls_au25p.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_main_au25p/solution1/syn/verilog
+
+$(VERILOGTOP_RECEIVER): $(SRCS) $(HDRS) run_hls_receiver_au25p.tcl
+	vitis_hls run_hls_receiver_au25p.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_receiver_au25p/solution1/syn/verilog
+
+$(VERILOGTOP_SENDER): $(SRCS) $(HDRS) run_hls_sender_au25p.tcl
+	vitis_hls run_hls_sender_au25p.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_sender_au25p/solution1/syn/verilog
+
+csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
+	vitis_hls run_csim.tcl
+
+clean:
+	rm -rf proj_ros2_main_au25p
+	rm -rf proj_ros2_receiver_au25p
+	rm -rf proj_ros2_sender_au25p
+	rm -rf proj_ros2test
+	rm -rf *.log
+
+format:
+	-clang-format -i hls/*.cpp
+	-clang-format -i hls/*.hpp
+	-clang-format -i test/*.cpp
+	-clang-format -i test/*.hpp
