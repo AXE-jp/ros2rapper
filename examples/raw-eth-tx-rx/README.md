@@ -39,8 +39,9 @@ Then write generated bitstream (ros2rapper-pubsub/ros2rapper-pubsub.runs/impl\_1
 
 ### Test raw ether fream receive feature
 
-This example receives raw ether frames, excluding ARP packets and most of RTPS packets.
+This example receives raw ether frames, excluding ARP packets, most of RTPS packets and UDP packets whose payload begins with "RTPS".
 
+When this example receives a UDP datagram to the port 1234, the LED 4-7 on the FPGA board will be changed.
 To send UDP datagrams to port 1234 of FPGA, run following command.
 
 ```
