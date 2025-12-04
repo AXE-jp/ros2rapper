@@ -329,23 +329,23 @@ module top (
     // Check the ether frame type, and the IP protocol version and the header length in the IP header.
     wire rx_raw_eth_is_ipv4 = ((rx_raw_eth_data[3][31:16] == 16'h00_08) && (rx_raw_eth_data[4][7:0] == 8'h45));
     // Check the protocol number in the IP header
-    wire rx_raw_eth_is_udp = rx_raw_eth_is_ipv4 && (rx_raw_eth_data[6][15:8] == 8'd17));
-    wire [15:0] raw_eth_rx_udp_dest_port = {rx_raw_eth_data[9][23:16], rx_raw_eth_data[9][31:24]};
-    wire [15:0] raw_eth_rx_udp_payload_len = {rx_raw_eth_data[10][7:0], rx_raw_eth_data[10][15:8]};
-    reg  [15:0] rx_udp_payload_len_reg;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            rx_udp_payload_len_reg <= 16'd0;
+    wire rx_raw_eth_is_udp = (rx_raw_eth_is_ipv4 && (rx_raw_eth_data[6][15:8] == 8'd17));
+    wire [15:0] rx_raw_eth_udp_dest_port = {rx_raw_eth_data[9][23:16], rx_raw_eth_data[9][31:24]};
+    wire [15:0] rx_raw_eth_udp_length = {rx_raw_eth_data[10][7:0], rx_raw_eth_data[10][15:8]};
+    reg  [15:0] rx_raw_eth_udp_payload_len_reg;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            rx_raw_eth_udp_payload_len_reg <= 16'd0;
         end else begin
             if (rx_raw_eth_data_frame_ready && rx_raw_eth_is_udp && (rx_raw_eth_udp_dest_port == 16'd1234)) begin
-                rx_udp_payload_len_reg <= raw_eth_rx_udp_payload_len;
+                rx_raw_eth_udp_payload_len_reg <= rx_raw_eth_udp_payload_len;
             end
         end
     end
-    assign led4 = (rx_udp_payload_len_reg >= 1);
-    assign led5 = (rx_udp_payload_len_reg >= 5);
-    assign led6 = (rx_udp_payload_len_reg >= 10);
-    assign led7 = (rx_udp_payload_len_reg >= 15);
+    assign led4 = (rx_raw_eth_udp_payload_len_reg >= 1);
+    assign led5 = (rx_raw_eth_udp_payload_len_reg >= 5);
+    assign led6 = (rx_raw_eth_udp_payload_len_reg >= 10);
+    assign led7 = (rx_raw_eth_udp_payload_len_reg >= 15);
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
