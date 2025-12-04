@@ -338,7 +338,7 @@ module top (
             rx_raw_eth_udp_payload_len_reg <= 16'd0;
         end else begin
             if (rx_raw_eth_data_frame_ready && rx_raw_eth_is_udp && (rx_raw_eth_udp_dest_port == 16'd1234)) begin
-                rx_raw_eth_udp_payload_len_reg <= rx_raw_eth_udp_payload_len;
+                rx_raw_eth_udp_payload_len_reg <= rx_raw_eth_udp_length - 8;
             end
         end
     end
