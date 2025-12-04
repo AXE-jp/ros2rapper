@@ -39,6 +39,7 @@ module test_raw_eth_rx_adapter();
     localparam [15:0] IPV4_ANOTHER_PACKET_LEN = 16'd50;
     logic [399:0] ipv4_another_packet_unicast_to_me = {
         dummy_payload,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -46,10 +47,12 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [399:0] ipv4_another_packet_unicast_to_another = {
         dummy_payload,
+        // IPv4 header
         ip_addr_unicast_to_another, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -57,10 +60,12 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [399:0] ipv4_another_packet_multicast = {
         dummy_payload,
+        // IPv4 header
         ip_addr_multicast, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -68,10 +73,12 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [399:0] ipv4_another_packet_direct_broadcast_to_me = {
         dummy_payload,
+        // IPv4 header
         ip_addr_direct_broadcast_to_me, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -79,10 +86,12 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [399:0] ipv4_another_packet_direct_broadcast_to_others = {
         dummy_payload,
+        // IPv4 header
         ip_addr_direct_broadcast_to_others, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -90,10 +99,12 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [399:0] ipv4_another_packet_limited_broadcast = {
         dummy_payload,
+        // IPv4 header
         ip_addr_limited_broadcast, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -101,14 +112,17 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd36, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     localparam [15:0] UDP_PACKET_LEN = 16'd54;
     logic [431:0] udp_packet = {
         dummy_payload,
+        // UDP header
         16'd0, // UDP checksum
         8'd24, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_udp, 8'd64, // Time to live
@@ -116,15 +130,18 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd44, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     localparam [15:0] RTPS_PACKET_LEN = 16'd58;
     logic [463:0] rtps_packet = {
         dummy_payload,
         "SPTR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_udp, 8'd64, // Time to live
@@ -132,14 +149,17 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd48, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [463:0] rtps_packet_with_another_eth_type = {
         dummy_payload,
         "SPTR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_udp, 8'd64, // Time to live
@@ -147,14 +167,17 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd48, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_another, src_mac, dest_mac};
 
     logic [463:0] rtps_packet_with_more_fragment = {
         dummy_payload,
         "SPTR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_udp, 8'd64, // Time to live
@@ -162,14 +185,17 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd48, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [463:0] rtps_packet_with_fragment_offset = {
         dummy_payload,
         "SPTR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_udp, 8'd64, // Time to live
@@ -177,14 +203,17 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd48, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic [463:0] rtps_packet_with_another_protocol = {
         dummy_payload,
         "SPTR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         ip_addr, src_ip_addr,
         16'd0, // checksum
         ip_protocol_another, 8'd64, // Time to live
@@ -192,15 +221,18 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd48, 8'd0, // total length
         8'h00, 8'h45,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     localparam [15:0] RTPS_PACKET_WITH_OPTIONS_LEN = 16'd62;
     logic [495:0] rtps_packet_with_options = {
         dummy_payload,
         "TSPR",
+        // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
         dest_port, src_port,
+        // IPv4 header
         32'd0, // padding
         ip_addr, src_ip_addr,
         16'd0, // checksum
@@ -209,6 +241,7 @@ module test_raw_eth_rx_adapter();
         16'd0, // identification
         8'd52, 8'd0, // total length
         8'h00, 8'h46,
+        // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
     logic clk;
