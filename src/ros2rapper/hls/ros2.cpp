@@ -1263,6 +1263,7 @@ app_reader_id_t get_app_reader_cnt(const app_endpoint tbl[APP_READER_MAX]) {
 #pragma HLS unroll
         count += (tbl[j].alive ? 1 : 0);
     }
+    return count;
 }
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
