@@ -352,8 +352,8 @@ static void call_sedp_reader(
                     sub_topic_name, sub_topic_name_len, sub_type_name,
                     sub_type_name_len);
     }
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64);
+    call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,
+                 sub_enable, timestamp_i64);
 }
 
 static void setup_topic_data_all(

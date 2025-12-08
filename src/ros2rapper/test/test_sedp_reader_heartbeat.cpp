@@ -153,8 +153,8 @@ int test_sedp_reader_heartbeat() {
                     sub_topic_name, sub_topic_name_len, sub_type_name,
                     sub_type_name_len);
     }
-    ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64);
+    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+                 sub_enable, timestamp_i64);
 
     unsigned int sedp_reader_cnt = 0;
     for (auto j = 0; j < SEDP_READER_MAX; j++) {

@@ -247,7 +247,8 @@ void update_liveliness(hls_uint<9> in, hls_stream<rtps_data_t> &out,
 void remove_dead_endpoints(sedp_reader_id_t   id,
                            sedp_reader_tbl_t *sedp_reader_tbl,
                            app_endpoint       app_reader_tbl[APP_READER_MAX],
-                           int64_t            timestamp_i64) {
+                           int64_t            timestamp_i64,
+                           sedp_reader_id_t  *sedp_reader_cnt) {
 #pragma HLS inline
     // Check timeout
     if (id < SEDP_READER_MAX) {
@@ -261,6 +262,7 @@ void remove_dead_endpoints(sedp_reader_id_t   id,
                                           id);
             if ((timestamp_i64 - last_spdp_timestamp) > lease_duration) {
                 remove_sedp_endpoint(id, sedp_reader_tbl, app_reader_tbl);
+                (*sedp_reader_cnt)--;
             }
         }
     }
