@@ -1294,7 +1294,9 @@ void ros2_main(
         *cnt_sedp_sub_an_set /* Cyber port_mode=shared, volatile=YES */,
     VOLATILE uint8_t *cnt_app_wr_set /* Cyber port_mode=shared, volatile=YES */,
 
-    int64_t timestamp_i64 /* Cyber port_mode=in */) {
+    int64_t           timestamp_i64 /* Cyber port_mode=in */,
+    sedp_reader_id_t *sedp_reader_cnt /* Cyber port_mode=shared */,
+    app_reader_id_t  *app_reader_cnt /* Cyber port_mode=shared */) {
 
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out
@@ -1336,6 +1338,8 @@ void ros2_main(
 #pragma HLS interface mode = ap_vld port = cnt_app_wr_set
 
 #pragma HLS interface mode = ap_none port = timestamp_i64
+#pragma HLS interface mode = ap_vld port = sedp_reader_cnt
+#pragma HLS interface mode = ap_vld port = app_reader_cnt
 
 #ifdef SEDP_READER_TBL_FF
     static sedp_reader_tbl_t sedp_reader_tbl;
