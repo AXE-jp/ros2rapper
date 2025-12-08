@@ -198,43 +198,6 @@ module top (
     assign ros2_pub_app_data_ack_0 = ros2_pub_app_data_ack[0];
     assign ros2_pub_app_data_nack_0 = ros2_pub_app_data_nack[0];
 
-    // --- ROS2 Subscriber Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
-    wire [7:0] ros2_sub_topic_name_len = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_sub_topic_type_name_len = 8'd29;
-
-    // --- ROS2 Subscriber Received Message
-    wire [63:0] recvinfo_din;
-    wire recvinfo_write;
-    reg  [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_sub_app_data_len;
-    reg  [15:0] ros2_sub_app_data_rep_id;
-
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr;
-    wire ros2_sub_app_data_ce;
-    wire ros2_sub_app_data_we;
-    wire [7:0] ros2_sub_app_data_wdata;
-    reg [7:0] rx_msg_reg[0:`ROS2_MAX_APP_DATA_LEN-1];
-
-    always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n_int) begin
-            ros2_sub_app_data_len <= 0;
-            ros2_sub_app_data_rep_id <= 0;
-        end else begin
-            if (recvinfo_write) begin
-                ros2_sub_app_data_len <= recvinfo_din[15:0];
-                ros2_sub_app_data_rep_id <= recvinfo_din[31:16];
-            end
-            if (ros2_sub_app_data_ce & ros2_sub_app_data_we)
-                rx_msg_reg[ros2_sub_app_data_addr][7:0] <= ros2_sub_app_data_wdata;
-        end
-    end
-
-    assign led4 = rx_msg_reg[0][0];
-    assign led5 = rx_msg_reg[0][1];
-    assign led6 = rx_msg_reg[0][2];
-    assign led7 = rx_msg_reg[0][3];
-
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
     wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr;
@@ -257,6 +220,110 @@ module top (
         .o_rdata(sedp_reader_tbl_mem_rdata)
     );
 `endif
+
+    // Raw Ether TX message
+    wire [47:0] dest_mac_addr = 48'hff_ff_ff_ff_ff_ff; // broadcast
+    wire [31:0] dest_ip_addr  = {8'd2, 8'd1, 8'd168, 8'd192};
+    wire [15:0] udp_src_port  = 16'd1111;
+    wire [15:0] udp_dest_port = 16'd1234;
+
+    // Ether header
+    wire [15:0] eth_type = {8'h00, 8'h08}; // IPv4
+    wire [111:0] raw_eth_hdr = {eth_type, mac_addr, dest_mac_addr};
+
+    // IP header
+    wire [7:0]  ip_ver_ihl = 8'h45;
+    wire [7:0]  ip_tos = 8'h00;
+    wire [15:0] ip_total_length = 16'd44;
+    wire [15:0] ip_identification = 16'd0;
+    wire [7:0]  ip_flags = 8'h40; // Don't fragment
+    wire [7:0]  ip_fragment_offset = 8'd0;
+    wire [7:0]  ip_ttl = 8'd64;
+    wire [7:0]  ip_protocol = 8'd17; // UDP
+    wire [15:0] ip_checksum;
+    wire [159:0] raw_eth_ip_hdr = {
+        dest_ip_addr, ip_addr, ip_checksum, ip_protocol, ip_ttl, ip_fragment_offset, ip_flags,
+        ip_identification[7:0], ip_identification[15:8], ip_total_length[7:0], ip_total_length[15:8], ip_tos, ip_ver_ihl
+        };
+
+    wire [31:0] ip_checksum_0 =
+        raw_eth_ip_hdr[15:0] + raw_eth_ip_hdr[31:16] + raw_eth_ip_hdr[47:32] + raw_eth_ip_hdr[63:48] + raw_eth_ip_hdr[79:64]
+        + raw_eth_ip_hdr[111:96] + raw_eth_ip_hdr[127:112] + raw_eth_ip_hdr[143:128] + raw_eth_ip_hdr[159:144];
+    wire [31:0] ip_checksum_1 = ip_checksum_0[15:0] + ip_checksum_0[31:16];
+    assign ip_checksum = ~(ip_checksum_1[15:0] + ip_checksum_1[31:16]);
+
+    // UDP
+    wire [15:0] udp_length = 16'd24;
+    wire [15:0] udp_checksum = 16'd0; // No checksum
+    wire [127:0] udp_payload = {8'h00, "\ntset rehte war"};
+    wire [191:0] raw_eth_udp_packet = {
+        udp_payload, udp_checksum[7:0], udp_checksum[15:8], udp_length[7:0], udp_length[15:8],
+        udp_dest_port[7:0], udp_dest_port[15:8], udp_src_port[7:0], udp_src_port[15:8]
+        };
+
+    wire [463:0] raw_eth_packet = {raw_eth_udp_packet, raw_eth_ip_hdr, raw_eth_hdr};
+    wire [15:0]  raw_eth_packet_len = 58;
+    wire [479:0] tx_raw_eth_data = {raw_eth_packet, raw_eth_packet_len};
+    wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr;
+    wire tx_raw_eth_data_ce;
+    reg  [31:0] tx_raw_eth_data_rdata;
+
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            tx_raw_eth_data_rdata <= 32'd0;
+        end else begin
+            if (tx_raw_eth_data_ce) begin
+                if (tx_raw_eth_data_addr < 15) begin
+                    tx_raw_eth_data_rdata <= tx_raw_eth_data[32*tx_raw_eth_data_addr +: 32];
+                end else begin
+                    tx_raw_eth_data_rdata <= 32'd0;
+                end
+            end
+        end
+    end
+
+    // Raw Ether TX handshake
+    reg  [26:0] count;
+    wire tx_raw_eth_frame_ready = count[26];
+    wire tx_raw_eth_completed;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            count <= 27'd0;
+        end else begin
+            if (tx_raw_eth_completed) begin
+                count <= 27'd0;
+            end else if (!tx_raw_eth_frame_ready) begin
+                count <= count + 1'b1;
+            end
+        end
+    end
+
+    reg  tx_raw_eth_frame_ready_before;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            tx_raw_eth_frame_ready_before <= 1'b0;
+        end else begin
+            tx_raw_eth_frame_ready_before <= tx_raw_eth_frame_ready;
+        end
+    end
+    // The rising edge of tx_raw_eth_frame_ready
+    wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
+
+    // Monitor raw ether
+    reg  led_tx_raw_eth_send; // Blink when a raw ether packet is sent
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            led_tx_raw_eth_send <= 1'b0;
+        end else begin
+            if (tx_raw_eth_kick)
+                led_tx_raw_eth_send <= ~led_tx_raw_eth_send;
+        end
+    end
+
+    assign led4 = led_tx_raw_eth_send;
+    assign led5 = 1'b0;
+    assign led6 = 1'b0;
+    assign led7 = 1'b0;
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -300,7 +367,7 @@ module top (
 
         .ether_en(1'b1),
         .ros2pub_en(1),
-        .ros2sub_en(1),
+        .ros2sub_en(0),
 
         .phy_rx_clk(phy_rx_clk),
         .phy_rxd(phy_rxd),
@@ -345,10 +412,10 @@ module top (
         .ros2_pub_topic_type_name_3(0),
         .ros2_pub_topic_type_name_len_3(0),
 
-        .ros2_sub_topic_name_0(ros2_sub_topic_name),
-        .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len),
-        .ros2_sub_topic_type_name_0(ros2_sub_topic_type_name),
-        .ros2_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len),
+        .ros2_sub_topic_name_0(0),
+        .ros2_sub_topic_name_len_0(0),
+        .ros2_sub_topic_type_name_0(0),
+        .ros2_sub_topic_type_name_len_0(0),
 
         .ros2_sub_topic_name_1(0),
         .ros2_sub_topic_name_len_1(0),
@@ -400,10 +467,10 @@ module top (
         .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
         .ros2_pub_app_data_grant(),
 
-        .ros2_sub_app_data_0_addr(ros2_sub_app_data_addr),
-        .ros2_sub_app_data_0_ce(ros2_sub_app_data_ce),
-        .ros2_sub_app_data_0_we(ros2_sub_app_data_we),
-        .ros2_sub_app_data_0_wdata(ros2_sub_app_data_wdata),
+        .ros2_sub_app_data_0_addr(),
+        .ros2_sub_app_data_0_ce(),
+        .ros2_sub_app_data_0_we(),
+        .ros2_sub_app_data_0_wdata(),
 
         .ros2_sub_app_data_1_addr(),
         .ros2_sub_app_data_1_ce(),
@@ -420,9 +487,9 @@ module top (
         .ros2_sub_app_data_3_we(),
         .ros2_sub_app_data_3_wdata(),
 
-        .ros2_sub_app_data_recvinfo_din(recvinfo_din),
+        .ros2_sub_app_data_recvinfo_din(),
         .ros2_sub_app_data_recvinfo_full_n(1'b1),
-        .ros2_sub_app_data_recvinfo_write(recvinfo_write),
+        .ros2_sub_app_data_recvinfo_write(),
 
         .ros2_sub_app_data_req(0),
         .ros2_sub_app_data_rel(0),
@@ -444,11 +511,11 @@ module top (
         .ip_payloadsmem_wdata(payloadsmem_wdata),
         .ip_payloadsmem_rdata(payloadsmem_rdata),
 
-        .tx_raw_eth_data_addr(),
-        .tx_raw_eth_data_ce(),
-        .tx_raw_eth_data_rdata(32'd0),
-        .tx_raw_eth_frame_ready(1'b0),
-        .tx_raw_eth_completed(),
+        .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
+        .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
+        .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+        .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
+        .tx_raw_eth_completed(tx_raw_eth_completed),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
