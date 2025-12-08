@@ -13,8 +13,8 @@
 #define PUB_TOPICS_MAX 4
 #define SUB_TOPICS_MAX 4
 
-typedef hls_uint<7> sedp_reader_id_t;
-typedef hls_uint<7> app_reader_id_t;
+typedef hls_uint<8> sedp_reader_id_t;
+typedef hls_uint<8> app_reader_id_t;
 typedef hls_uint<2> topic_id_t;
 
 // sedp_reader_cnt can be SEDP_READER_MAX.
