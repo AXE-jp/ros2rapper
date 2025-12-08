@@ -244,6 +244,8 @@ module test_raw_eth_rx_adapter();
         // ether frame header
         eth_type_ipv4, src_mac, dest_mac};
 
+    logic [31:0] error_code;
+
     logic clk;
     logic rst_n;
     localparam DELAY = 1;
@@ -271,7 +273,10 @@ module test_raw_eth_rx_adapter();
     task automatic rom_is_not_touched();
         integer i;
         for (i = 0; i < (`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4); i = i + 1) begin
-            assert (rom[i] == 32'd0) else $finish;
+            assert (rom[i] == 32'd0) else begin
+                error_code = 32'd1;
+                $finish;
+            end
         end
     endtask
 
@@ -400,12 +405,18 @@ module test_raw_eth_rx_adapter();
         logic [ADDR_WIDTH-1:0] addr;
         logic [4:0] offset;
         integer j;
-        assert (rom[0][15:0] == packet_len) else $finish;
+        assert (rom[0][15:0] == packet_len) else begin
+            error_code = 32'd2;
+            $finish;
+        end
         for (j = 0; j < packet_len; j = j + 1) begin
             index  = j + 2;
             addr   = index[ADDR_WIDTH+1:2];
             offset = 8 * index[1:0];
-            assert (rom[addr][offset +: 8] == packet[8*j +: 8]) else $finish;
+            assert (rom[addr][offset +: 8] == packet[8*j +: 8]) else begin
+                error_code = 32'd3;
+                $finish;
+            end
         end
     endtask
 
@@ -419,11 +430,17 @@ module test_raw_eth_rx_adapter();
         @(posedge clk);
         send_packet(.packet_len(packet_len), .packet(packet));
         repeat(20) @(posedge clk);
-        assert (frame_ready == 1'b0) else $finish;
+        assert (frame_ready == 1'b0) else begin
+            error_code = 32'd4;
+            $finish;
+        end
         rom_is_not_touched();
         send_packet_with_interval(.packet_len(packet_len), .packet(packet));
         repeat(20) @(posedge clk);
-        assert (frame_ready == 1'b0) else $finish;
+        assert (frame_ready == 1'b0) else begin
+            error_code = 32'd5;
+            $finish;
+        end
         rom_is_not_touched();
     endtask
 
@@ -436,7 +453,10 @@ module test_raw_eth_rx_adapter();
         @(posedge clk);
         send_packet(.packet_len(packet_len), .packet(packet));
         repeat(20) @(posedge clk);
-        assert (frame_ready == 1'b1) else $finish;
+        assert (frame_ready == 1'b1) else begin
+            error_code = 32'd6;
+            $finish;
+        end
         check_rom(.packet_len(packet_len), .packet(packet));
         #(DELAY);
         ack = 1'b1;
@@ -449,7 +469,10 @@ module test_raw_eth_rx_adapter();
         @(posedge clk);
         send_packet_with_interval(.packet_len(packet_len), .packet(packet));
         repeat(20) @(posedge clk);
-        assert (frame_ready == 1'b1) else $finish;
+        assert (frame_ready == 1'b1) else begin
+            error_code = 32'd7;
+            $finish;
+        end
         check_rom(.packet_len(packet_len), .packet(packet));
         #(DELAY);
         ack = 1'b1;
@@ -462,6 +485,7 @@ module test_raw_eth_rx_adapter();
     endtask
 
     initial begin
+        error_code = 32'd0;
         rst_n = 1'b0;
         repeat(10) @(posedge clk);
         rst_n = 1'b1;
@@ -503,7 +527,10 @@ module test_raw_eth_rx_adapter();
         // Test whether the packet is ignored when frame_ready == 1'b1
         send_packet(.packet_len(IPV4_ANOTHER_PACKET_LEN), .packet(ipv4_another_packet_unicast_to_me));
         repeat(20) @(posedge clk);
-        assert (frame_ready == 1'b1) else $finish;
+        assert (frame_ready == 1'b1) else begin
+            error_code = 32'd8;
+            $finish;
+        end
         reset_rom();
         send_packet(.packet_len(IPV4_ANOTHER_PACKET_LEN), .packet(ipv4_another_packet_unicast_to_me));
         repeat(20) @(posedge clk);
