@@ -175,6 +175,9 @@ module ros2rapper #(
     input wire ros2_cnt_sedp_sub_an_elapsed,
     input wire ros2_cnt_app_wr_elapsed,
 
+    output wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt,
+    output wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0] ros2_app_reader_cnt,
+
 `ifdef ROS2_SEDP_READER_TBL_RAM
     output wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr,
     output wire sedp_reader_tbl_mem_ce,
@@ -248,6 +251,30 @@ always @(posedge clk or negedge rst_n) begin
         local_timestamp <= 64'd0;
     end else begin
         local_timestamp <= local_timestamp + LOCAL_TIMESTAMP_INCREMENT;
+    end
+end
+
+localparam SEDP_READER_CNT_WIDTH = $clog2(`ROS2_SEDP_READER_MAX+1);
+reg  [SEDP_READER_CNT_WIDTH-1:0] r_sedp_reader_cnt;
+wire [SEDP_READER_CNT_WIDTH-1:0] w_sedp_reader_cnt;
+wire w_sedp_reader_cnt_valid;
+assign ros2_sedp_reader_cnt = r_sedp_reader_cnt;
+
+localparam APP_READER_CNT_WIDTH = $clog2(`ROS2_APP_READER_MAX+1);
+reg  [APP_READER_CNT_WIDTH-1:0] r_app_reader_cnt;
+wire [APP_READER_CNT_WIDTH-1:0] w_app_reader_cnt;
+wire w_app_reader_cnt_valid;
+assign ros2_app_reader_cnt = r_app_reader_cnt;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        r_sedp_reader_cnt <= {SEDP_READER_CNT_WIDTH{1'b0}};
+        r_app_reader_cnt <= {APP_READER_CNT_WIDTH{1'b0}};
+    end else begin
+        if (w_sedp_reader_cnt_valid)
+            r_sedp_reader_cnt <= w_sedp_reader_cnt;
+        if (w_app_reader_cnt_valid)
+            r_app_reader_cnt <= w_app_reader_cnt;
     end
 end
 
@@ -505,7 +532,11 @@ ros2_main (
     .cnt_app_wr_elapsed(cnt_app_wr_elapsed),
     .cnt_app_wr_elapsed_ap_ack(),
 
-    .timestamp_i64(local_timestamp)
+    .timestamp_i64(local_timestamp),
+    .sedp_reader_cnt(w_sedp_reader_cnt),
+    .sedp_reader_cnt_ap_vld(w_sedp_reader_cnt_valid),
+    .app_reader_cnt(w_app_reader_cnt),
+    .app_reader_cnt_ap_vld(w_app_reader_cnt_valid)
 );
 
 ros2_sender
@@ -1172,7 +1203,11 @@ ros2_main (
   .cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
   .cnt_app_wr_elapsed(cnt_app_wr_elapsed),
 
-  .timestamp_i64(local_timestamp)
+  .timestamp_i64(local_timestamp),
+  .sedp_reader_cnt_wd(w_sedp_reader_cnt),
+  .sedp_reader_cnt_we(w_sedp_reader_cnt_valid),
+  .app_reader_cnt_wd(w_app_reader_cnt),
+  .app_reader_cnt_we(w_app_reader_cnt_valid)
 );
 
 ros2_sender
