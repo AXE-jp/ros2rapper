@@ -34,16 +34,16 @@ module ros2_eth_tx_adapter (
   localparam IP_HDR_SIZE  = 20;
   localparam UDP_HDR_SIZE = 8;
 
-  localparam IP_HDR_OFFSET_VERSION_IHL = 0;  // Version, IHL
-  localparam IP_HDR_OFFSET_TOS         = 1;  // Type of Service
-  localparam IP_HDR_OFFSET_TOT_LEN     = 2;  // Total Length
-  localparam IP_HDR_OFFSET_ID          = 4;  // Identification
-  localparam IP_HDR_OFFSET_FLAG_OFF    = 6;  // Flags, Fragment Offset
-  localparam IP_HDR_OFFSET_TTL         = 8;  // Time to Live
-  localparam IP_HDR_OFFSET_PROTOCOL    = 9;  // Protocol
-  localparam IP_HDR_OFFSET_CHECK       = 10; // Header Checksum
-  localparam IP_HDR_OFFSET_SADDR       = 12; // Source Address
-  localparam IP_HDR_OFFSET_DADDR       = 16; // Destination Address
+  localparam [15:0] IP_HDR_OFFSET_VERSION_IHL = 0;  // Version, IHL
+  localparam [15:0] IP_HDR_OFFSET_TOS         = 1;  // Type of Service
+  localparam [15:0] IP_HDR_OFFSET_TOT_LEN     = 2;  // Total Length
+  localparam [15:0] IP_HDR_OFFSET_ID          = 4;  // Identification
+  localparam [15:0] IP_HDR_OFFSET_FLAG_OFF    = 6;  // Flags, Fragment Offset
+  localparam [15:0] IP_HDR_OFFSET_TTL         = 8;  // Time to Live
+  localparam [15:0] IP_HDR_OFFSET_PROTOCOL    = 9;  // Protocol
+  localparam [15:0] IP_HDR_OFFSET_CHECK       = 10; // Header Checksum
+  localparam [15:0] IP_HDR_OFFSET_SADDR       = 12; // Source Address
+  localparam [15:0] IP_HDR_OFFSET_DADDR       = 16; // Destination Address
 
   localparam UDP_HDR_OFFSET_SPORT    = IP_HDR_SIZE;     // Source Port
   localparam UDP_HDR_OFFSET_DPORT    = IP_HDR_SIZE + 2; // Destination Port

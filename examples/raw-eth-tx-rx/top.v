@@ -272,10 +272,12 @@ module top (
         if (!rst_n_int) begin
             tx_raw_eth_data_rdata <= 32'd0;
         end else begin
-            if (tx_raw_eth_data_addr < 15) begin
-                tx_raw_eth_data_rdata <= tx_raw_eth_data[32*tx_raw_eth_data_addr +: 32];
-            end else begin
-                tx_raw_eth_data_rdata <= 32'd0;
+            if (tx_raw_eth_data_ce) begin
+                if (tx_raw_eth_data_addr < 15) begin
+                    tx_raw_eth_data_rdata <= tx_raw_eth_data[32*tx_raw_eth_data_addr +: 32];
+                end else begin
+                    tx_raw_eth_data_rdata <= 32'd0;
+                end
             end
         end
     end

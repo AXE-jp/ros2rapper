@@ -10,7 +10,7 @@ class SampleSubscriber(Node):
         super().__init__("sample_subscriber")
         qos_profile = QoSProfile(depth=0, history=HistoryPolicy.KEEP_LAST, reliability=QoSReliabilityPolicy.BEST_EFFORT)
         self.counter_ = 0
-        self.subscription_ = self.create_subscription(Uint16x512, "sample_topic", self.listener_callback, qos_profile)
+        self.subscription_ = self.create_subscription(Uint16x512, "sample_topic_b", self.listener_callback, qos_profile)
         self.subscription_
 
     def listener_callback(self, msg):
