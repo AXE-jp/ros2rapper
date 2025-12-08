@@ -1254,6 +1254,17 @@ static void ros2_out(
     }
 }
 
+/* Cyber func=inline */
+app_reader_id_t get_app_reader_cnt(const app_endpoint tbl[APP_READER_MAX]) {
+#pragma HLS inline
+    app_reader_id_t count = 0;
+    /* Cyber unroll_times=all */
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+#pragma HLS unroll
+        count += (tbl[j].alive ? 1 : 0);
+    }
+}
+
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_main(
     hls_stream<rtps_data_t> &in /* Cyber port_mode=axi_stream */,
@@ -1371,4 +1382,6 @@ void ros2_main(
         cnt_sedp_sub_hb_elapsed, cnt_sedp_sub_hb_set, cnt_sedp_pub_an_elapsed,
         cnt_sedp_pub_an_set, cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set,
         cnt_app_wr_elapsed, cnt_app_wr_set, timestamp_i64);
+
+    *app_reader_cnt = get_app_reader_cnt(app_reader_tbl);
 }
