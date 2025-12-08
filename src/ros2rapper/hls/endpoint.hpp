@@ -17,14 +17,10 @@ typedef hls_uint<7> sedp_reader_id_t;
 typedef hls_uint<7> app_reader_id_t;
 typedef hls_uint<2> topic_id_t;
 
-// There is a variable "unused_reader_id" of type sedp_reader_id_t in
-// spdp_reader. "unused_reader_id" becomes SEDP_READER_MAX when sedp_reader_tbl
-// is full.
+// sedp_reader_cnt can be SEDP_READER_MAX.
 static_assert(SEDP_READER_MAX <= 255,
               "sedp_reader_id_t should be able to represent SEDP_READER_MAX.");
-// There is a variable "unused_app_reader_id" of type app_reader_id_t in
-// sedp_reader. "unused_app_reader_id" becomes APP_READER_MAX when
-// app_reader_tbl is full.
+// app_reader_cnt can be APP_READER_MAX.
 static_assert(APP_READER_MAX <= 255,
               "app_reader_id_t should be able to represent APP_READER_MAX.");
 static_assert((PUB_TOPICS_MAX <= 4) && (SUB_TOPICS_MAX <= 4),
