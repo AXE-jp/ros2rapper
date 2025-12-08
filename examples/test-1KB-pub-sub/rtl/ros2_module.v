@@ -70,8 +70,8 @@ module ros2_module #(
     wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
 
     // --- ROS2 Pubisher Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "cipot_elpmas/tr";
-    wire [7:0] ros2_pub_topic_name_len = 8'd16;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "b_cipot_elpmas/tr";
+    wire [7:0] ros2_pub_topic_name_len = 8'd18;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_215x61tniU::_sdd::gsm::sgsm_elpmas";
     wire [7:0] ros2_pub_topic_type_name_len = 8'd36;
 
@@ -112,8 +112,8 @@ module ros2_module #(
 `endif
 
     // --- ROS2 Subscriber Configuration
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "cipot_elpmas/tr";
-    wire [7:0] ros2_sub_topic_name_len = 8'd16;
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "a_cipot_elpmas/tr";
+    wire [7:0] ros2_sub_topic_name_len = 8'd18;
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_215x61tniU::_sdd::gsm::sgsm_elpmas";
     wire [7:0] ros2_sub_topic_type_name_len = 8'd36;
 

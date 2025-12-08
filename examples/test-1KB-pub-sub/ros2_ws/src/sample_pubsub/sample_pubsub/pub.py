@@ -7,7 +7,7 @@ class SamplePublisher(Node):
 
     def __init__(self):
         super().__init__("sample_publisher")
-        self.publisher_ = self.create_publisher(Uint16x512, "sample_topic", 10)
+        self.publisher_ = self.create_publisher(Uint16x512, "sample_topic_a", 10)
         self.timer_ = self.create_timer(1, self.timer_callback)
         self.counter_ = 0
 
