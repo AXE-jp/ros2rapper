@@ -21,25 +21,10 @@ module top (
     output wire       phy_tx_en,
     output wire       phy_rst_n,
 
-    input  wire       sw0,
-    input  wire       sw1,
-    input  wire       sw2,
-    input  wire       sw3,
-
     output wire       led4,
     output wire       led5,
     output wire       led6,
-    output wire       led7,
-
-    output wire       led0_b,
-    output wire       led1_b,
-    output wire       led2_b,
-    output wire       led3_b,
-
-    output wire       led0_r,
-    output wire       led1_r,
-    output wire       led2_r,
-    output wire       led3_r
+    output wire       led7
 );
 
     // --- Clock & Reset
@@ -51,10 +36,10 @@ module top (
 
     assign phy_ref_clk = clk_25mhz_int;
 
-    localparam ROS2CLK_HZ = 80_000_000;
+    localparam ROS2CLK_HZ = 40_000_000;
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
-        .CLKOUT0_DIVIDE_F(12.5),
+        .CLKOUT0_DIVIDE_F(25.0),
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
         .CLKOUT1_DIVIDE(40),
@@ -137,113 +122,81 @@ module top (
     wire [31:0] ros2_participant_lease_duration_fraction = 32'd0;
 
     // --- ROS2 Pubisher Configuration
-    wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2pub_en = {sw3, sw2, sw1, sw0};
+    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name = "bbb/tr";
+    wire [7:0] ros2_pub_topic_name_len = 8'd7;
+    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name = "_gnirtS::_sdd::gsm::sgsm_dts";
+    wire [7:0] ros2_pub_topic_type_name_len = 8'd29;
+    reg [7:0] msg_number;
 
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0 = "bbb/tr";
-    wire [7:0] ros2_pub_topic_name_len_0 = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_0 = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_pub_topic_type_name_len_0 = 8'd29;
-
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_1 = "ccc/tr";
-    wire [7:0] ros2_pub_topic_name_len_1 = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_1 = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_pub_topic_type_name_len_1 = 8'd29;
-
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_2 = "ddd/tr";
-    wire [7:0] ros2_pub_topic_name_len_2 = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_2 = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_pub_topic_type_name_len_2 = 8'd29;
-
-    wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_3 = "eee/tr";
-    wire [7:0] ros2_pub_topic_name_len_3 = 8'd7;
-    wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3 = "_gnirtS::_sdd::gsm::sgsm_dts";
-    wire [7:0] ros2_pub_topic_type_name_len_3 = 8'd29;
-
-    // --- ROS2 Publisher Message Control
-    reg [29:0] msg_change_counter;
-    reg [3:0] prev_msg_change_counter;
-    always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n_int) begin
-            msg_change_counter <= 30'd0;
-            prev_msg_change_counter <= 4'd0;
-        end else begin
-            msg_change_counter <= msg_change_counter + 1'b1;
-            prev_msg_change_counter[3:0] <= msg_change_counter[29:26];
+    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN = 8'd22;
+    localparam [`ROS2_APP_DATA_LEN_WIDTH-1:0] ROS2_PUB_APP_DATA_LEN = ROS2_PUB_APP_DATA_STRLEN + 8'd4;
+    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data = {msg_number, " - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN}; // Published message
+`ifdef ROS2_PUB_DATA_RAM
+    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr;
+    wire ros2_pub_app_data_ce;
+    reg  [31:0] ros2_pub_app_data_rdata;
+    always @(posedge clk_int) begin
+        if (ros2_pub_app_data_ce) begin
+            if (ros2_pub_app_data_addr == 0) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[31:0];
+            end else if (ros2_pub_app_data_addr == 1) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[63:32];
+            end else if (ros2_pub_app_data_addr == 2) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[95:64];
+            end else if (ros2_pub_app_data_addr == 3) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[127:96];
+            end else if (ros2_pub_app_data_addr == 4) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[159:128];
+            end else if (ros2_pub_app_data_addr == 5) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[191:160];
+            end else if (ros2_pub_app_data_addr == 6) begin
+                ros2_pub_app_data_rdata <= ros2_pub_app_data[223:192];
+            end else begin
+                ros2_pub_app_data_rdata <= 32'd0;
+            end
         end
     end
+`endif
 
-    // Rising edge of msg_change_counter[29:26]
-    wire [3:0] change_msg = (~prev_msg_change_counter) & msg_change_counter[29:26];
+    // --- ROS2 Publisher Message Control
+    reg ros2_pub_app_data_req_0;
+    reg ros2_pub_app_data_rel_0;
+    wire ros2_pub_app_data_ack_0;
+    wire ros2_pub_app_data_nack_0;
+    reg [27:0] msg_change_counter;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            msg_number <= 8'd48; // '0'
+            ros2_pub_app_data_req_0 <= 0;
+            ros2_pub_app_data_rel_0 <= 0;
+            msg_change_counter <= 0;
+        end else begin
+            msg_change_counter <= msg_change_counter + 1;
+            ros2_pub_app_data_rel_0 <= 0;
+
+            if (ros2_pub_app_data_req_0 & ros2_pub_app_data_ack_0) begin
+                msg_number <= (msg_number == 8'd57) ? 8'd48 : msg_number + 1;
+                ros2_pub_app_data_rel_0 <= 1;
+                ros2_pub_app_data_req_0 <= 0;
+                msg_change_counter <= 0;
+            end else if (ros2_pub_app_data_req_0 & ros2_pub_app_data_nack_0) begin
+                ros2_pub_app_data_req_0 <= 0;
+            end else if (ros2_pub_app_data_rel_0 & ros2_pub_app_data_ack_0) begin
+                ros2_pub_app_data_rel_0 <= 0;
+            end else if (msg_change_counter[27]) begin
+                ros2_pub_app_data_req_0 <= 1;
+            end
+        end
+    end
 
     wire [3:0] ros2_pub_app_data_req;
     wire [3:0] ros2_pub_app_data_rel;
     wire [3:0] ros2_pub_app_data_ack;
     wire [3:0] ros2_pub_app_data_nack;
-
-    // Published messages
-    wire [7:0] msg_number[0:3];
-
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_0 = 8'd23;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_0 = ROS2_PUB_APP_DATA_STRLEN_0 + 8'd4;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0 = {msg_number[0], "B - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_0};
-
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_1 = 8'd24;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_1 = ROS2_PUB_APP_DATA_STRLEN_1 + 8'd4;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1 = {msg_number[1], "CC - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_1};
-
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_2 = 8'd25;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_2 = ROS2_PUB_APP_DATA_STRLEN_2 + 8'd4;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2 = {msg_number[2], "DDD - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_2};
-
-    localparam [7:0] ROS2_PUB_APP_DATA_STRLEN_3 = 8'd26;
-    localparam [7:0] ROS2_PUB_APP_DATA_LEN_3 = ROS2_PUB_APP_DATA_STRLEN_3 + 8'd4;
-    wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3 = {msg_number[3], "EEEE - AGPF morF egasseM", 24'b0, ROS2_PUB_APP_DATA_STRLEN_3};
-
-    generate
-        genvar iter;
-        for (iter = 0; iter < 4; iter = iter + 1) begin : PUB_MSG_CTRL
-            pub_msg_ctrl pub_msg_ctrl_inst(
-                .clk(clk_int),
-                .rst_n(rst_n_int),
-                .msg_number(msg_number[iter]),
-                .change_msg(change_msg[iter]),
-                .ros2_pub_app_data_req(ros2_pub_app_data_req[iter]),
-                .ros2_pub_app_data_rel(ros2_pub_app_data_rel[iter]),
-                .ros2_pub_app_data_ack(ros2_pub_app_data_ack[iter]),
-                .ros2_pub_app_data_nack(ros2_pub_app_data_nack[iter]),
-                .ros2_pub_app_data_grant()
-            );
-        end
-    endgenerate
-
-`ifdef ROS2_PUB_DATA_RAM
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_0_addr;
-    wire ros2_pub_app_data_0_ce;
-    reg  [31:0] ros2_pub_app_data_0_rdata;
-
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_1_addr;
-    wire ros2_pub_app_data_1_ce;
-    reg  [31:0] ros2_pub_app_data_1_rdata;
-
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_2_addr;
-    wire ros2_pub_app_data_2_ce;
-    reg  [31:0] ros2_pub_app_data_2_rdata;
-
-    wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_3_addr;
-    wire ros2_pub_app_data_3_ce;
-    reg  [31:0] ros2_pub_app_data_3_rdata;
-
-    always @(posedge clk_int) begin
-        if (ros2_pub_app_data_0_ce)
-            ros2_pub_app_data_0_rdata <= ros2_pub_app_data_0[32*ros2_pub_app_data_0_addr +: 32];
-        if (ros2_pub_app_data_1_ce)
-            ros2_pub_app_data_1_rdata <= ros2_pub_app_data_1[32*ros2_pub_app_data_1_addr +: 32];
-        if (ros2_pub_app_data_2_ce)
-            ros2_pub_app_data_2_rdata <= ros2_pub_app_data_2[32*ros2_pub_app_data_2_addr +: 32];
-        if (ros2_pub_app_data_3_ce)
-            ros2_pub_app_data_3_rdata <= ros2_pub_app_data_3[32*ros2_pub_app_data_3_addr +: 32];
-    end
-`endif
+    assign ros2_pub_app_data_req[0] = ros2_pub_app_data_req_0;
+    assign ros2_pub_app_data_rel[0] = ros2_pub_app_data_rel_0;
+    assign ros2_pub_app_data_ack_0 = ros2_pub_app_data_ack[0];
+    assign ros2_pub_app_data_nack_0 = ros2_pub_app_data_nack[0];
 
     // --- ROS2 Subscriber Configuration
     wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name = "aaa/tr";
@@ -281,18 +234,6 @@ module top (
     assign led5 = rx_msg_reg[0][1];
     assign led6 = rx_msg_reg[0][2];
     assign led7 = rx_msg_reg[0][3];
-
-    // Debug info
-    wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt;
-    wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0]  ros2_app_reader_cnt;
-    assign led0_b = ros2_sedp_reader_cnt[0];
-    assign led1_b = ros2_sedp_reader_cnt[1];
-    assign led2_b = ros2_sedp_reader_cnt[2];
-    assign led3_b = ros2_sedp_reader_cnt[3];
-    assign led0_r = ros2_app_reader_cnt[0];
-    assign led1_r = ros2_app_reader_cnt[1];
-    assign led2_r = ros2_app_reader_cnt[2];
-    assign led3_r = ros2_app_reader_cnt[3];
 
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
@@ -358,7 +299,7 @@ module top (
         .rst_n(rst_n_int),
 
         .ether_en(1'b1),
-        .ros2pub_en(ros2pub_en),
+        .ros2pub_en(1),
         .ros2sub_en(1),
 
         .phy_rx_clk(phy_rx_clk),
@@ -384,25 +325,25 @@ module top (
         .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
         .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
 
-        .ros2_pub_topic_name_0(ros2_pub_topic_name_0),
-        .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len_0),
-        .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name_0),
-        .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len_0),
+        .ros2_pub_topic_name_0(ros2_pub_topic_name),
+        .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len),
+        .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name),
+        .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len),
 
-        .ros2_pub_topic_name_1(ros2_pub_topic_name_1),
-        .ros2_pub_topic_name_len_1(ros2_pub_topic_name_len_1),
-        .ros2_pub_topic_type_name_1(ros2_pub_topic_type_name_1),
-        .ros2_pub_topic_type_name_len_1(ros2_pub_topic_type_name_len_1),
+        .ros2_pub_topic_name_1(0),
+        .ros2_pub_topic_name_len_1(0),
+        .ros2_pub_topic_type_name_1(0),
+        .ros2_pub_topic_type_name_len_1(0),
 
-        .ros2_pub_topic_name_2(ros2_pub_topic_name_2),
-        .ros2_pub_topic_name_len_2(ros2_pub_topic_name_len_2),
-        .ros2_pub_topic_type_name_2(ros2_pub_topic_type_name_2),
-        .ros2_pub_topic_type_name_len_2(ros2_pub_topic_type_name_len_2),
+        .ros2_pub_topic_name_2(0),
+        .ros2_pub_topic_name_len_2(0),
+        .ros2_pub_topic_type_name_2(0),
+        .ros2_pub_topic_type_name_len_2(0),
 
-        .ros2_pub_topic_name_3(ros2_pub_topic_name_3),
-        .ros2_pub_topic_name_len_3(ros2_pub_topic_name_len_3),
-        .ros2_pub_topic_type_name_3(ros2_pub_topic_type_name_3),
-        .ros2_pub_topic_type_name_len_3(ros2_pub_topic_type_name_len_3),
+        .ros2_pub_topic_name_3(0),
+        .ros2_pub_topic_name_len_3(0),
+        .ros2_pub_topic_type_name_3(0),
+        .ros2_pub_topic_type_name_len_3(0),
 
         .ros2_sub_topic_name_0(ros2_sub_topic_name),
         .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len),
@@ -425,33 +366,33 @@ module top (
         .ros2_sub_topic_type_name_len_3(0),
 
 `ifdef ROS2_PUB_DATA_FF
-        .ros2_pub_app_data_0(ros2_pub_app_data_0),
-        .ros2_pub_app_data_1(ros2_pub_app_data_1),
-        .ros2_pub_app_data_2(ros2_pub_app_data_2),
-        .ros2_pub_app_data_3(ros2_pub_app_data_3),
+        .ros2_pub_app_data_0(ros2_pub_app_data),
+        .ros2_pub_app_data_1(0),
+        .ros2_pub_app_data_2(0),
+        .ros2_pub_app_data_3(0),
 `endif
 `ifdef ROS2_PUB_DATA_RAM
-        .ros2_pub_app_data_0_addr(ros2_pub_app_data_0_addr),
-        .ros2_pub_app_data_0_ce(ros2_pub_app_data_0_ce),
-        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_0_rdata),
+        .ros2_pub_app_data_0_addr(ros2_pub_app_data_addr),
+        .ros2_pub_app_data_0_ce(ros2_pub_app_data_ce),
+        .ros2_pub_app_data_0_rdata(ros2_pub_app_data_rdata),
 
-        .ros2_pub_app_data_1_addr(ros2_pub_app_data_1_addr),
-        .ros2_pub_app_data_1_ce(ros2_pub_app_data_1_ce),
-        .ros2_pub_app_data_1_rdata(ros2_pub_app_data_1_rdata),
+        .ros2_pub_app_data_1_addr(),
+        .ros2_pub_app_data_1_ce(),
+        .ros2_pub_app_data_1_rdata(0),
 
-        .ros2_pub_app_data_2_addr(ros2_pub_app_data_2_addr),
-        .ros2_pub_app_data_2_ce(ros2_pub_app_data_2_ce),
-        .ros2_pub_app_data_2_rdata(ros2_pub_app_data_2_rdata),
+        .ros2_pub_app_data_2_addr(),
+        .ros2_pub_app_data_2_ce(),
+        .ros2_pub_app_data_2_rdata(0),
 
-        .ros2_pub_app_data_3_addr(ros2_pub_app_data_3_addr),
-        .ros2_pub_app_data_3_ce(ros2_pub_app_data_3_ce),
-        .ros2_pub_app_data_3_rdata(ros2_pub_app_data_3_rdata),
+        .ros2_pub_app_data_3_addr(),
+        .ros2_pub_app_data_3_ce(),
+        .ros2_pub_app_data_3_rdata(0),
 `endif
 
-        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN_0),
-        .ros2_pub_app_data_len_1(ROS2_PUB_APP_DATA_LEN_1),
-        .ros2_pub_app_data_len_2(ROS2_PUB_APP_DATA_LEN_2),
-        .ros2_pub_app_data_len_3(ROS2_PUB_APP_DATA_LEN_3),
+        .ros2_pub_app_data_len_0(ROS2_PUB_APP_DATA_LEN),
+        .ros2_pub_app_data_len_1(0),
+        .ros2_pub_app_data_len_2(0),
+        .ros2_pub_app_data_len_3(0),
 
         .ros2_pub_app_data_req(ros2_pub_app_data_req),
         .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
@@ -489,9 +430,6 @@ module top (
         .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
 
-        .ros2_sedp_reader_cnt(ros2_sedp_reader_cnt),
-        .ros2_app_reader_cnt(ros2_app_reader_cnt),
-
 `ifdef ROS2_SEDP_READER_TBL_RAM
         .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
         .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_cs),
@@ -516,43 +454,6 @@ module top (
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
         .arp_req_timeout(ARP_REQUEST_TIMEOUT)
     );
-
-endmodule
-
-
-module pub_msg_ctrl(
-    input wire clk,
-    input wire rst_n,
-
-    output reg [7:0] msg_number,
-    input wire change_msg,
-
-    output reg ros2_pub_app_data_req,
-    output reg ros2_pub_app_data_rel,
-    input wire ros2_pub_app_data_ack,
-    input wire ros2_pub_app_data_nack,
-    input wire ros2_pub_app_data_grant
-);
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            msg_number <= 8'd48;  // '0'
-            ros2_pub_app_data_req <= 1'b0;
-            ros2_pub_app_data_rel <= 1'b0;
-        end else begin
-            if (change_msg) begin
-                ros2_pub_app_data_req <= 1'b1;
-            end else if (ros2_pub_app_data_req && ros2_pub_app_data_ack) begin
-                msg_number <= (msg_number == 8'd57) ? 8'd48 : (msg_number + 1'b1);
-                ros2_pub_app_data_req <= 1'b0;
-                ros2_pub_app_data_rel <= 1'b1;
-            end else if (ros2_pub_app_data_req && ros2_pub_app_data_nack) begin
-                ros2_pub_app_data_req <= 1'b0;
-            end else if (ros2_pub_app_data_rel && ros2_pub_app_data_ack) begin
-                ros2_pub_app_data_rel <= 1'b0;
-            end
-        end
-    end
 
 endmodule
 

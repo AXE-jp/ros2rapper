@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SUBS=$(find . -mindepth 1 -maxdepth 1 -type d)
+SUBS=$(find . -mindepth 1 -maxdepth 1 -type d | grep -v '\-cwb')
 
 for dir in $SUBS; do
     make -C $dir create-proj synth
