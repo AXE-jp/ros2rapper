@@ -29,7 +29,17 @@ module top (
     output wire       led4,
     output wire       led5,
     output wire       led6,
-    output wire       led7
+    output wire       led7,
+
+    output wire       led0_b,
+    output wire       led1_b,
+    output wire       led2_b,
+    output wire       led3_b,
+
+    output wire       led0_r,
+    output wire       led1_r,
+    output wire       led2_r,
+    output wire       led3_r
 );
 
     // --- Clock & Reset
@@ -272,6 +282,18 @@ module top (
     assign led6 = rx_msg_reg[0][2];
     assign led7 = rx_msg_reg[0][3];
 
+    // Debug info
+    wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt;
+    wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0]  ros2_app_reader_cnt;
+    assign led0_b = ros2_sedp_reader_cnt[0];
+    assign led1_b = ros2_sedp_reader_cnt[1];
+    assign led2_b = ros2_sedp_reader_cnt[2];
+    assign led3_b = ros2_sedp_reader_cnt[3];
+    assign led0_r = ros2_app_reader_cnt[0];
+    assign led1_r = ros2_app_reader_cnt[1];
+    assign led2_r = ros2_app_reader_cnt[2];
+    assign led3_r = ros2_app_reader_cnt[3];
+
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
     wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr;
@@ -466,6 +488,9 @@ module top (
         .ros2_sub_app_data_ack(),
         .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
+
+        .ros2_sedp_reader_cnt(ros2_sedp_reader_cnt),
+        .ros2_app_reader_cnt(ros2_app_reader_cnt),
 
 `ifdef ROS2_SEDP_READER_TBL_RAM
         .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),

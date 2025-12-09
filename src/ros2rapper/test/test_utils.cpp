@@ -1,7 +1,9 @@
 #include "test_utils.hpp"
 #include "endpoint.hpp"
+#include "remove_endpoints.hpp"
 #include "ros2.hpp"
 #include "rtps.hpp"
+#include <cassert>
 #include <cstdint>
 
 void setup_topic_data(int id, uint8_t topic_name[][MAX_TOPIC_NAME_LEN],
@@ -76,4 +78,35 @@ void set_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> children,
                                   sedp_reader_tbl_t *tbl, unsigned int idx) {
     set_sedp_reader_tbl(children & 0xffffffffffffffff, tbl, idx, 9);
     set_sedp_reader_tbl(children >> 64, tbl, idx, 10);
+}
+
+sedp_reader_id_t get_sedp_reader_cnt(const sedp_reader_tbl_t *tbl) {
+    sedp_reader_id_t reader_cnt = 0;
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        if (is_sedp_endpoint_alive(tbl, j)) {
+            reader_cnt++;
+        }
+    }
+    return reader_cnt;
+}
+
+void call_ros2_in(hls_stream<rtps_data_t> &in,
+                  sedp_reader_tbl_t       *sedp_reader_tbl,
+                  app_endpoint             app_reader_tbl[APP_READER_MAX],
+                  hls_uint<PUB_TOPICS_MAX> pub_enable,
+                  hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
+    sedp_reader_id_t sedp_reader_cnt = get_sedp_reader_cnt(sedp_reader_tbl);
+    ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
+            timestamp_i64, &sedp_reader_cnt);
+    assert(sedp_reader_cnt == get_sedp_reader_cnt(sedp_reader_tbl));
+}
+
+void call_remove_dead_endpoints(sedp_reader_id_t   id,
+                                sedp_reader_tbl_t *sedp_reader_tbl,
+                                app_endpoint app_reader_tbl[APP_READER_MAX],
+                                int64_t      timestamp_i64) {
+    sedp_reader_id_t sedp_reader_cnt = get_sedp_reader_cnt(sedp_reader_tbl);
+    remove_dead_endpoints(id, sedp_reader_tbl, app_reader_tbl, timestamp_i64,
+                          &sedp_reader_cnt);
+    assert(sedp_reader_cnt == get_sedp_reader_cnt(sedp_reader_tbl));
 }

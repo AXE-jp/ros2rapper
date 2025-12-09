@@ -43,3 +43,16 @@ void get_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> *children,
                                   unsigned int              idx);
 void set_sedp_reader_tbl_children(hls_uint<APP_READER_MAX> children,
                                   sedp_reader_tbl_t *tbl, unsigned int idx);
+
+sedp_reader_id_t get_sedp_reader_cnt(const sedp_reader_tbl_t *tbl);
+
+void call_ros2_in(hls_stream<rtps_data_t> &in,
+                  sedp_reader_tbl_t       *sedp_reader_tbl,
+                  app_endpoint             app_reader_tbl[APP_READER_MAX],
+                  hls_uint<PUB_TOPICS_MAX> pub_enable,
+                  hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64);
+
+void call_remove_dead_endpoints(sedp_reader_id_t   id,
+                                sedp_reader_tbl_t *sedp_reader_tbl,
+                                app_endpoint app_reader_tbl[APP_READER_MAX],
+                                int64_t      timestamp_i64);
