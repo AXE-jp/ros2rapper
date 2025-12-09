@@ -472,6 +472,13 @@ module top (
         .tx_raw_eth_frame_ready(1'b0),
         .tx_raw_eth_completed(),
 
+        .rx_raw_eth_data_addr(),
+        .rx_raw_eth_data_ce(),
+        .rx_raw_eth_data_we(),
+        .rx_raw_eth_data_wdata(),
+        .rx_raw_eth_data_frame_ready(),
+        .rx_raw_eth_data_ack(1'b1),
+
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
         .arp_req_timeout(ARP_REQUEST_TIMEOUT)
