@@ -1267,6 +1267,18 @@ static void ros2_out(
     }
 }
 
+#ifdef SEDP_READER_TBL_RAM
+/* Cyber func=inline */
+static void initialize_sedp_reader_tbl(sedp_reader_tbl_t *tbl) {
+#pragma HLS inline
+    /* Cyber folding=1 */
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+#pragma HLS pipeline II=1
+        set_sedp_reader_tbl(0, tbl, j, 0);
+    }
+}
+#endif // SEDP_READER_TBL_RAM
+
 /* Cyber func=inline */
 app_reader_id_t get_app_reader_cnt(const app_endpoint tbl[APP_READER_MAX]) {
 #pragma HLS inline
@@ -1375,6 +1387,14 @@ void ros2_main(
 #pragma HLS array_partition variable = app_reader_tbl complete dim = 0
 
     static sedp_reader_id_t sedp_reader_cnt_reg;
+
+#ifdef SEDP_READER_TBL_RAM
+    static bool sedp_reader_tbl_initialized;
+    if (!sedp_reader_tbl_initialized) {
+        initialize_sedp_reader_tbl(sedp_reader_tbl);
+        sedp_reader_tbl_initialized = true;
+    }
+#endif // SEDP_READER_TBL_RAM
 
     ros2_in(in,
 #ifdef SEDP_READER_TBL_FF
