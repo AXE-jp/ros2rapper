@@ -197,6 +197,13 @@ module ros2_ether #(
     input  wire tx_raw_eth_frame_ready,
     output wire tx_raw_eth_completed,
 
+    output wire [$clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN)-3:0] rx_raw_eth_data_addr,
+    output wire rx_raw_eth_data_ce,
+    output wire [3:0] rx_raw_eth_data_we,
+    output wire [31:0] rx_raw_eth_data_wdata,
+    output wire rx_raw_eth_data_frame_ready,
+    input  wire rx_raw_eth_data_ack,
+
     input  wire [5:0] arp_req_retry_count,
     input  wire [35:0] arp_req_retry_interval,
     input  wire [35:0] arp_req_timeout
@@ -244,6 +251,11 @@ wire [7:0] tx_raw_eth_axis_tdata;
 wire tx_raw_eth_axis_tvalid;
 wire tx_raw_eth_axis_tready;
 wire tx_raw_eth_axis_tlast;
+
+wire [7:0] rx_raw_eth_axis_tdata;
+wire rx_raw_eth_axis_tvalid;
+wire rx_raw_eth_axis_tready;
+wire rx_raw_eth_axis_tlast;
 
 verilog_ethernet verilog_ethernet_inst (
     .clk(clk),
@@ -305,6 +317,12 @@ verilog_ethernet verilog_ethernet_inst (
     .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
     .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
     .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
+    .rx_raw_eth_axis_tuser(),
 
     .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
     .local_ip({32{ether_en}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
@@ -619,6 +637,25 @@ raw_eth_tx_adapter_inst (
     .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
     .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
     .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast)
+);
+
+raw_eth_rx_adapter
+raw_eth_rx_adapter_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .enable(ether_en),
+    .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
+    .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
+    .rx_raw_eth_data_we(rx_raw_eth_data_we),
+    .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
+    .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+    .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
+    .ip_addr(ip_addr),
+    .subnet_mask(subnet_mask)
 );
 
 endmodule

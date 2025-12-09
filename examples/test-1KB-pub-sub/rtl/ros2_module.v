@@ -92,6 +92,7 @@ module ros2_module #(
 `ifdef ROS2_PUB_DATA_RAM
     reg  [31:0] ros2_pub_app_data [0:`ROS2_MAX_APP_DATA_LEN/4-1];
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr1;
+    wire ros2_pub_app_data_ce1;
     reg  [31:0] ros2_pub_app_data_rdata1;
 
     wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_addr0_32 = ros2_pub_app_data_addr0[$clog2(`ROS2_MAX_APP_DATA_LEN)-2:1];
@@ -99,7 +100,8 @@ module ros2_module #(
         if (!rst_n) begin
             ros2_pub_app_data_rdata1 <= 32'd0;
         end else begin
-            ros2_pub_app_data_rdata1 <= ros2_pub_app_data[ros2_pub_app_data_addr1];
+            if (ros2_pub_app_data_ce1)
+                ros2_pub_app_data_rdata1 <= ros2_pub_app_data[ros2_pub_app_data_addr1];
             if (ros2_pub_app_data_ce0 & ros2_pub_app_data_we0) begin
                 if (ros2_pub_app_data_addr0[0]) begin
                     ros2_pub_app_data[ros2_pub_app_data_addr0_32][31:16] <= ros2_pub_app_data_wdata0;
@@ -239,6 +241,114 @@ module ros2_module #(
     assign ros2_sub_app_data_ack_0 = ros2_sub_app_data_ack[0];
     assign ros2_sub_app_data_nack_0 = ros2_sub_app_data_nack[0];
 
+    // Raw ether echo
+    localparam MAX_RAW_ETH_DATA_LEN = `ROS2_MAX_RAW_ETH_TX_DATA_LEN / 4;
+    localparam RAW_ETH_ADDR_WIDTH = $clog2(MAX_RAW_ETH_DATA_LEN);
+    reg [15:0] raw_eth_data_length;
+    reg [47:0] rx_raw_eth_dst_mac_addr;
+    reg [47:0] rx_raw_eth_src_mac_addr;
+    reg [15:0] raw_eth_type;
+    reg [31:0] raw_eth_data [4:MAX_RAW_ETH_DATA_LEN-1];
+
+    // Raw ether RX
+    wire [RAW_ETH_ADDR_WIDTH-1:0] rx_raw_eth_data_addr;
+    wire rx_raw_eth_data_ce;
+    wire [3:0] rx_raw_eth_data_we;
+    wire [31:0] rx_raw_eth_data_wdata;
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            raw_eth_data_length <= 16'd0;
+            rx_raw_eth_dst_mac_addr <= 48'd0;
+            rx_raw_eth_src_mac_addr <= 48'd0;
+            raw_eth_type <= 16'd0;
+        end else begin
+            if (rx_raw_eth_data_ce) begin
+                if (rx_raw_eth_data_addr == 9'd0) begin
+                    if (rx_raw_eth_data_we[0])
+                        raw_eth_data_length[7:0] <= rx_raw_eth_data_wdata[7:0];
+                    if (rx_raw_eth_data_we[1])
+                        raw_eth_data_length[15:8] <= rx_raw_eth_data_wdata[15:8];
+                    if (rx_raw_eth_data_we[2])
+                        rx_raw_eth_dst_mac_addr[7:0] <= rx_raw_eth_data_wdata[23:16];
+                    if (rx_raw_eth_data_we[3])
+                        rx_raw_eth_dst_mac_addr[15:8] <= rx_raw_eth_data_wdata[31:24];
+                end else if (rx_raw_eth_data_addr == 9'd1) begin
+                    if (rx_raw_eth_data_we[0])
+                        rx_raw_eth_dst_mac_addr[23:16] <= rx_raw_eth_data_wdata[7:0];
+                    if (rx_raw_eth_data_we[1])
+                        rx_raw_eth_dst_mac_addr[31:24] <= rx_raw_eth_data_wdata[15:8];
+                    if (rx_raw_eth_data_we[2])
+                        rx_raw_eth_dst_mac_addr[39:32] <= rx_raw_eth_data_wdata[23:16];
+                    if (rx_raw_eth_data_we[3])
+                        rx_raw_eth_dst_mac_addr[47:40] <= rx_raw_eth_data_wdata[31:24];
+                end else if (rx_raw_eth_data_addr == 9'd2) begin
+                    if (rx_raw_eth_data_we[0])
+                        rx_raw_eth_src_mac_addr[7:0] <= rx_raw_eth_data_wdata[7:0];
+                    if (rx_raw_eth_data_we[1])
+                        rx_raw_eth_src_mac_addr[15:8] <= rx_raw_eth_data_wdata[15:8];
+                    if (rx_raw_eth_data_we[2])
+                        rx_raw_eth_src_mac_addr[23:16] <= rx_raw_eth_data_wdata[23:16];
+                    if (rx_raw_eth_data_we[3])
+                        rx_raw_eth_src_mac_addr[31:24] <= rx_raw_eth_data_wdata[31:24];
+                end else if (rx_raw_eth_data_addr == 9'd3) begin
+                    if (rx_raw_eth_data_we[0])
+                        rx_raw_eth_src_mac_addr[39:32] <= rx_raw_eth_data_wdata[7:0];
+                    if (rx_raw_eth_data_we[1])
+                        rx_raw_eth_src_mac_addr[47:40] <= rx_raw_eth_data_wdata[15:8];
+                    if (rx_raw_eth_data_we[2])
+                        raw_eth_type[7:0] <= rx_raw_eth_data_wdata[23:16];
+                    if (rx_raw_eth_data_we[3])
+                        raw_eth_type[15:8] <= rx_raw_eth_data_wdata[31:24];
+                end else begin
+                    if (rx_raw_eth_data_we[0])
+                        raw_eth_data[rx_raw_eth_data_addr][7:0] <= rx_raw_eth_data_wdata[7:0];
+                    if (rx_raw_eth_data_we[1])
+                        raw_eth_data[rx_raw_eth_data_addr][15:8] <= rx_raw_eth_data_wdata[15:8];
+                    if (rx_raw_eth_data_we[2])
+                        raw_eth_data[rx_raw_eth_data_addr][23:16] <= rx_raw_eth_data_wdata[23:16];
+                    if (rx_raw_eth_data_we[3])
+                        raw_eth_data[rx_raw_eth_data_addr][31:24] <= rx_raw_eth_data_wdata[31:24];
+                end
+            end
+        end
+    end
+
+    // Raw ether TX
+    wire [RAW_ETH_ADDR_WIDTH-1:0] tx_raw_eth_data_addr;
+    wire tx_raw_eth_data_ce;
+    reg  [31:0] tx_raw_eth_data_rdata;
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            tx_raw_eth_data_rdata <= 32'd0;
+        end else begin
+            if (tx_raw_eth_data_ce) begin
+                if (tx_raw_eth_data_addr == 9'd0) begin
+                    tx_raw_eth_data_rdata[15:0] <= raw_eth_data_length;
+                    tx_raw_eth_data_rdata[31:16] <= rx_raw_eth_src_mac_addr[15:0];
+                end else if (tx_raw_eth_data_addr == 9'd1) begin
+                    tx_raw_eth_data_rdata <= rx_raw_eth_src_mac_addr[47:16];
+                end else if (tx_raw_eth_data_addr == 9'd2) begin
+                    tx_raw_eth_data_rdata <= mac_addr[31:0];
+                end else if (tx_raw_eth_data_addr == 9'd3) begin
+                    tx_raw_eth_data_rdata[15:0] <= mac_addr[47:32];
+                    tx_raw_eth_data_rdata[31:16] <= raw_eth_type;
+                end else begin
+                    tx_raw_eth_data_rdata <= raw_eth_data[tx_raw_eth_data_addr];
+                end
+            end
+        end
+    end
+
+    // Raw ether control
+    // if the type of a received ether frame is 0xffff, echo back it.
+    wire raw_eth_type_is_valid = (raw_eth_type == 16'hffff);
+    wire rx_raw_eth_data_frame_ready;
+    wire tx_raw_eth_frame_ready = (raw_eth_type_is_valid & rx_raw_eth_data_frame_ready);
+    wire tx_raw_eth_completed;
+    wire rx_raw_eth_data_ack = (raw_eth_type_is_valid ? tx_raw_eth_completed : rx_raw_eth_data_frame_ready);
+
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
     wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr;
@@ -377,7 +487,7 @@ module ros2_module #(
 `endif
 `ifdef ROS2_PUB_DATA_RAM
         .ros2_pub_app_data_0_addr(ros2_pub_app_data_addr1),
-        .ros2_pub_app_data_0_ce(),
+        .ros2_pub_app_data_0_ce(ros2_pub_app_data_ce1),
         .ros2_pub_app_data_0_rdata(ros2_pub_app_data_rdata1),
 
         .ros2_pub_app_data_1_addr(),
@@ -448,11 +558,18 @@ module ros2_module #(
         .ip_payloadsmem_wdata(payloadsmem_wdata),
         .ip_payloadsmem_rdata(payloadsmem_rdata),
 
-        .tx_raw_eth_data_addr(),
-        .tx_raw_eth_data_ce(),
-        .tx_raw_eth_data_rdata(32'd0),
-        .tx_raw_eth_frame_ready(1'b0),
-        .tx_raw_eth_completed(),
+        .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
+        .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
+        .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+        .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
+        .tx_raw_eth_completed(tx_raw_eth_completed),
+
+        .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
+        .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
+        .rx_raw_eth_data_we(rx_raw_eth_data_we),
+        .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
+        .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+        .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),

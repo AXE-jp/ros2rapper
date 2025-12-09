@@ -2,6 +2,7 @@
 
 * Publish ROS2 topic and send 1KB messages.
 * Subscribe ROS2 topic and receive 1KB messages.
+* Echo back raw ether packets
 
 ## Requirements
 * Arty A7-100T FPGA board
@@ -46,3 +47,12 @@ Then write generated bitstream (ros2rapper-1KB/ros2rapper-1KB.runs/impl\_1/top.b
 This example uses the custom interface "Uint16x512". It is defined in `ros2_ws/src/sample_msgs/msg/Uint16x512.msg`.
 The publishers in this example sends uint16 array of length 512 (say `data[512]`),
 and it is expected that `data[i] == data[0] + i` for i = 1, ..., 511.
+
+### Echo raw ether packet
+* This example send a raw ether frame of type 0xffff from PC, and the ROS2rapper echoes back it.
+* To send raw ether frame from PC, run the following command.
+  * `./run-raw-eth.sh NETWORK_INTERFACE_NAME`
+    * If NETWORK_INTERFACE_NAME is not supplied, "eth0" is used.
+  * This script runs a python program on a Docker container. This docker container uses a host network.
+* When the program on the Linux machine receives the echo with correct payload, a message "OK" is shown.
+  When the program receives a message with wrong payload, a message "Bad response" is shown.
