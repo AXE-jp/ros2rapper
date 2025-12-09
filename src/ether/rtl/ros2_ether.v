@@ -43,6 +43,7 @@ module ros2_ether #(
     input  wire [31:0] gateway_ip_addr,
     input  wire [31:0] subnet_mask,
 
+    input  wire [15:0] ros2_vendor_id,
     input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input  wire [7:0] ros2_node_name_len,
     input  wire [15:0] ros2_node_udp_port,
@@ -395,6 +396,7 @@ ros2rapper (
     .ip_addr(ip_addr),
     .subnet_mask(subnet_mask),
 
+    .ros2_vendor_id(ros2_vendor_id),
     .ros2_node_name(ros2_node_name),
     .ros2_node_name_len(ros2_node_name_len),
     .ros2_node_udp_port(ros2_node_udp_port),
