@@ -113,6 +113,7 @@ module top (
 
     // --- ROS2 Node Configuration
     wire [15:0] ros2_vendor_id = 16'd0; // VENDOR_ID_UNKNOWN
+    //wire [15:0] ros2_vendor_id = {8'haa, 8'h55}; // For test
     wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
