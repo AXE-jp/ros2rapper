@@ -430,6 +430,9 @@ module top (
         .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
 
+        .ros2_sedp_reader_cnt(),
+        .ros2_app_reader_cnt(),
+
 `ifdef ROS2_SEDP_READER_TBL_RAM
         .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
         .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_cs),
