@@ -134,6 +134,7 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- ROS2 Node Configuration
+    wire [15:0] ros2_vendor_id = 16'd0; // VENDOR_ID_UNKNOWN
     wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
@@ -338,6 +339,7 @@ module top (
         .gateway_ip_addr(gateway_ip_addr),
         .subnet_mask(subnet_mask),
 
+        .ros2_vendor_id(ros2_vendor_id),
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),

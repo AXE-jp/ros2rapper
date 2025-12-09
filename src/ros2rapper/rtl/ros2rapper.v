@@ -39,6 +39,7 @@ module ros2rapper #(
     input  wire [31:0] ip_addr,
     input  wire [31:0] subnet_mask,
 
+    input  wire [15:0] ros2_vendor_id,
     input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input  wire [7:0] ros2_node_name_len,
     input  wire [15:0] ros2_node_udp_port,
@@ -553,6 +554,7 @@ ros2_sender (
     .out_r_write(tx_fifo_wr_en),
 
     .conf_ip_addr(ip_addr),
+    .conf_vendor_id(ros2_vendor_id),
     .conf_node_name(ros2_node_name),
     .conf_node_name_len(ros2_node_name_len),
     .conf_node_udp_port({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
@@ -1225,6 +1227,7 @@ ros2_sender (
 
   .conf_ip_addr_0(ip_addr[7:0]), .conf_ip_addr_1(ip_addr[15:8]),
   .conf_ip_addr_2(ip_addr[23:16]), .conf_ip_addr_3(ip_addr[31:24]),
+  .conf_vendor_id_0(ros2_vendor_id[7:0]), .conf_vendor_id_1(ros2_vendor_id[15:8]),
   .conf_node_name_00(ros2_node_name[7:0]), .conf_node_name_01(ros2_node_name[15:8]),
   .conf_node_name_02(ros2_node_name[23:16]), .conf_node_name_03(ros2_node_name[31:24]),
   .conf_node_name_04(ros2_node_name[39:32]), .conf_node_name_05(ros2_node_name[47:40]),
