@@ -523,13 +523,14 @@ void sedp_reader(
 
 /* Cyber func=inline */
 void sedp_writer(
-    const uint8_t writer_guid_prefix[12], const uint8_t writer_entity_id[4],
-    const uint8_t reader_guid_prefix[12], const uint8_t reader_entity_id[4],
-    int64_t seqnum, const uint8_t usertraffic_addr[4],
-    const uint8_t usertraffic_port[2], const uint8_t app_entity_id[4],
-    hls_stream<uint8_t> &out, const uint8_t topic_name[MAX_TOPIC_NAME_LEN],
-    uint8_t topic_name_len, const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN],
-    uint8_t type_name_len, timestamp now) {
+    const uint8_t vendor_id[2], const uint8_t writer_guid_prefix[12],
+    const uint8_t writer_entity_id[4], const uint8_t reader_guid_prefix[12],
+    const uint8_t reader_entity_id[4], int64_t seqnum,
+    const uint8_t usertraffic_addr[4], const uint8_t usertraffic_port[2],
+    const uint8_t app_entity_id[4], hls_stream<uint8_t> &out,
+    const uint8_t topic_name[MAX_TOPIC_NAME_LEN], uint8_t topic_name_len,
+    const uint8_t type_name[MAX_TOPIC_TYPE_NAME_LEN], uint8_t type_name_len,
+    timestamp now) {
 #pragma HLS inline
 #ifdef SBM_ENDIAN_LITTLE
     static const uint8_t  sbm_flags = SBM_FLAGS_ENDIANNESS;
@@ -577,8 +578,8 @@ void sedp_writer(
     out.write('S');
     out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
     out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(writer_guid_prefix[0]);
     out.write(writer_guid_prefix[1]);
     out.write(writer_guid_prefix[2]);
@@ -782,8 +783,8 @@ void sedp_writer(
     out.write(S_BYTE1(PID_VENDOR_ID));
     out.write(S_BYTE0(PID_VENDOR_ID_SIZE));
     out.write(S_BYTE1(PID_VENDOR_ID_SIZE));
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(0); // padding
     out.write(0); // padding
     out.write(S_BYTE0(PID_DURABILITY));
@@ -893,7 +894,8 @@ void sedp_writer(
 }
 
 /* Cyber func=inline */
-void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
+void sedp_heartbeat(const uint8_t vendor_id[2],
+                    const uint8_t writer_guid_prefix[12],
                     const uint8_t writer_entity_id[4],
                     const uint8_t reader_guid_prefix[12],
                     const uint8_t reader_entity_id[4],
@@ -918,8 +920,8 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
     out.write('S');
     out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
     out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(writer_guid_prefix[0]);
     out.write(writer_guid_prefix[1]);
     out.write(writer_guid_prefix[2]);
@@ -983,7 +985,8 @@ void sedp_heartbeat(const uint8_t writer_guid_prefix[12],
 }
 
 /* Cyber func=inline */
-void sedp_acknack(const uint8_t writer_guid_prefix[12],
+void sedp_acknack(const uint8_t vendor_id[2],
+                  const uint8_t writer_guid_prefix[12],
                   const uint8_t writer_entity_id[4],
                   const uint8_t reader_guid_prefix[12],
                   const uint8_t reader_entity_id[4], uint8_t snstate_base,
@@ -1003,8 +1006,8 @@ void sedp_acknack(const uint8_t writer_guid_prefix[12],
     out.write('S');
     out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
     out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(writer_guid_prefix[0]);
     out.write(writer_guid_prefix[1]);
     out.write(writer_guid_prefix[2]);

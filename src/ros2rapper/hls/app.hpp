@@ -23,7 +23,8 @@
 #define APP_WRITER_IP_PKT_LEN(app_data_len)                                    \
     (IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN(app_data_len))
 
-void app_writer(const uint8_t writer_guid_prefix[12],
+void app_writer(const uint8_t vendor_id[2],
+                const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,

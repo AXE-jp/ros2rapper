@@ -30,7 +30,8 @@ void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
                  hls_uint<1> enable, const uint8_t ip_addr[4],
                  const uint8_t subnet_mask[4], uint16_t port_num_seed);
 
-void spdp_writer(const uint8_t writer_guid_prefix[12],
+void spdp_writer(const uint8_t vendor_id[2],
+                 const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
