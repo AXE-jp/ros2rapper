@@ -411,8 +411,6 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
                              &app_unused_idx);
 
     app_endpoint reader;
-#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
 #pragma HLS array_partition variable = reader.udp_port complete dim = 1
 #pragma HLS array_partition variable = reader.entity_id complete dim = 1
     // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
