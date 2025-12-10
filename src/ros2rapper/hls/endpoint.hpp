@@ -108,9 +108,8 @@ const app_ep_type_t APP_EP_SUB
     = 0x02; // Application-defined Reader (ROS2rapper is subscriber)
 
 struct app_endpoint {
-    uint8_t       ip_addr[4] /* Cyber array=EXPAND, array_index=const */;
+    sedp_reader_id_t parent_id;
     uint8_t       udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t       guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t       entity_id[4] /* Cyber array=EXPAND, array_index=const */;
     app_ep_type_t app_ep_type;
     topic_id_t    topic_id;

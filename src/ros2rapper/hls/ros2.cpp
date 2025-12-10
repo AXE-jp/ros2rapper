@@ -111,16 +111,6 @@ static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
 static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
                                      app_endpoint      *reader) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        reader->guid_prefix[j] = rtps_data.guid_prefix[j];
-    }
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        reader->ip_addr[j] = rtps_data.data[j];
-    }
     reader->udp_port[0] = rtps_data.data[4];
     reader->udp_port[1] = rtps_data.data[5];
     /* Cyber unroll_times=all */
@@ -429,6 +419,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     // RTPS_TYPE_SEDP_SUB
     copy_app_endpoint_params(rtps_data, &reader);
     reader.alive = true;
+    reader.parent_id = sedp_matched_idx;
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:

@@ -499,8 +499,8 @@ int test_sedp_reader_2() {
     // Setup tables
     setup_reader_tables_with_default_value(&sedp_reader_tbl, app_reader_tbl);
     for (auto j = 0; j < APP_READER_MAX; j++) {
-        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-            app_reader_tbl[j].guid_prefix[k] = 0;
+        for (auto k = 0; k < 4; k++) {
+            app_reader_tbl[j].entity_id[k] = 0;
         }
         app_reader_tbl[j].alive = true;
     }
@@ -520,9 +520,9 @@ int test_sedp_reader_2() {
     assert((flags & SEDP_ENDPOINT_SUBRD_ACKNACK_REQ) == 0);
     // Check app_reader_tbl.
     for (auto j = 0; j < APP_READER_MAX; j++) {
-        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+        for (auto k = 0; k < 4; k++) {
             // sedp_reader should not change app_reader_tbl.
-            assert(app_reader_tbl[j].guid_prefix[k] == 0);
+            assert(app_reader_tbl[j].entity_id[k] == 0);
         }
     }
 
@@ -544,12 +544,7 @@ int test_sedp_reader_2() {
         // Setup app_reader_tbl.
         for (auto j = 0; j < APP_READER_MAX; j++) {
             bool known = ((1 << j) & known_endpoints);
-            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-                app_reader_tbl[j].guid_prefix[k]
-                    = known ? test_sedp_reader_pub_data
-                                  [k + RTPS_HDR_OFFSET_GUID_PREFIX]
-                            : 0;
-            }
+            app_reader_tbl[j].parent_id = 0;
             app_reader_tbl[j].entity_id[0] = 0x00;
             app_reader_tbl[j].entity_id[1] = 0x00;
             app_reader_tbl[j].entity_id[2] = 0x11;
@@ -595,9 +590,9 @@ int test_sedp_reader_2() {
         clear_sedp_reader_tbl_children(&sedp_reader_tbl, 1);
         // Setup app_reader_tbl.
         for (auto j = 0; j < APP_READER_MAX; j++) {
-            for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-                app_reader_tbl[j].guid_prefix[k] = 0;
-            }
+            // for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+            //     app_reader_tbl[j].guid_prefix[k] = 0;
+            // }
             app_reader_tbl[j].alive = (j < first_n_app_endpoints_alive);
         }
         CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
@@ -610,11 +605,12 @@ int test_sedp_reader_2() {
             assert(app_reader_tbl[j].alive
                    == (j <= first_n_app_endpoints_alive));
         }
-        for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-            assert(
-                app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]
-                == test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX]);
-        }
+        // TODO: Add another test
+        // for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
+        //     assert(
+        //         app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]
+        //         == test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        // }
     }
 
     // Test whether ros2rapper uses valid endpoint's data and does not use
