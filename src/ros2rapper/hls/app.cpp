@@ -9,7 +9,8 @@
 #define APP_HDR_SIZE APP_TOT_LEN(0)
 
 /* Cyber func=inline */
-void app_writer(const uint8_t writer_guid_prefix[12],
+void app_writer(const uint8_t vendor_id[2],
+                const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
@@ -45,8 +46,8 @@ void app_writer(const uint8_t writer_guid_prefix[12],
     out.write('S');
     out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
     out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(writer_guid_prefix[0]);
     out.write(writer_guid_prefix[1]);
     out.write(writer_guid_prefix[2]);

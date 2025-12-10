@@ -271,8 +271,8 @@ static void call_update_liveliness(const receiver_config_t *conf,
         update_liveliness(data, stream, conf->guid_prefix);
     }
 
-    ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64);
+    call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,
+                 sub_enable, timestamp_i64);
 }
 
 static int test_update_liveliness_1(const receiver_config_t *conf,
@@ -403,8 +403,8 @@ static int test_remove_dead_endpoints_1() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
-                                  timestamp_i64);
+            call_remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
+                                       timestamp_i64);
             bool j_alive = is_sedp_endpoint_alive(&sedp_reader_tbl, j);
             if ((1 << j) & sedp_pattern) {
                 assert(j_alive);
@@ -448,8 +448,8 @@ static int test_remove_dead_endpoints_2() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
-                                  timestamp_i64);
+            call_remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
+                                       timestamp_i64);
             for (auto k = 0; k < SEDP_READER_MAX; k++) {
                 assert(is_sedp_endpoint_alive(&sedp_reader_tbl, k));
             }
@@ -480,11 +480,13 @@ static int test_remove_dead_endpoints_3() {
     int64_t timestamp_i64 = static_cast<int64_t>(30) << 32;
     // sedp_reader_tbl[1] is already dead, so its children should not be removed
     // by remove_dead_endpoints.
-    remove_dead_endpoints(1, &sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    call_remove_dead_endpoints(1, &sedp_reader_tbl, app_reader_tbl,
+                               timestamp_i64);
     assert(app_reader_tbl[0].alive);
     // sedp_reader_tbl[0] is alive, so its children should be removed by
     // remove_dead_endpoints.
-    remove_dead_endpoints(0, &sedp_reader_tbl, app_reader_tbl, timestamp_i64);
+    call_remove_dead_endpoints(0, &sedp_reader_tbl, app_reader_tbl,
+                               timestamp_i64);
     assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
     assert(!app_reader_tbl[0].alive);
 

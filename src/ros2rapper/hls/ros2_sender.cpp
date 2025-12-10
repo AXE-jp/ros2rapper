@@ -35,9 +35,9 @@ static void spdp_writer_out(const sender_config_t    *conf,
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
                    SPDP_WRITER_RTPS_PKT_LEN, out);
 
-    spdp_writer(conf->guid_prefix, conf->ip_addr, metatraffic_port,
-                conf->ip_addr, default_port, lease_duration, out,
-                conf->node_name, conf->node_name_len, msg_metadata->now);
+    spdp_writer(conf->vendor_id, conf->guid_prefix, conf->ip_addr,
+                metatraffic_port, conf->ip_addr, default_port, lease_duration,
+                out, conf->node_name, conf->node_name_len, msg_metadata->now);
 }
 
 /* Cyber func=inline */
@@ -67,10 +67,11 @@ static void sedp_writer_out(const uint8_t writer_entity_id[4],
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
                    SEDP_WRITER_RTPS_PKT_LEN, out);
 
-    sedp_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                reader_entity_id, seqnum, conf->ip_addr, usertraffic_port,
-                app_entity_id, out, topic_name, topic_name_len, topic_type_name,
-                topic_type_name_len, msg_metadata->now);
+    sedp_writer(conf->vendor_id, conf->guid_prefix, writer_entity_id,
+                reader_guid_prefix, reader_entity_id, seqnum, conf->ip_addr,
+                usertraffic_port, app_entity_id, out, topic_name,
+                topic_name_len, topic_type_name, topic_type_name_len,
+                msg_metadata->now);
 }
 
 /* Cyber func=inline */
@@ -95,8 +96,9 @@ static void sedp_heartbeat_out(const uint8_t             writer_entity_id[4],
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
                    SEDP_HEARTBEAT_RTPS_PKT_LEN, out);
 
-    sedp_heartbeat(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                   reader_entity_id, first_seqnum, last_seqnum, cnt, out);
+    sedp_heartbeat(conf->vendor_id, conf->guid_prefix, writer_entity_id,
+                   reader_guid_prefix, reader_entity_id, first_seqnum,
+                   last_seqnum, cnt, out);
 }
 
 /* Cyber func=inline */
@@ -121,8 +123,9 @@ static void sedp_acknack_out(const uint8_t             writer_entity_id[4],
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
                    SEDP_ACKNACK_RTPS_PKT_LEN, out);
 
-    sedp_acknack(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-                 reader_entity_id, snstate_base, snstate_empty, cnt, out);
+    sedp_acknack(conf->vendor_id, conf->guid_prefix, writer_entity_id,
+                 reader_guid_prefix, reader_entity_id, snstate_base,
+                 snstate_empty, cnt, out);
 }
 
 /* Cyber func=inline */
@@ -151,9 +154,9 @@ static void app_writer_out(
     udp_set_header(conf->node_udp_port, msg_metadata->dst_port,
                    APP_WRITER_RTPS_PKT_LEN(pub_app_data_len), out);
 
-    app_writer(conf->guid_prefix, writer_entity_id, reader_guid_prefix,
-               reader_entity_id, seqnum, pub_app_data, pub_app_data_len, out,
-               msg_metadata->now);
+    app_writer(conf->vendor_id, conf->guid_prefix, writer_entity_id,
+               reader_guid_prefix, reader_entity_id, seqnum, pub_app_data,
+               pub_app_data_len, out, msg_metadata->now);
 }
 
 /* Cyber func=inline */
@@ -272,6 +275,8 @@ void ros2_sender(
 #pragma HLS disaggregate             variable = conf
 #pragma HLS array_reshape variable = conf->ip_addr type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->ip_addr
+#pragma HLS array_reshape variable = conf->vendor_id type = complete dim = 0
+#pragma HLS interface mode = ap_none port = conf->vendor_id
 #pragma HLS array_reshape variable = conf->node_name type = complete dim = 0
 #pragma HLS interface mode = ap_none port = conf->node_name
 #pragma HLS interface mode = ap_none port = conf->node_name_len

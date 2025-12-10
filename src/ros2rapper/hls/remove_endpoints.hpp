@@ -20,6 +20,7 @@ void update_liveliness(hls_uint<9> in, hls_stream<rtps_data_t> &out,
 void remove_dead_endpoints(sedp_reader_id_t   id,
                            sedp_reader_tbl_t *sedp_reader_tbl,
                            app_endpoint       app_reader_tbl[APP_READER_MAX],
-                           int64_t            timestamp_i64);
+                           int64_t            timestamp_i64,
+                           sedp_reader_id_t  *sedp_reader_cnt);
 
 #endif // !REMOVE_ENDPOINTS_HPP

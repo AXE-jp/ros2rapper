@@ -61,6 +61,7 @@ typedef struct {
 
 typedef struct {
     uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+    uint8_t vendor_id[2] /* Cyber array=EXPAND */;
     uint8_t node_name[MAX_NODE_NAME_LEN] /* Cyber array=EXPAND */;
     uint8_t node_name_len;
     uint8_t node_udp_port[2] /* Cyber array=EXPAND */;
@@ -92,6 +93,7 @@ typedef struct {
 void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
              app_endpoint             app_reader_tbl[APP_READER_MAX],
              hls_uint<PUB_TOPICS_MAX> pub_enable,
-             hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64);
+             hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64,
+             sedp_reader_id_t *sedp_reader_cnt);
 
 #endif // !ROS2_HPP

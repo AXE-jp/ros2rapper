@@ -287,7 +287,8 @@ void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
 }
 
 /* Cyber func=inline */
-void spdp_writer(const uint8_t writer_guid_prefix[12],
+void spdp_writer(const uint8_t vendor_id[2],
+                 const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
@@ -341,8 +342,8 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     out.write('S');
     out.write(RTPS_HDR_PROTOCOL_VERSION >> 8);
     out.write(RTPS_HDR_PROTOCOL_VERSION & 0xff);
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(writer_guid_prefix[0]);
     out.write(writer_guid_prefix[1]);
     out.write(writer_guid_prefix[2]);
@@ -407,8 +408,8 @@ void spdp_writer(const uint8_t writer_guid_prefix[12],
     out.write(S_BYTE1(PID_VENDOR_ID));
     out.write(S_BYTE0(PID_VENDOR_ID_SIZE));
     out.write(S_BYTE1(PID_VENDOR_ID_SIZE));
-    out.write(RTPS_HDR_VENDOR_ID >> 8);
-    out.write(RTPS_HDR_VENDOR_ID & 0xff);
+    out.write(vendor_id[0]);
+    out.write(vendor_id[1]);
     out.write(0); // padding
     out.write(0); // padding
     out.write(S_BYTE0(PID_PARTICIPANT_GUID));

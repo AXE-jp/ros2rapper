@@ -67,6 +67,12 @@ module verilog_ethernet (
     output wire        tx_raw_eth_axis_tready,
     input  wire        tx_raw_eth_axis_tlast,
 
+    output wire [7:0]  rx_raw_eth_axis_tdata,
+    output wire        rx_raw_eth_axis_tvalid,
+    input  wire        rx_raw_eth_axis_tready,
+    output wire        rx_raw_eth_axis_tlast,
+    output wire        rx_raw_eth_axis_tuser,
+
     input  wire [47:0] local_mac,
     input  wire [31:0] local_ip,
     input  wire [31:0] gateway_ip,
@@ -82,6 +88,12 @@ wire rx_axis_tvalid;
 wire rx_axis_tready;
 wire rx_axis_tlast;
 wire rx_axis_tuser;
+
+wire [7:0] rx_ros2_axis_tdata;
+wire rx_ros2_axis_tvalid;
+wire rx_ros2_axis_tready;
+wire rx_ros2_axis_tlast;
+wire rx_ros2_axis_tuser;
 
 wire [7:0] tx_axis_tdata;
 wire tx_axis_tvalid;
@@ -174,12 +186,12 @@ eth_axis_rx_inst (
     .clk(clk),
     .rst_n(rst_n),
 
-    .s_axis_tdata(rx_axis_tdata),
+    .s_axis_tdata(rx_ros2_axis_tdata),
     .s_axis_tkeep(1'b1),
-    .s_axis_tvalid(rx_axis_tvalid),
-    .s_axis_tready(rx_axis_tready),
-    .s_axis_tlast(rx_axis_tlast),
-    .s_axis_tuser(rx_axis_tuser),
+    .s_axis_tvalid(rx_ros2_axis_tvalid),
+    .s_axis_tready(rx_ros2_axis_tready),
+    .s_axis_tlast(rx_ros2_axis_tlast),
+    .s_axis_tuser(rx_ros2_axis_tuser),
 
     .m_eth_hdr_valid(rx_eth_hdr_valid),
     .m_eth_hdr_ready(rx_eth_hdr_ready),
@@ -195,6 +207,42 @@ eth_axis_rx_inst (
 
     .busy(),
     .error_header_early_termination()
+);
+
+axis_broadcast #(
+    .M_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .LAST_ENABLE(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+axis_broadcast_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_axis_tdata(rx_axis_tdata),
+    .s_axis_tkeep(1'b1),
+    .s_axis_tvalid(rx_axis_tvalid),
+    .s_axis_tready(rx_axis_tready),
+    .s_axis_tlast(rx_axis_tlast),
+    .s_axis_tid(8'd0),
+    .s_axis_tdest(8'd0),
+    .s_axis_tuser(rx_axis_tuser),
+
+    .m_axis_tdata({rx_raw_eth_axis_tdata, rx_ros2_axis_tdata}),
+    .m_axis_tkeep(),
+    .m_axis_tvalid({rx_raw_eth_axis_tvalid, rx_ros2_axis_tvalid}),
+    .m_axis_tready({rx_raw_eth_axis_tready, rx_ros2_axis_tready}),
+    .m_axis_tlast({rx_raw_eth_axis_tlast, rx_ros2_axis_tlast}),
+    .m_axis_tid(),
+    .m_axis_tdest(),
+    .m_axis_tuser({rx_raw_eth_axis_tuser, rx_ros2_axis_tuser})
 );
 
 eth_axis_tx

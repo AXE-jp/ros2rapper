@@ -1,7 +1,8 @@
 # Raw Ether TX/RX example of ROS2rapper
 
+* Send raw ether frames (UDP packets).
+* Receive raw ether frames (use only UDP packets).
 * Publish ROS2 topic and send string messages.
-* Send raw ether frames (UDP packets)
 
 ## Requirements
 * Arty A7-100T FPGA board
@@ -10,9 +11,6 @@
   * Vivado 2023.2
   * Vitis HLS 2023.2
   * Docker
-
-## Configure
-Set `dest_mac_addr` and `dest_ip_addr` in `top.v` properly.
 
 ## Build
 To run high-level synthesis, logic synthesis and PnR, run following commands.
@@ -28,13 +26,37 @@ Then write generated bitstream (ros2rapper-pubsub/ros2rapper-pubsub.runs/impl\_1
 * Connect Linux machine and FPGA board through Ethernet.
 * Configure Linux machine's IP address to be the same network address of FPGA's. IP address of FPGA is `192.168.1.100`.
 
-### Test ROS2rapper Raw Ether TX feature
-* Run the next command in the Linux machine.
-```
-nc -ul 1234
-````
+### Test raw ether frame send feature
 
-* You may see the message `raw ether test` periodically.
+* This example sends raw ether (UDP) datagrams to port 1234 of 192.168.1.2 (default).
+* To show payload of UDP datagrams arrived at port 1234 of Linux machine, run following command.
+
+  ```
+  nc -ul 1234
+  ```
+
+  Text "raw ether test\n" will be shown periodically.
+
+### Test raw ether fream receive feature
+
+This example receives raw ether frames, excluding ARP packets, most of RTPS packets and UDP packets whose payload begins with "RTPS".
+
+When this example receives a UDP datagram to the port 1234, the LED 4-7 on the FPGA board will be changed.
+To send UDP datagrams to port 1234 of FPGA, run following command.
+
+```
+nc -u 192.168.1.100 1234
+```
+
+Input any text, then press enter key to send UDP datagram.
+If the text is not begins with "RTPS", LED 4-7 on FPGA board will be changed when UDP datagram has been arrived.
+
+* LED 4 is on when datagram length >= 1.
+* LED 5 is on when datagram length >= 5.
+* LED 6 is on when datagram length >= 10.
+* LED 7 is on when datagram length >= 15.
+
+Note that a datagram contains newline code.
 
 ### Test ROS2rapper Publisher feature
 * This example publishes the "/bbb" topic.

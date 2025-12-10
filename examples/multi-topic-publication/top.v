@@ -29,7 +29,17 @@ module top (
     output wire       led4,
     output wire       led5,
     output wire       led6,
-    output wire       led7
+    output wire       led7,
+
+    output wire       led0_b,
+    output wire       led1_b,
+    output wire       led2_b,
+    output wire       led3_b,
+
+    output wire       led0_r,
+    output wire       led1_r,
+    output wire       led2_r,
+    output wire       led3_r
 );
 
     // --- Clock & Reset
@@ -117,6 +127,7 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- ROS2 Node Configuration
+    wire [15:0] ros2_vendor_id = 16'd0; // VENDOR_ID_UNKNOWN
     wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
@@ -272,6 +283,18 @@ module top (
     assign led6 = rx_msg_reg[0][2];
     assign led7 = rx_msg_reg[0][3];
 
+    // Debug info
+    wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt;
+    wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0]  ros2_app_reader_cnt;
+    assign led0_b = ros2_sedp_reader_cnt[0];
+    assign led1_b = ros2_sedp_reader_cnt[1];
+    assign led2_b = ros2_sedp_reader_cnt[2];
+    assign led3_b = ros2_sedp_reader_cnt[3];
+    assign led0_r = ros2_app_reader_cnt[0];
+    assign led1_r = ros2_app_reader_cnt[1];
+    assign led2_r = ros2_app_reader_cnt[2];
+    assign led3_r = ros2_app_reader_cnt[3];
+
     // --- SEDP Reader Table Memory
 `ifdef ROS2_SEDP_READER_TBL_RAM
     wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr;
@@ -353,6 +376,7 @@ module top (
         .gateway_ip_addr(gateway_ip_addr),
         .subnet_mask(subnet_mask),
 
+        .ros2_vendor_id(ros2_vendor_id),
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),
@@ -467,6 +491,9 @@ module top (
         .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
 
+        .ros2_sedp_reader_cnt(ros2_sedp_reader_cnt),
+        .ros2_app_reader_cnt(ros2_app_reader_cnt),
+
 `ifdef ROS2_SEDP_READER_TBL_RAM
         .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
         .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_cs),
@@ -486,6 +513,13 @@ module top (
         .tx_raw_eth_data_rdata(32'd0),
         .tx_raw_eth_frame_ready(1'b0),
         .tx_raw_eth_completed(),
+
+        .rx_raw_eth_data_addr(),
+        .rx_raw_eth_data_ce(),
+        .rx_raw_eth_data_we(),
+        .rx_raw_eth_data_wdata(),
+        .rx_raw_eth_data_frame_ready(),
+        .rx_raw_eth_data_ack(1'b1),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),

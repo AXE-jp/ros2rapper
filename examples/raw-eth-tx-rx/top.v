@@ -112,6 +112,7 @@ module top (
     localparam ARP_REQUEST_TIMEOUT = (125000000*30);
 
     // --- ROS2 Node Configuration
+    wire [15:0] ros2_vendor_id = 16'd0; // VENDOR_ID_UNKNOWN
     wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name = "elpmaxe_reppar2sor";
     wire [7:0] ros2_node_name_len = 8'd19;
     wire [15:0] ros2_node_udp_port = 16'd52000;
@@ -309,21 +310,45 @@ module top (
     // The rising edge of tx_raw_eth_frame_ready
     wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
 
-    // Monitor raw ether
-    reg  led_tx_raw_eth_send; // Blink when a raw ether packet is sent
-    always @(posedge clk_int or negedge rst_n_int) begin
-        if (!rst_n_int) begin
-            led_tx_raw_eth_send <= 1'b0;
-        end else begin
-            if (tx_raw_eth_kick)
-                led_tx_raw_eth_send <= ~led_tx_raw_eth_send;
+    // Raw Ether RX
+    wire [$clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN)-3:0] rx_raw_eth_data_addr;
+    wire rx_raw_eth_data_ce;
+    wire [3:0] rx_raw_eth_data_we;
+    wire [31:0] rx_raw_eth_data_wdata;
+    reg  [31:0] rx_raw_eth_data [0:(`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4)-1];
+    wire rx_raw_eth_data_frame_ready;
+    wire rx_raw_eth_data_ack = rx_raw_eth_data_frame_ready;
+    always @(posedge clk_int) begin
+        if (rx_raw_eth_data_ce) begin
+            if (rx_raw_eth_data_we[0]) rx_raw_eth_data[rx_raw_eth_data_addr][7:0]   <= rx_raw_eth_data_wdata[7:0];
+            if (rx_raw_eth_data_we[1]) rx_raw_eth_data[rx_raw_eth_data_addr][15:8]  <= rx_raw_eth_data_wdata[15:8];
+            if (rx_raw_eth_data_we[2]) rx_raw_eth_data[rx_raw_eth_data_addr][23:16] <= rx_raw_eth_data_wdata[23:16];
+            if (rx_raw_eth_data_we[3]) rx_raw_eth_data[rx_raw_eth_data_addr][31:24] <= rx_raw_eth_data_wdata[31:24];
         end
     end
 
-    assign led4 = led_tx_raw_eth_send;
-    assign led5 = 1'b0;
-    assign led6 = 1'b0;
-    assign led7 = 1'b0;
+    // Raw Ether RX control
+    wire [15:0] rx_raw_eth_data_len = rx_raw_eth_data[0][15:0];
+    // Check the ether frame type, and the IP protocol version and the header length in the IP header.
+    wire rx_raw_eth_is_ipv4 = ((rx_raw_eth_data[3][31:16] == 16'h00_08) && (rx_raw_eth_data[4][7:0] == 8'h45));
+    // Check the protocol number in the IP header
+    wire rx_raw_eth_is_udp = (rx_raw_eth_is_ipv4 && (rx_raw_eth_data[6][15:8] == 8'd17));
+    wire [15:0] rx_raw_eth_udp_dest_port = {rx_raw_eth_data[9][23:16], rx_raw_eth_data[9][31:24]};
+    wire [15:0] rx_raw_eth_udp_length = {rx_raw_eth_data[10][7:0], rx_raw_eth_data[10][15:8]};
+    reg  [15:0] rx_raw_eth_udp_payload_len_reg;
+    always @(posedge clk_int or negedge rst_n_int) begin
+        if (!rst_n_int) begin
+            rx_raw_eth_udp_payload_len_reg <= 16'd0;
+        end else begin
+            if (rx_raw_eth_data_frame_ready && rx_raw_eth_is_udp && (rx_raw_eth_udp_dest_port == 16'd1234)) begin
+                rx_raw_eth_udp_payload_len_reg <= rx_raw_eth_udp_length - 8;
+            end
+        end
+    end
+    assign led4 = (rx_raw_eth_udp_payload_len_reg >= 1);
+    assign led5 = (rx_raw_eth_udp_payload_len_reg >= 5);
+    assign led6 = (rx_raw_eth_udp_payload_len_reg >= 10);
+    assign led7 = (rx_raw_eth_udp_payload_len_reg >= 15);
 
     // --- IP Payload Memory
     wire payloadsmem_cs;
@@ -497,6 +522,9 @@ module top (
         .ros2_sub_app_data_nack(),
         .ros2_sub_app_data_grant(),
 
+        .ros2_sedp_reader_cnt(),
+        .ros2_app_reader_cnt(),
+
 `ifdef ROS2_SEDP_READER_TBL_RAM
         .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
         .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_cs),
@@ -516,6 +544,13 @@ module top (
         .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
         .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
         .tx_raw_eth_completed(tx_raw_eth_completed),
+
+        .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
+        .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
+        .rx_raw_eth_data_we(rx_raw_eth_data_we),
+        .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
+        .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+        .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
 
         .arp_req_retry_count(ARP_REQUEST_RETRY_COUNT),
         .arp_req_retry_interval(ARP_REQUEST_RETRY_INTERVAL),
