@@ -122,6 +122,10 @@ void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
 void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index);
 
+// Returns liveliness (true means alive)
+bool get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry);
 void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl,
                                   unsigned int entry);
 

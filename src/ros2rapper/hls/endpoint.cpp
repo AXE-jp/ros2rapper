@@ -20,6 +20,29 @@ void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
 }
 
 /* Cyber func=inline */
+bool get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, entry, 0);
+    get_sedp_reader_tbl(&data_1, tbl, entry, 1);
+
+    /* Cyber unroll_times=all */
+    for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+        guid_prefix[k] = (data_0 >> (8 * (k + 4)));
+    }
+    /* Cyber unroll_times=all */
+    for (auto k = 0; k < 8; k++) {
+#pragma HLS unroll
+        guid_prefix[k + 4] = (data_1 >> (8 * k));
+    }
+
+    return ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+}
+
+/* Cyber func=inline */
 void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl,
                                   unsigned int entry) {
 #pragma HLS inline

@@ -31,25 +31,13 @@ static void find_unused_and_matched_sedp_endpoint(
 #ifdef SEDP_READER_TBL_FF
 #pragma HLS unroll
 #else // !SEDP_READER_TBL_FF
-#pragma HLS pipeline
+#pragma HLS pipeline II = 2
 #endif // SEDP_READER_TBL_FF
-        uint64_t data_0, data_1;
-        get_sedp_reader_tbl(&data_0, sedp_reader_tbl, j, 0);
-        get_sedp_reader_tbl(&data_1, sedp_reader_tbl, j, 1);
 
-        bool    j_alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
         uint8_t j_guid_prefix[12];
 #pragma HLS array_partition variable = j_guid_prefix complete dim = 1
-        /* Cyber unroll_times=all */
-        for (auto k = 0; k < 4; k++) {
-#pragma HLS unroll
-            j_guid_prefix[k] = (data_0 >> (8 * (k + 4)));
-        }
-        /* Cyber unroll_times=all */
-        for (auto k = 0; k < 8; k++) {
-#pragma HLS unroll
-            j_guid_prefix[k + 4] = (data_1 >> (8 * k));
-        }
+        bool j_alive = get_sedp_reader_tbl_guid_prefix(j_guid_prefix,
+                                                       sedp_reader_tbl, j);
 
         bool j_matched = j_alive;
         /* Cyber unroll_times=all */
