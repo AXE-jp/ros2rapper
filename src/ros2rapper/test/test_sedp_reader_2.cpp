@@ -590,9 +590,9 @@ int test_sedp_reader_2() {
         clear_sedp_reader_tbl_children(&sedp_reader_tbl, 1);
         // Setup app_reader_tbl.
         for (auto j = 0; j < APP_READER_MAX; j++) {
-            // for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-            //     app_reader_tbl[j].guid_prefix[k] = 0;
-            // }
+            for (auto k = 0; k < 4; k++) {
+                app_reader_tbl[j].entity_id[k] = 0;
+            }
             app_reader_tbl[j].alive = (j < first_n_app_endpoints_alive);
         }
         CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_sedp_reader_pub_data);
@@ -605,13 +605,11 @@ int test_sedp_reader_2() {
             assert(app_reader_tbl[j].alive
                    == (j <= first_n_app_endpoints_alive));
         }
-        // TODO: Add another test
-        // for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
-        //     assert(
-        //         app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]
-        //         == test_sedp_reader_pub_data[k +
-        //         RTPS_HDR_OFFSET_GUID_PREFIX]);
-        // }
+        const unsigned int entity_id_offset = 244;
+        for (auto k = 0; k < 4; k++) {
+            assert(app_reader_tbl[first_n_app_endpoints_alive].entity_id[k]
+                   == test_sedp_reader_pub_data[k + entity_id_offset]);
+        }
     }
 
     // Test whether ros2rapper uses valid endpoint's data and does not use
