@@ -411,9 +411,10 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     rtps_data_t rtps_data;
 #pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = rtps_data.data complete dim = 1
-    if (!in.read_nb(rtps_data)) {
+    if (in.empty()) {
         return;
     }
+    in.read_nb(rtps_data);
     if (!enable) {
         return;
     }
