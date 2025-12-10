@@ -109,11 +109,11 @@ const app_ep_type_t APP_EP_SUB
 
 struct app_endpoint {
     sedp_reader_id_t parent_id;
-    uint8_t       udp_port[2] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t       entity_id[4] /* Cyber array=EXPAND, array_index=const */;
-    app_ep_type_t app_ep_type;
-    topic_id_t    topic_id;
-    bool          alive;
+    uint8_t          udp_port[2] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t          entity_id[4] /* Cyber array=EXPAND, array_index=const */;
+    app_ep_type_t    app_ep_type;
+    topic_id_t       topic_id;
+    bool             alive;
 };
 
 void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
@@ -132,6 +132,9 @@ void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     uint8_t ip_addr[4], uint8_t *pubrd_wr_seqnum, uint8_t *pubrd_rd_seqnum,
     uint8_t *subrd_wr_seqnum, uint8_t *subrd_rd_seqnum,
     const sedp_reader_tbl_t *tbl, unsigned int entry);
+void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
+                                 const sedp_reader_tbl_t *tbl,
+                                 unsigned int             entry);
 void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     const uint8_t ip_addr[4], uint8_t pubrd_wr_seqnum, uint8_t pubrd_rd_seqnum,
     uint8_t subrd_wr_seqnum, uint8_t subrd_rd_seqnum, sedp_reader_tbl_t *tbl,

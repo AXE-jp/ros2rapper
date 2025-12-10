@@ -609,7 +609,8 @@ int test_sedp_reader_2() {
         // for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
         //     assert(
         //         app_reader_tbl[first_n_app_endpoints_alive].guid_prefix[k]
-        //         == test_sedp_reader_pub_data[k + RTPS_HDR_OFFSET_GUID_PREFIX]);
+        //         == test_sedp_reader_pub_data[k +
+        //         RTPS_HDR_OFFSET_GUID_PREFIX]);
         // }
     }
 

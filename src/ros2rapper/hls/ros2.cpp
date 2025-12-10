@@ -489,7 +489,6 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
                                    sedp_reader_tbl_t *tbl, unsigned int idx) {
 #pragma HLS inline
     uint64_t data_0, data_1;
-    uint8_t  sn_0, sn_1, sn_2, sn_3;
 
     get_sedp_reader_tbl(&data_0, tbl, idx, 0);
     bool        alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
@@ -513,8 +512,7 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
         guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
     }
 
-    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
-                                               &sn_3, tbl, idx);
+    get_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
 
     if (increment_initial_send_counter && (initial_send_counter < 3)) {
         initial_send_counter++;
@@ -848,21 +846,33 @@ static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
 
 /* Cyber func=inline */
 static void
-APP_WRITER_OUT(app_reader_id_t app_reader_id,
-               app_endpoint    app_reader_tbl[APP_READER_MAX],
-               const uint8_t   app_writer_entity_id_list[PUB_TOPICS_MAX][4],
+APP_WRITER_OUT(app_reader_id_t          app_reader_id,
+               const sedp_reader_tbl_t *sedp_reader_tbl,
+               app_endpoint             app_reader_tbl[APP_READER_MAX],
+               const uint8_t app_writer_entity_id_list[PUB_TOPICS_MAX][4],
                int64_t &app_seqnum, message_metadata_t *msg_metadata) {
 #pragma HLS inline
     if ((app_reader_id < APP_READER_MAX) && app_reader_tbl[app_reader_id].alive
         && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)) {
-        topic_id_t topic_id = app_reader_tbl[app_reader_id].topic_id;
-        if (topic_id < PUB_TOPICS_MAX) {
-            app_writer_out(topic_id, app_writer_entity_id_list[topic_id],
-                           app_reader_tbl[app_reader_id].ip_addr,
-                           app_reader_tbl[app_reader_id].udp_port,
-                           app_reader_tbl[app_reader_id].guid_prefix,
-                           app_reader_tbl[app_reader_id].entity_id, app_seqnum,
-                           msg_metadata);
+        sedp_reader_id_t parent_id = app_reader_tbl[app_reader_id].parent_id;
+        topic_id_t       topic_id = app_reader_tbl[app_reader_id].topic_id;
+        if ((parent_id < SEDP_READER_MAX) && (topic_id < PUB_TOPICS_MAX)) {
+            uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+            uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+
+            bool alive = get_sedp_reader_tbl_guid_prefix(
+                guid_prefix, sedp_reader_tbl, parent_id);
+            get_sedp_reader_tbl_ip_addr(ip_addr, sedp_reader_tbl, parent_id);
+
+            if (alive) {
+                app_writer_out(topic_id, app_writer_entity_id_list[topic_id],
+                               ip_addr, app_reader_tbl[app_reader_id].udp_port,
+                               guid_prefix,
+                               app_reader_tbl[app_reader_id].entity_id,
+                               app_seqnum, msg_metadata);
+            }
         }
     }
 }
@@ -1186,7 +1196,7 @@ static void ros2_out(
             }
         } else if (pub_enable != 0 && cnt_app_wr_elapsed
                    && next_packet_type == 7) {
-            APP_WRITER_OUT(tx_progress, app_reader_tbl,
+            APP_WRITER_OUT(tx_progress, sedp_reader_tbl, app_reader_tbl,
                            app_writer_entity_id_list, app_seqnum,
                            &msg_metadata);
             if (tx_progress < (APP_READER_MAX - 1)) {
