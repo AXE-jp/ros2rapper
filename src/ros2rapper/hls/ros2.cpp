@@ -878,21 +878,23 @@ static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
 }
 
 /* Cyber func=inline */
-static void APP_WRITER_OUT(topic_id_t topic_id, app_reader_id_t app_reader_id,
-                           app_endpoint        app_reader_tbl[APP_READER_MAX],
-                           const uint8_t       app_writer_entity_id[4],
-                           int64_t            &app_seqnum,
-                           message_metadata_t *msg_metadata) {
+static void
+APP_WRITER_OUT(app_reader_id_t app_reader_id,
+               app_endpoint    app_reader_tbl[APP_READER_MAX],
+               const uint8_t   app_writer_entity_id_list[PUB_TOPICS_MAX][4],
+               int64_t &app_seqnum, message_metadata_t *msg_metadata) {
 #pragma HLS inline
     if ((app_reader_id < APP_READER_MAX) && app_reader_tbl[app_reader_id].alive
-        && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)
-        && (app_reader_tbl[app_reader_id].topic_id == topic_id)) {
-        app_writer_out(topic_id, app_writer_entity_id,
-                       app_reader_tbl[app_reader_id].ip_addr,
-                       app_reader_tbl[app_reader_id].udp_port,
-                       app_reader_tbl[app_reader_id].guid_prefix,
-                       app_reader_tbl[app_reader_id].entity_id, app_seqnum,
-                       msg_metadata);
+        && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)) {
+        topic_id_t topic_id = app_reader_tbl[app_reader_id].topic_id;
+        if (topic_id < PUB_TOPICS_MAX) {
+            app_writer_out(topic_id, app_writer_entity_id_list[topic_id],
+                           app_reader_tbl[app_reader_id].ip_addr,
+                           app_reader_tbl[app_reader_id].udp_port,
+                           app_reader_tbl[app_reader_id].guid_prefix,
+                           app_reader_tbl[app_reader_id].entity_id, app_seqnum,
+                           msg_metadata);
+        }
     }
 }
 
@@ -1216,26 +1218,21 @@ static void ros2_out(
             }
         } else if (pub_enable != 0 && cnt_app_wr_elapsed
                    && next_packet_type == 7) {
-            APP_WRITER_OUT(tx_topic_progress, tx_progress, app_reader_tbl,
-                           app_writer_entity_id_list[tx_topic_progress],
-                           app_seqnum, &msg_metadata);
+            APP_WRITER_OUT(tx_progress, app_reader_tbl,
+                           app_writer_entity_id_list, app_seqnum,
+                           &msg_metadata);
             if (tx_progress < (APP_READER_MAX - 1)) {
                 tx_progress++;
             } else {
                 tx_progress = 0;
-                if (tx_topic_progress < (PUB_TOPICS_MAX - 1)) {
-                    tx_topic_progress++;
-                } else {
-                    /* Cyber scheduling_block = non-transparent */
-                cnt_reset_7: {
+                /* Cyber scheduling_block = non-transparent */
+            cnt_reset_7: {
 #pragma HLS protocol fixed
-                    *cnt_app_wr_set = 1;
-                    CLOCK_BOUNDARY;
-                    CLOCK_BOUNDARY;
-                }
-                    ROTATE_NEXT_PACKET_TYPE;
-                    tx_topic_progress = 0;
-                }
+                *cnt_app_wr_set = 1;
+                CLOCK_BOUNDARY;
+                CLOCK_BOUNDARY;
+            }
+                ROTATE_NEXT_PACKET_TYPE;
             }
         } else if (next_packet_type == 8) {
             // Remove dead endpoints.
