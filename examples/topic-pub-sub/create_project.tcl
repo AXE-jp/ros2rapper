@@ -61,9 +61,15 @@ current_run -implementation [get_runs impl_1]
 add_files -norecurse -fileset sources_1 [ glob ./*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/rtl/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_receiver/solution1/syn/verilog/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_sender/solution1/syn/verilog/*.v ]
+
+if {[string equal [lindex $argv 0] "vitis"]} {
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_receiver/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_sender/solution1/syn/verilog/*.v ]
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/*.v ]
+}
+
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/lib/*.v ]
