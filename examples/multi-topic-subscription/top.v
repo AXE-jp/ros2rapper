@@ -59,7 +59,7 @@ module top (
 `ifdef ROS2RAPPER_HLS_VITIS
     localparam ROS2CLK_HZ = 80_000_000;
 `elsif ROS2RAPPER_HLS_CWB
-    localparam ROS2_CLK_HZ = 40_000_000;
+    localparam ROS2CLK_HZ = 40_000_000;
 `endif
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
