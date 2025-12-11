@@ -42,6 +42,5 @@ set_property -dict {PACKAGE_PIN J5 IOSTANDARD LVCMOS33} [get_ports led5]
 set_false_path -to [get_ports {phy_ref_clk phy_rst_n}]
 set_output_delay 0.000 [get_ports {phy_ref_clk phy_rst_n}]
 
-set_clock_groups -asynchronous \
-    -group {clk ros2_clk_clk_wiz_0 clk_25MHz_clk_wiz_0} \
-    -group {phy_rx_clk} -group {phy_tx_clk}
+set_clock_groups -asynchronous -group {clk_int} -group {phy_rx_clk}
+set_clock_groups -asynchronous -group {clk_int} -group {phy_tx_clk}

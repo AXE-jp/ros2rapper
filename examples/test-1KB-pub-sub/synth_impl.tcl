@@ -13,13 +13,6 @@ if {[get_property PROGRESS [get_runs blk_mem_gen_0_synth_1]] != "100%"} {
 	error "ERROR: blk_mem_gen_0_synth_1 failed"
 }
 
-reset_run clk_wiz_0_synth_1
-launch_runs clk_wiz_0_synth_1 -jobs 16
-wait_on_run clk_wiz_0_synth_1
-if {[get_property PROGRESS [get_runs clk_wiz_0_synth_1]] != "100%"} {
-	error "ERROR: clk_wiz_0_synth_1 failed"
-}
-
 reset_run hls_pub_0_synth_1
 launch_runs hls_pub_0_synth_1 -jobs 16
 wait_on_run hls_pub_0_synth_1
