@@ -441,7 +441,7 @@ static void setup_reader_tables_with_default_value(
 
 static sedp_reader_tbl_t sedp_reader_tbl;
 static app_endpoint      app_reader_tbl[APP_READER_MAX];
-static uint64_t          new_app_reader_tbl[APP_READER_MAX];
+static app_reader_tbl_t  new_app_reader_tbl;
 
 bool app_endpoint_equal(const app_endpoint &lhs, const app_endpoint &rhs) {
     return (lhs.alive == rhs.alive) && (lhs.app_ep_type == rhs.app_ep_type)
@@ -480,13 +480,13 @@ int test_app_reader_tbl() {
             app_endpoint tmp_reader;
             reader_0.topic_id = j;
             reader_0.parent_id = k;
-            set_app_reader_tbl(reader_0, new_app_reader_tbl, j);
-            get_app_reader_tbl(&tmp_reader, new_app_reader_tbl, j);
+            set_app_reader_tbl(reader_0, &new_app_reader_tbl, j);
+            get_app_reader_tbl(&tmp_reader, &new_app_reader_tbl, j);
             assert(app_endpoint_equal(tmp_reader, reader_0));
             reader_1.topic_id = j;
             reader_1.parent_id = k;
-            set_app_reader_tbl(reader_1, new_app_reader_tbl, j);
-            get_app_reader_tbl(&tmp_reader, new_app_reader_tbl, j);
+            set_app_reader_tbl(reader_1, &new_app_reader_tbl, j);
+            get_app_reader_tbl(&tmp_reader, &new_app_reader_tbl, j);
             assert(app_endpoint_equal(tmp_reader, reader_1));
         }
     }

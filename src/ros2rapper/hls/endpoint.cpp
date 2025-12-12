@@ -6,11 +6,10 @@
 #include <cstdint>
 
 /* Cyber func=inline */
-void get_app_reader_tbl(app_endpoint  *reader,
-                        const uint64_t app_reader_tbl[APP_READER_MAX],
-                        unsigned int   entry) {
+void get_app_reader_tbl(app_endpoint *reader, const app_reader_tbl_t *tbl,
+                        unsigned int entry) {
 #pragma HLS inline
-    uint64_t data = app_reader_tbl[entry];
+    uint64_t data = tbl->ram[entry];
     reader->alive = ((data & 1) != 0);
     reader->app_ep_type = data >> 1;
     reader->topic_id = data >> 3;
@@ -24,9 +23,8 @@ void get_app_reader_tbl(app_endpoint  *reader,
 }
 
 /* Cyber func=inline */
-void set_app_reader_tbl(const app_endpoint &reader,
-                        uint64_t            app_reader_tbl[APP_READER_MAX],
-                        unsigned int        entry) {
+void set_app_reader_tbl(const app_endpoint &reader, app_reader_tbl_t *tbl,
+                        unsigned int entry) {
 #pragma HLS inline
     uint64_t data = (reader.alive ? 1 : 0);
     data |= static_cast<uint64_t>(reader.app_ep_type) << 1;
@@ -38,7 +36,7 @@ void set_app_reader_tbl(const app_endpoint &reader,
     data |= static_cast<uint64_t>(reader.entity_id[1]) << 40;
     data |= static_cast<uint64_t>(reader.entity_id[2]) << 48;
     data |= static_cast<uint64_t>(reader.entity_id[3]) << 56;
-    app_reader_tbl[entry] = data;
+    tbl->ram[entry] = data;
 }
 
 /* Cyber func=inline */

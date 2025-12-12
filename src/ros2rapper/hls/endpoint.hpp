@@ -112,12 +112,18 @@ struct app_endpoint {
     bool             alive;
 };
 
-void get_app_reader_tbl(app_endpoint  *reader,
-                        const uint64_t app_reader_tbl[APP_READER_MAX],
-                        unsigned int   entry);
-void set_app_reader_tbl(const app_endpoint &reader,
-                        uint64_t            app_reader_tbl[APP_READER_MAX],
-                        unsigned int        entry);
+typedef struct {
+    uint64_t ram[APP_READER_MAX]
+#ifdef APP_READER_TBL_FF
+    /* Cyber array=EXPAND, array_index=const */
+#endif
+        ;
+} app_reader_tbl_t;
+
+void get_app_reader_tbl(app_endpoint *reader, const app_reader_tbl_t *tbl,
+                        unsigned int entry);
+void set_app_reader_tbl(const app_endpoint &reader, app_reader_tbl_t *tbl,
+                        unsigned int entry);
 
 void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index);
