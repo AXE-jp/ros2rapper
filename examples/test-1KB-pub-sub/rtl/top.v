@@ -190,7 +190,7 @@ module top(
         .wea(ros2_sub_app_data_we),      // input wire [0 : 0] wea
         .addra(ros2_sub_app_data_addr),  // input wire [9 : 0] addra
         .dina(ros2_sub_app_data_wdata),    // input wire [7 : 0] dina
-        .clkb(ros2_clk),    // input wire clkb
+        .clkb(clk_int),    // input wire clkb
         .enb(sub_app_data_ce0),      // input wire enb
         .addrb(sub_app_data_address0),  // input wire [8 : 0] addrb
         .doutb(sub_app_data_q0)  // output wire [15 : 0] doutb
