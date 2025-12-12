@@ -427,7 +427,7 @@ static int test_remove_dead_endpoints_2() {
 
     // set lease_duration INFINITE.
     const duration duration_infinite = DURATION_INFINITE;
-    const int64_t lease_duration
+    const int64_t  lease_duration
         = (static_cast<int64_t>(duration_infinite.seconds) << 32)
           | duration_infinite.fraction;
     for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;

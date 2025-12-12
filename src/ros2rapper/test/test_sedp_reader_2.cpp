@@ -441,6 +441,58 @@ static void setup_reader_tables_with_default_value(
 
 static sedp_reader_tbl_t sedp_reader_tbl;
 static app_endpoint      app_reader_tbl[APP_READER_MAX];
+static uint64_t          new_app_reader_tbl[APP_READER_MAX];
+
+bool app_endpoint_equal(const app_endpoint &lhs, const app_endpoint &rhs) {
+    return (lhs.alive == rhs.alive) && (lhs.app_ep_type == rhs.app_ep_type)
+           && (lhs.topic_id == rhs.topic_id) && (lhs.parent_id == rhs.parent_id)
+           && (lhs.udp_port[0] == rhs.udp_port[0])
+           && (lhs.udp_port[1] == rhs.udp_port[1])
+           && (lhs.entity_id[0] == rhs.entity_id[0])
+           && (lhs.entity_id[1] == rhs.entity_id[1])
+           && (lhs.entity_id[2] == rhs.entity_id[2])
+           && (lhs.entity_id[3] == rhs.entity_id[3]);
+}
+
+int test_app_reader_tbl() {
+    app_endpoint reader_0, reader_1;
+
+    reader_0.alive = false;
+    reader_0.app_ep_type = APP_EP_PUB;
+    reader_0.udp_port[0] = 0x55;
+    reader_0.udp_port[1] = 0x66;
+    reader_0.entity_id[0] = 0x77;
+    reader_0.entity_id[1] = 0x88;
+    reader_0.entity_id[3] = 0x99;
+    reader_0.entity_id[4] = 0xaa;
+
+    reader_1.alive = true;
+    reader_1.app_ep_type = APP_EP_SUB;
+    reader_1.udp_port[0] = 0xaa;
+    reader_1.udp_port[1] = 0x99;
+    reader_1.entity_id[0] = 0x88;
+    reader_1.entity_id[1] = 0x77;
+    reader_1.entity_id[3] = 0x66;
+    reader_1.entity_id[4] = 0x55;
+
+    for (auto j = 0; j < MAX(PUB_TOPICS_MAX, SUB_TOPICS_MAX); j++) {
+        for (auto k = 0; k < SEDP_READER_MAX; k++) {
+            app_endpoint tmp_reader;
+            reader_0.topic_id = j;
+            reader_0.parent_id = k;
+            set_app_reader_tbl(reader_0, new_app_reader_tbl, j);
+            get_app_reader_tbl(&tmp_reader, new_app_reader_tbl, j);
+            assert(app_endpoint_equal(tmp_reader, reader_0));
+            reader_1.topic_id = j;
+            reader_1.parent_id = k;
+            set_app_reader_tbl(reader_1, new_app_reader_tbl, j);
+            get_app_reader_tbl(&tmp_reader, new_app_reader_tbl, j);
+            assert(app_endpoint_equal(tmp_reader, reader_1));
+        }
+    }
+
+    return 0;
+}
 
 int test_sedp_reader_2() {
     receiver_config_t conf = {
@@ -469,6 +521,9 @@ int test_sedp_reader_2() {
     uint8_t ip_addr[4];
     uint8_t pubrd_wr_seqnum, pubrd_rd_seqnum, subrd_wr_seqnum, subrd_rd_seqnum;
     hls_uint<APP_READER_MAX> children;
+
+    // Test get_app_reader_tbl and set_app_reader_tbl
+    assert(test_app_reader_tbl() == 0);
 
     // Test whether sedp_reader ignores dead participants.
     // Setup sedp_reader_tbl.

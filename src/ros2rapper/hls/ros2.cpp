@@ -1258,7 +1258,7 @@ static void initialize_sedp_reader_tbl(sedp_reader_tbl_t *tbl) {
 #pragma HLS inline
     /* Cyber folding=1 */
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#pragma HLS pipeline II=1
+#pragma HLS pipeline II = 1
         set_sedp_reader_tbl(0, tbl, j, 0);
     }
 }

@@ -6,6 +6,42 @@
 #include <cstdint>
 
 /* Cyber func=inline */
+void get_app_reader_tbl(app_endpoint  *reader,
+                        const uint64_t app_reader_tbl[APP_READER_MAX],
+                        unsigned int   entry) {
+#pragma HLS inline
+    uint64_t data = app_reader_tbl[entry];
+    reader->alive = ((data & 1) != 0);
+    reader->app_ep_type = data >> 1;
+    reader->topic_id = data >> 3;
+    reader->parent_id = data >> 8;
+    reader->udp_port[0] = data >> 16;
+    reader->udp_port[1] = data >> 24;
+    reader->entity_id[0] = data >> 32;
+    reader->entity_id[1] = data >> 40;
+    reader->entity_id[2] = data >> 48;
+    reader->entity_id[3] = data >> 56;
+}
+
+/* Cyber func=inline */
+void set_app_reader_tbl(const app_endpoint &reader,
+                        uint64_t            app_reader_tbl[APP_READER_MAX],
+                        unsigned int        entry) {
+#pragma HLS inline
+    uint64_t data = (reader.alive ? 1 : 0);
+    data |= static_cast<uint64_t>(reader.app_ep_type) << 1;
+    data |= static_cast<uint64_t>(reader.topic_id) << 3;
+    data |= static_cast<uint64_t>(reader.parent_id) << 8;
+    data |= static_cast<uint64_t>(reader.udp_port[0]) << 16;
+    data |= static_cast<uint64_t>(reader.udp_port[1]) << 24;
+    data |= static_cast<uint64_t>(reader.entity_id[0]) << 32;
+    data |= static_cast<uint64_t>(reader.entity_id[1]) << 40;
+    data |= static_cast<uint64_t>(reader.entity_id[2]) << 48;
+    data |= static_cast<uint64_t>(reader.entity_id[3]) << 56;
+    app_reader_tbl[entry] = data;
+}
+
+/* Cyber func=inline */
 void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index) {
 #pragma HLS inline
