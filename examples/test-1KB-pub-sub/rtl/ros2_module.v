@@ -120,11 +120,12 @@ module ros2_module #(
     wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name = "_215x61tniU::_sdd::gsm::sgsm_elpmas";
     wire [7:0] ros2_sub_topic_type_name_len = 8'd36;
 
-    localparam STATE_IDLE       = 0;
-    localparam STATE_WAIT_GRANT = 1;
-    localparam STATE_WAIT_VALID = 2;
-    reg [$clog2(STATE_WAIT_VALID+1)-1:0] pub_state;
-    reg [$clog2(STATE_WAIT_VALID+1)-1:0] sub_state;
+    localparam [1:0] STATE_IDLE       = 0;
+    localparam [1:0] STATE_WAIT_GRANT = 1;
+    localparam [1:0] STATE_WAIT_VALID = 2;
+    localparam [1:0] STATE_RELEASE    = 3;
+    reg [1:0] pub_state;
+    reg [1:0] sub_state;
 
     // --- ROS2 Publisher Message Control
     localparam COUNT_MAX = ROS2CLK_HZ - 1;
@@ -145,16 +146,15 @@ module ros2_module #(
     end
 
     reg  ros2_pub_app_data_req_0;
-    wire ros2_pub_app_data_rel_0;
+    reg  ros2_pub_app_data_rel_0;
     wire ros2_pub_app_data_ack_0;
     wire ros2_pub_app_data_nack_0;
-
-    assign ros2_pub_app_data_rel_0 = (pub_state == STATE_WAIT_VALID) & ros2_pub_app_data_ap_ready;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             pub_state <= STATE_IDLE;
             ros2_pub_app_data_req_0 <= 1'b0;
+            ros2_pub_app_data_rel_0 <= 1'b0;
             ros2_pub_app_data_ap_start <= 1'b0;
         end else begin
             if (pub_state == STATE_WAIT_GRANT) begin
@@ -168,8 +168,14 @@ module ros2_module #(
                 end
             end else if (pub_state == STATE_WAIT_VALID) begin
                 if (ros2_pub_app_data_ap_ready) begin
-                    pub_state <= STATE_IDLE;
+                    pub_state <= STATE_RELEASE;
+                    ros2_pub_app_data_rel_0 <= 1'b1;
                     ros2_pub_app_data_ap_start <= 1'b0;
+                end
+            end else if (pub_state == STATE_RELEASE) begin
+                if (ros2_pub_app_data_ack_0) begin
+                    pub_state <= STATE_IDLE;
+                    ros2_pub_app_data_rel_0 <= 1'b0;
                 end
             end else begin  // pub_state == STATE_IDLE
                 if (count == 0) begin
@@ -192,7 +198,7 @@ module ros2_module #(
 
     // --- ROS2 Subscriber message control
     reg  ros2_sub_app_data_req_0;
-    wire ros2_sub_app_data_rel_0;
+    reg  ros2_sub_app_data_rel_0;
     wire ros2_sub_app_data_ack_0;
     wire ros2_sub_app_data_nack_0;
 
@@ -200,12 +206,12 @@ module ros2_module #(
     wire recvinfo_write;
 
     assign sub_data_result_ap_ack = (sub_state == STATE_WAIT_GRANT) & ros2_sub_app_data_ack_0;
-    assign ros2_sub_app_data_rel_0 = (sub_state == STATE_WAIT_VALID) & sub_data_result_ap_vld;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             sub_state <= STATE_IDLE;
             ros2_sub_app_data_req_0 <= 1'b0;
+            ros2_sub_app_data_rel_0 <= 1'b0;
             led4 <= 1'b0;
             led5 <= 1'b0;
         end else begin
@@ -219,9 +225,15 @@ module ros2_module #(
                 end
             end else if (sub_state == STATE_WAIT_VALID) begin
                 if (sub_data_result_ap_vld) begin
-                    sub_state <= STATE_IDLE;
+                    sub_state <= STATE_RELEASE;
+                    ros2_sub_app_data_rel_0 <= 1'b1;
                     led4 <= sub_data_result;
                     led5 <= ~sub_data_result;
+                end
+            end else if (sub_state == STATE_RELEASE) begin
+                if (ros2_sub_app_data_ack_0) begin
+                    sub_state <= STATE_IDLE;
+                    ros2_sub_app_data_rel_0 <= 1'b0;
                 end
             end else begin  // sub_state == STATE_IDLE
                 if (recvinfo_write && recvinfo_din[35:32] == 4'b0001) begin
