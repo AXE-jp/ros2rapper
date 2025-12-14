@@ -34,14 +34,14 @@ module top(
 `ifdef ROS2RAPPER_HLS_VITIS
     localparam ROS2CLK_HZ = 80_000_000;
 `elsif ROS2RAPPER_HLS_CWB
-    localparam ROS2CLK_HZ = 40_000_000;
+    localparam ROS2CLK_HZ = 25_000_000;
 `endif
     MMCME2_BASE #(
         .BANDWIDTH("OPTIMIZED"),
 `ifdef ROS2RAPPER_HLS_VITIS
         .CLKOUT0_DIVIDE_F(12.5),
 `elsif ROS2RAPPER_HLS_CWB
-        .CLKOUT0_DIVIDE_F(25.0),
+        .CLKOUT0_DIVIDE_F(40.0),
 `endif
         .CLKOUT0_DUTY_CYCLE(0.5),
         .CLKOUT0_PHASE(0),
@@ -190,7 +190,7 @@ module top(
         .wea(ros2_sub_app_data_we),      // input wire [0 : 0] wea
         .addra(ros2_sub_app_data_addr),  // input wire [9 : 0] addra
         .dina(ros2_sub_app_data_wdata),    // input wire [7 : 0] dina
-        .clkb(ros2_clk),    // input wire clkb
+        .clkb(clk_int),    // input wire clkb
         .enb(sub_app_data_ce0),      // input wire enb
         .addrb(sub_app_data_address0),  // input wire [8 : 0] addrb
         .doutb(sub_app_data_q0)  // output wire [15 : 0] doutb
