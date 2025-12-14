@@ -308,7 +308,7 @@ wire cnt_sedp_sub_an_elapsed;
 wire cnt_app_wr_elapsed;
 
 generate
-    if (SET_TX_PERIOD_BY_PARAMETER) begin
+    if (SET_TX_PERIOD_BY_PARAMETER) begin : ROS2_INST_BLOCK_0
         ros2rapper_tx_counters #(
             .PRESCALER_DIV              (PRESCALER_DIV              ),
             .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
@@ -345,7 +345,7 @@ generate
             .o_cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
             .o_cnt_app_wr_elapsed(cnt_app_wr_elapsed)
         );
-    end else begin
+    end else begin : ROS2_INST_BLOCK_1
         assign ros2_cnt_interval_set = cnt_interval_set;
         assign ros2_cnt_spdp_wr_set = cnt_spdp_wr_set;
         assign ros2_cnt_sedp_pub_wr_set = cnt_sedp_pub_wr_set;

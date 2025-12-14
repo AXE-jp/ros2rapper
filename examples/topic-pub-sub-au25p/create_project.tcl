@@ -22,7 +22,11 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 }
 set obj [get_filesets sources_1]
 set_property -name "loop_count" -value "1000" -objects $obj
-set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFG=1" -objects $obj
+if {[string equal [lindex $argv 0] "vitis"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_CWB=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+}
 set_property -name "verilog_version" -value "verilog_2001" -objects $obj
 
 # Create fileset "constrs_1"

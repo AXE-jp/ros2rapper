@@ -53,7 +53,7 @@ void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
 /* Cyber func=process, bdltran_option=-s, process_valid=NO */
 void ros2_receiver(
     hls_stream<uint8_t>     &in /* Cyber port_mode=cw_fifo */,
-    hls_stream<rtps_data_t> &out /* Cyber port_mode=axi_stream */,
+    hls_stream<rtps_data_t> &out /* Cyber port_mode=axi_stream:reg_both */,
     uint8_t ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
     hls_uint<PUB_TOPICS_MAX> pub_enable /* Cyber port_mode=in */,
     hls_uint<SUB_TOPICS_MAX> sub_enable /* Cyber port_mode=in */,

@@ -237,6 +237,8 @@ payload_fifo (
     .pause_req(1'b0),
     .pause_ack(),
     // Status
+    .status_depth(),
+    .status_depth_commit(),
     .status_overflow(),
     .status_bad_frame(),
     .status_good_frame()

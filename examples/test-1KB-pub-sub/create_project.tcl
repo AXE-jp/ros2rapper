@@ -22,7 +22,11 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 }
 set obj [get_filesets sources_1]
 set_property -name "loop_count" -value "1000" -objects $obj
-set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+if {[string equal [lindex $argv 0] "vitis"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_CWB=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+}
 set_property -name "verilog_version" -value "verilog_2001" -objects $obj
 
 # Create fileset "constrs_1"
@@ -88,29 +92,6 @@ if {[string equal [get_ips -quiet blk_mem_gen_0] ""]} {
     ] [get_ips blk_mem_gen_0]
     generate_target all [get_files ./$project_name/$project_name.srcs/sources_1/ip/blk_mem_gen_0/blk_mem_gen_0.xci]
     create_ip_run [get_files -of_objects [get_fileset sources_1] ./$project_name/$project_name.srcs/sources_1/ip/blk_mem_gen_0/blk_mem_gen_0.xci]
-}
-
-if {[string equal [get_ips -quiet clk_wiz_0] ""]} {
-    create_ip -name clk_wiz -vendor xilinx.com -library ip -version 6.0 -module_name clk_wiz_0
-    set_property -dict [list \
-        CONFIG.CLKOUT1_JITTER {137.143} \
-        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {80.000} \
-        CONFIG.CLKOUT1_USED {true} \
-        CONFIG.CLKOUT2_JITTER {175.402} \
-        CONFIG.CLKOUT2_PHASE_ERROR {98.575} \
-        CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {25.000} \
-        CONFIG.CLKOUT2_USED {true} \
-        CONFIG.CLK_OUT1_PORT {ros2_clk} \
-        CONFIG.CLK_OUT2_PORT {clk_25MHz} \
-        CONFIG.MMCM_CLKOUT0_DIVIDE_F {12.500} \
-        CONFIG.MMCM_CLKOUT1_DIVIDE {40} \
-        CONFIG.NUM_OUT_CLKS {2} \
-        CONFIG.PRIM_SOURCE {Global_buffer} \
-        CONFIG.RESET_PORT {resetn} \
-        CONFIG.RESET_TYPE {ACTIVE_LOW} \
-    ] [get_ips clk_wiz_0]
-    generate_target all [get_files ./$project_name/$project_name.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci]
-    create_ip_run [get_files -of_objects [get_fileset sources_1] ./$project_name/$project_name.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci]
 }
 
 if {[string equal [get_ips -quiet hls_pub_0] ""]} {

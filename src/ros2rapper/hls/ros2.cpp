@@ -32,25 +32,13 @@ static void find_unused_and_matched_sedp_endpoint(
 #ifdef SEDP_READER_TBL_FF
 #pragma HLS unroll
 #else // !SEDP_READER_TBL_FF
-#pragma HLS pipeline
+#pragma HLS pipeline II = 2
 #endif // SEDP_READER_TBL_FF
-        uint64_t data_0, data_1;
-        get_sedp_reader_tbl(&data_0, sedp_reader_tbl, j, 0);
-        get_sedp_reader_tbl(&data_1, sedp_reader_tbl, j, 1);
 
-        bool    j_alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
         uint8_t j_guid_prefix[12];
 #pragma HLS array_partition variable = j_guid_prefix complete dim = 1
-        /* Cyber unroll_times=all */
-        for (auto k = 0; k < 4; k++) {
-#pragma HLS unroll
-            j_guid_prefix[k] = (data_0 >> (8 * (k + 4)));
-        }
-        /* Cyber unroll_times=all */
-        for (auto k = 0; k < 8; k++) {
-#pragma HLS unroll
-            j_guid_prefix[k + 4] = (data_1 >> (8 * k));
-        }
+        bool j_alive = get_sedp_reader_tbl_guid_prefix(j_guid_prefix,
+                                                       sedp_reader_tbl, j);
 
         bool j_matched = j_alive;
         /* Cyber unroll_times=all */
@@ -129,16 +117,6 @@ static void copy_sedp_endpoint_params(const rtps_data_t &rtps_data,
 static void copy_app_endpoint_params(const rtps_data_t &rtps_data,
                                      app_endpoint      *reader) {
 #pragma HLS inline
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        reader->guid_prefix[j] = rtps_data.guid_prefix[j];
-    }
-    /* Cyber unroll_times=all */
-    for (auto j = 0; j < 4; j++) {
-#pragma HLS unroll
-        reader->ip_addr[j] = rtps_data.data[j];
-    }
     reader->udp_port[0] = rtps_data.data[4];
     reader->udp_port[1] = rtps_data.data[5];
     /* Cyber unroll_times=all */
@@ -420,9 +398,10 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     rtps_data_t rtps_data;
 #pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = rtps_data.data complete dim = 1
-    if (!in.read_nb(rtps_data)) {
+    if (in.empty()) {
         return;
     }
+    in.read_nb(rtps_data);
     if (!enable) {
         return;
     }
@@ -442,14 +421,13 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
                              &app_unused_idx);
 
     app_endpoint reader;
-#pragma HLS array_partition variable = reader.guid_prefix complete dim = 1
-#pragma HLS array_partition variable = reader.ip_addr complete dim = 1
 #pragma HLS array_partition variable = reader.udp_port complete dim = 1
 #pragma HLS array_partition variable = reader.entity_id complete dim = 1
     // Initialize reader in case rtps_data.type is RTPS_TYPE_SEDP_PUB or
     // RTPS_TYPE_SEDP_SUB
     copy_app_endpoint_params(rtps_data, &reader);
     reader.alive = true;
+    reader.parent_id = sedp_matched_idx;
 
     switch (rtps_data.type) {
     case RTPS_TYPE_SPDP:
@@ -520,7 +498,6 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
                                    sedp_reader_tbl_t *tbl, unsigned int idx) {
 #pragma HLS inline
     uint64_t data_0, data_1;
-    uint8_t  sn_0, sn_1, sn_2, sn_3;
 
     get_sedp_reader_tbl(&data_0, tbl, idx, 0);
     bool        alive = ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
@@ -544,8 +521,7 @@ static bool get_ros2_out_sedp_info(bool    cnt_elapsed,
         guid_prefix[j + 4] = (data_1 >> (8 * j)) & 0xff;
     }
 
-    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
-                                               &sn_3, tbl, idx);
+    get_sedp_reader_tbl_ip_addr(ip_addr, tbl, idx);
 
     if (increment_initial_send_counter && (initial_send_counter < 3)) {
         initial_send_counter++;
@@ -879,21 +855,33 @@ static void SEDP_SUB_ACKNACK_OUT(hls_uint<1>        cnt_elapsed,
 
 /* Cyber func=inline */
 static void
-APP_WRITER_OUT(app_reader_id_t app_reader_id,
-               app_endpoint    app_reader_tbl[APP_READER_MAX],
-               const uint8_t   app_writer_entity_id_list[PUB_TOPICS_MAX][4],
+APP_WRITER_OUT(app_reader_id_t          app_reader_id,
+               const sedp_reader_tbl_t *sedp_reader_tbl,
+               app_endpoint             app_reader_tbl[APP_READER_MAX],
+               const uint8_t app_writer_entity_id_list[PUB_TOPICS_MAX][4],
                int64_t &app_seqnum, message_metadata_t *msg_metadata) {
 #pragma HLS inline
     if ((app_reader_id < APP_READER_MAX) && app_reader_tbl[app_reader_id].alive
         && (app_reader_tbl[app_reader_id].app_ep_type & APP_EP_PUB)) {
-        topic_id_t topic_id = app_reader_tbl[app_reader_id].topic_id;
-        if (topic_id < PUB_TOPICS_MAX) {
-            app_writer_out(topic_id, app_writer_entity_id_list[topic_id],
-                           app_reader_tbl[app_reader_id].ip_addr,
-                           app_reader_tbl[app_reader_id].udp_port,
-                           app_reader_tbl[app_reader_id].guid_prefix,
-                           app_reader_tbl[app_reader_id].entity_id, app_seqnum,
-                           msg_metadata);
+        sedp_reader_id_t parent_id = app_reader_tbl[app_reader_id].parent_id;
+        topic_id_t       topic_id = app_reader_tbl[app_reader_id].topic_id;
+        if ((parent_id < SEDP_READER_MAX) && (topic_id < PUB_TOPICS_MAX)) {
+            uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = guid_prefix complete dim = 1
+            uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+
+            bool alive = get_sedp_reader_tbl_guid_prefix(
+                guid_prefix, sedp_reader_tbl, parent_id);
+            get_sedp_reader_tbl_ip_addr(ip_addr, sedp_reader_tbl, parent_id);
+
+            if (alive) {
+                app_writer_out(topic_id, app_writer_entity_id_list[topic_id],
+                               ip_addr, app_reader_tbl[app_reader_id].udp_port,
+                               guid_prefix,
+                               app_reader_tbl[app_reader_id].entity_id,
+                               app_seqnum, msg_metadata);
+            }
         }
     }
 }
@@ -1218,7 +1206,7 @@ static void ros2_out(
             }
         } else if (pub_enable != 0 && cnt_app_wr_elapsed
                    && next_packet_type == 7) {
-            APP_WRITER_OUT(tx_progress, app_reader_tbl,
+            APP_WRITER_OUT(tx_progress, sedp_reader_tbl, app_reader_tbl,
                            app_writer_entity_id_list, app_seqnum,
                            &msg_metadata);
             if (tx_progress < (APP_READER_MAX - 1)) {

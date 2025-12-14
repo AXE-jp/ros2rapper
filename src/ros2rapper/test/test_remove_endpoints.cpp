@@ -426,9 +426,10 @@ static int test_remove_dead_endpoints_2() {
     constexpr unsigned int n_sedp_patterns = 1 << MIN(SEDP_READER_MAX, 8);
 
     // set lease_duration INFINITE.
+    const duration duration_infinite = DURATION_INFINITE;
     const int64_t lease_duration
-        = (static_cast<int64_t>(DURATION_INFINITE.seconds) << 32)
-          | DURATION_INFINITE.fraction;
+        = (static_cast<int64_t>(duration_infinite.seconds) << 32)
+          | duration_infinite.fraction;
     for (unsigned int sedp_pattern = 0; sedp_pattern < n_sedp_patterns;
          sedp_pattern++) {
         int64_t timestamp_i64 = static_cast<int64_t>(sedp_pattern + 1) << 32;

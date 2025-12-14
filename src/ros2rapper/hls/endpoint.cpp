@@ -20,6 +20,29 @@ void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
 }
 
 /* Cyber func=inline */
+bool get_sedp_reader_tbl_guid_prefix(uint8_t                  guid_prefix[12],
+                                     const sedp_reader_tbl_t *tbl,
+                                     unsigned int             entry) {
+#pragma HLS inline
+    uint64_t data_0, data_1;
+    get_sedp_reader_tbl(&data_0, tbl, entry, 0);
+    get_sedp_reader_tbl(&data_1, tbl, entry, 1);
+
+    /* Cyber unroll_times=all */
+    for (auto k = 0; k < 4; k++) {
+#pragma HLS unroll
+        guid_prefix[k] = (data_0 >> (8 * (k + 4)));
+    }
+    /* Cyber unroll_times=all */
+    for (auto k = 0; k < 8; k++) {
+#pragma HLS unroll
+        guid_prefix[k + 4] = (data_1 >> (8 * k));
+    }
+
+    return ((data_0 & SEDP_ENDPOINT_ALIVE) != 0);
+}
+
+/* Cyber func=inline */
 void enable_sedp_reader_tbl_flags(uint8_t flags, sedp_reader_tbl_t *tbl,
                                   unsigned int entry) {
 #pragma HLS inline
@@ -44,6 +67,16 @@ void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     *pubrd_rd_seqnum = (data >> 40) & 0xff;
     *subrd_wr_seqnum = (data >> 48) & 0xff;
     *subrd_rd_seqnum = (data >> 56) & 0xff;
+}
+
+/* Cyber func=inline */
+void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
+                                 const sedp_reader_tbl_t *tbl,
+                                 unsigned int             entry) {
+#pragma HLS inline
+    uint8_t sn_0, sn_1, sn_2, sn_3;
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
+                                               &sn_3, tbl, entry);
 }
 
 /* Cyber func=inline */

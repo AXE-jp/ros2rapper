@@ -101,7 +101,7 @@ reg [S_COUNT-1:0] s_axis_tready_reg, s_axis_tready_next;
 reg  [DATA_WIDTH-1:0] m_axis_tdata_int;
 reg  [KEEP_WIDTH-1:0] m_axis_tkeep_int;
 reg                   m_axis_tvalid_int;
-reg                   m_axis_tready_int_reg = 1'b0;
+reg                   m_axis_tready_int_reg;
 reg                   m_axis_tlast_int;
 reg  [ID_WIDTH-1:0]   m_axis_tid_int;
 reg  [DEST_WIDTH-1:0] m_axis_tdest_int;
