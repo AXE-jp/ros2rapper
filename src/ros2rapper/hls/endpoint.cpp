@@ -114,6 +114,21 @@ void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
 }
 
 /* Cyber func=inline */
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, entry);
+}
+
+/* Cyber func=inline */
 void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     const uint8_t ip_addr[4], uint8_t pubrd_wr_seqnum, uint8_t pubrd_rd_seqnum,
     uint8_t subrd_wr_seqnum, uint8_t subrd_rd_seqnum, sedp_reader_tbl_t *tbl,

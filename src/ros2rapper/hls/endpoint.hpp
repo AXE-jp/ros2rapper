@@ -144,6 +144,12 @@ void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
 void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
                                  const sedp_reader_tbl_t *tbl,
                                  unsigned int             entry);
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry);
 void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     const uint8_t ip_addr[4], uint8_t pubrd_wr_seqnum, uint8_t pubrd_rd_seqnum,
     uint8_t subrd_wr_seqnum, uint8_t subrd_rd_seqnum, sedp_reader_tbl_t *tbl,
