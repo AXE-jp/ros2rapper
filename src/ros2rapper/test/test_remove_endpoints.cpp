@@ -396,6 +396,7 @@ static int test_remove_dead_endpoints_1() {
             set_sedp_reader_tbl(SEDP_ENDPOINT_ALIVE, &sedp_reader_tbl, j, 0);
             set_sedp_reader_tbl_lease_duration(lease_duration, &sedp_reader_tbl,
                                                j);
+            clear_sedp_reader_tbl_children(&sedp_reader_tbl, j);
             if ((1 << j) & sedp_pattern) {
                 // sedp_reader_tbl[j] should be alive.
                 set_sedp_reader_tbl_timestamp(timestamp_i64 - lease_duration,
@@ -443,6 +444,7 @@ static int test_remove_dead_endpoints_2() {
             set_sedp_reader_tbl(SEDP_ENDPOINT_ALIVE, &sedp_reader_tbl, j, 0);
             set_sedp_reader_tbl_lease_duration(lease_duration, &sedp_reader_tbl,
                                                j);
+            clear_sedp_reader_tbl_children(&sedp_reader_tbl, j);
             if ((1 << j) & sedp_pattern) {
                 set_sedp_reader_tbl_timestamp(timestamp_i64 - lease_duration,
                                               &sedp_reader_tbl, j);

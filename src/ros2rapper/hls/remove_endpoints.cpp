@@ -53,7 +53,7 @@ void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
 #pragma HLS pipeline II = 1
 #endif
         uint64_t flag = static_cast<uint64_t>(1) << j;
-        if ((children_0 & flag) != 0) {
+        if ((children_1 & flag) != 0) {
             app_reader_tbl->ram[j + 64] = 0;
             (*app_reader_cnt)--;
         }
