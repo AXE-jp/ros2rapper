@@ -134,7 +134,7 @@ static void find_unused_and_matched_app_endpoint(
 #endif
         uint64_t     flag = static_cast<uint64_t>(1) << j;
         app_endpoint reader;
-        get_app_reader_tbl(&reader, app_reader_tbl, j);
+        get_app_reader_tbl(&reader, app_reader_tbl, j + 64);
         bool is_child = ((children_1 & flag) != 0);
         bool has_same_entity_id
             = is_same_entity_id(reader.entity_id, entity_id);

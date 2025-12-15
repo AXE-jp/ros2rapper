@@ -13,7 +13,7 @@ int test_message_metadata();
 int main() {
     assert(test_sedp_reader_heartbeat() == 0);
     assert(test_spdp_reader() == 0);
-    // assert(test_sedp_reader_2() == 0);
+    assert(test_sedp_reader_2() == 0);
     assert(test_remove_endpoints() == 0);
     assert(test_multi_topic_subscription() == 0);
     assert(test_message_metadata() == 0);
