@@ -90,23 +90,39 @@ sedp_reader_id_t get_sedp_reader_cnt(const sedp_reader_tbl_t *tbl) {
     return reader_cnt;
 }
 
+app_reader_id_t get_app_reader_cnt(const app_reader_tbl_t *tbl) {
+    app_reader_id_t reader_cnt = 0;
+    for (auto j = 0; j < APP_READER_MAX; j++) {
+        app_endpoint reader;
+        get_app_reader_tbl(&reader, tbl, j);
+        if (reader.alive) {
+            reader_cnt++;
+        }
+    }
+    return reader_cnt;
+}
+
 void call_ros2_in(hls_stream<rtps_data_t> &in,
                   sedp_reader_tbl_t       *sedp_reader_tbl,
-                  app_endpoint             app_reader_tbl[APP_READER_MAX],
+                  app_reader_tbl_t        *app_reader_tbl,
                   hls_uint<PUB_TOPICS_MAX> pub_enable,
                   hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64) {
     sedp_reader_id_t sedp_reader_cnt = get_sedp_reader_cnt(sedp_reader_tbl);
+    app_reader_id_t  app_reader_cnt = get_app_reader_cnt(app_reader_tbl);
     ros2_in(in, sedp_reader_tbl, app_reader_tbl, pub_enable, sub_enable,
-            timestamp_i64, &sedp_reader_cnt);
+            timestamp_i64, &sedp_reader_cnt, &app_reader_cnt);
     assert(sedp_reader_cnt == get_sedp_reader_cnt(sedp_reader_tbl));
+    assert(app_reader_cnt == get_app_reader_cnt(app_reader_tbl));
 }
 
 void call_remove_dead_endpoints(sedp_reader_id_t   id,
                                 sedp_reader_tbl_t *sedp_reader_tbl,
-                                app_endpoint app_reader_tbl[APP_READER_MAX],
-                                int64_t      timestamp_i64) {
+                                app_reader_tbl_t  *app_reader_tbl,
+                                int64_t            timestamp_i64) {
     sedp_reader_id_t sedp_reader_cnt = get_sedp_reader_cnt(sedp_reader_tbl);
+    app_reader_id_t  app_reader_cnt = get_app_reader_cnt(app_reader_tbl);
     remove_dead_endpoints(id, sedp_reader_tbl, app_reader_tbl, timestamp_i64,
-                          &sedp_reader_cnt);
+                          &sedp_reader_cnt, &app_reader_cnt);
     assert(sedp_reader_cnt == get_sedp_reader_cnt(sedp_reader_tbl));
+    assert(app_reader_cnt == get_app_reader_cnt(app_reader_tbl));
 }

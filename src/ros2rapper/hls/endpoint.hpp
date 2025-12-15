@@ -80,8 +80,8 @@ static_assert(APP_READER_MAX == 128,
               "You have to modify\n"
               "  - sedp_reader_tbl_t (in hls/endpoint.hpp),\n"
               "  - clear_sedp_reader_tbl_children (in hls/endpoint.cpp),\n"
-              "  - ros2_in_sedp_pub, ros2_in_sedp_sub and remove_sedp_endpoint "
-              "(in hls/ros2.cpp),\n"
+              "  - remove_sedp_endpoint (in hls/remove_endpoints.cpp),\n"
+              "  - find_unused_and_matched_app_endpoint (in hls/ros2.cpp),\n"
               "  - get_sedp_reader_tbl_children and "
               "set_sedp_reader_tbl_children (in test/test_utils.cpp)\n"
               "when you change APP_READER_MAX.");

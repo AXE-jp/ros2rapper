@@ -214,7 +214,7 @@ constexpr uint8_t test_update_liveliness_guid_prefix[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0x03, 0x5b, 0x00, 0x00, 0x00, 0x00};
 
 static sedp_reader_tbl_t sedp_reader_tbl;
-static app_endpoint      app_reader_tbl[APP_READER_MAX];
+static app_reader_tbl_t  app_reader_tbl;
 
 static void setup_sedp_reader_tbl(sedp_reader_id_t   target,
                                   const uint8_t      test_data[],
@@ -256,8 +256,8 @@ static int check_sedp_reader_tbl_liveliness(sedp_reader_id_t   target,
 
 static void call_update_liveliness(const receiver_config_t *conf,
                                    sedp_reader_tbl_t       *sedp_reader_tbl,
-                                   app_endpoint  app_reader_tbl[APP_READER_MAX],
-                                   int64_t       timestamp_i64,
+                                   app_reader_tbl_t        *app_reader_tbl,
+                                   int64_t                  timestamp_i64,
                                    const uint8_t test_data[], size_t length) {
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
@@ -277,7 +277,7 @@ static void call_update_liveliness(const receiver_config_t *conf,
 
 static int test_update_liveliness_1(const receiver_config_t *conf,
                                     sedp_reader_tbl_t       *sedp_reader_tbl,
-                                    app_endpoint app_reader_tbl[APP_READER_MAX],
+                                    app_reader_tbl_t        *app_reader_tbl,
                                     unsigned int target, bool target_alive,
                                     const uint8_t test_data[],
                                     size_t        test_data_length,
@@ -303,7 +303,7 @@ static int test_update_liveliness_1(const receiver_config_t *conf,
 }
 
 #define TEST_UPDATE_LIVELINESS(conf, target, target_alive, test_data)          \
-    assert(test_update_liveliness_1(conf, &sedp_reader_tbl, app_reader_tbl,    \
+    assert(test_update_liveliness_1(conf, &sedp_reader_tbl, &app_reader_tbl,   \
                                     target, target_alive, test_data,           \
                                     sizeof(test_data), #test_data)             \
            == 0)
@@ -337,6 +337,8 @@ static int test_update_liveliness() {
 }
 
 static int test_update_liveliness_2() {
+    app_endpoint reader;
+
     receiver_config_t conf;
     for (auto k = 0; k < GUID_PREFIX_SIZE; k++) {
         conf.guid_prefix[k] = test_update_liveliness_guid_prefix[k];
@@ -354,25 +356,28 @@ static int test_update_liveliness_2() {
     }
 
     // app_reader_tbl[0] is alive.
-    app_reader_tbl[0].alive = true;
+    reader.alive = true;
+    set_app_reader_tbl(reader, &app_reader_tbl, 0);
 
     // sedp_reader_tbl[0] is already dead, so its children should not be removed
     // by remove_dead_endpoints.
-    call_update_liveliness(&conf, &sedp_reader_tbl, app_reader_tbl, 0,
+    call_update_liveliness(&conf, &sedp_reader_tbl, &app_reader_tbl, 0,
                            test_update_liveliness_dead_data_1,
                            sizeof(test_update_liveliness_dead_data_1));
-    assert(app_reader_tbl[0].alive);
+    get_app_reader_tbl(&reader, &app_reader_tbl, 0);
+    assert(reader.alive);
 
     // sedp_reader_tbl[0] is alive and has a child app_reader_tbl[0].
     set_sedp_reader_tbl_liveliness_and_guid_prefix(
         true, test_update_liveliness_guid_prefix, &sedp_reader_tbl, 0);
     // sedp_reader_tbl[0] is alive, so its children should be removed by
     // remove_dead_endpoints.
-    call_update_liveliness(&conf, &sedp_reader_tbl, app_reader_tbl, 0,
+    call_update_liveliness(&conf, &sedp_reader_tbl, &app_reader_tbl, 0,
                            test_update_liveliness_dead_data_1,
                            sizeof(test_update_liveliness_dead_data_1));
     assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
-    assert(!app_reader_tbl[0].alive);
+    get_app_reader_tbl(&reader, &app_reader_tbl, 0);
+    assert(!reader.alive);
 
     return 0;
 }
@@ -403,7 +408,7 @@ static int test_remove_dead_endpoints_1() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            call_remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
+            call_remove_dead_endpoints(j, &sedp_reader_tbl, &app_reader_tbl,
                                        timestamp_i64);
             bool j_alive = is_sedp_endpoint_alive(&sedp_reader_tbl, j);
             if ((1 << j) & sedp_pattern) {
@@ -448,7 +453,7 @@ static int test_remove_dead_endpoints_2() {
         }
         // Call remove_dead_endpoints and check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
-            call_remove_dead_endpoints(j, &sedp_reader_tbl, app_reader_tbl,
+            call_remove_dead_endpoints(j, &sedp_reader_tbl, &app_reader_tbl,
                                        timestamp_i64);
             for (auto k = 0; k < SEDP_READER_MAX; k++) {
                 assert(is_sedp_endpoint_alive(&sedp_reader_tbl, k));
@@ -459,6 +464,8 @@ static int test_remove_dead_endpoints_2() {
 }
 
 static int test_remove_dead_endpoints_3() {
+    app_endpoint reader;
+
     // Set up tables.
     // sedp_reader_tbl[0] is alive and has a child app_reader_tbl[0].
     set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(true,
@@ -475,20 +482,23 @@ static int test_remove_dead_endpoints_3() {
     set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 1);
     set_sedp_reader_tbl_children(1, &sedp_reader_tbl, 1);
     // app_reader_tbl[0] is alive.
-    app_reader_tbl[0].alive = true;
+    reader.alive = true;
+    set_app_reader_tbl(reader, &app_reader_tbl, 0);
 
     int64_t timestamp_i64 = static_cast<int64_t>(30) << 32;
     // sedp_reader_tbl[1] is already dead, so its children should not be removed
     // by remove_dead_endpoints.
-    call_remove_dead_endpoints(1, &sedp_reader_tbl, app_reader_tbl,
+    call_remove_dead_endpoints(1, &sedp_reader_tbl, &app_reader_tbl,
                                timestamp_i64);
-    assert(app_reader_tbl[0].alive);
+    get_app_reader_tbl(&reader, &app_reader_tbl, 0);
+    assert(reader.alive);
     // sedp_reader_tbl[0] is alive, so its children should be removed by
     // remove_dead_endpoints.
-    call_remove_dead_endpoints(0, &sedp_reader_tbl, app_reader_tbl,
+    call_remove_dead_endpoints(0, &sedp_reader_tbl, &app_reader_tbl,
                                timestamp_i64);
     assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
-    assert(!app_reader_tbl[0].alive);
+    get_app_reader_tbl(&reader, &app_reader_tbl, 0);
+    assert(!reader.alive);
 
     return 0;
 }
