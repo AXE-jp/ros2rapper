@@ -14,6 +14,8 @@ void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
                           sedp_reader_id_t  *sedp_reader_cnt,
                           app_reader_id_t   *app_reader_cnt) {
 #pragma HLS inline
+    app_reader_id_t tmp_app_reader_cnt = *app_reader_cnt;
+
     uint64_t children_0, children_1;
     get_sedp_reader_tbl(&children_0, sedp_reader_tbl, sedp_idx, 9);
     get_sedp_reader_tbl(&children_1, sedp_reader_tbl, sedp_idx, 10);
@@ -37,7 +39,7 @@ void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
         uint64_t flag = static_cast<uint64_t>(1) << j;
         if ((children_0 & flag) != 0) {
             app_reader_tbl->ram[j] = 0;
-            (*app_reader_cnt)--;
+            tmp_app_reader_cnt--;
         }
     }
 
@@ -55,9 +57,11 @@ void remove_sedp_endpoint(sedp_reader_id_t   sedp_idx,
         uint64_t flag = static_cast<uint64_t>(1) << j;
         if ((children_1 & flag) != 0) {
             app_reader_tbl->ram[j + 64] = 0;
-            (*app_reader_cnt)--;
+            tmp_app_reader_cnt--;
         }
     }
+
+    *app_reader_cnt = tmp_app_reader_cnt;
 }
 
 typedef enum {
