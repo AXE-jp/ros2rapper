@@ -122,7 +122,7 @@ module raw_eth_rx_adapter (
     wire is_ipv4_to_me = is_ipv4 && (is_unicast_to_me || is_multicast || is_direct_broadcast || is_limited_broadcast);
 
     wire more_fragment = data_mem[20][5];
-    wire fragment_offset = {data_mem[20][4:0], data_mem[21]};
+    wire [12:0] fragment_offset = {data_mem[20][4:0], data_mem[21]};
     wire is_fragment = is_ipv4_to_me && (more_fragment || (fragment_offset != 13'd0));
     wire is_udp = (data_mem[23] == 8'd17);
     wire has_rtps_magic = (data_mem[42] == "R") && (data_mem[43] == "T") && (data_mem[44] == "P") && (data_mem[45] == "S");
