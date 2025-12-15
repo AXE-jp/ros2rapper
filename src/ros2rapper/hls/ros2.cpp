@@ -356,7 +356,7 @@ static void ros2_in_add_new_app_endpoint(const app_endpoint &reader,
 }
 
 /* Cyber func=inline */
-static void ros2_in_sedp_pub(bool add_new_app_endpoint, uint8_t seqnum,
+static void ros2_in_sedp_pub(bool find_new_app_endpoint, uint8_t seqnum,
                              const app_endpoint &reader,
                              sedp_reader_tbl_t  *sedp_reader_tbl,
                              app_reader_tbl_t   *app_reader_tbl,
@@ -381,7 +381,7 @@ static void ros2_in_sedp_pub(bool add_new_app_endpoint, uint8_t seqnum,
     enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_PUBRD_ACKNACK_REQ,
                                  sedp_reader_tbl, sedp_idx);
 
-    if (add_new_app_endpoint) {
+    if (find_new_app_endpoint) {
         ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
                                      sedp_idx, app_idx);
         (*app_reader_cnt)++;
@@ -389,7 +389,7 @@ static void ros2_in_sedp_pub(bool add_new_app_endpoint, uint8_t seqnum,
 }
 
 /* Cyber func=inline */
-static void ros2_in_sedp_sub(bool add_new_app_endpoint, uint8_t seqnum,
+static void ros2_in_sedp_sub(bool find_new_app_endpoint, uint8_t seqnum,
                              const app_endpoint &reader,
                              sedp_reader_tbl_t  *sedp_reader_tbl,
                              app_reader_tbl_t   *app_reader_tbl,
@@ -414,7 +414,7 @@ static void ros2_in_sedp_sub(bool add_new_app_endpoint, uint8_t seqnum,
     enable_sedp_reader_tbl_flags(SEDP_ENDPOINT_SUBRD_ACKNACK_REQ,
                                  sedp_reader_tbl, sedp_idx);
 
-    if (add_new_app_endpoint) {
+    if (find_new_app_endpoint) {
         ros2_in_add_new_app_endpoint(reader, sedp_reader_tbl, app_reader_tbl,
                                      sedp_idx, app_idx);
         (*app_reader_cnt)++;
@@ -464,7 +464,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     bool            is_app_reader_tbl_full;
     bool            is_app_reader_matched;
     app_reader_id_t app_unused_idx;
-    bool            add_new_app_endpoint = false;
+    bool            find_new_app_endpoint = false;
     if (is_participant_matched
         && ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
             || (rtps_data.type == RTPS_TYPE_SEDP_SUB))) {
@@ -473,7 +473,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
             &is_app_reader_tbl_full, &is_app_reader_matched, &app_unused_idx,
             app_reader_cnt);
         if (!is_app_reader_matched) {
-            add_new_app_endpoint = true;
+            find_new_app_endpoint = true;
         }
     }
 
@@ -503,7 +503,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     case RTPS_TYPE_SEDP_PUB:
         reader.app_ep_type = APP_EP_SUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            ros2_in_sedp_pub(add_new_app_endpoint, rtps_data.data[11], reader,
+            ros2_in_sedp_pub(find_new_app_endpoint, rtps_data.data[11], reader,
                              sedp_reader_tbl, app_reader_tbl, sedp_matched_idx,
                              app_unused_idx, app_reader_cnt);
         }
@@ -512,7 +512,7 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     case RTPS_TYPE_SEDP_SUB:
         reader.app_ep_type = APP_EP_PUB;
         if (is_participant_matched && !is_app_reader_tbl_full) {
-            ros2_in_sedp_sub(add_new_app_endpoint, rtps_data.data[11], reader,
+            ros2_in_sedp_sub(find_new_app_endpoint, rtps_data.data[11], reader,
                              sedp_reader_tbl, app_reader_tbl, sedp_matched_idx,
                              app_unused_idx, app_reader_cnt);
         }
