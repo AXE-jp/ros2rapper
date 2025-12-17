@@ -15,7 +15,7 @@ hsynth:
 synth-examples:
   stage: build
   script:
-    - cd examples && ./synth-all.sh
+    - cd examples && ./synth-all-vitis.sh
 
 csim:
   stage: test
