@@ -189,6 +189,14 @@ module ros2_ether #(
     input  wire [63:0] sedp_reader_tbl_mem_rdata,
 `endif
 
+`ifdef ROS2_APP_READER_TBL_RAM
+    output wire [$clog2(`ROS2_APP_READER_MAX)-1:0] app_reader_tbl_mem_addr,
+    output wire app_reader_tbl_mem_ce,
+    output wire app_reader_tbl_mem_we,
+    output wire [63:0] app_reader_tbl_mem_wdata,
+    input  wire [63:0] app_reader_tbl_mem_rdata,
+`endif
+
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
     output wire ip_payloadsmem_we,
@@ -562,6 +570,14 @@ ros2rapper (
     .sedp_reader_tbl_mem_we(sedp_reader_tbl_mem_we),
     .sedp_reader_tbl_mem_wdata(sedp_reader_tbl_mem_wdata),
     .sedp_reader_tbl_mem_rdata(sedp_reader_tbl_mem_rdata),
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+    .app_reader_tbl_mem_addr(app_reader_tbl_mem_addr),
+    .app_reader_tbl_mem_ce(app_reader_tbl_mem_ce),
+    .app_reader_tbl_mem_we(app_reader_tbl_mem_we),
+    .app_reader_tbl_mem_wdata(app_reader_tbl_mem_wdata),
+    .app_reader_tbl_mem_rdata(app_reader_tbl_mem_rdata),
 `endif
 
     .ip_payloadsmem_addr(ip_payloadsmem_addr),

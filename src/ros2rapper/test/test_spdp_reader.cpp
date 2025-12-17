@@ -320,7 +320,7 @@ static int test_spdp_reader_0() {
 }
 
 static sedp_reader_tbl_t sedp_reader_tbl;
-static app_endpoint      app_reader_tbl[APP_READER_MAX];
+static app_reader_tbl_t  app_reader_tbl;
 
 static int test_spdp_reader_1() {
     constexpr uint8_t      ip_addr[4] = {192, 168, 0, 3};
@@ -357,7 +357,7 @@ static int test_spdp_reader_1() {
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+        call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                      sub_enable, timestamp_i64);
         // Check sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
@@ -383,7 +383,7 @@ static int test_spdp_reader_1() {
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+        call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                      sub_enable, timestamp_i64);
         // Check sedp_reader_tbl
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
@@ -429,7 +429,7 @@ static int test_spdp_reader_2() {
     set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
@@ -448,7 +448,7 @@ static int test_spdp_reader_2() {
     set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
@@ -467,7 +467,7 @@ static int test_spdp_reader_2() {
     set_sedp_reader_tbl_timestamp(0, &sedp_reader_tbl, 0);
     // Update sedp_reader_tbl
     stream.write(rtps_data_2);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
@@ -505,7 +505,7 @@ static int test_spdp_reader_3() {
     }
     // Update sedp_reader_tbl
     stream.write(rtps_data_3);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
     // Test
     assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
@@ -516,7 +516,7 @@ static int test_spdp_reader_3() {
     }
     // Update sedp_reader_tbl
     stream.write(rtps_data_4);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
     // Test
     assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
@@ -553,7 +553,7 @@ static int test_spdp_reader_4() {
 
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64_in);
 
     // Check sedp_reader_tbl
@@ -644,7 +644,7 @@ static int test_update_timestamp() {
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
-        call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+        call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                      sub_enable, timestamp_i64_new);
         // Check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {

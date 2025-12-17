@@ -326,6 +326,29 @@ module top (
     );
 `endif
 
+    // --- APP Reader Table Memory
+`ifdef ROS2_APP_READER_TBL_RAM
+    wire [$clog2(`ROS2_APP_READER_MAX)-1:0] app_reader_tbl_mem_addr;
+    wire app_reader_tbl_mem_cs;
+    wire app_reader_tbl_mem_we;
+    wire [63:0] app_reader_tbl_mem_wdata;
+    wire [63:0] app_reader_tbl_mem_rdata;
+    ram_1rw #(
+        .DEPTH(`ROS2_APP_READER_MAX),
+        .DWIDTH(64)
+    )
+    app_reader_tbl_mem (
+        .i_clk(clk_int),
+        .i_rst_n(rst_n_int),
+        .i_cs_n(~app_reader_tbl_mem_cs),
+        .i_we_n(~app_reader_tbl_mem_we),
+        .i_wmask(8'b11111111),
+        .i_addr(app_reader_tbl_mem_addr),
+        .i_wdata(app_reader_tbl_mem_wdata),
+        .o_rdata(app_reader_tbl_mem_rdata)
+    );
+`endif
+
     // --- IP Payload Memory
     wire payloadsmem_cs;
     wire payloadsmem_we;
@@ -508,6 +531,14 @@ module top (
         .sedp_reader_tbl_mem_we(sedp_reader_tbl_mem_we),
         .sedp_reader_tbl_mem_wdata(sedp_reader_tbl_mem_wdata),
         .sedp_reader_tbl_mem_rdata(sedp_reader_tbl_mem_rdata),
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+        .app_reader_tbl_mem_addr(app_reader_tbl_mem_addr),
+        .app_reader_tbl_mem_ce(app_reader_tbl_mem_cs),
+        .app_reader_tbl_mem_we(app_reader_tbl_mem_we),
+        .app_reader_tbl_mem_wdata(app_reader_tbl_mem_wdata),
+        .app_reader_tbl_mem_rdata(app_reader_tbl_mem_rdata),
 `endif
 
         .ip_payloadsmem_addr(payloadsmem_addr),

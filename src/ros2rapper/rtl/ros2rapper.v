@@ -187,6 +187,14 @@ module ros2rapper #(
     input  wire [63:0] sedp_reader_tbl_mem_rdata,
 `endif
 
+`ifdef ROS2_APP_READER_TBL_RAM
+    output wire [$clog2(`ROS2_APP_READER_MAX)-1:0] app_reader_tbl_mem_addr,
+    output wire app_reader_tbl_mem_ce,
+    output wire app_reader_tbl_mem_we,
+    output wire [63:0] app_reader_tbl_mem_wdata,
+    input  wire [63:0] app_reader_tbl_mem_rdata,
+`endif
+
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
     output wire ip_payloadsmem_we,
@@ -478,6 +486,14 @@ ros2_main (
     .sedp_reader_tbl_we0(sedp_reader_tbl_mem_we),
     .sedp_reader_tbl_d0(sedp_reader_tbl_mem_wdata),
     .sedp_reader_tbl_q0(sedp_reader_tbl_mem_rdata),
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+    .app_reader_tbl_address0(app_reader_tbl_mem_addr),
+    .app_reader_tbl_ce0(app_reader_tbl_mem_ce),
+    .app_reader_tbl_we0(app_reader_tbl_mem_we),
+    .app_reader_tbl_d0(app_reader_tbl_mem_wdata),
+    .app_reader_tbl_q0(app_reader_tbl_mem_rdata),
 `endif
 
     .pub_enable(pub_enable),
@@ -1159,6 +1175,14 @@ ros2_main (
   .sedp_reader_tbl_ram_WE1(sedp_reader_tbl_mem_we),
   .sedp_reader_tbl_ram_WD1(sedp_reader_tbl_mem_wdata),
   .sedp_reader_tbl_ram_RD1(sedp_reader_tbl_mem_rdata),
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+  .app_reader_tbl_ram_AD1(app_reader_tbl_mem_addr),
+  .app_reader_tbl_ram_CS1(app_reader_tbl_mem_ce),
+  .app_reader_tbl_ram_WE1(app_reader_tbl_mem_we),
+  .app_reader_tbl_ram_WD1(app_reader_tbl_mem_wdata),
+  .app_reader_tbl_ram_RD1(app_reader_tbl_mem_rdata),
 `endif
 
   .pub_enable(pub_enable),

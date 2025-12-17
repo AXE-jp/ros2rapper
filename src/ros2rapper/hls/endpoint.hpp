@@ -80,8 +80,8 @@ static_assert(APP_READER_MAX == 128,
               "You have to modify\n"
               "  - sedp_reader_tbl_t (in hls/endpoint.hpp),\n"
               "  - clear_sedp_reader_tbl_children (in hls/endpoint.cpp),\n"
-              "  - ros2_in_sedp_pub, ros2_in_sedp_sub and remove_sedp_endpoint "
-              "(in hls/ros2.cpp),\n"
+              "  - remove_sedp_endpoint (in hls/remove_endpoints.cpp),\n"
+              "  - find_unused_and_matched_app_endpoint (in hls/ros2.cpp),\n"
               "  - get_sedp_reader_tbl_children and "
               "set_sedp_reader_tbl_children (in test/test_utils.cpp)\n"
               "when you change APP_READER_MAX.");
@@ -112,6 +112,19 @@ struct app_endpoint {
     bool             alive;
 };
 
+typedef struct {
+    uint64_t ram[APP_READER_MAX]
+#ifdef APP_READER_TBL_FF
+    /* Cyber array=EXPAND, array_index=const */
+#endif
+        ;
+} app_reader_tbl_t;
+
+void get_app_reader_tbl(app_endpoint *reader, const app_reader_tbl_t *tbl,
+                        unsigned int entry);
+void set_app_reader_tbl(const app_endpoint &reader, app_reader_tbl_t *tbl,
+                        unsigned int entry);
+
 void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index);
 void set_sedp_reader_tbl(uint64_t data, sedp_reader_tbl_t *tbl,
@@ -131,6 +144,12 @@ void get_sedp_reader_tbl_ip_addr_and_rd_seqnums(
 void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
                                  const sedp_reader_tbl_t *tbl,
                                  unsigned int             entry);
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry);
 void set_sedp_reader_tbl_ip_addr_and_rd_seqnums(
     const uint8_t ip_addr[4], uint8_t pubrd_wr_seqnum, uint8_t pubrd_rd_seqnum,
     uint8_t subrd_wr_seqnum, uint8_t subrd_rd_seqnum, sedp_reader_tbl_t *tbl,

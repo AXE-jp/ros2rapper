@@ -64,7 +64,7 @@ static void print_port(const uint8_t portval[]) {
 }
 
 static sedp_reader_tbl_t sedp_reader_tbl;
-static app_endpoint      app_reader_tbl[APP_READER_MAX];
+static app_reader_tbl_t  app_reader_tbl;
 
 int test_sedp_reader_heartbeat() {
     // hls_stream<hls_uint<9>> in;
@@ -153,7 +153,7 @@ int test_sedp_reader_heartbeat() {
                     sub_topic_name, sub_topic_name_len, sub_type_name,
                     sub_type_name_len);
     }
-    call_ros2_in(stream, &sedp_reader_tbl, app_reader_tbl, pub_enable,
+    call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
                  sub_enable, timestamp_i64);
 
     unsigned int sedp_reader_cnt = 0;

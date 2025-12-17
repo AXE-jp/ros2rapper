@@ -6,6 +6,40 @@
 #include <cstdint>
 
 /* Cyber func=inline */
+void get_app_reader_tbl(app_endpoint *reader, const app_reader_tbl_t *tbl,
+                        unsigned int entry) {
+#pragma HLS inline
+    uint64_t data = tbl->ram[entry];
+    reader->alive = ((data & 1) != 0);
+    reader->app_ep_type = data >> 1;
+    reader->topic_id = data >> 3;
+    reader->parent_id = data >> 8;
+    reader->udp_port[0] = data >> 16;
+    reader->udp_port[1] = data >> 24;
+    reader->entity_id[0] = data >> 32;
+    reader->entity_id[1] = data >> 40;
+    reader->entity_id[2] = data >> 48;
+    reader->entity_id[3] = data >> 56;
+}
+
+/* Cyber func=inline */
+void set_app_reader_tbl(const app_endpoint &reader, app_reader_tbl_t *tbl,
+                        unsigned int entry) {
+#pragma HLS inline
+    uint64_t data = (reader.alive ? 1 : 0);
+    data |= static_cast<uint64_t>(reader.app_ep_type) << 1;
+    data |= static_cast<uint64_t>(reader.topic_id) << 3;
+    data |= static_cast<uint64_t>(reader.parent_id) << 8;
+    data |= static_cast<uint64_t>(reader.udp_port[0]) << 16;
+    data |= static_cast<uint64_t>(reader.udp_port[1]) << 24;
+    data |= static_cast<uint64_t>(reader.entity_id[0]) << 32;
+    data |= static_cast<uint64_t>(reader.entity_id[1]) << 40;
+    data |= static_cast<uint64_t>(reader.entity_id[2]) << 48;
+    data |= static_cast<uint64_t>(reader.entity_id[3]) << 56;
+    tbl->ram[entry] = data;
+}
+
+/* Cyber func=inline */
 void get_sedp_reader_tbl(uint64_t *data, const sedp_reader_tbl_t *tbl,
                          unsigned int entry, unsigned int word_index) {
 #pragma HLS inline
@@ -77,6 +111,21 @@ void get_sedp_reader_tbl_ip_addr(uint8_t                  ip_addr[4],
     uint8_t sn_0, sn_1, sn_2, sn_3;
     get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, &sn_0, &sn_1, &sn_2,
                                                &sn_3, tbl, entry);
+}
+
+/* Cyber func=inline */
+void get_sedp_reader_tbl_rd_seqnums(uint8_t                 *pubrd_wr_seqnum,
+                                    uint8_t                 *pubrd_rd_seqnum,
+                                    uint8_t                 *subrd_wr_seqnum,
+                                    uint8_t                 *subrd_rd_seqnum,
+                                    const sedp_reader_tbl_t *tbl,
+                                    unsigned int             entry) {
+#pragma HLS inline
+    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
+#pragma HLS array_partition variable = ip_addr complete dim = 1
+    get_sedp_reader_tbl_ip_addr_and_rd_seqnums(ip_addr, pubrd_wr_seqnum,
+                                               pubrd_rd_seqnum, subrd_wr_seqnum,
+                                               subrd_rd_seqnum, tbl, entry);
 }
 
 /* Cyber func=inline */
