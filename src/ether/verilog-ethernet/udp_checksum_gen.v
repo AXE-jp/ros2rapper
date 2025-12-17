@@ -358,7 +358,6 @@ integer i;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         header_fifo_wr_ptr_reg <= {HEADER_FIFO_ADDR_WIDTH+1{1'b0}};
-`ifndef TARGET_XILINX
         for (i=0; i<(2**HEADER_FIFO_ADDR_WIDTH); i=i+1) begin
 `ifdef TARGET_SIM
             eth_dest_mac_mem[i] = 48'd0;
@@ -400,7 +399,6 @@ always @(posedge clk or negedge rst_n) begin
             udp_checksum_mem[i] <= 16'd0;
 `endif
         end
-`endif
     end else begin
         header_fifo_wr_ptr_reg <= header_fifo_wr_ptr_next;
         if (header_fifo_write) begin
