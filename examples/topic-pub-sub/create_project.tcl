@@ -38,6 +38,12 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 if {[string equal [get_filesets -quiet sim_1] ""]} {
     create_fileset -simset sim_1
 }
+set obj [get_filesets sim_1]
+if {[string equal [lindex $argv 0] "vitis"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_CWB=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+}
 
 # Create run "synth_1" and set property
 set synth_1_flow     "Vivado Synthesis 2023"

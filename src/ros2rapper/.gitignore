@@ -5,6 +5,7 @@ proj_ros2_main_au25p/
 proj_ros2_receiver_au25p/
 proj_ros2_sender_au25p/
 proj_ros2test/
+proj_test_input/
 *.log
 *.jou
 *.CPINFO
