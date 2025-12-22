@@ -483,22 +483,6 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
                      is_participant_matched, sedp_matched_idx,
                      is_sedp_reader_tbl_full, sedp_unused_idx, sedp_reader_cnt);
         break;
-    case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
-        if (is_participant_matched) {
-            uint8_t first_sn = rtps_data.data[0];
-            uint8_t last_sn = rtps_data.data[1];
-            ros2_in_sedp_heartbeat_pub(first_sn, last_sn, sedp_reader_tbl,
-                                       sedp_matched_idx);
-        }
-        break;
-    case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
-        if (is_participant_matched) {
-            uint8_t first_sn = rtps_data.data[0];
-            uint8_t last_sn = rtps_data.data[1];
-            ros2_in_sedp_heartbeat_sub(first_sn, last_sn, sedp_reader_tbl,
-                                       sedp_matched_idx);
-        }
-        break;
     case RTPS_TYPE_SEDP_PUB_SN_ONLY:
     case RTPS_TYPE_SEDP_PUB:
         reader.app_ep_type = APP_EP_SUB;
@@ -522,6 +506,22 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
             remove_sedp_endpoint(sedp_matched_idx, sedp_reader_tbl,
                                  app_reader_tbl, sedp_reader_cnt,
                                  app_reader_cnt);
+        }
+        break;
+    case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
+        if (is_participant_matched) {
+            uint8_t first_sn = rtps_data.data[0];
+            uint8_t last_sn = rtps_data.data[1];
+            ros2_in_sedp_heartbeat_pub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
+        }
+        break;
+    case RTPS_TYPE_SEDP_HEARTBEAT_SUB:
+        if (is_participant_matched) {
+            uint8_t first_sn = rtps_data.data[0];
+            uint8_t last_sn = rtps_data.data[1];
+            ros2_in_sedp_heartbeat_sub(first_sn, last_sn, sedp_reader_tbl,
+                                       sedp_matched_idx);
         }
         break;
     }
