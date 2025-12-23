@@ -46,7 +46,7 @@ module ip_mux #
 )
 (
     input  wire                          clk,
-    input  wire                          rst,
+    input  wire                          rst_n,
 
     /*
      * IP frame inputs
@@ -257,8 +257,8 @@ always @* begin
     m_ip_payload_axis_tuser_int  = current_s_tuser;
 end
 
-always @(posedge clk) begin
-    if (rst) begin
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
         select_reg <= 0;
         frame_reg <= 1'b0;
         s_ip_hdr_ready_reg <= 0;
@@ -351,7 +351,7 @@ always @* begin
     end
 end
 
-always @(posedge clk) begin
+always @(posedge clk or negedge rst_n) begin
     m_ip_payload_axis_tvalid_reg <= m_ip_payload_axis_tvalid_next;
     m_ip_payload_axis_tready_int_reg <= m_ip_payload_axis_tready_int_early;
     temp_m_ip_payload_axis_tvalid_reg <= temp_m_ip_payload_axis_tvalid_next;
@@ -382,7 +382,7 @@ always @(posedge clk) begin
         temp_m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
     end
 
-    if (rst) begin
+    if (!rst_n) begin
         m_ip_payload_axis_tvalid_reg <= 1'b0;
         m_ip_payload_axis_tready_int_reg <= 1'b0;
         temp_m_ip_payload_axis_tvalid_reg <= 1'b0;
