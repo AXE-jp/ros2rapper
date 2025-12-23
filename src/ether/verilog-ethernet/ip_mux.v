@@ -264,30 +264,49 @@ always @(posedge clk or negedge rst_n) begin
         s_ip_hdr_ready_reg <= 0;
         s_ip_payload_axis_tready_reg <= 0;
         m_ip_hdr_valid_reg <= 1'b0;
+
+        m_eth_dest_mac_reg <= 48'd0;
+        m_eth_src_mac_reg <= 48'd0;
+        m_eth_type_reg <= 16'd0;
+        m_ip_version_reg <= 4'd0;
+        m_ip_ihl_reg <= 4'd0;
+        m_ip_dscp_reg <= 6'd0;
+        m_ip_ecn_reg <= 2'd0;
+        m_ip_length_reg <= 16'd0;
+        m_ip_identification_reg <= 16'd0;
+        m_ip_flags_reg <= 3'd0;
+        m_ip_fragment_offset_reg <= 13'd0;
+        m_ip_ttl_reg <= 8'd0;
+        m_ip_protocol_reg <= 8'd0;
+        m_ip_header_checksum_reg <= 16'd0;
+        m_ip_source_ip_reg <= 32'd0;
+        m_ip_dest_ip_reg <= 32'd0;
     end else begin
         select_reg <= select_next;
         frame_reg <= frame_next;
         s_ip_hdr_ready_reg <= s_ip_hdr_ready_next;
         s_ip_payload_axis_tready_reg <= s_ip_payload_axis_tready_next;
         m_ip_hdr_valid_reg <= m_ip_hdr_valid_next;
+
+        m_eth_dest_mac_reg <= m_eth_dest_mac_next;
+        m_eth_src_mac_reg <= m_eth_src_mac_next;
+        m_eth_type_reg <= m_eth_type_next;
+        m_ip_version_reg <= m_ip_version_next;
+        m_ip_ihl_reg <= m_ip_ihl_next;
+        m_ip_dscp_reg <= m_ip_dscp_next;
+        m_ip_ecn_reg <= m_ip_ecn_next;
+        m_ip_length_reg <= m_ip_length_next;
+        m_ip_identification_reg <= m_ip_identification_next;
+        m_ip_flags_reg <= m_ip_flags_next;
+        m_ip_fragment_offset_reg <= m_ip_fragment_offset_next;
+        m_ip_ttl_reg <= m_ip_ttl_next;
+        m_ip_protocol_reg <= m_ip_protocol_next;
+        m_ip_header_checksum_reg <= m_ip_header_checksum_next;
+        m_ip_source_ip_reg <= m_ip_source_ip_next;
+        m_ip_dest_ip_reg <= m_ip_dest_ip_next;
     end
 
-    m_eth_dest_mac_reg <= m_eth_dest_mac_next;
-    m_eth_src_mac_reg <= m_eth_src_mac_next;
-    m_eth_type_reg <= m_eth_type_next;
-    m_ip_version_reg <= m_ip_version_next;
-    m_ip_ihl_reg <= m_ip_ihl_next;
-    m_ip_dscp_reg <= m_ip_dscp_next;
-    m_ip_ecn_reg <= m_ip_ecn_next;
-    m_ip_length_reg <= m_ip_length_next;
-    m_ip_identification_reg <= m_ip_identification_next;
-    m_ip_flags_reg <= m_ip_flags_next;
-    m_ip_fragment_offset_reg <= m_ip_fragment_offset_next;
-    m_ip_ttl_reg <= m_ip_ttl_next;
-    m_ip_protocol_reg <= m_ip_protocol_next;
-    m_ip_header_checksum_reg <= m_ip_header_checksum_next;
-    m_ip_source_ip_reg <= m_ip_source_ip_next;
-    m_ip_dest_ip_reg <= m_ip_dest_ip_next;
+
 end
 
 // output datapath logic
@@ -352,40 +371,54 @@ always @* begin
 end
 
 always @(posedge clk or negedge rst_n) begin
-    m_ip_payload_axis_tvalid_reg <= m_ip_payload_axis_tvalid_next;
-    m_ip_payload_axis_tready_int_reg <= m_ip_payload_axis_tready_int_early;
-    temp_m_ip_payload_axis_tvalid_reg <= temp_m_ip_payload_axis_tvalid_next;
-
-    // datapath
-    if (store_axis_int_to_output) begin
-        m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
-        m_ip_payload_axis_tkeep_reg <= m_ip_payload_axis_tkeep_int;
-        m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
-        m_ip_payload_axis_tid_reg   <= m_ip_payload_axis_tid_int;
-        m_ip_payload_axis_tdest_reg <= m_ip_payload_axis_tdest_int;
-        m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
-    end else if (store_axis_temp_to_output) begin
-        m_ip_payload_axis_tdata_reg <= temp_m_ip_payload_axis_tdata_reg;
-        m_ip_payload_axis_tkeep_reg <= temp_m_ip_payload_axis_tkeep_reg;
-        m_ip_payload_axis_tlast_reg <= temp_m_ip_payload_axis_tlast_reg;
-        m_ip_payload_axis_tid_reg   <= temp_m_ip_payload_axis_tid_reg;
-        m_ip_payload_axis_tdest_reg <= temp_m_ip_payload_axis_tdest_reg;
-        m_ip_payload_axis_tuser_reg <= temp_m_ip_payload_axis_tuser_reg;
-    end
-
-    if (store_axis_int_to_temp) begin
-        temp_m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
-        temp_m_ip_payload_axis_tkeep_reg <= m_ip_payload_axis_tkeep_int;
-        temp_m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
-        temp_m_ip_payload_axis_tid_reg   <= m_ip_payload_axis_tid_int;
-        temp_m_ip_payload_axis_tdest_reg <= m_ip_payload_axis_tdest_int;
-        temp_m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
-    end
-
     if (!rst_n) begin
         m_ip_payload_axis_tvalid_reg <= 1'b0;
         m_ip_payload_axis_tready_int_reg <= 1'b0;
         temp_m_ip_payload_axis_tvalid_reg <= 1'b0;
+
+        m_ip_payload_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
+        m_ip_payload_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};
+        m_ip_payload_axis_tlast_reg <= 1'b0;
+        m_ip_payload_axis_tid_reg   <= {ID_WIDTH{1'b0}};
+        m_ip_payload_axis_tdest_reg <= {DEST_WIDTH{1'b0}};
+        m_ip_payload_axis_tuser_reg <= {USER_WIDTH{1'b0}};
+
+        temp_m_ip_payload_axis_tdata_reg <= {DATA_WIDTH{1'b0}};
+        temp_m_ip_payload_axis_tkeep_reg <= {KEEP_WIDTH{1'b0}};
+        temp_m_ip_payload_axis_tlast_reg <= 1'b0;
+        temp_m_ip_payload_axis_tid_reg   <= {ID_WIDTH{1'b0}};
+        temp_m_ip_payload_axis_tdest_reg <= {DEST_WIDTH{1'b0}};
+        temp_m_ip_payload_axis_tuser_reg <= {USER_WIDTH{1'b0}};
+    end else begin
+        m_ip_payload_axis_tvalid_reg <= m_ip_payload_axis_tvalid_next;
+        m_ip_payload_axis_tready_int_reg <= m_ip_payload_axis_tready_int_early;
+        temp_m_ip_payload_axis_tvalid_reg <= temp_m_ip_payload_axis_tvalid_next;
+
+        // datapath
+        if (store_axis_int_to_output) begin
+            m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
+            m_ip_payload_axis_tkeep_reg <= m_ip_payload_axis_tkeep_int;
+            m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
+            m_ip_payload_axis_tid_reg   <= m_ip_payload_axis_tid_int;
+            m_ip_payload_axis_tdest_reg <= m_ip_payload_axis_tdest_int;
+            m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
+        end else if (store_axis_temp_to_output) begin
+            m_ip_payload_axis_tdata_reg <= temp_m_ip_payload_axis_tdata_reg;
+            m_ip_payload_axis_tkeep_reg <= temp_m_ip_payload_axis_tkeep_reg;
+            m_ip_payload_axis_tlast_reg <= temp_m_ip_payload_axis_tlast_reg;
+            m_ip_payload_axis_tid_reg   <= temp_m_ip_payload_axis_tid_reg;
+            m_ip_payload_axis_tdest_reg <= temp_m_ip_payload_axis_tdest_reg;
+            m_ip_payload_axis_tuser_reg <= temp_m_ip_payload_axis_tuser_reg;
+        end
+
+        if (store_axis_int_to_temp) begin
+            temp_m_ip_payload_axis_tdata_reg <= m_ip_payload_axis_tdata_int;
+            temp_m_ip_payload_axis_tkeep_reg <= m_ip_payload_axis_tkeep_int;
+            temp_m_ip_payload_axis_tlast_reg <= m_ip_payload_axis_tlast_int;
+            temp_m_ip_payload_axis_tid_reg   <= m_ip_payload_axis_tid_int;
+            temp_m_ip_payload_axis_tdest_reg <= m_ip_payload_axis_tdest_int;
+            temp_m_ip_payload_axis_tuser_reg <= m_ip_payload_axis_tuser_int;
+        end
     end
 end
 
