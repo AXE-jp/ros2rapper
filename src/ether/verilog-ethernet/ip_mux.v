@@ -25,7 +25,7 @@ THE SOFTWARE.
 // Language: Verilog 2001
 
 `resetall
-`timescale 1ns / 1ps
+`include "ros2_ether_config.vh"
 `default_nettype none
 
 /*
