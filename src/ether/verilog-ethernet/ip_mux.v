@@ -117,36 +117,36 @@ module ip_mux #
 
 parameter CL_S_COUNT = $clog2(S_COUNT);
 
-reg [CL_S_COUNT-1:0] select_reg = 2'd0, select_next;
-reg frame_reg = 1'b0, frame_next;
+reg [CL_S_COUNT-1:0] select_reg, select_next;
+reg frame_reg, frame_next;
 
-reg [S_COUNT-1:0] s_ip_hdr_ready_reg = 0, s_ip_hdr_ready_next;
+reg [S_COUNT-1:0] s_ip_hdr_ready_reg, s_ip_hdr_ready_next;
 
-reg [S_COUNT-1:0] s_ip_payload_axis_tready_reg = 0, s_ip_payload_axis_tready_next;
+reg [S_COUNT-1:0] s_ip_payload_axis_tready_reg, s_ip_payload_axis_tready_next;
 
-reg m_ip_hdr_valid_reg = 1'b0, m_ip_hdr_valid_next;
-reg [47:0] m_eth_dest_mac_reg = 48'd0, m_eth_dest_mac_next;
-reg [47:0] m_eth_src_mac_reg = 48'd0, m_eth_src_mac_next;
-reg [15:0] m_eth_type_reg = 16'd0, m_eth_type_next;
-reg [3:0]  m_ip_version_reg = 4'd0, m_ip_version_next;
-reg [3:0]  m_ip_ihl_reg = 4'd0, m_ip_ihl_next;
-reg [5:0]  m_ip_dscp_reg = 6'd0, m_ip_dscp_next;
-reg [1:0]  m_ip_ecn_reg = 2'd0, m_ip_ecn_next;
-reg [15:0] m_ip_length_reg = 16'd0, m_ip_length_next;
-reg [15:0] m_ip_identification_reg = 16'd0, m_ip_identification_next;
-reg [2:0]  m_ip_flags_reg = 3'd0, m_ip_flags_next;
-reg [12:0] m_ip_fragment_offset_reg = 13'd0, m_ip_fragment_offset_next;
-reg [7:0]  m_ip_ttl_reg = 8'd0, m_ip_ttl_next;
-reg [7:0]  m_ip_protocol_reg = 8'd0, m_ip_protocol_next;
-reg [15:0] m_ip_header_checksum_reg = 16'd0, m_ip_header_checksum_next;
-reg [31:0] m_ip_source_ip_reg = 32'd0, m_ip_source_ip_next;
-reg [31:0] m_ip_dest_ip_reg = 32'd0, m_ip_dest_ip_next;
+reg m_ip_hdr_valid_reg, m_ip_hdr_valid_next;
+reg [47:0] m_eth_dest_mac_reg, m_eth_dest_mac_next;
+reg [47:0] m_eth_src_mac_reg, m_eth_src_mac_next;
+reg [15:0] m_eth_type_reg, m_eth_type_next;
+reg [3:0]  m_ip_version_reg, m_ip_version_next;
+reg [3:0]  m_ip_ihl_reg, m_ip_ihl_next;
+reg [5:0]  m_ip_dscp_reg, m_ip_dscp_next;
+reg [1:0]  m_ip_ecn_reg, m_ip_ecn_next;
+reg [15:0] m_ip_length_reg, m_ip_length_next;
+reg [15:0] m_ip_identification_reg, m_ip_identification_next;
+reg [2:0]  m_ip_flags_reg, m_ip_flags_next;
+reg [12:0] m_ip_fragment_offset_reg, m_ip_fragment_offset_next;
+reg [7:0]  m_ip_ttl_reg, m_ip_ttl_next;
+reg [7:0]  m_ip_protocol_reg, m_ip_protocol_next;
+reg [15:0] m_ip_header_checksum_reg, m_ip_header_checksum_next;
+reg [31:0] m_ip_source_ip_reg, m_ip_source_ip_next;
+reg [31:0] m_ip_dest_ip_reg, m_ip_dest_ip_next;
 
 // internal datapath
 reg  [DATA_WIDTH-1:0] m_ip_payload_axis_tdata_int;
 reg  [KEEP_WIDTH-1:0] m_ip_payload_axis_tkeep_int;
 reg                   m_ip_payload_axis_tvalid_int;
-reg                   m_ip_payload_axis_tready_int_reg = 1'b0;
+reg                   m_ip_payload_axis_tready_int_reg;
 reg                   m_ip_payload_axis_tlast_int;
 reg  [ID_WIDTH-1:0]   m_ip_payload_axis_tid_int;
 reg  [DEST_WIDTH-1:0] m_ip_payload_axis_tdest_int;
@@ -310,21 +310,21 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 // output datapath logic
-reg [DATA_WIDTH-1:0] m_ip_payload_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] m_ip_payload_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg                  m_ip_payload_axis_tvalid_reg = 1'b0, m_ip_payload_axis_tvalid_next;
-reg                  m_ip_payload_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   m_ip_payload_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] m_ip_payload_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] m_ip_payload_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] m_ip_payload_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] m_ip_payload_axis_tkeep_reg;
+reg                  m_ip_payload_axis_tvalid_reg, m_ip_payload_axis_tvalid_next;
+reg                  m_ip_payload_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   m_ip_payload_axis_tid_reg;
+reg [DEST_WIDTH-1:0] m_ip_payload_axis_tdest_reg;
+reg [USER_WIDTH-1:0] m_ip_payload_axis_tuser_reg;
 
-reg [DATA_WIDTH-1:0] temp_m_ip_payload_axis_tdata_reg  = {DATA_WIDTH{1'b0}};
-reg [KEEP_WIDTH-1:0] temp_m_ip_payload_axis_tkeep_reg  = {KEEP_WIDTH{1'b0}};
-reg                  temp_m_ip_payload_axis_tvalid_reg = 1'b0, temp_m_ip_payload_axis_tvalid_next;
-reg                  temp_m_ip_payload_axis_tlast_reg  = 1'b0;
-reg [ID_WIDTH-1:0]   temp_m_ip_payload_axis_tid_reg    = {ID_WIDTH{1'b0}};
-reg [DEST_WIDTH-1:0] temp_m_ip_payload_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
-reg [USER_WIDTH-1:0] temp_m_ip_payload_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+reg [DATA_WIDTH-1:0] temp_m_ip_payload_axis_tdata_reg;
+reg [KEEP_WIDTH-1:0] temp_m_ip_payload_axis_tkeep_reg;
+reg                  temp_m_ip_payload_axis_tvalid_reg, temp_m_ip_payload_axis_tvalid_next;
+reg                  temp_m_ip_payload_axis_tlast_reg;
+reg [ID_WIDTH-1:0]   temp_m_ip_payload_axis_tid_reg;
+reg [DEST_WIDTH-1:0] temp_m_ip_payload_axis_tdest_reg;
+reg [USER_WIDTH-1:0] temp_m_ip_payload_axis_tuser_reg;
 
 // datapath control
 reg store_axis_int_to_output;
