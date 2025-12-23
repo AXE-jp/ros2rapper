@@ -18,20 +18,62 @@ module raw_eth_tx_adapter (
     output wire [7:0] tx_raw_eth_axis_tdata,
     output wire tx_raw_eth_axis_tvalid,
     input  wire tx_raw_eth_axis_tready,
-    output wire tx_raw_eth_axis_tlast
-);
-    reg [2:0] state_reg;
-    reg [2:0] state_next;
-    localparam [2:0] IDLE         = 3'd0;
-    localparam [2:0] CHECK_LENGTH = 3'd1;
-    localparam [2:0] WRITE_0      = 3'd2;
-    localparam [2:0] WRITE_1      = 3'd3;
-    localparam [2:0] WRITE_2      = 3'd4;
-    localparam [2:0] WRITE_3      = 3'd5;
+    output wire tx_raw_eth_axis_tlast,
 
-    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
-    reg [COUNT_WIDTH-1:0] count_reg;
-    reg [COUNT_WIDTH-1:0] count_next;
+    output wire tx_raw_eth_ip_hdr_valid,
+    input  wire tx_raw_eth_ip_hdr_ready,
+    output wire [5:0]  tx_raw_eth_ip_dscp,
+    output wire [1:0]  tx_raw_eth_ip_ecn,
+    output wire [15:0] tx_raw_eth_ip_length,
+    output wire [7:0]  tx_raw_eth_ip_ttl,
+    output wire [7:0]  tx_raw_eth_ip_protocol,
+    output wire [31:0] tx_raw_eth_ip_source_ip,
+    output wire [31:0] tx_raw_eth_ip_dest_ip,
+    output wire [7:0]  tx_raw_eth_ip_payload_axis_tdata,
+    output wire tx_raw_eth_ip_payload_axis_tvalid,
+    input  wire tx_raw_eth_ip_payload_axis_tready,
+    output wire tx_raw_eth_ip_payload_axis_tlast,
+
+    output wire select_tx_raw_eth_axis,
+    output wire select_tx_raw_eth_ip
+);
+    localparam [5:0] STATE_IDLE               = 6'd0;
+    localparam [5:0] STATE_READ_ETH_HDR_0     = 6'd1;
+    localparam [5:0] STATE_READ_ETH_HDR_1     = 6'd2;
+    localparam [5:0] STATE_READ_ETH_HDR_2     = 6'd3;
+    localparam [5:0] STATE_READ_ETH_HDR_3     = 6'd4; // Identify the packet type here
+    localparam [5:0] STATE_SEND_ETH_HDR_0     = 6'd5; // If the frame is not IPv4
+    /* verilator lint_off UNUSEDPARAM */
+    localparam [5:0] STATE_SEND_ETH_HDR_1     = 6'd6;
+    localparam [5:0] STATE_SEND_ETH_HDR_2     = 6'd7;
+    localparam [5:0] STATE_SEND_ETH_HDR_3     = 6'd8;
+    localparam [5:0] STATE_SEND_ETH_HDR_4     = 6'd9;
+    localparam [5:0] STATE_SEND_ETH_HDR_5     = 6'd10;
+    localparam [5:0] STATE_SEND_ETH_HDR_6     = 6'd11;
+    localparam [5:0] STATE_SEND_ETH_HDR_7     = 6'd12;
+    localparam [5:0] STATE_SEND_ETH_HDR_8     = 6'd13;
+    localparam [5:0] STATE_SEND_ETH_HDR_9     = 6'd14;
+    localparam [5:0] STATE_SEND_ETH_HDR_10    = 6'd15;
+    localparam [5:0] STATE_SEND_ETH_HDR_11    = 6'd16;
+    localparam [5:0] STATE_SEND_ETH_HDR_12    = 6'd17;
+    /* verilator lint_on UNUSEDPARAM */
+    localparam [5:0] STATE_SEND_ETH_HDR_13    = 6'd18;
+    localparam [5:0] STATE_SEND_ETH_PAYLOAD_0 = 6'd19;
+    localparam [5:0] STATE_SEND_ETH_PAYLOAD_1 = 6'd20;
+    localparam [5:0] STATE_SEND_ETH_PAYLOAD_2 = 6'd21;
+    localparam [5:0] STATE_SEND_ETH_PAYLOAD_3 = 6'd22;
+    localparam [5:0] STATE_READ_IP_HDR_0      = 6'd23; // If the frame is IPv4
+    localparam [5:0] STATE_READ_IP_HDR_1      = 6'd24;
+    localparam [5:0] STATE_READ_IP_HDR_2      = 6'd25;
+    localparam [5:0] STATE_READ_IP_HDR_3      = 6'd26;
+    localparam [5:0] STATE_READ_IP_HDR_4      = 6'd27;
+    localparam [5:0] STATE_WAIT_IP_HDR_READY  = 6'd28;
+    localparam [5:0] STATE_SEND_IP_PAYLOAD_0  = 6'd29;
+    localparam [5:0] STATE_SEND_IP_PAYLOAD_1  = 6'd30;
+    localparam [5:0] STATE_SEND_IP_PAYLOAD_2  = 6'd31;
+    localparam [5:0] STATE_SEND_IP_PAYLOAD_3  = 6'd32;
+    localparam [5:0] STATE_COMPLETE           = 6'd33;
+    reg [5:0] state_reg, state_next;
 
     reg tx_raw_eth_frame_ready_before;
     always @(posedge clk or negedge rst_n) begin
@@ -44,20 +86,14 @@ module raw_eth_tx_adapter (
     // The rising edge of tx_raw_eth_frame_ready
     wire tx_raw_eth_kick = ~tx_raw_eth_frame_ready_before & tx_raw_eth_frame_ready;
 
-    reg completed_reg;
-    reg completed_next;
-    assign tx_raw_eth_completed = completed_reg;
+    reg    tx_raw_eth_completed_reg;
+    wire   tx_raw_eth_completed_next = (state_next == STATE_COMPLETE);
+    assign tx_raw_eth_completed = tx_raw_eth_completed_reg;
 
-    wire [31:0] rdata_new;
-    wire rdata_new_valid;
-    reg  rdata_new_ready;
-
-    reg  [7:0] eth_axis_tdata;
-    reg  eth_axis_tvalid;
-    assign tx_raw_eth_axis_tdata = eth_axis_tdata;
-    assign tx_raw_eth_axis_tvalid = eth_axis_tvalid;
-    assign tx_raw_eth_axis_tlast = (count_reg == 0);
-
+    wire [31:0] rom_fifo_data;
+    wire rom_fifo_valid;
+    reg  rom_fifo_ready;
+    wire rom_fifo_start = ((state_reg != STATE_IDLE) && (state_reg != STATE_COMPLETE));
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
         .DATA_WIDTH(32)
@@ -65,127 +101,359 @@ module raw_eth_tx_adapter (
     raw_eth_tx_adapter_fifo_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .start(state_reg != IDLE),
+        .start(rom_fifo_start),
         .rom_addr(tx_raw_eth_data_addr),
         .rom_ce(tx_raw_eth_data_ce),
         .rom_rdata(tx_raw_eth_data_rdata),
-        .out_tdata(rdata_new),
-        .out_tvalid(rdata_new_valid),
-        .out_tready(rdata_new_ready)
+        .out_tdata(rom_fifo_data),
+        .out_tvalid(rom_fifo_valid),
+        .out_tready(rom_fifo_ready)
     );
 
-    reg [31:0] rdata_reg;
-    reg [31:0] rdata_next;
+    // Store the ether header data.
+    reg [111:0] hdr_mem_reg, hdr_mem_next;
+
+    localparam COUNT_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN);
+    // Indicate how much data is left in bytes.
+    // If the current data is the last, count_reg becomes 0.
+    reg [COUNT_WIDTH-1:0] count_reg, count_next;
+
+    reg [23:0] payload_reg, payload_next;
+
+    reg  [7:0] eth_axis_tdata;
+    reg  eth_axis_tvalid;
+    wire eth_axis_tlast  = (count_reg == 0);
+    wire eth_axis_tready = tx_raw_eth_axis_tready;
+    assign tx_raw_eth_axis_tdata  = eth_axis_tdata;
+    assign tx_raw_eth_axis_tvalid = eth_axis_tvalid;
+    assign tx_raw_eth_axis_tlast  = eth_axis_tlast;
+
+    reg  ip_hdr_valid_reg;
+    wire ip_hdr_valid_next = (state_next == STATE_WAIT_IP_HDR_READY);
+    assign tx_raw_eth_ip_hdr_valid = ip_hdr_valid_reg;
+
+    //reg [3:0]  ip_version_reg, ip_version_next;
+    //reg [3:0]  ip_ihl_reg, ip_ihl_next;
+    reg [5:0]  ip_dscp_reg, ip_dscp_next;
+    reg [1:0]  ip_ecn_reg, ip_ecn_next;
+    reg [15:0] ip_length_reg, ip_length_next;
+    //reg [15:0] ip_identification_reg, ip_identification_next;
+    //reg [2:0]  ip_flags_reg, ip_flags_next;
+    //reg [12:0] ip_fragmentation_offset_reg, ip_fragmentation_offset_next;
+    reg [7:0]  ip_ttl_reg, ip_ttl_next;
+    reg [7:0]  ip_protocol_reg, ip_protocol_next;
+    //reg [15:0] ip_header_checksum_reg, ip_header_checksum_next;
+    reg [31:0] ip_source_ip_reg, ip_source_ip_next;
+    reg [31:0] ip_dest_ip_reg, ip_dest_ip_next;
+    assign tx_raw_eth_ip_dscp = ip_dscp_reg;
+    assign tx_raw_eth_ip_ecn = ip_ecn_reg;
+    assign tx_raw_eth_ip_length  = ip_length_reg;
+    assign tx_raw_eth_ip_ttl = ip_ttl_reg;
+    assign tx_raw_eth_ip_protocol = ip_protocol_reg;
+    assign tx_raw_eth_ip_source_ip = ip_source_ip_reg;
+    assign tx_raw_eth_ip_dest_ip = ip_dest_ip_reg;
+
+    reg  [7:0] ip_axis_tdata;
+    reg  ip_axis_tvalid;
+    wire ip_axis_tlast  = (count_reg == 0);
+    wire ip_axis_tready = tx_raw_eth_ip_payload_axis_tready;
+    assign tx_raw_eth_ip_payload_axis_tdata  = ip_axis_tdata;
+    assign tx_raw_eth_ip_payload_axis_tvalid = ip_axis_tvalid;
+    assign tx_raw_eth_ip_payload_axis_tlast  = ip_axis_tlast;
+
+    reg  select_tx_raw_eth_axis_reg;
+    wire select_tx_raw_eth_axis_next = ((state_next >= STATE_SEND_ETH_HDR_0) && (state_next <= STATE_SEND_ETH_PAYLOAD_3));
+    assign select_tx_raw_eth_axis = select_tx_raw_eth_axis_reg;
+
+    reg  select_tx_raw_eth_ip_reg;
+    wire select_tx_raw_eth_ip_next = ((state_next >= STATE_READ_IP_HDR_0) && (state_next <= STATE_SEND_IP_PAYLOAD_3));
+    assign select_tx_raw_eth_ip = select_tx_raw_eth_ip_reg;
 
     always @* begin
         state_next = state_reg;
-        completed_next = completed_reg;
+        rom_fifo_ready  = 1'b0;
+        hdr_mem_next = hdr_mem_reg;
         count_next = count_reg;
-        rdata_next = rdata_reg;
-
-        rdata_new_ready = 1'b0;
-        eth_axis_tdata = 8'd0;
+        payload_next = payload_reg;
+        eth_axis_tdata  = 8'd0;
         eth_axis_tvalid = 1'b0;
+        ip_dscp_next = ip_dscp_reg;
+        ip_ecn_next = ip_ecn_reg;
+        ip_length_next = ip_length_reg;
+        ip_ttl_next = ip_ttl_reg;
+        ip_protocol_next = ip_protocol_reg;
+        ip_source_ip_next = ip_source_ip_reg;
+        ip_dest_ip_next = ip_dest_ip_reg;
+        ip_axis_tdata  = 8'd0;
+        ip_axis_tvalid = 1'b0;
 
-        if (state_reg == IDLE) begin
+        if (state_reg == STATE_IDLE) begin
             if (tx_raw_eth_kick) begin
-                state_next = CHECK_LENGTH;
+                state_next = STATE_READ_ETH_HDR_0;
             end
-        end else if (state_reg == CHECK_LENGTH) begin
-            // Read from raw_eth_tx_adapter_fifo
-            rdata_new_ready = 1'b1;
-            rdata_next = rdata_new;
-            if (rdata_new_valid) begin
-                // Check frame data length
-                if ((rdata_new[15:0] != 0) && (rdata_new[15:0] <= (`ROS2_MAX_RAW_ETH_TX_DATA_LEN - 2))) begin
-                    count_next = rdata_new[15:0] - 1'b1;
-                    state_next = WRITE_2;
+        end else if (state_reg == STATE_READ_ETH_HDR_0) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                count_next = rom_fifo_data[COUNT_WIDTH-1:0]; // the frame length
+                hdr_mem_next[15:0] = rom_fifo_data[31:16];
+                // rom_fifo_data[15:0] is the frame length.
+                if ((rom_fifo_data[15:0] == 0) || (rom_fifo_data[15:0] > (`ROS2_MAX_RAW_ETH_TX_DATA_LEN - 2))) begin
+                    // The frame has no data, or the designated length is larger than memory size.
+                    state_next = STATE_COMPLETE;
                 end else begin
-                    // Do nothing if tx_raw_eth_data_len is invalid
-                    completed_next = 1'b1;
-                    state_next = IDLE;
+                    state_next = STATE_READ_ETH_HDR_1;
                 end
             end
-        end else if (state_reg == WRITE_0) begin
-            // Read 1 word (32 bit) data from raw_eth_tx_adapter_fifo
-            // and set it to rdata_reg
-            rdata_new_ready = tx_raw_eth_axis_tready;
-            rdata_next = rdata_new;
-            // Write the first byte of rdata_new
-            eth_axis_tdata = rdata_new[7:0];
-            eth_axis_tvalid = rdata_new_valid;
-            if (rdata_new_valid && tx_raw_eth_axis_tready) begin
-                if (count_reg == 0) begin
-                    completed_next = 1'b1;
-                    state_next = IDLE;
+        end else if (state_reg == STATE_READ_ETH_HDR_1) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                hdr_mem_next[47:16] = rom_fifo_data;
+                state_next = STATE_READ_ETH_HDR_2;
+            end
+        end else if (state_reg == STATE_READ_ETH_HDR_2) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                hdr_mem_next[79:48] = rom_fifo_data;
+                state_next = STATE_READ_ETH_HDR_3;
+            end
+        end else if (state_reg == STATE_READ_ETH_HDR_3) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                hdr_mem_next[111:80] = rom_fifo_data;
+                // count_reg - the frame length
+                // rom_fifo_data[31:16] - ether frame type
+                if ((count_reg >= 14) && (rom_fifo_data[31:16] == 16'h00_08)) begin
+                    // The ether header is valid and the frame type is IPv4
+                    if (count_reg > 34) begin
+                        // The IP header is valid and the IP packet has non-empty payload.
+                        state_next = STATE_READ_IP_HDR_0;
+                        count_next = count_reg - 35;
+                    end else begin
+                        state_next = STATE_COMPLETE;
+                    end
                 end else begin
-                    count_next = count_reg - 1'b1;
-                    state_next = WRITE_1;
+                    state_next = STATE_SEND_ETH_HDR_0;
+                    count_next = count_reg - 1;
                 end
             end
-        end else if (state_reg == WRITE_1) begin
-            // Write the second byte of rdata_reg
-            eth_axis_tdata = rdata_reg[15:8];
+        end else if ((state_reg >= STATE_SEND_ETH_HDR_0) && (state_reg <= STATE_SEND_ETH_HDR_13)) begin
+            eth_axis_tdata  = hdr_mem_reg[8*(state_reg - STATE_SEND_ETH_HDR_0) +: 8];
             eth_axis_tvalid = 1'b1;
-            if (tx_raw_eth_axis_tready) begin
-                if (count_reg == 0) begin
-                    completed_next = 1'b1;
-                    state_next = IDLE;
+            if (eth_axis_tready) begin
+                if (eth_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else if (state_reg == STATE_SEND_ETH_HDR_13) begin
+                    state_next = STATE_SEND_ETH_PAYLOAD_0;
+                    count_next = count_reg - 1;
                 end else begin
-                    count_next = count_reg - 1'b1;
-                    state_next = WRITE_2;
+                    state_next = state_reg + 1;
+                    count_next = count_reg - 1;
                 end
             end
-        end else if (state_reg == WRITE_2) begin
-            // Write the third byte of rdata_reg
-            eth_axis_tdata = rdata_reg[23:16];
-            eth_axis_tvalid = 1'b1;
-            if (tx_raw_eth_axis_tready) begin
-                if (count_reg == 0) begin
-                    completed_next = 1'b1;
-                    state_next = IDLE;
+        end else if (state_reg == STATE_SEND_ETH_PAYLOAD_0) begin
+            // Read ROM data from the FIFO
+            rom_fifo_ready = eth_axis_tready;
+            payload_next = rom_fifo_data[31:8];
+            eth_axis_tdata  = rom_fifo_data[7:0];
+            eth_axis_tvalid = rom_fifo_valid;
+            if (rom_fifo_valid && eth_axis_tready) begin
+                if (eth_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
                 end else begin
-                    count_next = count_reg - 1'b1;
-                    state_next = WRITE_3;
+                    state_next = STATE_SEND_ETH_PAYLOAD_1;
+                    count_next = count_reg - 1;
                 end
             end
-        end else if (state_reg == WRITE_3) begin
-            // Write the last byte of rdata_reg
-            eth_axis_tdata = rdata_reg[31:24];
+        end else if (state_reg == STATE_SEND_ETH_PAYLOAD_1) begin
+            eth_axis_tdata  = payload_reg[7:0];
             eth_axis_tvalid = 1'b1;
-            if (tx_raw_eth_axis_tready) begin
-                if (count_reg == 0) begin
-                    completed_next = 1'b1;
-                    state_next = IDLE;
+            if (eth_axis_tready) begin
+                if (eth_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
                 end else begin
-                    count_next = count_reg - 1'b1;
-                    state_next = WRITE_0;
+                    state_next = STATE_SEND_ETH_PAYLOAD_2;
+                    count_next = count_reg - 1;
                 end
+            end
+        end else if (state_reg == STATE_SEND_ETH_PAYLOAD_2) begin
+            eth_axis_tdata  = payload_reg[15:8];
+            eth_axis_tvalid = 1'b1;
+            if (eth_axis_tready) begin
+                if (eth_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_ETH_PAYLOAD_3;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_SEND_ETH_PAYLOAD_3) begin
+            eth_axis_tdata  = payload_reg[23:16];
+            eth_axis_tvalid = 1'b1;
+            if (eth_axis_tready) begin
+                if (eth_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_ETH_PAYLOAD_0;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_READ_IP_HDR_0) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                //ip_version_next = rom_fifo_data[7:4];
+                //ip_ihl_next = rom_fifo_data[3:0];
+                ip_dscp_next = rom_fifo_data[15:10];
+                ip_ecn_next = rom_fifo_data[9:8];
+                ip_length_next[15:8] = rom_fifo_data[23:16];
+                ip_length_next[7:0]  = rom_fifo_data[31:24];
+                state_next = STATE_READ_IP_HDR_1;
+            end
+        end else if (state_reg == STATE_READ_IP_HDR_1) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                //ip_identification_next[15:8] = rom_fifo_data[7:0];
+                //ip_identification_next[7:0]  = rom_fifo_data[15:8];
+                //ip_flags_next = rom_fifo_data[23:21];
+                //ip_fragmentation_offset_next = {rom_fifo_data[20:16], rom_fifo_data[31:24]};
+                state_next = STATE_READ_IP_HDR_2;
+            end
+        end else if (state_reg == STATE_READ_IP_HDR_2) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                ip_ttl_next = rom_fifo_data[7:0];
+                ip_protocol_next = rom_fifo_data[15:8];
+                //ip_header_checksum_next[15:8] = rom_fifo_data[23:16];
+                //ip_header_checksum_next[7:0]  = rom_fifo_data[31:24];
+                state_next = STATE_READ_IP_HDR_3;
+            end
+        end else if (state_reg == STATE_READ_IP_HDR_3) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                ip_source_ip_next[31:24] = rom_fifo_data[7:0];
+                ip_source_ip_next[23:16] = rom_fifo_data[15:8];
+                ip_source_ip_next[15:8]  = rom_fifo_data[23:16];
+                ip_source_ip_next[7:0]   = rom_fifo_data[31:24];
+                state_next = STATE_READ_IP_HDR_4;
+            end
+        end else if (state_reg == STATE_READ_IP_HDR_4) begin
+            rom_fifo_ready = 1'b1;
+            if (rom_fifo_valid) begin
+                ip_dest_ip_next[31:24] = rom_fifo_data[7:0];
+                ip_dest_ip_next[23:16] = rom_fifo_data[15:8];
+                ip_dest_ip_next[15:8]  = rom_fifo_data[23:16];
+                ip_dest_ip_next[7:0]   = rom_fifo_data[31:24];
+                state_next = STATE_WAIT_IP_HDR_READY;
+            end
+        end else if (state_reg == STATE_WAIT_IP_HDR_READY) begin
+            if (tx_raw_eth_ip_hdr_ready) begin
+                state_next = STATE_SEND_IP_PAYLOAD_0;
+            end
+        end else if (state_reg == STATE_SEND_IP_PAYLOAD_0) begin
+            // Read ROM data from the FIFO
+            rom_fifo_ready = ip_axis_tready;
+            payload_next = rom_fifo_data[31:8];
+            ip_axis_tdata  = rom_fifo_data[7:0];
+            ip_axis_tvalid = rom_fifo_valid;
+            if (rom_fifo_valid && ip_axis_tready) begin
+                if (ip_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_IP_PAYLOAD_1;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_SEND_IP_PAYLOAD_1) begin
+            ip_axis_tdata  = payload_reg[7:0];
+            ip_axis_tvalid = 1'b1;
+            if (ip_axis_tready) begin
+                if (ip_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_IP_PAYLOAD_2;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_SEND_IP_PAYLOAD_2) begin
+            ip_axis_tdata  = payload_reg[15:8];
+            ip_axis_tvalid = 1'b1;
+            if (ip_axis_tready) begin
+                if (ip_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_IP_PAYLOAD_3;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_SEND_IP_PAYLOAD_3) begin
+            ip_axis_tdata  = payload_reg[23:16];
+            ip_axis_tvalid = 1'b1;
+            if (ip_axis_tready) begin
+                if (ip_axis_tlast) begin
+                    state_next = STATE_COMPLETE;
+                end else begin
+                    state_next = STATE_SEND_IP_PAYLOAD_0;
+                    count_next = count_reg - 1;
+                end
+            end
+        end else if (state_reg == STATE_COMPLETE) begin
+            if (!tx_raw_eth_frame_ready) begin
+                state_next = STATE_IDLE;
             end
         end else begin
-            completed_next = 1'b1;
-            state_next = IDLE;
+            state_next = STATE_COMPLETE;
         end
     end
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            state_reg <= IDLE;
-            completed_reg <= 1'b0;
+            state_reg <= STATE_IDLE;
+            tx_raw_eth_completed_reg <= 1'b0;
+            hdr_mem_reg <= 112'd0;
             count_reg <= {COUNT_WIDTH{1'b0}};
-            rdata_reg <= 32'd0;
+            payload_reg <= 24'd0;
+            ip_hdr_valid_reg <= 1'b0;
+            ip_dscp_reg <= 6'd0;
+            ip_ecn_reg <= 2'd0;
+            ip_length_reg <= 16'd0;
+            ip_ttl_reg <= 8'd0;
+            ip_protocol_reg <= 8'd0;
+            ip_source_ip_reg <= 32'd0;
+            ip_dest_ip_reg <= 32'd0;
+            select_tx_raw_eth_axis_reg <= 1'b0;
+            select_tx_raw_eth_ip_reg <= 1'b0;
         end else begin
             if (!enable) begin
-                state_reg <= IDLE;
-                completed_reg <= 1'b0;
+                state_reg <= STATE_IDLE;
+                tx_raw_eth_completed_reg <= 1'b0;
+                hdr_mem_reg <= 112'd0;
                 count_reg <= {COUNT_WIDTH{1'b0}};
-                rdata_reg <= 32'd0;
+                payload_reg <= 24'd0;
+                ip_hdr_valid_reg <= 1'b0;
+                ip_dscp_reg <= 6'd0;
+                ip_ecn_reg <= 2'd0;
+                ip_length_reg <= 16'd0;
+                ip_ttl_reg <= 8'd0;
+                ip_protocol_reg <= 8'd0;
+                ip_source_ip_reg <= 32'd0;
+                ip_dest_ip_reg <= 32'd0;
+                select_tx_raw_eth_axis_reg <= 1'b0;
+                select_tx_raw_eth_ip_reg <= 1'b0;
             end else begin
                 state_reg <= state_next;
-                // deassert completed_reg when frame_ready is deasserted
-                completed_reg <= completed_next & tx_raw_eth_frame_ready;
+                tx_raw_eth_completed_reg <= tx_raw_eth_completed_next;
+                hdr_mem_reg <= hdr_mem_next;
                 count_reg <= count_next;
-                rdata_reg <= rdata_next;
+                payload_reg <= payload_next;
+                ip_hdr_valid_reg <= ip_hdr_valid_next;
+                ip_dscp_reg <= ip_dscp_next;
+                ip_ecn_reg <= ip_ecn_next;
+                ip_length_reg <= ip_length_next;
+                ip_ttl_reg <= ip_ttl_next;
+                ip_protocol_reg <= ip_protocol_next;
+                ip_source_ip_reg <= ip_source_ip_next;
+                ip_dest_ip_reg <= ip_dest_ip_next;
+                select_tx_raw_eth_axis_reg <= select_tx_raw_eth_axis_next;
+                select_tx_raw_eth_ip_reg <= select_tx_raw_eth_ip_next;
             end
         end
     end
