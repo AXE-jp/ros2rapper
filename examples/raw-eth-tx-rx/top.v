@@ -115,9 +115,9 @@ module top (
     wire [31:0] subnet_mask      = {8'd0, 8'd255, 8'd255, 8'd255};
 
     // --- ARP Configuration
-    localparam ARP_REQUEST_RETRY_COUNT = 4;
-    localparam ARP_REQUEST_RETRY_INTERVAL = (125000000*2);
-    localparam ARP_REQUEST_TIMEOUT = (125000000*30);
+    localparam [5:0]  ARP_REQUEST_RETRY_COUNT = 4;
+    localparam [35:0] ARP_REQUEST_RETRY_INTERVAL = (ROS2CLK_HZ*2);
+    localparam [35:0] ARP_REQUEST_TIMEOUT = (ROS2CLK_HZ*30);
 
     // --- ROS2 Node Configuration
     wire [15:0] ros2_vendor_id = 16'd0; // VENDOR_ID_UNKNOWN
@@ -274,7 +274,7 @@ module top (
         if (!rst_n_int) begin
             tx_raw_eth_completed_before <= 1'b0;
         end else begin
-            tx_raw_eth_completed_before <= tx_raw_eth_completed_before;
+            tx_raw_eth_completed_before <= tx_raw_eth_completed;
         end
     end
     // The rising edge of tx_raw_eth_completed
