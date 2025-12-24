@@ -498,6 +498,7 @@ module top (
         .gateway_ip_addr(gateway_ip_addr),
         .subnet_mask(subnet_mask),
 
+        .ros2_vendor_id(ros2_vendor_id),
         .ros2_node_name(ros2_node_name),
         .ros2_node_name_len(ros2_node_name_len),
         .ros2_node_udp_port(ros2_node_udp_port),
