@@ -281,7 +281,7 @@ module top (
     wire tx_raw_eth_change_message = ~tx_raw_eth_completed_before & tx_raw_eth_completed;
 
     // Raw Ether TX IPv4 messages
-    wire [48:0] dest_mac_addr = 48'd0; // Use the ARP module
+    wire [47:0] dest_mac_addr = 48'd0; // Use the ARP module
     wire [31:0] dest_unicast_ip_addr = {8'd2, 8'd1, 8'd168, 8'd192};
     wire [31:0] dest_multicast_ip_addr = {8'd1, 8'd1, 8'd1, 8'd239};
     wire [31:0] dest_direct_broadcast_ip_addr = ip_addr | ~subnet_mask;
@@ -290,28 +290,28 @@ module top (
     wire [15:0] udp_dest_port = 16'd1234;
 
     // Raw ether header
-    wire [15:0] eth_type = {8'h00, 8'h08}; // IPv4
-    wire [111:0] raw_eth_hdr = {eth_type, mac_addr, dest_mac_addr};
+    wire [15:0] eth_type = 16'h0800; // IPv4
+    wire [111:0] raw_eth_hdr = {eth_type[7:0], eth_type[15:8], mac_addr, dest_mac_addr};
 
     // Raw ether IP header
     wire [7:0]  ip_ver_ihl = 8'h45;
     wire [7:0]  ip_tos = 8'h00;
     wire [15:0] ip_length;
     wire [15:0] ip_identification = 16'd0;
-    wire [15:0] ip_fragment_params = 8'h00_40; // Don't fragment and fragment offset is 0
-    wire [7:0]  ip_ttl = 8'd64;
+    wire [15:0] ip_fragment_params = 16'h4000; // Don't fragment and fragment offset is 0
+    wire [7:0]  ip_ttl = 8'd1;
     wire [7:0]  ip_protocol = 8'd17; // UDP
     wire [15:0] ip_checksum = 16'd0; // calculated in ROS2rapper
     reg  [31:0] dest_ip_addr;
     wire [159:0] raw_eth_ip_hdr = {
-        dest_ip_addr, ip_addr, ip_checksum, ip_protocol, ip_ttl, ip_fragment_offset, ip_flags,
+        dest_ip_addr, ip_addr, ip_checksum, ip_protocol, ip_ttl, ip_fragment_params[7:0], ip_fragment_params[15:8],
         ip_identification[7:0], ip_identification[15:8], ip_length[7:0], ip_length[15:8], ip_tos, ip_ver_ihl
     };
 
     // Raw ether UDP header
     reg  [15:0] udp_length;
     wire [15:0] udp_checksum = 16'd0; // No checksum
-    wire [63:0] raw_eth_udp_header = {
+    wire [63:0] raw_eth_udp_hdr = {
         udp_checksum[7:0], udp_checksum[15:8], udp_length[7:0], udp_length[15:8],
         udp_dest_port[7:0], udp_dest_port[15:8], udp_src_port[7:0], udp_src_port[15:8]
     };
@@ -323,8 +323,8 @@ module top (
     wire [159:0] raw_eth_limited_broadcast_udp_payload = {24'd00, "\n3 tset rehte waR"};
     wire [15:0]  raw_eth_unicast_udp_length = 16'd1480;
     wire [15:0]  raw_eth_multicast_udp_length = 16'd26;
-    wire [15:0]  raw_eth_direct_broadcast_udp_payload = 16'd26;
-    wire [15:0]  raw_eth_limited_broadcast_udp_payload = 16'd26;
+    wire [15:0]  raw_eth_direct_broadcast_udp_length = 16'd26;
+    wire [15:0]  raw_eth_limited_broadcast_udp_length = 16'd26;
 
     // Select raw ether IP packets
     localparam [1:0] RAW_ETH_IP_UNICAST           = 2'd0;
@@ -356,7 +356,7 @@ module top (
             dest_ip_addr = dest_direct_broadcast_ip_addr;
             udp_length = raw_eth_direct_broadcast_udp_length;
         end else if (raw_eth_state == RAW_ETH_IP_LIMITED_BROADCAST) begin
-            dest_ip_addr = dest_limited_braodcast_ip_addr;
+            dest_ip_addr = dest_limited_broadcast_ip_addr;
             udp_length = raw_eth_limited_broadcast_udp_length;
         end
     end
