@@ -317,14 +317,14 @@ module top (
     };
 
     // Raw ether UDP payload
-    //wire [8*1472-1:0] raw_eth_unicast_udp_payload = {8'h00, "\n", 1470{8'h55}};
-    wire [159:0] raw_eth_multicast_udp_payload = {24'd00, "\n1 tset rehte waR"};
-    wire [159:0] raw_eth_direct_broadcast_udp_payload = {24'd00, "\n2 tset rehte waR"};
-    wire [159:0] raw_eth_limited_broadcast_udp_payload = {24'd00, "\n3 tset rehte waR"};
+    //wire [8*1472-1:0] raw_eth_unicast_udp_payload = {"\n", 1471{8'h55}};
+    wire [159:0] raw_eth_multicast_udp_payload = {24'd0, "\n1 tset rehte waR"};
+    wire [159:0] raw_eth_direct_broadcast_udp_payload = {16'd0, "\n22 tset rehte waR"};
+    wire [159:0] raw_eth_limited_broadcast_udp_payload = {8'd0, "\n333 tset rehte waR"};
     wire [15:0]  raw_eth_unicast_udp_length = 16'd1480;
-    wire [15:0]  raw_eth_multicast_udp_length = 16'd26;
+    wire [15:0]  raw_eth_multicast_udp_length = 16'd25;
     wire [15:0]  raw_eth_direct_broadcast_udp_length = 16'd26;
-    wire [15:0]  raw_eth_limited_broadcast_udp_length = 16'd26;
+    wire [15:0]  raw_eth_limited_broadcast_udp_length = 16'd27;
 
     // Select raw ether IP packets
     localparam [1:0] RAW_ETH_IP_UNICAST           = 2'd0;
@@ -393,7 +393,7 @@ module top (
                     end
                 end else if (tx_raw_eth_data_addr == 378) begin
                     if (raw_eth_state == RAW_ETH_IP_UNICAST) begin
-                        tx_raw_eth_data_rdata <= {8'h00, "\n", 16'h55_55};
+                        tx_raw_eth_data_rdata <= {"\n", 16'h55_55_55}; // "UUU\n"
                     end
                 end
             end
