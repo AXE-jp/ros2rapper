@@ -8,4 +8,4 @@ docker run -it --rm \
   -v ./ros2_ws:/root/ros2_ws \
   -w /root/ros2_ws \
   ros:humble-ros-base \
-  python receive_udp.py
+  python3 receive_udp.py
