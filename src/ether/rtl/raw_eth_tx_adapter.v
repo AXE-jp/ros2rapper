@@ -90,10 +90,10 @@ module raw_eth_tx_adapter (
     wire   tx_raw_eth_completed_next = (state_next == STATE_COMPLETE);
     assign tx_raw_eth_completed = tx_raw_eth_completed_reg;
 
-    wire [31:0] rom_fifo_data;
-    wire rom_fifo_valid;
-    reg  rom_fifo_ready;
-    wire rom_fifo_start = ((state_reg != STATE_IDLE) && (state_reg != STATE_COMPLETE));
+    wire [31:0] ram_fifo_data;
+    wire ram_fifo_valid;
+    reg  ram_fifo_ready;
+    wire ram_fifo_start = ((state_reg != STATE_IDLE) && (state_reg != STATE_COMPLETE));
     raw_eth_tx_adapter_fifo #(
         .MAX_DATA_LEN(`ROS2_MAX_RAW_ETH_TX_DATA_LEN/4),
         .DATA_WIDTH(32)
@@ -101,13 +101,13 @@ module raw_eth_tx_adapter (
     raw_eth_tx_adapter_fifo_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .start(rom_fifo_start),
-        .rom_addr(tx_raw_eth_data_addr),
-        .rom_ce(tx_raw_eth_data_ce),
-        .rom_rdata(tx_raw_eth_data_rdata),
-        .out_tdata(rom_fifo_data),
-        .out_tvalid(rom_fifo_valid),
-        .out_tready(rom_fifo_ready)
+        .start(ram_fifo_start),
+        .ram_addr(tx_raw_eth_data_addr),
+        .ram_ce(tx_raw_eth_data_ce),
+        .ram_rdata(tx_raw_eth_data_rdata),
+        .out_tdata(ram_fifo_data),
+        .out_tvalid(ram_fifo_valid),
+        .out_tready(ram_fifo_ready)
     );
 
     // Store the ether header data.
@@ -171,7 +171,7 @@ module raw_eth_tx_adapter (
 
     always @* begin
         state_next = state_reg;
-        rom_fifo_ready  = 1'b0;
+        ram_fifo_ready  = 1'b0;
         hdr_mem_next = hdr_mem_reg;
         count_next = count_reg;
         payload_next = payload_reg;
@@ -192,12 +192,12 @@ module raw_eth_tx_adapter (
                 state_next = STATE_READ_ETH_HDR_0;
             end
         end else if (state_reg == STATE_READ_ETH_HDR_0) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                count_next = rom_fifo_data[COUNT_WIDTH-1:0]; // the frame length
-                hdr_mem_next[15:0] = rom_fifo_data[31:16];
-                // rom_fifo_data[15:0] is the frame length.
-                if ((rom_fifo_data[15:0] == 0) || (rom_fifo_data[15:0] > (`ROS2_MAX_RAW_ETH_TX_DATA_LEN - 2))) begin
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                count_next = ram_fifo_data[COUNT_WIDTH-1:0]; // the frame length
+                hdr_mem_next[15:0] = ram_fifo_data[31:16];
+                // ram_fifo_data[15:0] is the frame length.
+                if ((ram_fifo_data[15:0] == 0) || (ram_fifo_data[15:0] > (`ROS2_MAX_RAW_ETH_TX_DATA_LEN - 2))) begin
                     // The frame has no data, or the designated length is larger than memory size.
                     state_next = STATE_COMPLETE;
                 end else begin
@@ -205,24 +205,24 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == STATE_READ_ETH_HDR_1) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                hdr_mem_next[47:16] = rom_fifo_data;
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                hdr_mem_next[47:16] = ram_fifo_data;
                 state_next = STATE_READ_ETH_HDR_2;
             end
         end else if (state_reg == STATE_READ_ETH_HDR_2) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                hdr_mem_next[79:48] = rom_fifo_data;
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                hdr_mem_next[79:48] = ram_fifo_data;
                 state_next = STATE_READ_ETH_HDR_3;
             end
         end else if (state_reg == STATE_READ_ETH_HDR_3) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                hdr_mem_next[111:80] = rom_fifo_data;
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                hdr_mem_next[111:80] = ram_fifo_data;
                 // count_reg - the frame length
-                // rom_fifo_data[31:16] - ether frame type
-                if ((count_reg >= 14) && (rom_fifo_data[31:16] == 16'h00_08)) begin
+                // ram_fifo_data[31:16] - ether frame type
+                if ((count_reg >= 14) && (ram_fifo_data[31:16] == 16'h00_08)) begin
                     // The ether header is valid and the frame type is IPv4
                     if (count_reg > 34) begin
                         // The IP header is valid and the IP packet has non-empty payload.
@@ -251,12 +251,12 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == STATE_SEND_ETH_PAYLOAD_0) begin
-            // Read ROM data from the FIFO
-            rom_fifo_ready = eth_axis_tready;
-            payload_next = rom_fifo_data[31:8];
-            eth_axis_tdata  = rom_fifo_data[7:0];
-            eth_axis_tvalid = rom_fifo_valid;
-            if (rom_fifo_valid && eth_axis_tready) begin
+            // Read RAM data from the FIFO
+            ram_fifo_ready = eth_axis_tready;
+            payload_next = ram_fifo_data[31:8];
+            eth_axis_tdata  = ram_fifo_data[7:0];
+            eth_axis_tvalid = ram_fifo_valid;
+            if (ram_fifo_valid && eth_axis_tready) begin
                 if (eth_axis_tlast) begin
                     state_next = STATE_COMPLETE;
                 end else begin
@@ -298,50 +298,50 @@ module raw_eth_tx_adapter (
                 end
             end
         end else if (state_reg == STATE_READ_IP_HDR_0) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                //ip_version_next = rom_fifo_data[7:4];
-                //ip_ihl_next = rom_fifo_data[3:0];
-                ip_dscp_next = rom_fifo_data[15:10];
-                ip_ecn_next = rom_fifo_data[9:8];
-                ip_length_next[15:8] = rom_fifo_data[23:16];
-                ip_length_next[7:0]  = rom_fifo_data[31:24];
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                //ip_version_next = ram_fifo_data[7:4];
+                //ip_ihl_next = ram_fifo_data[3:0];
+                ip_dscp_next = ram_fifo_data[15:10];
+                ip_ecn_next = ram_fifo_data[9:8];
+                ip_length_next[15:8] = ram_fifo_data[23:16];
+                ip_length_next[7:0]  = ram_fifo_data[31:24];
                 state_next = STATE_READ_IP_HDR_1;
             end
         end else if (state_reg == STATE_READ_IP_HDR_1) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                //ip_identification_next[15:8] = rom_fifo_data[7:0];
-                //ip_identification_next[7:0]  = rom_fifo_data[15:8];
-                //ip_flags_next = rom_fifo_data[23:21];
-                //ip_fragmentation_offset_next = {rom_fifo_data[20:16], rom_fifo_data[31:24]};
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                //ip_identification_next[15:8] = ram_fifo_data[7:0];
+                //ip_identification_next[7:0]  = ram_fifo_data[15:8];
+                //ip_flags_next = ram_fifo_data[23:21];
+                //ip_fragmentation_offset_next = {ram_fifo_data[20:16], ram_fifo_data[31:24]};
                 state_next = STATE_READ_IP_HDR_2;
             end
         end else if (state_reg == STATE_READ_IP_HDR_2) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                ip_ttl_next = rom_fifo_data[7:0];
-                ip_protocol_next = rom_fifo_data[15:8];
-                //ip_header_checksum_next[15:8] = rom_fifo_data[23:16];
-                //ip_header_checksum_next[7:0]  = rom_fifo_data[31:24];
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                ip_ttl_next = ram_fifo_data[7:0];
+                ip_protocol_next = ram_fifo_data[15:8];
+                //ip_header_checksum_next[15:8] = ram_fifo_data[23:16];
+                //ip_header_checksum_next[7:0]  = ram_fifo_data[31:24];
                 state_next = STATE_READ_IP_HDR_3;
             end
         end else if (state_reg == STATE_READ_IP_HDR_3) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                ip_source_ip_next[31:24] = rom_fifo_data[7:0];
-                ip_source_ip_next[23:16] = rom_fifo_data[15:8];
-                ip_source_ip_next[15:8]  = rom_fifo_data[23:16];
-                ip_source_ip_next[7:0]   = rom_fifo_data[31:24];
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                ip_source_ip_next[31:24] = ram_fifo_data[7:0];
+                ip_source_ip_next[23:16] = ram_fifo_data[15:8];
+                ip_source_ip_next[15:8]  = ram_fifo_data[23:16];
+                ip_source_ip_next[7:0]   = ram_fifo_data[31:24];
                 state_next = STATE_READ_IP_HDR_4;
             end
         end else if (state_reg == STATE_READ_IP_HDR_4) begin
-            rom_fifo_ready = 1'b1;
-            if (rom_fifo_valid) begin
-                ip_dest_ip_next[31:24] = rom_fifo_data[7:0];
-                ip_dest_ip_next[23:16] = rom_fifo_data[15:8];
-                ip_dest_ip_next[15:8]  = rom_fifo_data[23:16];
-                ip_dest_ip_next[7:0]   = rom_fifo_data[31:24];
+            ram_fifo_ready = 1'b1;
+            if (ram_fifo_valid) begin
+                ip_dest_ip_next[31:24] = ram_fifo_data[7:0];
+                ip_dest_ip_next[23:16] = ram_fifo_data[15:8];
+                ip_dest_ip_next[15:8]  = ram_fifo_data[23:16];
+                ip_dest_ip_next[7:0]   = ram_fifo_data[31:24];
                 state_next = STATE_WAIT_IP_HDR_READY;
             end
         end else if (state_reg == STATE_WAIT_IP_HDR_READY) begin
@@ -349,12 +349,12 @@ module raw_eth_tx_adapter (
                 state_next = STATE_SEND_IP_PAYLOAD_0;
             end
         end else if (state_reg == STATE_SEND_IP_PAYLOAD_0) begin
-            // Read ROM data from the FIFO
-            rom_fifo_ready = ip_axis_tready;
-            payload_next = rom_fifo_data[31:8];
-            ip_axis_tdata  = rom_fifo_data[7:0];
-            ip_axis_tvalid = rom_fifo_valid;
-            if (rom_fifo_valid && ip_axis_tready) begin
+            // Read RAM data from the FIFO
+            ram_fifo_ready = ip_axis_tready;
+            payload_next = ram_fifo_data[31:8];
+            ip_axis_tdata  = ram_fifo_data[7:0];
+            ip_axis_tvalid = ram_fifo_valid;
+            if (ram_fifo_valid && ip_axis_tready) begin
                 if (ip_axis_tlast) begin
                     state_next = STATE_COMPLETE;
                 end else begin
@@ -459,7 +459,7 @@ module raw_eth_tx_adapter (
     end
 endmodule
 
-// Read data from a ROM
+// Read data from a RAM
 module raw_eth_tx_adapter_read #(
     parameter ADDR_WIDTH = 9,
     parameter DATA_WIDTH = 32
@@ -468,38 +468,38 @@ module raw_eth_tx_adapter_read #(
     input  wire clk,
     input  wire rst_n,
 
-    output wire [ADDR_WIDTH-1:0] rom_addr,
-    output wire rom_ce,
-    input  wire [DATA_WIDTH-1:0] rom_rdata,
+    output wire [ADDR_WIDTH-1:0] ram_addr,
+    output wire ram_ce,
+    input  wire [DATA_WIDTH-1:0] ram_rdata,
 
     input  wire [ADDR_WIDTH-1:0] addr,
     input  wire addr_valid,
     output wire [DATA_WIDTH-1:0] rdata,
     output wire rdata_valid
 );
-    reg [ADDR_WIDTH-1:0] r_rom_addr;
-    reg r_rom_ce;
+    reg [ADDR_WIDTH-1:0] r_ram_addr;
+    reg r_ram_ce;
     reg r_rdata_valid;
 
-    assign rom_addr = r_rom_addr;
-    assign rom_ce = r_rom_ce;
-    assign rdata = rom_rdata;
+    assign ram_addr = r_ram_addr;
+    assign ram_ce = r_ram_ce;
+    assign rdata = ram_rdata;
     assign rdata_valid = r_rdata_valid;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            r_rom_addr <= {ADDR_WIDTH{1'b0}};
-            r_rom_ce <= 1'b0;
+            r_ram_addr <= {ADDR_WIDTH{1'b0}};
+            r_ram_ce <= 1'b0;
             r_rdata_valid <= 1'b0;
         end else begin
-            r_rom_addr <= addr;
-            r_rom_ce <= addr_valid;
-            r_rdata_valid <= r_rom_ce;
+            r_ram_addr <= addr;
+            r_ram_ce <= addr_valid;
+            r_rdata_valid <= r_ram_ce;
         end
     end
 endmodule
 
-// Read data from a ROM, and output it.
+// Read data from a RAM, and output it.
 module raw_eth_tx_adapter_fifo #(
     parameter MAX_DATA_LEN=400,
     parameter DATA_WIDTH=32
@@ -509,10 +509,10 @@ module raw_eth_tx_adapter_fifo #(
     input  wire rst_n,
     input  wire start,
 
-    // ROM ports
-    output wire [$clog2(MAX_DATA_LEN)-1:0] rom_addr,
-    output wire rom_ce,
-    input  wire [DATA_WIDTH-1:0] rom_rdata,
+    // RAM ports
+    output wire [$clog2(MAX_DATA_LEN)-1:0] ram_addr,
+    output wire ram_ce,
+    input  wire [DATA_WIDTH-1:0] ram_rdata,
 
     // AXIS ports
     output wire [DATA_WIDTH-1:0] out_tdata,
@@ -533,9 +533,9 @@ module raw_eth_tx_adapter_fifo #(
     raw_eth_tx_adapter_read_inst (
         .clk(clk),
         .rst_n(rst_n),
-        .rom_addr(rom_addr),
-        .rom_ce(rom_ce),
-        .rom_rdata(rom_rdata),
+        .ram_addr(ram_addr),
+        .ram_ce(ram_ce),
+        .ram_rdata(ram_rdata),
         .addr(r_addr),
         .addr_valid(w_addr_valid),
         .rdata(w_rdata_new),

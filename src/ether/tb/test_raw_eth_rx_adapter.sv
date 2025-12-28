@@ -257,23 +257,23 @@ module test_raw_eth_rx_adapter();
     end
 
     localparam ADDR_WIDTH = $clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN) - 2;
-    logic [ADDR_WIDTH-1:0] rom_addr;
-    logic rom_ce;
-    logic [3:0]  rom_we;
-    logic [31:0] rom_wdata;
-    logic [31:0] rom [0:(`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4)-1];
+    logic [ADDR_WIDTH-1:0] ram_addr;
+    logic ram_ce;
+    logic [3:0]  ram_we;
+    logic [31:0] ram_wdata;
+    logic [31:0] ram [0:(`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4)-1];
 
-    task automatic reset_rom();
+    task automatic reset_ram();
         integer i;
         for (i = 0; i < (`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4); i = i + 1) begin
-            rom[i] = 32'd0;
+            ram[i] = 32'd0;
         end
     endtask
 
-    task automatic rom_is_not_touched();
+    task automatic ram_is_not_touched();
         integer i;
         for (i = 0; i < (`ROS2_MAX_RAW_ETH_RX_DATA_LEN/4); i = i + 1) begin
-            assert (rom[i] == 32'd0) else begin
+            assert (ram[i] == 32'd0) else begin
                 error_code = 32'd1;
                 $finish;
             end
@@ -282,13 +282,13 @@ module test_raw_eth_rx_adapter();
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            reset_rom();
+            reset_ram();
         end else begin
-            if (rom_ce) begin
-                if (rom_we[0]) rom[rom_addr][7:0]   = rom_wdata[7:0];
-                if (rom_we[1]) rom[rom_addr][15:8]  = rom_wdata[15:8];
-                if (rom_we[2]) rom[rom_addr][23:16] = rom_wdata[23:16];
-                if (rom_we[3]) rom[rom_addr][31:24] = rom_wdata[31:24];
+            if (ram_ce) begin
+                if (ram_we[0]) ram[ram_addr][7:0]   = ram_wdata[7:0];
+                if (ram_we[1]) ram[ram_addr][15:8]  = ram_wdata[15:8];
+                if (ram_we[2]) ram[ram_addr][23:16] = ram_wdata[23:16];
+                if (ram_we[3]) ram[ram_addr][31:24] = ram_wdata[31:24];
             end
         end
     end
@@ -310,10 +310,10 @@ module test_raw_eth_rx_adapter();
         .rx_raw_eth_axis_tvalid(axis_tvalid),
         .rx_raw_eth_axis_tready(axis_tready),
         .rx_raw_eth_axis_tlast(axis_tlast),
-        .rx_raw_eth_data_addr(rom_addr),
-        .rx_raw_eth_data_ce(rom_ce),
-        .rx_raw_eth_data_we(rom_we),
-        .rx_raw_eth_data_wdata(rom_wdata),
+        .rx_raw_eth_data_addr(ram_addr),
+        .rx_raw_eth_data_ce(ram_ce),
+        .rx_raw_eth_data_we(ram_we),
+        .rx_raw_eth_data_wdata(ram_wdata),
         .rx_raw_eth_data_frame_ready(frame_ready),
         .rx_raw_eth_data_ack(ack),
         .ip_addr(ip_addr),
@@ -397,7 +397,7 @@ module test_raw_eth_rx_adapter();
         axis_tlast  = 1'b0;
     endtask
 
-    task automatic check_rom(
+    task automatic check_ram(
         input [15:0] packet_len,
         input [MAX_PACKET_LEN*8-1:0] packet
     );
@@ -405,7 +405,7 @@ module test_raw_eth_rx_adapter();
         logic [ADDR_WIDTH-1:0] addr;
         logic [4:0] offset;
         integer j;
-        assert (rom[0][15:0] == packet_len) else begin
+        assert (ram[0][15:0] == packet_len) else begin
             error_code = 32'd2;
             $finish;
         end
@@ -413,7 +413,7 @@ module test_raw_eth_rx_adapter();
             index  = j + 2;
             addr   = index[ADDR_WIDTH+1:2];
             offset = 8 * index[1:0];
-            assert (rom[addr][offset +: 8] == packet[8*j +: 8]) else begin
+            assert (ram[addr][offset +: 8] == packet[8*j +: 8]) else begin
                 error_code = 32'd3;
                 $finish;
             end
@@ -425,7 +425,7 @@ module test_raw_eth_rx_adapter();
         input [MAX_PACKET_LEN*8-1:0] packet
     );
         #(DELAY);
-        reset_rom();
+        reset_ram();
         ack = 1'b0;
         @(posedge clk);
         send_packet(.packet_len(packet_len), .packet(packet));
@@ -434,14 +434,14 @@ module test_raw_eth_rx_adapter();
             error_code = 32'd4;
             $finish;
         end
-        rom_is_not_touched();
+        ram_is_not_touched();
         send_packet_with_interval(.packet_len(packet_len), .packet(packet));
         repeat(20) @(posedge clk);
         assert (frame_ready == 1'b0) else begin
             error_code = 32'd5;
             $finish;
         end
-        rom_is_not_touched();
+        ram_is_not_touched();
     endtask
 
     task automatic test_packet_received (
@@ -457,14 +457,14 @@ module test_raw_eth_rx_adapter();
             error_code = 32'd6;
             $finish;
         end
-        check_rom(.packet_len(packet_len), .packet(packet));
+        check_ram(.packet_len(packet_len), .packet(packet));
         #(DELAY);
         ack = 1'b1;
         while (frame_ready) begin
             @(posedge clk);
             #(DELAY);
         end
-        reset_rom();
+        reset_ram();
         ack = 1'b0;
         @(posedge clk);
         send_packet_with_interval(.packet_len(packet_len), .packet(packet));
@@ -473,7 +473,7 @@ module test_raw_eth_rx_adapter();
             error_code = 32'd7;
             $finish;
         end
-        check_rom(.packet_len(packet_len), .packet(packet));
+        check_ram(.packet_len(packet_len), .packet(packet));
         #(DELAY);
         ack = 1'b1;
         while (frame_ready) begin
@@ -531,10 +531,10 @@ module test_raw_eth_rx_adapter();
             error_code = 32'd8;
             $finish;
         end
-        reset_rom();
+        reset_ram();
         send_packet(.packet_len(IPV4_ANOTHER_PACKET_LEN), .packet(ipv4_another_packet_unicast_to_me));
         repeat(20) @(posedge clk);
-        rom_is_not_touched();
+        ram_is_not_touched();
 
         $finish;
     end
