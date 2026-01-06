@@ -60,12 +60,27 @@ module verilog_ethernet (
     output wire        rx_ip_payload_axis_tlast,
     output wire        rx_ip_payload_axis_tuser,
 
-    input  wire        tx_raw_eth_frame_ready,
-    input  wire        tx_raw_eth_completed,
     input  wire [7:0]  tx_raw_eth_axis_tdata,
     input  wire        tx_raw_eth_axis_tvalid,
     output wire        tx_raw_eth_axis_tready,
     input  wire        tx_raw_eth_axis_tlast,
+
+    input  wire        tx_raw_eth_ip_hdr_valid,
+    output wire        tx_raw_eth_ip_hdr_ready,
+    input  wire [5:0]  tx_raw_eth_ip_dscp,
+    input  wire [1:0]  tx_raw_eth_ip_ecn,
+    input  wire [15:0] tx_raw_eth_ip_length,
+    input  wire [7:0]  tx_raw_eth_ip_ttl,
+    input  wire [7:0]  tx_raw_eth_ip_protocol,
+    input  wire [31:0] tx_raw_eth_ip_source_ip,
+    input  wire [31:0] tx_raw_eth_ip_dest_ip,
+    input  wire [7:0]  tx_raw_eth_ip_payload_axis_tdata,
+    input  wire        tx_raw_eth_ip_payload_axis_tvalid,
+    output wire        tx_raw_eth_ip_payload_axis_tready,
+    input  wire        tx_raw_eth_ip_payload_axis_tlast,
+
+    input  wire        select_tx_raw_eth_axis,
+    input  wire        select_tx_raw_eth_ip,
 
     output wire [7:0]  rx_raw_eth_axis_tdata,
     output wire        rx_raw_eth_axis_tvalid,
@@ -273,7 +288,6 @@ eth_axis_tx_inst (
 );
 
 // 0: ROS2rapper, 1: raw ether
-wire axis_mux_select = tx_raw_eth_frame_ready & ~tx_raw_eth_completed;
 axis_mux #(
     .S_COUNT(2),
     .DATA_WIDTH(8),
@@ -309,7 +323,7 @@ axis_mux_inst (
     .m_axis_tuser(tx_axis_tuser),
 
     .enable(enable),
-    .select(axis_mux_select)
+    .select(select_tx_raw_eth_axis)
 );
 
 wire        udp_hdr_valid;
@@ -339,6 +353,21 @@ wire        udp_payload_axis_tvalid;
 wire        udp_payload_axis_tready;
 wire        udp_payload_axis_tlast;
 wire        udp_payload_axis_tuser;
+
+wire        tx_ros2_ip_hdr_valid;
+wire        tx_ros2_ip_hdr_ready;
+wire [5:0]  tx_ros2_ip_dscp;
+wire [1:0]  tx_ros2_ip_ecn;
+wire [15:0] tx_ros2_ip_length;
+wire [7:0]  tx_ros2_ip_ttl;
+wire [7:0]  tx_ros2_ip_protocol;
+wire [31:0] tx_ros2_ip_source_ip;
+wire [31:0] tx_ros2_ip_dest_ip;
+wire [7:0]  tx_ros2_ip_payload_axis_tdata;
+wire        tx_ros2_ip_payload_axis_tvalid;
+wire        tx_ros2_ip_payload_axis_tready;
+wire        tx_ros2_ip_payload_axis_tlast;
+wire        tx_ros2_ip_payload_axis_tuser;
 
 wire        tx_ip_hdr_valid;
 wire        tx_ip_hdr_ready;
@@ -450,6 +479,78 @@ udp_ip_tx_inst(
     .s_udp_payload_axis_tlast(udp_payload_axis_tlast),
     .s_udp_payload_axis_tuser(udp_payload_axis_tuser),
 
+    .m_ip_hdr_valid(tx_ros2_ip_hdr_valid),
+    .m_ip_hdr_ready(tx_ros2_ip_hdr_ready),
+    .m_eth_dest_mac(),
+    .m_eth_src_mac(),
+    .m_eth_type(),
+    .m_ip_version(),
+    .m_ip_ihl(),
+    .m_ip_dscp(tx_ros2_ip_dscp),
+    .m_ip_ecn(tx_ros2_ip_ecn),
+    .m_ip_length(tx_ros2_ip_length),
+    .m_ip_identification(),
+    .m_ip_flags(),
+    .m_ip_fragment_offset(),
+    .m_ip_ttl(tx_ros2_ip_ttl),
+    .m_ip_protocol(tx_ros2_ip_protocol),
+    .m_ip_header_checksum(),
+    .m_ip_source_ip(tx_ros2_ip_source_ip),
+    .m_ip_dest_ip(tx_ros2_ip_dest_ip),
+    .m_ip_payload_axis_tdata(tx_ros2_ip_payload_axis_tdata),
+    .m_ip_payload_axis_tvalid(tx_ros2_ip_payload_axis_tvalid),
+    .m_ip_payload_axis_tready(tx_ros2_ip_payload_axis_tready),
+    .m_ip_payload_axis_tlast(tx_ros2_ip_payload_axis_tlast),
+    .m_ip_payload_axis_tuser(tx_ros2_ip_payload_axis_tuser),
+
+    .busy(),
+    .error_payload_early_termination()
+);
+
+// 0: ROS2rapper, 1: raw ether
+ip_mux #(
+    .S_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+ip_mux_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_ip_hdr_valid({tx_raw_eth_ip_hdr_valid, tx_ros2_ip_hdr_valid}),
+    .s_ip_hdr_ready({tx_raw_eth_ip_hdr_ready, tx_ros2_ip_hdr_ready}),
+    .s_eth_dest_mac(96'd0),
+    .s_eth_src_mac(96'd0),
+    .s_eth_type(32'd0),
+    .s_ip_version(8'd0),
+    .s_ip_ihl(8'd0),
+    .s_ip_dscp({tx_raw_eth_ip_dscp, tx_ros2_ip_dscp}),
+    .s_ip_ecn({tx_raw_eth_ip_ecn, tx_ros2_ip_ecn}),
+    .s_ip_length({tx_raw_eth_ip_length, tx_ros2_ip_length}),
+    .s_ip_identification(32'd0),
+    .s_ip_flags(6'd0),
+    .s_ip_fragment_offset(26'd0),
+    .s_ip_ttl({tx_raw_eth_ip_ttl, tx_ros2_ip_ttl}),
+    .s_ip_protocol({tx_raw_eth_ip_protocol, tx_ros2_ip_protocol}),
+    .s_ip_header_checksum(32'd0),
+    .s_ip_source_ip({tx_raw_eth_ip_source_ip, tx_ros2_ip_source_ip}),
+    .s_ip_dest_ip({tx_raw_eth_ip_dest_ip, tx_ros2_ip_dest_ip}),
+    .s_ip_payload_axis_tdata({tx_raw_eth_ip_payload_axis_tdata, tx_ros2_ip_payload_axis_tdata}),
+    .s_ip_payload_axis_tkeep(2'd0),
+    .s_ip_payload_axis_tvalid({tx_raw_eth_ip_payload_axis_tvalid, tx_ros2_ip_payload_axis_tvalid}),
+    .s_ip_payload_axis_tready({tx_raw_eth_ip_payload_axis_tready, tx_ros2_ip_payload_axis_tready}),
+    .s_ip_payload_axis_tlast({tx_raw_eth_ip_payload_axis_tlast, tx_ros2_ip_payload_axis_tlast}),
+    .s_ip_payload_axis_tid(16'd0),
+    .s_ip_payload_axis_tdest(16'd0),
+    .s_ip_payload_axis_tuser({1'b0, tx_ros2_ip_payload_axis_tuser}),
+
     .m_ip_hdr_valid(tx_ip_hdr_valid),
     .m_ip_hdr_ready(tx_ip_hdr_ready),
     .m_eth_dest_mac(),
@@ -469,13 +570,16 @@ udp_ip_tx_inst(
     .m_ip_source_ip(tx_ip_source_ip),
     .m_ip_dest_ip(tx_ip_dest_ip),
     .m_ip_payload_axis_tdata(tx_ip_payload_axis_tdata),
+    .m_ip_payload_axis_tkeep(),
     .m_ip_payload_axis_tvalid(tx_ip_payload_axis_tvalid),
     .m_ip_payload_axis_tready(tx_ip_payload_axis_tready),
     .m_ip_payload_axis_tlast(tx_ip_payload_axis_tlast),
+    .m_ip_payload_axis_tid(),
+    .m_ip_payload_axis_tdest(),
     .m_ip_payload_axis_tuser(tx_ip_payload_axis_tuser),
 
-    .busy(),
-    .error_payload_early_termination()
+    .enable(enable),
+    .select(select_tx_raw_eth_ip)
 );
 
 ip_complete #(
