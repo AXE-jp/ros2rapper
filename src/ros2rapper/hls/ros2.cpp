@@ -461,9 +461,9 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     reader.alive = true;
     reader.parent_id = sedp_matched_idx;
 
-    bool            is_app_reader_tbl_full;
-    bool            is_app_reader_matched;
-    app_reader_id_t app_unused_idx;
+    bool            is_app_reader_tbl_full = false;
+    bool            is_app_reader_matched = false;
+    app_reader_id_t app_unused_idx = 0;
     bool            find_new_app_endpoint = false;
     if (is_participant_matched
         && ((rtps_data.type == RTPS_TYPE_SEDP_PUB)
