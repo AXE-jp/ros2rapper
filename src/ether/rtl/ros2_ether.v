@@ -264,6 +264,23 @@ wire tx_raw_eth_axis_tvalid;
 wire tx_raw_eth_axis_tready;
 wire tx_raw_eth_axis_tlast;
 
+wire tx_raw_eth_ip_hdr_valid;
+wire tx_raw_eth_ip_hdr_ready;
+wire [5:0]  tx_raw_eth_ip_dscp;
+wire [1:0]  tx_raw_eth_ip_ecn;
+wire [15:0] tx_raw_eth_ip_length;
+wire [7:0]  tx_raw_eth_ip_ttl;
+wire [7:0]  tx_raw_eth_ip_protocol;
+wire [31:0] tx_raw_eth_ip_source_ip;
+wire [31:0] tx_raw_eth_ip_dest_ip;
+wire [7:0]  tx_raw_eth_ip_payload_axis_tdata;
+wire tx_raw_eth_ip_payload_axis_tvalid;
+wire tx_raw_eth_ip_payload_axis_tready;
+wire tx_raw_eth_ip_payload_axis_tlast;
+
+wire select_tx_raw_eth_axis;
+wire select_tx_raw_eth_ip;
+
 wire [7:0] rx_raw_eth_axis_tdata;
 wire rx_raw_eth_axis_tvalid;
 wire rx_raw_eth_axis_tready;
@@ -323,12 +340,27 @@ verilog_ethernet verilog_ethernet_inst (
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
 
-    .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
-    .tx_raw_eth_completed(tx_raw_eth_completed),
     .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
     .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
     .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
     .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+
+    .tx_raw_eth_ip_hdr_valid(tx_raw_eth_ip_hdr_valid),
+    .tx_raw_eth_ip_hdr_ready(tx_raw_eth_ip_hdr_ready),
+    .tx_raw_eth_ip_dscp(tx_raw_eth_ip_dscp),
+    .tx_raw_eth_ip_ecn(tx_raw_eth_ip_ecn),
+    .tx_raw_eth_ip_length(tx_raw_eth_ip_length),
+    .tx_raw_eth_ip_ttl(tx_raw_eth_ip_ttl),
+    .tx_raw_eth_ip_protocol(tx_raw_eth_ip_protocol),
+    .tx_raw_eth_ip_source_ip(tx_raw_eth_ip_source_ip),
+    .tx_raw_eth_ip_dest_ip(tx_raw_eth_ip_dest_ip),
+    .tx_raw_eth_ip_payload_axis_tdata(tx_raw_eth_ip_payload_axis_tdata),
+    .tx_raw_eth_ip_payload_axis_tvalid(tx_raw_eth_ip_payload_axis_tvalid),
+    .tx_raw_eth_ip_payload_axis_tready(tx_raw_eth_ip_payload_axis_tready),
+    .tx_raw_eth_ip_payload_axis_tlast(tx_raw_eth_ip_payload_axis_tlast),
+
+    .select_tx_raw_eth_axis(select_tx_raw_eth_axis),
+    .select_tx_raw_eth_ip(select_tx_raw_eth_ip),
 
     .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
     .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
@@ -660,7 +692,22 @@ raw_eth_tx_adapter_inst (
     .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
     .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
     .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
-    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast)
+    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+    .tx_raw_eth_ip_hdr_valid(tx_raw_eth_ip_hdr_valid),
+    .tx_raw_eth_ip_hdr_ready(tx_raw_eth_ip_hdr_ready),
+    .tx_raw_eth_ip_dscp(tx_raw_eth_ip_dscp),
+    .tx_raw_eth_ip_ecn(tx_raw_eth_ip_ecn),
+    .tx_raw_eth_ip_length(tx_raw_eth_ip_length),
+    .tx_raw_eth_ip_ttl(tx_raw_eth_ip_ttl),
+    .tx_raw_eth_ip_protocol(tx_raw_eth_ip_protocol),
+    .tx_raw_eth_ip_source_ip(tx_raw_eth_ip_source_ip),
+    .tx_raw_eth_ip_dest_ip(tx_raw_eth_ip_dest_ip),
+    .tx_raw_eth_ip_payload_axis_tdata(tx_raw_eth_ip_payload_axis_tdata),
+    .tx_raw_eth_ip_payload_axis_tvalid(tx_raw_eth_ip_payload_axis_tvalid),
+    .tx_raw_eth_ip_payload_axis_tready(tx_raw_eth_ip_payload_axis_tready),
+    .tx_raw_eth_ip_payload_axis_tlast(tx_raw_eth_ip_payload_axis_tlast),
+    .select_tx_raw_eth_axis(select_tx_raw_eth_axis),
+    .select_tx_raw_eth_ip(select_tx_raw_eth_ip)
 );
 
 raw_eth_rx_adapter
