@@ -273,6 +273,18 @@ tx_fifo (
     .m_status_good_frame()
 );
 
+(* ASYNC_REG = "TRUE" *) reg rx_sync_en_reg_1, rx_sync_en_reg_2;
+
+always @(posedge rx_clk or posedge rx_rst) begin
+    if (rx_rst) begin
+        rx_sync_en_reg_1 <= 2'd0;
+        rx_sync_en_reg_2 <= 2'd0;
+    end else begin
+        rx_sync_en_reg_1 <= logic_enable;
+        rx_sync_en_reg_2 <= rx_sync_en_reg_1;
+    end
+end
+
 axis_async_fifo_adapter #(
     .DEPTH(RX_FIFO_DEPTH),
     .S_DATA_WIDTH(8),
@@ -296,7 +308,7 @@ rx_fifo (
     // AXI input
     .s_clk(rx_clk),
     .s_rst_n(~rx_rst),
-    .s_drop(~logic_enable),
+    .s_drop(~rx_sync_en_reg_2),
     .s_axis_tdata(rx_fifo_axis_tdata),
     .s_axis_tkeep(1'b1),
     .s_axis_tvalid(rx_fifo_axis_tvalid),
