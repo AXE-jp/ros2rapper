@@ -175,37 +175,37 @@ reg [ADDR_WIDTH:0] rd_ptr_gray_reg;
 
 (* SHREG_EXTRACT = "NO" *)
 reg [ADDR_WIDTH:0] wr_ptr_gray_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] wr_ptr_gray_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] rd_ptr_gray_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] rd_ptr_gray_sync2_reg;
 
 reg wr_ptr_update_valid_reg;
 reg wr_ptr_update_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *)
 reg wr_ptr_update_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_sync3_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_ack_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_ack_sync2_reg;
 
 (* SHREG_EXTRACT = "NO" *)
 reg s_rst_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg s_rst_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg s_rst_sync3_reg;
 (* SHREG_EXTRACT = "NO" *)
 reg m_rst_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg m_rst_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg m_rst_sync3_reg;
 
 (* ramstyle = "no_rw_check" *)
@@ -238,17 +238,17 @@ reg m_drop_frame_reg;
 reg m_terminate_frame_reg;
 
 reg overflow_sync1_reg;
-reg overflow_sync2_reg;
-reg overflow_sync3_reg;
-reg overflow_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync4_reg;
 reg bad_frame_sync1_reg;
-reg bad_frame_sync2_reg;
-reg bad_frame_sync3_reg;
-reg bad_frame_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync4_reg;
 reg good_frame_sync1_reg;
-reg good_frame_sync2_reg;
-reg good_frame_sync3_reg;
-reg good_frame_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync4_reg;
 
 assign s_axis_tready = (FRAME_FIFO ? (!full_cur || (full_wr && DROP_OVERSIZE_FRAME) || DROP_WHEN_FULL) : !full) && s_rst_sync3_reg;
 

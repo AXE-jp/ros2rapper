@@ -129,9 +129,9 @@ wire        rx_fifo_axis_tuser;
 wire tx_error_underflow_int;
 
 reg [0:0] tx_sync_reg_1;
-reg [0:0] tx_sync_reg_2;
-reg [0:0] tx_sync_reg_3;
-reg [0:0] tx_sync_reg_4;
+(* ASYNC_REG = "TRUE" *) reg [0:0] tx_sync_reg_2;
+(* ASYNC_REG = "TRUE" *) reg [0:0] tx_sync_reg_3;
+(* ASYNC_REG = "TRUE" *) reg [0:0] tx_sync_reg_4;
 
 assign tx_error_underflow = tx_sync_reg_3[0] ^ tx_sync_reg_4[0];
 
@@ -159,9 +159,9 @@ wire rx_error_bad_frame_int;
 wire rx_error_bad_fcs_int;
 
 reg [1:0] rx_sync_reg_1;
-reg [1:0] rx_sync_reg_2;
-reg [1:0] rx_sync_reg_3;
-reg [1:0] rx_sync_reg_4;
+(* ASYNC_REG = "TRUE" *) reg [1:0] rx_sync_reg_2;
+(* ASYNC_REG = "TRUE" *) reg [1:0] rx_sync_reg_3;
+(* ASYNC_REG = "TRUE" *) reg [1:0] rx_sync_reg_4;
 
 assign rx_error_bad_frame = rx_sync_reg_3[0] ^ rx_sync_reg_4[0];
 assign rx_error_bad_fcs = rx_sync_reg_3[1] ^ rx_sync_reg_4[1];
