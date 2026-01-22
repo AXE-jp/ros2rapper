@@ -505,11 +505,34 @@ static int test_remove_dead_endpoints_3() {
     return 0;
 }
 
+int test_remove_dead_endpoints_4() {
+    // Test timeout with timestamp overflow
+    const int64_t timestamp_i64_old = 0x7fffffff00000000;
+    const int64_t timestamp_i64_new = -0x7fffffc000000000;
+    const int64_t lease_duration = 0x0000001400000000; // 20 sec
+    // Initialize sedp_reader_tbl.
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        set_sedp_reader_tbl(SEDP_ENDPOINT_ALIVE, &sedp_reader_tbl, j, 0);
+        set_sedp_reader_tbl_lease_duration(lease_duration, &sedp_reader_tbl, j);
+        set_sedp_reader_tbl_timestamp(timestamp_i64_old, &sedp_reader_tbl, j);
+        clear_sedp_reader_tbl_children(&sedp_reader_tbl, j);
+    }
+    // Call remove_dead_endpoints and check sedp_reader_tbl.
+    // All endpoints should be removed.
+    for (auto j = 0; j < SEDP_READER_MAX; j++) {
+        call_remove_dead_endpoints(j, &sedp_reader_tbl, &app_reader_tbl,
+                                   timestamp_i64_new);
+        assert(!is_sedp_endpoint_alive(&sedp_reader_tbl, j));
+    }
+    return 0;
+}
+
 int test_remove_endpoints() {
     assert(test_update_liveliness() == 0);
     assert(test_update_liveliness_2() == 0);
     assert(test_remove_dead_endpoints_1() == 0);
     assert(test_remove_dead_endpoints_2() == 0);
     assert(test_remove_dead_endpoints_3() == 0);
+    assert(test_remove_dead_endpoints_4() == 0);
     return 0;
 }

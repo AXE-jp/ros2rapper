@@ -428,12 +428,27 @@ module ros2_module #(
         .o_rdata(payloadsmem_rdata)
     );
 
-    // --- ROS2rapper with Ethernet
     localparam PRESCALER_DIV = 64;
-    ros2_ether #(
-        .SET_TX_PERIOD_BY_PARAMETER (1),
-        .PRESCALER_DIV              (PRESCALER_DIV),
-        .ROS2CLK_HZ                 (ROS2CLK_HZ),
+    wire cnt_interval_set;
+    wire cnt_spdp_wr_set;
+    wire cnt_sedp_pub_wr_set;
+    wire cnt_sedp_sub_wr_set;
+    wire cnt_sedp_pub_hb_set;
+    wire cnt_sedp_sub_hb_set;
+    wire cnt_sedp_pub_an_set;
+    wire cnt_sedp_sub_an_set;
+    wire cnt_app_wr_set;
+    wire cnt_interval_elapsed;
+    wire cnt_spdp_wr_elapsed;
+    wire cnt_sedp_pub_wr_elapsed;
+    wire cnt_sedp_sub_wr_elapsed;
+    wire cnt_sedp_pub_hb_elapsed;
+    wire cnt_sedp_sub_hb_elapsed;
+    wire cnt_sedp_pub_an_elapsed;
+    wire cnt_sedp_sub_an_elapsed;
+    wire cnt_app_wr_elapsed;
+    ros2rapper_tx_counters #(
+        .PRESCALER_DIV(64),
         .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
         .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
@@ -443,6 +458,35 @@ module ros2_module #(
         .TX_PERIOD_SEDP_PUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_SEDP_SUB_AN_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_APP_WR_COUNT     ((ROS2CLK_HZ / PRESCALER_DIV) * 3)
+    )
+    ros2rapper_tx_counters_inst (
+        .i_clk(clk),
+        .i_rst_n(rst_n),
+        .i_cnt_interval_set(cnt_interval_set),
+        .i_cnt_spdp_wr_set(cnt_spdp_wr_set),
+        .i_cnt_sedp_pub_wr_set(cnt_sedp_pub_wr_set),
+        .i_cnt_sedp_sub_wr_set(cnt_sedp_sub_wr_set),
+        .i_cnt_sedp_pub_hb_set(cnt_sedp_pub_hb_set),
+        .i_cnt_sedp_sub_hb_set(cnt_sedp_sub_hb_set),
+        .i_cnt_sedp_pub_an_set(cnt_sedp_pub_an_set),
+        .i_cnt_sedp_sub_an_set(cnt_sedp_sub_an_set),
+        .i_cnt_app_wr_set(cnt_app_wr_set),
+        .o_cnt_interval_elapsed(cnt_interval_elapsed),
+        .o_cnt_spdp_wr_elapsed(cnt_spdp_wr_elapsed),
+        .o_cnt_sedp_pub_wr_elapsed(cnt_sedp_pub_wr_elapsed),
+        .o_cnt_sedp_sub_wr_elapsed(cnt_sedp_sub_wr_elapsed),
+        .o_cnt_sedp_pub_hb_elapsed(cnt_sedp_pub_hb_elapsed),
+        .o_cnt_sedp_sub_hb_elapsed(cnt_sedp_sub_hb_elapsed),
+        .o_cnt_sedp_pub_an_elapsed(cnt_sedp_pub_an_elapsed),
+        .o_cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
+        .o_cnt_app_wr_elapsed(cnt_app_wr_elapsed)
+    );
+
+    localparam TIMESTAMP_INCREMENT = 33'h100000000 / ROS2CLK_HZ;
+
+    // --- ROS2rapper with Ethernet
+    ros2_ether #(
+        .SET_TX_PERIOD_BY_PARAMETER(0)
     )
     ros2 (
         .clk(clk),
@@ -580,6 +624,28 @@ module ros2_module #(
         .ros2_sub_app_data_ack(ros2_sub_app_data_ack),
         .ros2_sub_app_data_nack(ros2_sub_app_data_nack),
         .ros2_sub_app_data_grant(),
+
+        .ros2_cnt_interval_set(cnt_interval_set),
+        .ros2_cnt_spdp_wr_set(cnt_spdp_wr_set),
+        .ros2_cnt_sedp_pub_wr_set(cnt_sedp_pub_wr_set),
+        .ros2_cnt_sedp_sub_wr_set(cnt_sedp_sub_wr_set),
+        .ros2_cnt_sedp_pub_hb_set(cnt_sedp_pub_hb_set),
+        .ros2_cnt_sedp_sub_hb_set(cnt_sedp_sub_hb_set),
+        .ros2_cnt_sedp_pub_an_set(cnt_sedp_pub_an_set),
+        .ros2_cnt_sedp_sub_an_set(cnt_sedp_sub_an_set),
+        .ros2_cnt_app_wr_set(cnt_app_wr_set),
+
+        .ros2_cnt_interval_elapsed(cnt_interval_elapsed),
+        .ros2_cnt_spdp_wr_elapsed(cnt_spdp_wr_elapsed),
+        .ros2_cnt_sedp_pub_wr_elapsed(cnt_sedp_pub_wr_elapsed),
+        .ros2_cnt_sedp_sub_wr_elapsed(cnt_sedp_sub_wr_elapsed),
+        .ros2_cnt_sedp_pub_hb_elapsed(cnt_sedp_pub_hb_elapsed),
+        .ros2_cnt_sedp_sub_hb_elapsed(cnt_sedp_sub_hb_elapsed),
+        .ros2_cnt_sedp_pub_an_elapsed(cnt_sedp_pub_an_elapsed),
+        .ros2_cnt_sedp_sub_an_elapsed(cnt_sedp_sub_an_elapsed),
+        .ros2_cnt_app_wr_elapsed(cnt_app_wr_elapsed),
+
+        .ros2_timestamp_increment(TIMESTAMP_INCREMENT),
 
         .ros2_sedp_reader_cnt(),
         .ros2_app_reader_cnt(),

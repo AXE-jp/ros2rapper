@@ -393,7 +393,7 @@ module top (
                     end
                 end else if (tx_raw_eth_data_addr == 378) begin
                     if (raw_eth_state == RAW_ETH_IP_UNICAST) begin
-                        tx_raw_eth_data_rdata <= {"\n", 16'h55_55_55}; // "UUU\n"
+                        tx_raw_eth_data_rdata <= {"\n", 24'h55_55_55}; // "UUU\n"
                     end
                 end
             end
