@@ -178,6 +178,8 @@ module ros2_ether #(
     input wire ros2_cnt_sedp_sub_an_elapsed,
     input wire ros2_cnt_app_wr_elapsed,
 
+    input wire [31:0] ros2_timestamp_increment,
+
     output wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt,
     output wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0] ros2_app_reader_cnt,
 
@@ -592,6 +594,8 @@ ros2rapper (
     .ros2_cnt_sedp_pub_an_elapsed(ros2_cnt_sedp_pub_an_elapsed),
     .ros2_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
     .ros2_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
+
+    .ros2_timestamp_increment(ros2_timestamp_increment),
 
     .ros2_sedp_reader_cnt(ros2_sedp_reader_cnt),
     .ros2_app_reader_cnt(ros2_app_reader_cnt),

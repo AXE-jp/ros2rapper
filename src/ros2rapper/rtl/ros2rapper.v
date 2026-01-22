@@ -176,6 +176,8 @@ module ros2rapper #(
     input wire ros2_cnt_sedp_sub_an_elapsed,
     input wire ros2_cnt_app_wr_elapsed,
 
+    input wire [31:0] ros2_timestamp_increment,
+
     output wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt,
     output wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0] ros2_app_reader_cnt,
 
@@ -251,15 +253,20 @@ endgenerate
 
 // local_timestamp[63:32] is time in second and local_timestamp[31:0] is the fractional part.
 reg [63:0] local_timestamp;
-// Designate the bit length to prevent overflow.
-localparam [33:0] TWO_SECONDS = 2 * (2 ** 32);
 // How much local_timestamp increases in each cycle.
-localparam LOCAL_TIMESTAMP_INCREMENT = (TWO_SECONDS + ROS2CLK_HZ) / (2 * ROS2CLK_HZ);
+wire [31:0] local_timestamp_increment;
+generate
+    if (SET_TX_PERIOD_BY_PARAMETER) begin
+        assign local_timestamp_increment = (34'h200000000 + ROS2CLK_HZ) / (2 * ROS2CLK_HZ);
+    end else begin
+        assign local_timestamp_increment = ros2_timestamp_increment;
+    end
+endgenerate
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         local_timestamp <= 64'd0;
     end else begin
-        local_timestamp <= local_timestamp + LOCAL_TIMESTAMP_INCREMENT;
+        local_timestamp <= local_timestamp + local_timestamp_increment;
     end
 end
 
