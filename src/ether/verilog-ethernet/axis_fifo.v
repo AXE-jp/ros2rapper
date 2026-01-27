@@ -385,6 +385,8 @@ always @(posedge clk or negedge rst_n) begin
                 wr_ptr_reg <= wr_ptr_reg + 1;
                 wr_ptr_commit_reg <= wr_ptr_reg + 1;
             end
+
+            if (!MARK_WHEN_FULL) mark_frame_reg <= 1'b0;
         end
     end
 end
