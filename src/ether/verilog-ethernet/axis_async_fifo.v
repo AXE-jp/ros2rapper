@@ -406,19 +406,19 @@ always @(posedge s_clk or negedge s_rst_n) begin
             if (!FRAME_FIFO) begin
                 // normal FIFO mode
                 mem[wr_ptr_reg[ADDR_WIDTH-1:0]] <= s_axis;
-                if (drop_frame_reg && LAST_ENABLE) begin
+                if ((drop_frame_reg || s_drop) && LAST_ENABLE) begin
                     // currently dropping frame
                     // (only for frame transfers interrupted by sink reset)
                     if (s_axis_tlast) begin
                         // end of frame, clear drop flag
-                        drop_frame_reg <= s_drop;
+                        drop_frame_reg <= 1'b0;
                     end
                 end else begin
                     // update pointers
                     wr_ptr_reg <= (wr_ptr_reg + 1);
                     wr_ptr_gray_reg <= calc_gray(wr_ptr_reg + 1);
                 end
-            end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg) begin
+            end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg || s_drop) begin
                 // full, packet overflow, or currently dropping frame
                 // drop frame
                 drop_frame_reg <= 1'b1;
@@ -426,7 +426,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
                     // end of frame, reset write pointer
                     wr_ptr_cur_reg <= wr_ptr_reg;
                     wr_ptr_cur_gray_reg <= calc_gray(wr_ptr_reg);
-                    drop_frame_reg <= s_drop;
+                    drop_frame_reg <= 1'b0;
                     overflow_reg <= 1'b1;
                 end
             end else begin

@@ -227,7 +227,7 @@ module test_raw_eth_rx_adapter();
     localparam [15:0] RTPS_PACKET_WITH_OPTIONS_LEN = 16'd62;
     logic [495:0] rtps_packet_with_options = {
         dummy_payload,
-        "TSPR",
+        "SPTR",
         // UDP header
         16'd0, // UDP checksum
         8'd28, 8'd0, // payload length
