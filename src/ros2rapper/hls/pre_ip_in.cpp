@@ -4,10 +4,9 @@
 #include <cstdint>
 
 void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
-#pragma HLS interface mode=ap_ctrl_none port=return
-#pragma HLS interface mode=axis port=in
-#pragma HLS interface mode=axis port=out
-#pragma HLS pipeline style=flp
+#pragma HLS interface mode = ap_ctrl_none port = return
+#pragma HLS interface mode = axis port = in
+#pragma HLS interface mode = axis port = out
     static uint16_t offset = 0;
     static uint16_t len = 0;
 
