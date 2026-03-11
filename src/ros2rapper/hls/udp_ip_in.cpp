@@ -180,13 +180,12 @@ int8_t get_payload_offset(pending_index_t pindex) {
 void udp_ip_in(
     hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    uint32_t fragment_expiration, hls_uint<1> enable, uint8_t *error) {
+    uint32_t fragment_expiration, uint8_t *error) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out
 #pragma HLS interface mode = ap_memory port = ip_payloads storage_type = ram_1p
 #pragma HLS interface mode = ap_none port = fragment_expiration
-#pragma HLS interface mode = ap_none port = enable
 #pragma HLS interface mode = ap_vld port = error
 
     static pending_info pendings[MAX_PENDINGS] /* Cyber array=REG */;
@@ -262,11 +261,10 @@ void udp_ip_in(
         if (end) {
             reset_state();
             TRACE("%s: state changed to HEADER.\n", __func__);
-        } else if ((offset == IP_HDR_SIZE)
-                   && ((protocol != PSEUDO_HDR_PROTOCOL) || !enable)) {
-            // Ignore the received packet if it is not UDP or ROS2rapper is
-            // disabled.
+        } else if ((offset == IP_HDR_SIZE) && (protocol != PSEUDO_HDR_PROTOCOL)) {
+            // Ignore the received packet if it is not a UDP packet.
             state = UDP_IP_IN_STATE_SKIP;
+            TRACE("%s: The received packet is not UDP.\n", __func__);
             TRACE("%s: state changed to SKIP.\n", __func__);
         } else if (offset == IP_HDR_SIZE) {
             bool     has_more_fragments = HAS_MORE_FRAGMENTS(flags_and_offset);

@@ -11,4 +11,4 @@
 void udp_ip_in(
     hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    uint32_t fragment_expiration, hls_uint<1> enable, uint8_t *error);
+    uint32_t fragment_expiration, uint8_t *error);
