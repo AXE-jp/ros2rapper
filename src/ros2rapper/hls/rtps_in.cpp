@@ -9,24 +9,27 @@
 #define RTPS_IN_SBM_BODY     3
 #define RTPS_IN_SKIP         4
 
-void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-             bool enable, const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
-             uint8_t guid_prefix_out[GUID_PREFIX_SIZE], uint8_t *sbm_id_out,
-             uint8_t *sbm_flags_out) {
-#pragma HLS inline
+void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<rtps_in_data_t> &out,
+             hls_uint<1>   enable,
+             const uint8_t guid_prefix[GUID_PREFIX_SIZE]) {
+#pragma HLS interface mode = ap_ctrl_none port = return
+#pragma HLS interface mode = axis port = in
+#pragma HLS interface mode = axis port = out
+#pragma HLS interface mode = ap_none port = enable
+#pragma HLS array_reshape variable = guid_prefix type = complete dim = 0
+#pragma HLS interface mode = ap_none port = guid_prefix
     static hls_uint<3> state;
     static uint16_t    offset;
-
-    static uint8_t guid_prefix[GUID_PREFIX_SIZE];
-#pragma HLS array_partition variable = guid_prefix
-    static uint8_t  sbm_id;
-    static uint8_t  sbm_flags;
-    static uint16_t sbm_len;
-    bool            sbm_le = sbm_flags & SBM_FLAGS_ENDIANNESS;
+    static uint8_t     sbm_id;
+    static bool        sbm_le;
+    static uint16_t    sbm_len;
 
     hls_uint<9> x = in.read();
     uint8_t     data = x & 0xff;
     bool        end = x & 0x100;
+
+    rtps_in_data_t out_data;
+    out_data.data = x;
 
     switch (state) {
     case RTPS_IN_RTPS_HDR:
@@ -36,7 +39,8 @@ void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         }
         if ((offset >= RTPS_HDR_OFFSET_GUID_PREFIX)
             && (offset < (RTPS_HDR_OFFSET_GUID_PREFIX + GUID_PREFIX_SIZE))) {
-            guid_prefix[offset - RTPS_HDR_OFFSET_GUID_PREFIX] = data;
+            out_data.index = offset - RTPS_HDR_OFFSET_GUID_PREFIX;
+            out.write(out_data);
         }
         offset++;
         if (offset == RTPS_HDR_SIZE) {
@@ -52,9 +56,13 @@ void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         switch (offset) {
         case SBM_HDR_OFFSET_SUBMESSAGE_ID:
             sbm_id = data;
+            out_data.index = RTPS_IN_DATA_SBM_ID;
+            out.write(out_data);
             break;
         case SBM_HDR_OFFSET_FLAGS:
-            sbm_flags = data;
+            sbm_le = data & SBM_FLAGS_ENDIANNESS;
+            out_data.index = RTPS_IN_DATA_SBM_FLAGS;
+            out.write(out_data);
             break;
         case SBM_HDR_OFFSET_OCTETS_TO_NEXT_HEADER:
             sbm_len = sbm_le ? data : (data << 8);
@@ -76,7 +84,7 @@ void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         break;
     case RTPS_IN_SBM_INFO_DST:
         if ((offset < GUID_PREFIX_SIZE)
-            && (data != reader_guid_prefix[offset])) {
+            && (data != guid_prefix[offset])) {
             state = RTPS_IN_SKIP;
         }
         offset++;
@@ -87,13 +95,13 @@ void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         break;
     case RTPS_IN_SBM_BODY:
         offset++;
-        if (offset < sbm_len) {
-            out.write(x);
-        } else {
-            out.write(0x100 | data);
+        if (offset == sbm_len) {
             state = RTPS_IN_SBM_HDR;
             offset = 0;
+            out_data.data |= 0x100;
         }
+        out_data.index = RTPS_IN_DATA_SBM_PAYLOAD;
+        out.write(out_data);
         break;
     }
 
@@ -101,11 +109,4 @@ void rtps_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         state = RTPS_IN_RTPS_HDR;
         offset = 0;
     }
-
-    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
-#pragma HLS unroll
-        guid_prefix_out[j] = guid_prefix[j];
-    }
-    *sbm_id_out = sbm_id;
-    *sbm_flags_out = sbm_flags;
 }
