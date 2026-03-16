@@ -32,7 +32,6 @@ typedef struct {
     uint8_t  ip_addr[4] /* Cyber array=EXPAND */;
     uint8_t  subnet_mask[4] /* Cyber array=EXPAND */;
     uint16_t port_num_seed;
-    uint32_t fragment_expiration;
     uint8_t  guid_prefix[12] /* Cyber array=EXPAND, array_index=const */;
     uint8_t  pub_topic_name
         [PUB_TOPICS_MAX]
@@ -54,7 +53,6 @@ typedef struct {
         [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
     uint8_t sub_topic_type_name_len
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
-    bool ignore_ip_checksum;
 } receiver_config_t;
 
 typedef struct {
