@@ -7,7 +7,7 @@
 
 void sedp_heartbeat_in(hls_uint<9> x, hls_stream<rtps_data_t> &out,
                        const uint8_t guid_prefix[GUID_PREFIX_SIZE],
-                       uint8_t sbm_flags, uint16_t sbm_len) {
+                       uint8_t       sbm_flags) {
 #pragma HLS inline
     static const uint8_t pub_reader_id[4] /* Cyber array=EXPAND */
         = ENTITYID_BUILTIN_PUBLICATIONS_READER;
@@ -43,7 +43,7 @@ void sedp_heartbeat_in(hls_uint<9> x, hls_stream<rtps_data_t> &out,
     }
 
     offset++;
-    if (offset == sbm_len) {
+    if (offset == SBM_HEARTBEAT_DATA_SIZE) {
         rtps_data_t rtps_data;
 #pragma HLS array_partition variable = rtps_data.guid_prefix complete dim = 1
 #pragma HLS array_partition variable = rtps_data.data complete dim = 1

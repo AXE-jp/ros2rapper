@@ -72,28 +72,27 @@ void ros2_receiver(
     bool                    enable = (pub_enable != 0) || (sub_enable != 0);
     uint8_t                 guid_prefix[GUID_PREFIX_SIZE];
 #pragma HLS array_partition variable = guid_prefix type = complete dim = 1
-    uint8_t  sbm_id;
-    uint8_t  sbm_flags;
-    uint16_t sbm_len;
+    uint8_t sbm_id;
+    uint8_t sbm_flags;
 
     rtps_in(in, stream, enable, conf->guid_prefix, guid_prefix, &sbm_id,
-            &sbm_flags, &sbm_len);
+            &sbm_flags);
     if (!stream.empty()) {
         hls_uint<9> x;
         stream.read_nb(x);
         if (sbm_id == SBM_ID_HEARTBEAT) {
-            sedp_heartbeat_in(x, rtps_data_stream, guid_prefix, sbm_flags,
-                              sbm_len);
+            sedp_heartbeat_in(x, rtps_data_stream, guid_prefix, sbm_flags);
         } else if (sbm_id == SBM_ID_DATA) {
             hls_uint<10> y;
             rtps_data_in(x, &y, rtps_data_stream, sbm_flags, guid_prefix);
             discovery_protocol_in(
                 y, rtps_data_stream, sbm_flags, pub_enable, sub_enable,
-                conf->ip_addr, conf->subnet_mask, conf->port_num_seed, conf->pub_topic_name,
-                conf->pub_topic_name_len, conf->pub_topic_type_name,
-                conf->pub_topic_type_name_len, conf->sub_topic_name,
-                conf->sub_topic_name_len, conf->sub_topic_type_name,
-                conf->sub_topic_type_name_len, guid_prefix);
+                conf->ip_addr, conf->subnet_mask, conf->port_num_seed,
+                conf->pub_topic_name, conf->pub_topic_name_len,
+                conf->pub_topic_type_name, conf->pub_topic_type_name_len,
+                conf->sub_topic_name, conf->sub_topic_name_len,
+                conf->sub_topic_type_name, conf->sub_topic_type_name_len,
+                guid_prefix);
             out.write(y);
         }
     }

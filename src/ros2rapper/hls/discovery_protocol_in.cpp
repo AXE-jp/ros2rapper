@@ -9,7 +9,7 @@
 
 #define FLAG_LOCATOR_FOUND        0b00001
 #define FLAG_LEASE_DURATION_FOUND 0b00010
-#define FLAG_ENTITY_ID_FOUND       0b00100
+#define FLAG_ENTITY_ID_FOUND      0b00100
 #define FLAG_TOPIC_MATCHED        0b01000
 #define FLAG_TYPE_MATCHED         0b10000
 
@@ -70,7 +70,8 @@ static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
     return 0;
 }
 
-static void set_rtps_data_sedp(rtps_data_t *rtps_data, builtin_ep_type_t ep_type, flag_t flags,
+static void set_rtps_data_sedp(rtps_data_t      *rtps_data,
+                               builtin_ep_type_t ep_type, flag_t flags,
                                hls_uint<PUB_TOPICS_MAX> pub_topics_unmatched,
                                hls_uint<PUB_TOPICS_MAX> pub_types_unmatched,
                                uint8_t seqnum, const uint8_t entity_id[4]) {
