@@ -42,17 +42,17 @@ void app_reader(hls_stream<hls_uint<10>> &in,
         = ENTITYID_APP_READER_LIST;
 #pragma HLS array_partition variable = reader_entity_id_list complete dim = 0
 
-    static unsigned int             state;
-    static uint16_t                 offset;
+    static hls_uint<2>              state = STATE_PARSE_DATA;
+    static uint16_t                 offset = 0;
+    static hls_uint<SUB_TOPICS_MAX> topics_unmatched = 0;
     static uint16_t                 rep_id;
-    static hls_uint<SUB_TOPICS_MAX> topics_unmatched;
 
     hls_uint<10> x = in.read();
     uint8_t      data = x & 0xff;
     bool         end = x & 0x100;
-    bool         inline_qos = x & 0x200;
+    bool         valid = x & 0x200;
 
-    if (!inline_qos) {
+    if (valid) {
         switch (state) {
         case STATE_PARSE_DATA: // parse/check sub-message : DATA
             /* Cyber unroll_times=all */
@@ -88,7 +88,7 @@ void app_reader(hls_stream<hls_uint<10>> &in,
                 offset = 0;
                 topics_unmatched
                     |= ~hls_uint<SUB_TOPICS_MAX>(sub_app_data_grant);
-                if (end || (~topics_unmatched == 0)) {
+                if (~topics_unmatched == 0) {
                     state = STATE_WAIT_END;
                 } else {
                     state = STATE_PARSE_PAYLOAD_DATA;
@@ -125,7 +125,6 @@ void app_reader(hls_stream<hls_uint<10>> &in,
         *sub_app_data_rel = sub_app_data_grant;
         state = STATE_PARSE_DATA;
         offset = 0;
-        rep_id = 0;
         topics_unmatched = 0;
     }
 }
