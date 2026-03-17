@@ -1,10 +1,9 @@
 #pragma once
 
 #include "hls.hpp"
-#include "ros2_receiver.hpp"
-#include "rtps.hpp"
-#include <cstdint>
 
-void rtps_data_in(hls_uint<9> x, hls_uint<10> *out,
-                  hls_stream<rtps_data_t> &rtps_data_stream, uint8_t sbm_flags,
-                  const uint8_t guid_prefix[GUID_PREFIX_SIZE]);
+void rtps_sbm_data_in(hls_stream<hls_uint<10>> &in,
+                      hls_stream<hls_uint<1>>  &out_status_info,
+                      hls_stream<hls_uint<10>> &out_spdp_reader,
+                      hls_stream<hls_uint<10>> &out_sedp_reader,
+                      hls_stream<hls_uint<10>> &out_app_reader);
