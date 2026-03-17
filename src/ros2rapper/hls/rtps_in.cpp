@@ -146,9 +146,11 @@ void rtps_in(hls_stream<hls_uint<9>>  &in,
         offset = 0;
     }
 
-    rtps_in_send_output(out_guid_prefix, data, send_end_flag,
-                        guid_prefix_valid);
-    rtps_in_send_output(out_sbm_heartbeat, data, send_end_flag,
-                        sbm_heartbeat_valid);
-    rtps_in_send_output(out_sbm_data, data, send_end_flag, sbm_data_valid);
+    if (guid_prefix_valid || sbm_heartbeat_valid || sbm_data_valid) {
+        rtps_in_send_output(out_guid_prefix, data, send_end_flag,
+                            guid_prefix_valid);
+        rtps_in_send_output(out_sbm_heartbeat, data, send_end_flag,
+                            sbm_heartbeat_valid);
+        rtps_in_send_output(out_sbm_data, data, send_end_flag, sbm_data_valid);
+    }
 }
