@@ -8,6 +8,7 @@ proj_ros2_receiver_au25p/
 proj_ros2_sender_au25p/
 proj_ros2test/
 proj_rtps_in/
+proj_sedp_heartbeat_in/
 proj_test_input/
 proj_udp_ip_in/
 *.log
