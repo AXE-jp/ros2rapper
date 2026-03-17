@@ -10,6 +10,7 @@ proj_ros2test/
 proj_rtps_in/
 proj_rtps_sbm_data_in/
 proj_sedp_heartbeat_in/
+proj_spdp_reader/
 proj_test_input/
 proj_udp_ip_in/
 *.log
