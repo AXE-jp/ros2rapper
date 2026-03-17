@@ -21,8 +21,8 @@ static bool compare_guid_prefix(uint16_t offset, uint8_t data,
     return true;
 }
 
-static void send_output(hls_stream<hls_uint<10>> &out, uint8_t data, bool end,
-                        bool valid) {
+void rtps_in_send_output(hls_stream<hls_uint<10>> &out, uint8_t data, bool end,
+                         bool valid) {
 #pragma HLS inline
     hls_uint<10> x = data;
     if (end) {
@@ -146,7 +146,9 @@ void rtps_in(hls_stream<hls_uint<9>>  &in,
         offset = 0;
     }
 
-    send_output(out_guid_prefix, data, send_end_flag, guid_prefix_valid);
-    send_output(out_sbm_heartbeat, data, send_end_flag, sbm_heartbeat_valid);
-    send_output(out_sbm_data, data, send_end_flag, sbm_data_valid);
+    rtps_in_send_output(out_guid_prefix, data, send_end_flag,
+                        guid_prefix_valid);
+    rtps_in_send_output(out_sbm_heartbeat, data, send_end_flag,
+                        sbm_heartbeat_valid);
+    rtps_in_send_output(out_sbm_data, data, send_end_flag, sbm_data_valid);
 }

@@ -4,6 +4,9 @@
 #include "rtps.hpp"
 #include <cstdint>
 
+void rtps_in_send_output(hls_stream<hls_uint<10>> &out, uint8_t data, bool end,
+                         bool valid);
+
 void rtps_in(hls_stream<hls_uint<9>>  &in,
              hls_stream<hls_uint<10>> &out_guid_prefix,
              hls_stream<hls_uint<10>> &out_sbm_heartbeat,

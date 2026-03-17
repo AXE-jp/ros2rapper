@@ -1,5 +1,6 @@
 #include "hls.hpp"
 #include "rtps.hpp"
+#include "rtps_in.hpp"
 #include <cstdint>
 
 #define RTPS_SBM_DATA_IN_STATE_SBM_HDR                0
@@ -34,6 +35,7 @@ void rtps_sbm_data_in(hls_stream<hls_uint<10>> &in,
     bool         end = x & 0x100;
     bool         valid = x & 0x200;
 
+    bool in_sbm_hdr = false;
     bool in_inline_qos = false;
     bool remove_endpoint = false;
 
@@ -44,6 +46,7 @@ void rtps_sbm_data_in(hls_stream<hls_uint<10>> &in,
                 sbm_le = data & SBM_FLAGS_ENDIANNESS;
                 sbm_inline_qos = data & SBM_FLAGS_INLINE_QOS;
             }
+            in_sbm_hdr = true;
             offset++;
             if (offset == SBM_HDR_SIZE) {
                 offset = 0;
@@ -138,15 +141,11 @@ void rtps_sbm_data_in(hls_stream<hls_uint<10>> &in,
         offset = 0;
     }
 
-    hls_uint<10> y = data;
-    if (end) {
-        y |= 0x100;
-    }
-    if (valid && !in_inline_qos) {
-        y |= 0x200;
-    }
+    bool spdp_reader_valid = valid && !in_inline_qos;
+    bool sedp_reader_valid = valid && !in_inline_qos;
+    bool app_reader_valid = valid && (!in_sbm_hdr || !in_inline_qos);
     out_status_info.write(remove_endpoint);
-    out_spdp_reader.write(y);
-    out_sedp_reader.write(y);
-    out_app_reader.write(y);
+    rtps_in_send_output(out_spdp_reader, data, valid, spdp_reader_valid);
+    rtps_in_send_output(out_sedp_reader, data, valid, sedp_reader_valid);
+    rtps_in_send_output(out_app_reader, data, valid, app_reader_valid);
 }
