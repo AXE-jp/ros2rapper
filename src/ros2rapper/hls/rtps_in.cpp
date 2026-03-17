@@ -58,7 +58,7 @@ void rtps_in(hls_stream<hls_uint<9>>  &in,
     uint8_t     data = x & 0xff;
     bool        end = x & 0x100;
 
-    bool send_end_flag = end;
+    bool sbm_end = end;
     bool guid_prefix_valid = false;
     bool sbm_heartbeat_valid = false;
     bool sbm_data_valid = false;
@@ -136,7 +136,7 @@ void rtps_in(hls_stream<hls_uint<9>>  &in,
         if (offset == sbm_len) {
             offset = 0;
             state = RTPS_IN_STATE_SBM_HDR;
-            send_end_flag = true;
+            sbm_end = true;
         }
         break;
     }
@@ -146,11 +146,7 @@ void rtps_in(hls_stream<hls_uint<9>>  &in,
         offset = 0;
     }
 
-    if (guid_prefix_valid || sbm_heartbeat_valid || sbm_data_valid) {
-        rtps_in_send_output(out_guid_prefix, data, send_end_flag,
-                            guid_prefix_valid);
-        rtps_in_send_output(out_sbm_heartbeat, data, send_end_flag,
-                            sbm_heartbeat_valid);
-        rtps_in_send_output(out_sbm_data, data, send_end_flag, sbm_data_valid);
-    }
+    rtps_in_send_output(out_guid_prefix, data, end, guid_prefix_valid);
+    rtps_in_send_output(out_sbm_heartbeat, data, sbm_end, sbm_heartbeat_valid);
+    rtps_in_send_output(out_sbm_data, data, sbm_end, sbm_data_valid);
 }
