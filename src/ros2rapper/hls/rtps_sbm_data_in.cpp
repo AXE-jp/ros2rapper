@@ -141,7 +141,7 @@ void rtps_sbm_data_in(hls_stream<hls_uint<10>> &in,
         offset = 0;
     }
 
-    bool spdp_reader_valid = valid && !in_inline_qos;
+    bool spdp_reader_valid = valid && (!in_sbm_hdr || !in_inline_qos);
     bool sedp_reader_valid = valid && !in_inline_qos;
     bool app_reader_valid = valid && (!in_sbm_hdr || !in_inline_qos);
     out_status_info.write(remove_endpoint);
