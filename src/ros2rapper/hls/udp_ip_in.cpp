@@ -171,11 +171,13 @@ int8_t get_payload_offset(pending_index_t pindex) {
 #endif
 }
 
-#define UDP_IP_IN_STATE_HEADER              0
-#define UDP_IP_IN_STATE_PAYLOAD             1
-#define UDP_IP_IN_STATE_PAYLOAD_TO_MEMORY   2
-#define UDP_IP_IN_STATE_PAYLOAD_FROM_MEMORY 3
-#define UDP_IP_IN_STATE_SKIP                4
+enum udp_ip_in_state_t {
+    UDP_IP_IN_STATE_HEADER,
+    UDP_IP_IN_STATE_PAYLOAD,
+    UDP_IP_IN_STATE_PAYLOAD_TO_MEMORY,
+    UDP_IP_IN_STATE_PAYLOAD_FROM_MEMORY,
+    UDP_IP_IN_STATE_SKIP
+};
 
 void udp_ip_in(
     hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
@@ -190,7 +192,7 @@ void udp_ip_in(
 
     static pending_info pendings[MAX_PENDINGS] /* Cyber array=REG */;
 #pragma HLS array_partition variable = pendings complete dim = 0
-    static pending_index_t pending_index;
+    static pending_index_t pending_index = INVALID_PENDING_INDEX;
 
     /* state / usage of variables...
      * HEADER / len: payload length, offset: from the beginning of header
@@ -199,12 +201,12 @@ void udp_ip_in(
      * PAYLOAD_FROM_MEMORY / len: not used, offset: from the beginning of a
      * payload buffer
      */
-    static hls_uint<3> state;
-    static uint16_t    offset;
-    static uint16_t    len;
-    static uint16_t    id;
-    static uint16_t    flags_and_offset;
-    static uint8_t     protocol;
+    static udp_ip_in_state_t state = UDP_IP_IN_STATE_HEADER;
+    static uint16_t          offset = 0;
+    static uint16_t          len = 0;
+    static uint16_t          id = 0;
+    static uint16_t          flags_and_offset = 0;
+    static uint8_t           protocol = 0;
 
 #define reset_state()                                                          \
     do {                                                                       \
@@ -261,7 +263,8 @@ void udp_ip_in(
         if (end) {
             reset_state();
             TRACE("%s: state changed to HEADER.\n", __func__);
-        } else if ((offset == IP_HDR_SIZE) && (protocol != PSEUDO_HDR_PROTOCOL)) {
+        } else if ((offset == IP_HDR_SIZE)
+                   && (protocol != PSEUDO_HDR_PROTOCOL)) {
             // Ignore the received packet if it is not a UDP packet.
             state = UDP_IP_IN_STATE_SKIP;
             TRACE("%s: The received packet is not UDP.\n", __func__);
@@ -339,6 +342,7 @@ void udp_ip_in(
         data = x & 0xff;
         end = x & 0x100;
         ip_payloads[get_payload_offset(pending_index) + offset] = data;
+        offset++;
         if (end) {
             TRACE("%s: n_arrived=%d, n_total=%d\n", __func__,
                   pendings[pending_index].n_arrived,
@@ -377,12 +381,9 @@ void udp_ip_in(
             }
         }
         break;
-    default:
+    case UDP_IP_IN_STATE_SKIP:
         if (!in.empty()) {
             in.read_nb(x);
-            data = x & 0xff;
-            end = x & 0x100;
-            offset++;
             if (end) {
                 reset_state();
                 TRACE("%s: state changed to HEADER.\n", __func__);
