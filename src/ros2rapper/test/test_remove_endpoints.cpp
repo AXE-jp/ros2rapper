@@ -254,6 +254,11 @@ static int check_sedp_reader_tbl_liveliness(sedp_reader_id_t   target,
     return 0;
 }
 
+static uint8_t sub_app_data_0[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_1[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_2[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_3[MAX_APP_DATA_LEN];
+
 static void call_update_liveliness(const receiver_config_t *conf,
                                    sedp_reader_tbl_t       *sedp_reader_tbl,
                                    app_reader_tbl_t        *app_reader_tbl,
@@ -261,14 +266,24 @@ static void call_update_liveliness(const receiver_config_t *conf,
                                    const uint8_t test_data[], size_t length) {
     hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
     hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+    hls_stream<hls_uint<9>>  in;
     hls_stream<rtps_data_t>  stream;
 
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_req;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
+    hls_stream<uint64_t>     sub_app_data_recvinfo;
+
     for (auto j = 0; j < length; j++) {
-        hls_uint<9> data = test_data[j];
+        hls_uint<9> x = test_data[j];
         if (j == (length - 1)) {
-            data |= hls_uint<9>(0x100);
+            x |= hls_uint<9>(0x100);
         }
-        update_liveliness(data, stream, conf->guid_prefix);
+        in.write(x);
+        ros2_receiver(in, stream, pub_enable, sub_enable, &sub_app_data_req,
+                      &sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+                      sub_app_data_1, sub_app_data_2, sub_app_data_3,
+                      sub_app_data_recvinfo, *conf);
     }
 
     call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,

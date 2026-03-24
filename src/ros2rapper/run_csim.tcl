@@ -4,6 +4,7 @@
 open_project -reset proj_ros2test
 
 add_files hls/app.cpp
+add_files hls/app_reader.cpp
 add_files hls/checksum.cpp
 add_files hls/endpoint.cpp
 add_files hls/ip.cpp
@@ -13,9 +14,13 @@ add_files hls/ros2_receiver.cpp
 add_files hls/ros2_sender.cpp
 add_files hls/ros2.cpp
 add_files hls/rtps.cpp
+add_files hls/rtps_sbm_heartbeat_in.cpp
+add_files hls/rtps_sbm_data_in.cpp
 add_files hls/sedp.cpp
+add_files hls/sedp_reader.cpp
 add_files hls/slip.cpp
 add_files hls/spdp.cpp
+add_files hls/spdp_reader.cpp
 add_files hls/udp.cpp
 add_files -tb -cflags "-Ihls" test/test.cpp
 add_files -tb -cflags "-Ihls" test/test_message_metadata.cpp

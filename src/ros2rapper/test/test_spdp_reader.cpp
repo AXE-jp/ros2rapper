@@ -3,11 +3,11 @@
 
 #include "common.hpp"
 #include "duration.hpp"
+#include "endpoint.hpp"
 #include "hls.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "rtps.hpp"
-#include "spdp.hpp"
 #include "test_utils.hpp"
 #include <cassert>
 #include <cstdio>
@@ -185,17 +185,46 @@ constexpr uint8_t test_spdp_reader_data_4[] = {
 constexpr uint8_t SOURCE_GUID_PREFIX[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0xcf, 0xe4, 0x00, 0x00, 0x00, 0x00};
 
+static uint8_t sub_app_data_0[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_1[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_2[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_3[MAX_APP_DATA_LEN];
+
 static void call_spdp_reader(hls_stream<rtps_data_t> &out,
                              const uint8_t            ip_addr[4],
                              const uint8_t            subnet_mask[4],
                              uint16_t port_num_seed, const uint8_t test_data[],
                              size_t test_data_size) {
+    hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+
+    receiver_config_t conf;
+    conf.ip_addr[0] = ip_addr[0];
+    conf.ip_addr[1] = ip_addr[1];
+    conf.ip_addr[2] = ip_addr[2];
+    conf.ip_addr[3] = ip_addr[3];
+    conf.subnet_mask[0] = subnet_mask[0];
+    conf.subnet_mask[1] = subnet_mask[1];
+    conf.subnet_mask[2] = subnet_mask[2];
+    conf.subnet_mask[3] = subnet_mask[3];
+    conf.port_num_seed = port_num_seed;
+
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_req;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
+    hls_stream<uint64_t>     sub_app_data_recvinfo;
+
+    hls_stream<hls_uint<9>> in;
     for (auto j = 0; j < test_data_size; j++) {
-        hls_uint<9> data = test_data[j];
+        hls_uint<9> x = test_data[j];
         if (j == (test_data_size - 1)) {
-            data |= hls_uint<9>(0x100);
+            x |= hls_uint<9>(0x100);
         }
-        spdp_reader(data, out, true, ip_addr, subnet_mask, port_num_seed);
+        in.write(x);
+        ros2_receiver(in, out, pub_enable, sub_enable, &sub_app_data_req,
+                      &sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+                      sub_app_data_1, sub_app_data_2, sub_app_data_3,
+                      sub_app_data_recvinfo, conf);
     }
 }
 
