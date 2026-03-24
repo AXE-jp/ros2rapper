@@ -246,6 +246,8 @@ void sedp_reader(
                                    sedp_udp_port, sedp_entity_id);
                 state = SEDP_READER_STATE_WAIT_END;
             } else if (param_length == 0) {
+                state = SEDP_READER_STATE_PARAM_HDR;
+            } else {
                 state = SEDP_READER_STATE_PARAM_PAYLOAD;
             }
         }

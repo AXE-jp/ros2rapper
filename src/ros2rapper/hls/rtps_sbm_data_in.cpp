@@ -71,7 +71,7 @@ void rtps_sbm_data_in(hls_uint<9> x, hls_stream<rtps_data_t> &out,
     static uint8_t                  seqnum;
 
     uint8_t data = x & 0xff;
-    uint8_t end = x & 0x100;
+    bool    end = x & 0x100;
 
     switch (state) {
     case RTPS_SBM_DATA_IN_STATE_SBM_DATA_HDR:

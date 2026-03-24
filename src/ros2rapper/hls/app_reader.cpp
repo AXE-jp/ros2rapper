@@ -75,6 +75,7 @@ void app_reader(hls_uint<9> x, hls_uint<SUB_TOPICS_MAX> app_matched,
             sub_app_data_recvinfo.write(info);
             state = APP_READER_STATE_WAIT_END;
         }
+        break;
     case APP_READER_STATE_WAIT_END:
         break;
     }

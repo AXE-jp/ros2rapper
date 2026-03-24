@@ -129,6 +129,7 @@ void ros2_receiver(hls_stream<hls_uint<9>> &in, hls_stream<rtps_data_t> &out,
                 state = ROS2_RECEIVER_STATE_WAIT_END;
             }
         }
+        break;
     case ROS2_RECEIVER_STATE_SBM_HDR:
         switch (offset) {
         case SBM_HDR_OFFSET_SUBMESSAGE_ID:
@@ -172,7 +173,7 @@ void ros2_receiver(hls_stream<hls_uint<9>> &in, hls_stream<rtps_data_t> &out,
         if (offset == sbm_length) {
             offset = 0;
             state = ROS2_RECEIVER_STATE_SBM_HDR;
-            y |= 0x100;
+            y |= hls_uint<9>(0x100);
         }
         switch (sbm_id) {
         case SBM_ID_HEARTBEAT:
