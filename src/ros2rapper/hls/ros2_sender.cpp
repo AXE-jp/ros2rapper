@@ -9,6 +9,7 @@
 #include "ip.hpp"
 #include "message_metadata.hpp"
 #include "ros2.hpp"
+#include "sedp.hpp"
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
