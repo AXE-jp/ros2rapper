@@ -384,68 +384,137 @@ generate
 endgenerate
 
 `ifdef ROS2RAPPER_HLS_VITIS
-ros2_receiver
-ros2_receiver (
+
+wire [15:0] pre_ip_tdata;
+wire pre_ip_tvalid;
+wire pre_ip_tready;
+
+pre_ip_in
+pre_ip_in (
     .ap_clk(clk),
     .ap_rst_n(rst_n),
+    .in_r_TDATA(rx_fifo_dout),
+    .in_r_TVALID(~rx_fifo_empty),
+    .in_r_TREADY(rx_fifo_rd_en),
+    .out_r_TDATA(pre_ip_tdata),
+    .out_r_TVALID(pre_ip_tvalid),
+    .out_r_TREADY(pre_ip_tready)
+);
 
-    .pub_enable(pub_enable),
-    .sub_enable(sub_enable),
+wire [15:0] udp_ip_tdata;
+wire udp_ip_tvalid;
+wire udp_ip_tready;
 
-    .in_r_dout(rx_fifo_dout),
-    .in_r_empty_n(~rx_fifo_empty),
-    .in_r_read(rx_fifo_rd_en),
-
-    .out_r_TDATA(ros2_rtps_data),
-    .out_r_TREADY(ros2_rtps_data_ready),
-    .out_r_TVALID(ros2_rtps_data_valid),
-
+udp_ip_in
+udp_ip_in (
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
+    .in_r_TDATA(pre_ip_tdata),
+    .in_r_TVALID(pre_ip_tvalid),
+    .in_r_TREADY(pre_ip_tready),
+    .out_r_TDATA(udp_ip_tdata),
+    .out_r_TVALID(udp_ip_tvalid),
+    .out_r_TREADY(udp_ip_tready),
     .ip_payloads_address0(ip_payloadsmem_addr),
     .ip_payloads_ce0(ip_payloadsmem_ce),
     .ip_payloads_we0(ip_payloadsmem_we),
     .ip_payloads_d0(ip_payloadsmem_wdata),
     .ip_payloads_q0(ip_payloadsmem_rdata),
+    .fragment_expiration(ros2_fragment_expiration),
+    .error(),
+    .error_ap_vld()
+);
 
-    .conf_ip_addr(ip_addr),
-    .conf_subnet_mask(subnet_mask),
-    .conf_port_num_seed(ros2_port_num_seed),
+wire [4:0] conf_pub_topic_name_addr;
+wire [4:0] conf_sub_topic_name_addr;
+wire [5:0] conf_pub_topic_type_name_addr;
+wire [5:0] conf_sub_topic_type_name_addr;
+wire conf_pub_topic_name_ce;
+wire conf_sub_topic_name_ce;
+wire conf_pub_topic_type_name_ce;
+wire conf_sub_topic_type_name_ce;
+reg  [`ROS2_PUB_TOPICS_MAX*8-1:0] conf_pub_topic_name_rdata;
+reg  [`ROS2_SUB_TOPICS_MAX*8-1:0] conf_sub_topic_name_rdata;
+reg  [`ROS2_PUB_TOPICS_MAX*8-1:0] conf_pub_topic_type_name_rdata;
+reg  [`ROS2_SUB_TOPICS_MAX*8-1:0] conf_sub_topic_type_name_rdata;
 
-    .conf_fragment_expiration(ros2_fragment_expiration),
-    .conf_guid_prefix(ros2_guid_prefix),
-    .conf_ignore_ip_checksum(ros2_ignore_ip_checksum),
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        conf_pub_topic_name_rdata <= {`ROS2_PUB_TOPICS_MAX{8'd0}};
+        conf_sub_topic_name_rdata <= {`ROS2_SUB_TOPICS_MAX{8'd0}};
+        conf_pub_topic_type_name_rdata <= {`ROS2_PUB_TOPICS_MAX{8'd0}};
+        conf_sub_topic_type_name_rdata <= {`ROS2_SUB_TOPICS_MAX{8'd0}};
+    end else begin
+        if (conf_pub_topic_name_ce) begin
+            conf_pub_topic_name_rdata[7:0]   <= ros2_pub_topic_name_0[8*conf_pub_topic_name_addr+:8];
+            conf_pub_topic_name_rdata[15:8]  <= ros2_pub_topic_name_1[8*conf_pub_topic_name_addr+:8];
+            conf_pub_topic_name_rdata[23:16] <= ros2_pub_topic_name_2[8*conf_pub_topic_name_addr+:8];
+            conf_pub_topic_name_rdata[31:24] <= ros2_pub_topic_name_3[8*conf_pub_topic_name_addr+:8];
+        end
+        if (conf_sub_topic_name_ce) begin
+            conf_sub_topic_name_rdata[7:0]   <= ros2_sub_topic_name_0[8*conf_sub_topic_name_addr+:8];
+            conf_sub_topic_name_rdata[15:8]  <= ros2_sub_topic_name_1[8*conf_sub_topic_name_addr+:8];
+            conf_sub_topic_name_rdata[23:16] <= ros2_sub_topic_name_2[8*conf_sub_topic_name_addr+:8];
+            conf_sub_topic_name_rdata[31:24] <= ros2_sub_topic_name_3[8*conf_sub_topic_name_addr+:8];
+        end
+        if (conf_pub_topic_type_name_ce) begin
+            conf_pub_topic_type_name_rdata[7:0]   <= ros2_pub_topic_type_name_0[8*conf_pub_topic_type_name_addr+:8];
+            conf_pub_topic_type_name_rdata[15:8]  <= ros2_pub_topic_type_name_1[8*conf_pub_topic_type_name_addr+:8];
+            conf_pub_topic_type_name_rdata[23:16] <= ros2_pub_topic_type_name_2[8*conf_pub_topic_type_name_addr+:8];
+            conf_pub_topic_type_name_rdata[31:24] <= ros2_pub_topic_type_name_3[8*conf_pub_topic_type_name_addr+:8];
+        end
+        if (conf_sub_topic_type_name_ce) begin
+            conf_sub_topic_type_name_rdata[7:0]   <= ros2_sub_topic_type_name_0[8*conf_sub_topic_type_name_addr+:8];
+            conf_sub_topic_type_name_rdata[15:8]  <= ros2_sub_topic_type_name_1[8*conf_sub_topic_type_name_addr+:8];
+            conf_sub_topic_type_name_rdata[23:16] <= ros2_sub_topic_type_name_2[8*conf_sub_topic_type_name_addr+:8];
+            conf_sub_topic_type_name_rdata[31:24] <= ros2_sub_topic_type_name_3[8*conf_sub_topic_type_name_addr+:8];
+        end
+    end
+end
 
-    .conf_pub_topic_name_0(ros2_pub_topic_name_0),
-    .conf_pub_topic_name_len_0(ros2_pub_topic_name_len_0),
-    .conf_pub_topic_type_name_0(ros2_pub_topic_type_name_0),
-    .conf_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len_0),
-    .conf_pub_topic_name_1(ros2_pub_topic_name_1),
-    .conf_pub_topic_name_len_1(ros2_pub_topic_name_len_1),
-    .conf_pub_topic_type_name_1(ros2_pub_topic_type_name_1),
-    .conf_pub_topic_type_name_len_1(ros2_pub_topic_type_name_len_1),
-    .conf_pub_topic_name_2(ros2_pub_topic_name_2),
-    .conf_pub_topic_name_len_2(ros2_pub_topic_name_len_2),
-    .conf_pub_topic_type_name_2(ros2_pub_topic_type_name_2),
-    .conf_pub_topic_type_name_len_2(ros2_pub_topic_type_name_len_2),
-    .conf_pub_topic_name_3(ros2_pub_topic_name_3),
-    .conf_pub_topic_name_len_3(ros2_pub_topic_name_len_3),
-    .conf_pub_topic_type_name_3(ros2_pub_topic_type_name_3),
-    .conf_pub_topic_type_name_len_3(ros2_pub_topic_type_name_len_3),
-    .conf_sub_topic_name_0(ros2_sub_topic_name_0),
-    .conf_sub_topic_name_len_0(ros2_sub_topic_name_len_0),
-    .conf_sub_topic_type_name_0(ros2_sub_topic_type_name_0),
-    .conf_sub_topic_type_name_len_0(ros2_sub_topic_type_name_len_0),
-    .conf_sub_topic_name_1(ros2_sub_topic_name_1),
-    .conf_sub_topic_name_len_1(ros2_sub_topic_name_len_1),
-    .conf_sub_topic_type_name_1(ros2_sub_topic_type_name_1),
-    .conf_sub_topic_type_name_len_1(ros2_sub_topic_type_name_len_1),
-    .conf_sub_topic_name_2(ros2_sub_topic_name_2),
-    .conf_sub_topic_name_len_2(ros2_sub_topic_name_len_2),
-    .conf_sub_topic_type_name_2(ros2_sub_topic_type_name_2),
-    .conf_sub_topic_type_name_len_2(ros2_sub_topic_type_name_len_2),
-    .conf_sub_topic_name_3(ros2_sub_topic_name_3),
-    .conf_sub_topic_name_len_3(ros2_sub_topic_name_len_3),
-    .conf_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
-    .conf_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
+wire [`ROS2_PUB_TOPICS_MAX*8-1:0] ros2_pub_topic_name_len;
+wire [`ROS2_SUB_TOPICS_MAX*8-1:0] ros2_sub_topic_name_len;
+wire [`ROS2_PUB_TOPICS_MAX*8-1:0] ros2_pub_topic_type_name_len;
+wire [`ROS2_SUB_TOPICS_MAX*8-1:0] ros2_sub_topic_type_name_len;
+
+assign ros2_pub_topic_name_len[7:0]   = ros2_pub_topic_name_len_0;
+assign ros2_pub_topic_name_len[15:8]  = ros2_pub_topic_name_len_1;
+assign ros2_pub_topic_name_len[23:16] = ros2_pub_topic_name_len_2;
+assign ros2_pub_topic_name_len[31:24] = ros2_pub_topic_name_len_3;
+assign ros2_sub_topic_name_len[7:0]   = ros2_sub_topic_name_len_0;
+assign ros2_sub_topic_name_len[15:8]  = ros2_sub_topic_name_len_1;
+assign ros2_sub_topic_name_len[23:16] = ros2_sub_topic_name_len_2;
+assign ros2_sub_topic_name_len[31:24] = ros2_sub_topic_name_len_3;
+assign ros2_pub_topic_type_name_len[7:0]   = ros2_pub_topic_type_name_len_0;
+assign ros2_pub_topic_type_name_len[15:8]  = ros2_pub_topic_type_name_len_1;
+assign ros2_pub_topic_type_name_len[23:16] = ros2_pub_topic_type_name_len_2;
+assign ros2_pub_topic_type_name_len[31:24] = ros2_pub_topic_type_name_len_3;
+assign ros2_sub_topic_type_name_len[7:0]   = ros2_sub_topic_type_name_len_0;
+assign ros2_sub_topic_type_name_len[15:8]  = ros2_sub_topic_type_name_len_1;
+assign ros2_sub_topic_type_name_len[23:16] = ros2_sub_topic_type_name_len_2;
+assign ros2_sub_topic_type_name_len[31:24] = ros2_sub_topic_type_name_len_3;
+
+ros2_receiver
+ros2_receiver (
+    .ap_clk(clk),
+    .ap_rst_n(rst_n),
+
+    .in_r_TDATA(udp_ip_tdata),
+    .in_r_TVALID(udp_ip_tvalid),
+    .in_r_TREADY(udp_ip_tready),
+
+    .out_r_TDATA(ros2_rtps_data),
+    .out_r_TREADY(ros2_rtps_data_ready),
+    .out_r_TVALID(ros2_rtps_data_valid),
+
+    .pub_enable(pub_enable),
+    .sub_enable(sub_enable),
+
+    .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req_valid),
+    .sub_app_data_req(ros2_sub_app_data_ip_req),
+    .sub_app_data_rel_ap_vld(ros2_sub_app_data_ip_rel_valid),
+    .sub_app_data_rel(ros2_sub_app_data_ip_rel),
+    .sub_app_data_grant(ros2_sub_app_data_ip_grant),
 
     .sub_app_data_0_address0(ros2_sub_app_data_0_addr),
     .sub_app_data_0_ce0(ros2_sub_app_data_0_ce),
@@ -467,19 +536,34 @@ ros2_receiver (
     .sub_app_data_3_we0(ros2_sub_app_data_3_we),
     .sub_app_data_3_d0(ros2_sub_app_data_3_wdata),
 
-    .sub_app_data_recvinfo_din(ros2_sub_app_data_recvinfo_din),
-    .sub_app_data_recvinfo_full_n(ros2_sub_app_data_recvinfo_full_n),
-    .sub_app_data_recvinfo_write(ros2_sub_app_data_recvinfo_write),
+    .sub_app_data_recvinfo_TDATA(ros2_sub_app_data_recvinfo_din),
+    .sub_app_data_recvinfo_TVALID(ros2_sub_app_data_recvinfo_write),
+    .sub_app_data_recvinfo_TREADY(ros2_sub_app_data_recvinfo_full_n),
 
-    .sub_app_data_req_ap_vld(ros2_sub_app_data_ip_req_valid),
-    .sub_app_data_req(ros2_sub_app_data_ip_req),
-    .sub_app_data_rel_ap_vld(ros2_sub_app_data_ip_rel_valid),
-    .sub_app_data_rel(ros2_sub_app_data_ip_rel),
-    .sub_app_data_grant(ros2_sub_app_data_ip_grant),
-    .sub_app_data_grant_ap_ack(),
+    .conf_ip_addr(ip_addr),
+    .conf_subnet_mask(subnet_mask),
+    .conf_port_num_seed(ros2_port_num_seed),
+    .conf_guid_prefix(ros2_guid_prefix),
 
-    .xout(),
-    .xout_ap_vld()
+    .conf_pub_topic_name_address0(conf_pub_topic_name_addr),
+    .conf_pub_topic_name_ce0(conf_pub_topic_name_ce),
+    .conf_pub_topic_name_q0(conf_pub_topic_name_rdata),
+    .conf_pub_topic_name_len(ros2_pub_topic_name_len),
+
+    .conf_sub_topic_name_address0(conf_sub_topic_name_addr),
+    .conf_sub_topic_name_ce0(conf_sub_topic_name_ce),
+    .conf_sub_topic_name_q0(conf_sub_topic_name_rdata),
+    .conf_sub_topic_name_len(ros2_sub_topic_name_len),
+
+    .conf_pub_topic_type_name_address0(conf_pub_topic_type_name_addr),
+    .conf_pub_topic_type_name_ce0(conf_pub_topic_type_name_ce),
+    .conf_pub_topic_type_name_q0(conf_pub_topic_type_name_rdata),
+    .conf_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
+
+    .conf_sub_topic_type_name_address0(conf_sub_topic_type_name_addr),
+    .conf_sub_topic_type_name_ce0(conf_sub_topic_type_name_ce),
+    .conf_sub_topic_type_name_q0(conf_sub_topic_type_name_rdata),
+    .conf_sub_topic_type_name_len(ros2_sub_topic_type_name_len)
 );
 
 ros2_main
