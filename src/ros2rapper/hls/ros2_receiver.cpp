@@ -30,7 +30,7 @@ typedef enum {
 } ros2_receiver_state_t;
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO,
- * async_reset_port=rst_n- */
+   async_reset_port=rst_n- */
 void ros2_receiver(
     hls_stream<hls_uint<9>>  &in /* Cyber port_mode=axi_stream:reg_both */,
     hls_stream<rtps_data_t>  &out /* Cyber port_mode=axi_stream:reg_both */,
