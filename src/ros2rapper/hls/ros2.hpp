@@ -40,10 +40,10 @@ typedef struct {
                                                   array_reshape_factor=NO:ALL */
         ;
     uint8_t pub_topic_name_len[PUB_TOPICS_MAX] /* Cyber array=EXPAND */;
-    uint8_t pub_topic_type_name[PUB_TOPICS_MAX]
-                               [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND,
-                                                            array_reshape_factor=NO:ALL
-                                                          */
+    uint8_t pub_topic_type_name
+        [PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND,
+                                                     array_reshape_factor=NO:ALL
+                                                   */
         ;
     uint8_t pub_topic_type_name_len[PUB_TOPICS_MAX] /* Cyber array=EXPAND */;
     uint8_t sub_topic_name[SUB_TOPICS_MAX]
@@ -51,10 +51,10 @@ typedef struct {
                                                   array_reshape_factor=NO:ALL */
         ;
     uint8_t sub_topic_name_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND */;
-    uint8_t sub_topic_type_name[SUB_TOPICS_MAX]
-                               [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND,
-                                                            array_reshape_factor=NO:ALL
-                                                          */
+    uint8_t sub_topic_type_name
+        [SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND,
+                                                     array_reshape_factor=NO:ALL
+                                                   */
         ;
     uint8_t sub_topic_type_name_len[SUB_TOPICS_MAX] /* Cyber array=EXPAND */;
 } receiver_config_t;
@@ -65,30 +65,38 @@ typedef struct {
 } config_t;
 
 typedef struct {
-    uint8_t ip_addr[4] /* Cyber array=EXPAND */;
-    uint8_t vendor_id[2] /* Cyber array=EXPAND */;
-    uint8_t node_name[MAX_NODE_NAME_LEN] /* Cyber array=EXPAND */;
+    uint8_t ip_addr[4] /* Cyber array_reshape_factor=ALL */;
+    uint8_t vendor_id[2] /* Cyber array_reshape_factor=ALL */;
+    uint8_t node_name[MAX_NODE_NAME_LEN] /* Cyber array_reshape_factor=ALL */;
     uint8_t node_name_len;
-    uint8_t node_udp_port[2] /* Cyber array=EXPAND */;
-    uint8_t guid_prefix[12] /* Cyber array=EXPAND */;
-    uint8_t pub_topic_name
-        [PUB_TOPICS_MAX]
-        [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t node_udp_port[2] /* Cyber array_reshape_factor=ALL */;
+    uint8_t guid_prefix[12] /* Cyber array_reshape_factor=ALL */;
+    uint8_t pub_topic_name[PUB_TOPICS_MAX]
+                          [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND,
+                                                  array_index=const,
+                                                  array_reshape_factor=NO:ALL */
+        ;
     uint8_t pub_topic_name_len
         [PUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
     uint8_t pub_topic_type_name
         [PUB_TOPICS_MAX]
-        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
+        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const,
+                                     array_reshape_factor=NO:ALL */
+        ;
     uint8_t pub_topic_type_name_len
         [PUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
-    uint8_t sub_topic_name
-        [SUB_TOPICS_MAX]
-        [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
+    uint8_t sub_topic_name[SUB_TOPICS_MAX]
+                          [MAX_TOPIC_NAME_LEN] /* Cyber array=EXPAND,
+                                                  array_index=const,
+                                                  array_reshape_factor=NO:ALL */
+        ;
     uint8_t sub_topic_name_len
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
     uint8_t sub_topic_type_name
         [SUB_TOPICS_MAX]
-        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const */;
+        [MAX_TOPIC_TYPE_NAME_LEN] /* Cyber array=EXPAND, array_index=const,
+                                     array_reshape_factor=NO:ALL */
+        ;
     uint8_t sub_topic_type_name_len
         [SUB_TOPICS_MAX] /* Cyber array=EXPAND, array_index=const */;
 } sender_config_t;
