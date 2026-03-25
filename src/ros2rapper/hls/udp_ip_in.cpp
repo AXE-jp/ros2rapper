@@ -179,10 +179,14 @@ enum udp_ip_in_state_t {
     UDP_IP_IN_STATE_SKIP
 };
 
+/* Cyber func=process, bdltran_option=-s, process_valid=NO,
+ * async_reset_port=rst_n- */
 void udp_ip_in(
-    hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
+    hls_stream<hls_uint<9>> &in /* Cyber port_mode=axi_stream:reg_both */,
+    hls_stream<hls_uint<9>> &out /* Cyber port_mode=axi_stream:reg_both */,
     uint8_t  ip_payloads[MAX_PENDINGS * IP_MAX_PAYLOAD_LEN * MAX_IP_FRAGMENTS],
-    uint32_t fragment_expiration, uint8_t *error) {
+    uint32_t fragment_expiration /* Cyber port_mode=in */,
+    uint8_t *error /* Cyber port_mode=shared */) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out

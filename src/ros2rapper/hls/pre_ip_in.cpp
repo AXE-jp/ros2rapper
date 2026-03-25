@@ -3,7 +3,11 @@
 #include "ip.hpp"
 #include <cstdint>
 
-void pre_ip_in(hls_stream<uint8_t> &in, hls_stream<hls_uint<9>> &out) {
+/* Cyber func=process, bdltran_option=-s, process_valid=NO,
+ * async_reset_port=rst_n- */
+void pre_ip_in(
+    hls_stream<uint8_t>     &in /* Cyber port_mode=axi_stream:reg_both */,
+    hls_stream<hls_uint<9>> &out /* Cyber port_mode=axi_stream:reg_both */) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out

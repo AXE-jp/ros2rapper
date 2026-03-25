@@ -5,9 +5,11 @@
 #include "spdp_reader.hpp"
 #include <cstdint>
 
+/* Cyber func=inline */
 static bool sedp_set_guid(uint16_t offset, uint8_t data,
                           uint8_t sedp_entity_id[4]) {
 #pragma HLS inline
+    /* Cyber unroll_times=all */
     for (auto j = 0; j < 4; j++) {
 #pragma HLS unroll
         if (offset == (j + GUID_PREFIX_SIZE)) {
@@ -17,6 +19,7 @@ static bool sedp_set_guid(uint16_t offset, uint8_t data,
     return (offset >= (GUID_PREFIX_SIZE + 3));
 }
 
+/* Cyber func=inline */
 template <unsigned int TOPICS_MAX>
 static void sedp_compare_topic_name_len(hls_uint<TOPICS_MAX> *unmatched,
                                         uint32_t              name_length,
@@ -31,6 +34,7 @@ static void sedp_compare_topic_name_len(hls_uint<TOPICS_MAX> *unmatched,
     }
 }
 
+/* Cyber func=inline */
 template <unsigned int TOPICS_MAX, unsigned int MAX_NAME_LEN>
 static void
 sedp_compare_topic_name(hls_uint<TOPICS_MAX> *unmatched, uint16_t offset,
@@ -38,6 +42,7 @@ sedp_compare_topic_name(hls_uint<TOPICS_MAX> *unmatched, uint16_t offset,
                         const uint8_t name[TOPICS_MAX][MAX_NAME_LEN]) {
 #pragma HLS inline
     if (offset < MAX_NAME_LEN) {
+        /* Cyber unroll_times=all */
         for (auto j = 0; j < TOPICS_MAX; j++) {
 #pragma HLS unroll
             if (data != name[j][offset]) {
@@ -47,6 +52,7 @@ sedp_compare_topic_name(hls_uint<TOPICS_MAX> *unmatched, uint16_t offset,
     }
 }
 
+/* Cyber func=inline */
 template <unsigned int MAX_NAME_LEN>
 static bool sedp_compare_topic_info(
     uint16_t offset, uint8_t data, hls_uint<PUB_TOPICS_MAX> *pub_unmatched,
@@ -93,6 +99,7 @@ static topic_id_t get_matched_pub_topic_id(hls_uint<PUB_TOPICS_MAX> matched) {
     return 0;
 }
 
+/* Cyber func=inline */
 static void send_received_sedp(hls_stream<rtps_data_t> &out,
                                builtin_ep_type_t ep_type, uint8_t seqnum,
                                bool found, hls_uint<PUB_TOPICS_MAX> pub_matched,
@@ -146,6 +153,7 @@ typedef enum {
     SEDP_READER_STATE_WAIT_END
 } sedp_reader_state_t;
 
+/* Cyber func=inline */
 void sedp_reader(
     hls_uint<9> x, hls_stream<rtps_data_t> &out,
     hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,

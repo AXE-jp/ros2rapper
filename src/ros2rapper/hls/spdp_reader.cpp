@@ -5,6 +5,7 @@
 #include "ros2_receiver.hpp"
 #include "rtps.hpp"
 
+/* Cyber func=inline */
 bool spdp_set_locator(uint16_t offset, uint8_t data, bool param_le,
                       uint8_t ip_addr[4], uint8_t udp_port[2],
                       const uint8_t reader_ip_addr[4],
@@ -35,6 +36,7 @@ bool spdp_set_locator(uint16_t offset, uint8_t data, bool param_le,
     return false;
 }
 
+/* Cyber func=inline */
 static bool spdp_set_lease_duration(uint16_t offset, uint8_t data,
                                     bool param_le, uint8_t lease_duration[8]) {
 #pragma HLS inline
@@ -78,6 +80,7 @@ static bool spdp_set_lease_duration(uint16_t offset, uint8_t data,
     return (offset >= 7);
 }
 
+/* Cyber func=inline */
 static void send_received_spdp(hls_stream<rtps_data_t> &out,
                                const uint8_t src_guid_prefix[GUID_PREFIX_SIZE],
                                const uint8_t spdp_ip_addr[4],
@@ -127,6 +130,7 @@ typedef enum {
     SPDP_READER_STATE_WAIT_END
 } spdp_reader_state_t;
 
+/* Cyber func=inline */
 void spdp_reader(hls_uint<9> x, hls_stream<rtps_data_t> &out,
                  const uint8_t reader_ip_addr[4], const uint8_t subnet_mask[4],
                  uint16_t      port_num_seed,
@@ -146,8 +150,7 @@ void spdp_reader(hls_uint<9> x, hls_stream<rtps_data_t> &out,
 #pragma HLS array_partition variable = spdp_ip_addr complete dim = 1
     static uint8_t spdp_udp_port[2] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = spdp_udp_port complete dim = 1
-    static uint8_t
-        spdp_lease_duration[8] /* Cyber array=EXPAND, array_index=const */;
+    static uint8_t spdp_lease_duration[8] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = spdp_lease_duration complete dim = 1
 
     uint8_t data = x & 0xff;

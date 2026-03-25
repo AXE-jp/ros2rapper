@@ -7,9 +7,11 @@
 #include "rtps_sbm_heartbeat_in.hpp"
 #include <cstdint>
 
+/* Cyber func=inline */
 static bool compare_guid_prefix(uint16_t offset, uint8_t data,
                                 const uint8_t guid_prefix[GUID_PREFIX_SIZE]) {
 #pragma HLS inline
+    /* Cyber unroll_times=all */
     for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
         if ((offset == j) && (data != guid_prefix[j])) {
@@ -27,18 +29,23 @@ typedef enum {
     ROS2_RECEIVER_STATE_WAIT_END
 } ros2_receiver_state_t;
 
-void ros2_receiver(hls_stream<hls_uint<9>> &in, hls_stream<rtps_data_t> &out,
-                   hls_uint<PUB_TOPICS_MAX>  pub_enable,
-                   hls_uint<SUB_TOPICS_MAX>  sub_enable,
-                   hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
-                   hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
-                   hls_uint<SUB_TOPICS_MAX>  sub_app_data_grant,
-                   uint8_t                   sub_app_data_0[MAX_APP_DATA_LEN],
-                   uint8_t                   sub_app_data_1[MAX_APP_DATA_LEN],
-                   uint8_t                   sub_app_data_2[MAX_APP_DATA_LEN],
-                   uint8_t                   sub_app_data_3[MAX_APP_DATA_LEN],
-                   hls_stream<uint64_t>     &sub_app_data_recvinfo,
-                   const receiver_config_t  &conf) {
+/* Cyber func=process, bdltran_option=-s, process_valid=NO,
+ * async_reset_port=rst_n- */
+void ros2_receiver(
+    hls_stream<hls_uint<9>>  &in /* Cyber port_mode=axi_stream:reg_both */,
+    hls_stream<rtps_data_t>  &out /* Cyber port_mode=axi_stream:reg_both */,
+    hls_uint<PUB_TOPICS_MAX>  pub_enable /* Cyber port_mode=in */,
+    hls_uint<SUB_TOPICS_MAX>  sub_enable /* Cyber port_mode=in */,
+    hls_uint<SUB_TOPICS_MAX> *sub_app_data_req /* Cyber port_mode=shared */,
+    hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel /* Cyber port_mode=shared */,
+    hls_uint<SUB_TOPICS_MAX>  sub_app_data_grant /* Cyber port_mode=in */,
+    uint8_t                   sub_app_data_0[MAX_APP_DATA_LEN],
+    uint8_t                   sub_app_data_1[MAX_APP_DATA_LEN],
+    uint8_t                   sub_app_data_2[MAX_APP_DATA_LEN],
+    uint8_t                   sub_app_data_3[MAX_APP_DATA_LEN],
+    hls_stream<uint64_t>
+        &sub_app_data_recvinfo /* Cyber port_mode=axi_stream:reg_both */,
+    const receiver_config_t &conf /* Cyber port_mode=in, stable_input */) {
 #pragma HLS interface mode = ap_ctrl_none port = return
 #pragma HLS interface mode = axis port = in
 #pragma HLS interface mode = axis port = out
@@ -97,7 +104,7 @@ void ros2_receiver(hls_stream<hls_uint<9>> &in, hls_stream<rtps_data_t> &out,
     static uint16_t              sbm_length;
     bool                         sbm_le = sbm_flags & SBM_FLAGS_ENDIANNESS;
 
-    static uint8_t src_guid_prefix[GUID_PREFIX_SIZE];
+    static uint8_t src_guid_prefix[GUID_PREFIX_SIZE] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = src_guid_prefix type = complete dim = 1
 
     bool enable = ((pub_enable != 0) || (sub_enable != 0));
@@ -114,6 +121,7 @@ void ros2_receiver(hls_stream<hls_uint<9>> &in, hls_stream<rtps_data_t> &out,
             state = ROS2_RECEIVER_STATE_WAIT_END;
             break;
         }
+        /* Cyber unroll_times=all */
         for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
 #pragma HLS unroll
             if (offset == (j + RTPS_HDR_OFFSET_GUID_PREFIX)) {

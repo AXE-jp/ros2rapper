@@ -11,6 +11,7 @@ enum app_reader_state_t {
     APP_READER_STATE_WAIT_END
 };
 
+/* Cyber func=inline */
 void app_reader(hls_uint<9> x, hls_uint<SUB_TOPICS_MAX> app_matched,
                 hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
                 hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,

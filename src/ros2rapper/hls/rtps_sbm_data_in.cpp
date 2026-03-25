@@ -7,6 +7,7 @@
 #include "sedp_reader.hpp"
 #include "spdp_reader.hpp"
 
+/* Cyber func=inline */
 static void
 send_received_status_info(hls_stream<rtps_data_t> &out,
                           const uint8_t src_guid_prefix[GUID_PREFIX_SIZE]) {
@@ -30,6 +31,7 @@ enum rtps_sbm_data_in_state_t {
     RTPS_SBM_DATA_IN_STATE_PAYLOAD
 };
 
+/* Cyber func=inline */
 void rtps_sbm_data_in(hls_uint<9> x, hls_stream<rtps_data_t> &out,
                       hls_uint<PUB_TOPICS_MAX> pub_enable,
                       hls_uint<SUB_TOPICS_MAX> sub_enable, uint8_t sbm_flags,
