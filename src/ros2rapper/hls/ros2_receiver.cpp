@@ -71,31 +71,35 @@ void ros2_receiver(
 #pragma HLS array_reshape variable = conf.subnet_mask type = complete dim = 1
 #pragma HLS interface mode = ap_none port = conf.subnet_mask
 #pragma HLS interface mode = ap_none port = conf.port_num_seed
-#pragma HLS array_reshape variable = conf.pub_topic_name type = complete dim = 1
-#pragma HLS interface mode = ap_memory port = conf.pub_topic_name storage_type \
-    = rom_1p                                                      latency = 1
-#pragma HLS array_reshape variable = conf.pub_topic_name_len type              \
-    = complete                                               dim = 1
+#pragma HLS array_reshape variable = conf.pub_topic_name type = complete dim = 2
+#pragma HLS array_partition variable = conf.pub_topic_name type = complete dim \
+    = 1
+#pragma HLS interface mode = ap_none port = conf.pub_topic_name
+#pragma HLS array_partition variable = conf.pub_topic_name_len type            \
+    = complete                                                 dim = 1
 #pragma HLS interface mode = ap_none port = conf.pub_topic_name_len
 #pragma HLS array_reshape variable = conf.pub_topic_type_name type             \
-    = complete                                                dim = 1
-#pragma HLS interface mode = ap_memory port                                    \
-    = conf.pub_topic_type_name storage_type = rom_1p latency = 1
-#pragma HLS array_reshape variable = conf.pub_topic_type_name_len type         \
-    = complete                                                    dim = 1
+    = complete                                                dim = 2
+#pragma HLS array_partition variable = conf.pub_topic_type_name type           \
+    = complete                                                  dim = 1
+#pragma HLS interface mode = ap_none port = conf.pub_topic_type_name
+#pragma HLS array_partition variable = conf.pub_topic_type_name_len type       \
+    = complete                                                      dim = 1
 #pragma HLS interface mode = ap_none port = conf.pub_topic_type_name_len
-#pragma HLS array_reshape variable = conf.sub_topic_name type = complete dim = 1
-#pragma HLS interface mode = ap_memory port = conf.sub_topic_name storage_type \
-    = rom_1p                                                      latency = 1
-#pragma HLS array_reshape variable = conf.sub_topic_name_len type              \
-    = complete                                               dim = 1
+#pragma HLS array_reshape variable = conf.sub_topic_name type = complete dim = 2
+#pragma HLS array_partition variable = conf.sub_topic_name type = complete dim \
+    = 1
+#pragma HLS interface mode = ap_none port = conf.sub_topic_name
+#pragma HLS array_partition variable = conf.sub_topic_name_len type            \
+    = complete                                                 dim = 1
 #pragma HLS interface mode = ap_none port = conf.sub_topic_name_len
 #pragma HLS array_reshape variable = conf.sub_topic_type_name type             \
-    = complete                                                dim = 1
-#pragma HLS interface mode = ap_memory port                                    \
-    = conf.sub_topic_type_name storage_type = rom_1p latency = 1
-#pragma HLS array_reshape variable = conf.sub_topic_type_name_len type         \
-    = complete                                                    dim = 1
+    = complete                                                dim = 2
+#pragma HLS array_partition variable = conf.sub_topic_type_name type           \
+    = complete                                                  dim = 1
+#pragma HLS interface mode = ap_none port = conf.sub_topic_type_name
+#pragma HLS array_partition variable = conf.sub_topic_type_name_len type       \
+    = complete                                                      dim = 1
 #pragma HLS interface mode = ap_none port = conf.sub_topic_type_name_len
     static ros2_receiver_state_t state = ROS2_RECEIVER_STATE_RTPS_HDR;
     static uint16_t              offset = 0;
