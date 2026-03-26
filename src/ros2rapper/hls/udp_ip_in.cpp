@@ -180,7 +180,7 @@ enum udp_ip_in_state_t {
 };
 
 /* Cyber func=process, bdltran_option=-s, process_valid=NO,
- * async_reset_port=rst_n- */
+   async_reset_port=rst_n- */
 void udp_ip_in(
     hls_stream<hls_uint<9>> &in /* Cyber port_mode=axi_stream:reg_both */,
     hls_stream<hls_uint<9>> &out /* Cyber port_mode=axi_stream:reg_both */,
