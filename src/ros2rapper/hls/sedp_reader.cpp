@@ -175,7 +175,7 @@ void sedp_reader(
     static uint16_t            param_id;
     static uint16_t            param_length;
     static uint32_t            name_length;
-    bool                       param_le = (rep_id == SP_ID_PL_CDR_LE);
+    bool                       param_le = (rep_id & SP_ID_CDR_LE);
 
     static bool                     locator_found;
     static bool                     guid_found;
@@ -217,7 +217,7 @@ void sedp_reader(
             sub_topics_unmatched = ~sub_enable;
             pub_types_unmatched = ~pub_enable;
             sub_types_unmatched = ~sub_enable;
-            if ((rep_id == SP_ID_PL_CDR_LE) || (rep_id == SP_ID_PL_CDR_BE)) {
+            if (rep_id & SP_ID_PL_CDR) {
                 state = SEDP_READER_STATE_PARAM_HDR;
             } else {
                 state = SEDP_READER_STATE_WAIT_END;

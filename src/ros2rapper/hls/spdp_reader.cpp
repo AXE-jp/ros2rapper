@@ -141,7 +141,7 @@ void spdp_reader(hls_uint<9> x, hls_stream<rtps_data_t> &out,
     static uint16_t            rep_id;
     static uint16_t            param_id;
     static uint16_t            param_length;
-    bool                       param_le = (rep_id == SP_ID_PL_CDR_LE);
+    bool                       param_le = (rep_id & SP_ID_CDR_LE);
 
     static bool locator_found;
     static bool lease_duration_found;
@@ -171,7 +171,7 @@ void spdp_reader(hls_uint<9> x, hls_stream<rtps_data_t> &out,
             offset = 0;
             locator_found = false;
             lease_duration_found = false;
-            if ((rep_id == SP_ID_PL_CDR_LE) || (rep_id == SP_ID_PL_CDR_BE)) {
+            if (rep_id & SP_ID_PL_CDR) {
                 state = SPDP_READER_STATE_PARAM_HDR;
             } else {
                 state = SPDP_READER_STATE_WAIT_END;
