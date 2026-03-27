@@ -388,6 +388,7 @@ void udp_ip_in(
     case UDP_IP_IN_STATE_SKIP:
         if (!in.empty()) {
             in.read_nb(x);
+            end = x & 0x100;
             if (end) {
                 reset_state();
                 TRACE("%s: state changed to HEADER.\n", __func__);
