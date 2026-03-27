@@ -6,7 +6,7 @@ ROS2 communicating protocol hardware IP for FPGA/ASIC
 ## Prerequisites
 ROS2rapper is mainly written in C++ and supports following high-level synthesis softwares.
 * AMD Vitis HLS 2023.2
-* NEC CyberWorkBench 10.1
+* NEC CyberWorkBench 11.0
 
 ## Try
 There are example projects under `examples` directory.
