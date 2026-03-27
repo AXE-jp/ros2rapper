@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 AXE, Inc.
+# Copyright (c) 2021-2026 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 .PHONY: create-vitis-proj create-cwb-proj hls_pub hls_sub synth clean
