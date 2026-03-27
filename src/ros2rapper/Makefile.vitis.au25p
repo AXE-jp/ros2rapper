@@ -11,12 +11,16 @@ TBSRCS = $(wildcard $(TBDIR)/*.cpp)
 VERILOGTOP_MAIN = proj_ros2_main_au25p/solution1/syn/verilog/ros2_main.v
 VERILOGTOP_RECEIVER = proj_ros2_receiver_au25p/solution1/syn/verilog/ros2_receiver.v
 VERILOGTOP_SENDER = proj_ros2_sender_au25p/solution1/syn/verilog/ros2_sender.v
+VERILOGTOP_PRE_IP_IN = proj_pre_ip_in_au25p/solution1/syn/verilog/pre_ip_in.v
+VERILOGTOP_UDP_IP_IN = proj_udp_ip_in_au25p/solution1/syn/verilog/udp_ip_in.v
 
-.PHONY: synth synth_main synth_sender clean csim format
-synth: synth_main synth_receiver synth_sender
+.PHONY: synth synth_main synth_sender synth_pre_ip_in synth_udp_ip_in clean csim format
+synth: synth_main synth_receiver synth_sender synth_pre_ip_in synth_udp_ip_in
 synth_main: $(VERILOGTOP_MAIN)
 synth_receiver: $(VERILOGTOP_RECEIVER)
 synth_sender: $(VERILOGTOP_SENDER)
+synth_pre_ip_in: $(VERILOGTOP_PRE_IP_IN)
+synth_udp_ip_in: $(VERILOGTOP_UDP_IP_IN)
 
 $(VERILOGTOP_MAIN): $(SRCS) $(HDRS) run_hls_au25p.tcl
 	vitis_hls run_hls_au25p.tcl
@@ -30,6 +34,14 @@ $(VERILOGTOP_SENDER): $(SRCS) $(HDRS) run_hls_sender_au25p.tcl
 	vitis_hls run_hls_sender_au25p.tcl
 	./fix-hls-code-for-verilator.rb proj_ros2_sender_au25p/solution1/syn/verilog
 
+$(VERILOGTOP_PRE_IP_IN): $(SRCS) $(HDRS) run_hls_pre_ip_in_au25p.tcl
+	vitis_hls run_hls_pre_ip_in_au25p.tcl
+	./fix-hls-code-for-verilator.rb proj_pre_ip_in_au25p/solution1/syn/verilog
+
+$(VERILOGTOP_UDP_IP_IN): $(SRCS) $(HDRS) run_hls_udp_ip_in_au25p.tcl
+	vitis_hls run_hls_udp_ip_in_au25p.tcl
+	./fix-hls-code-for-verilator.rb proj_udp_ip_in_au25p/solution1/syn/verilog
+
 csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
 	vitis_hls run_csim.tcl
 
@@ -37,6 +49,8 @@ clean:
 	rm -rf proj_ros2_main_au25p
 	rm -rf proj_ros2_receiver_au25p
 	rm -rf proj_ros2_sender_au25p
+	rm -rf proj_pre_ip_in_au25p
+	rm -rf proj_udp_ip_in_au25p
 	rm -rf proj_ros2test
 	rm -rf *.log
 

@@ -1,13 +1,15 @@
-proj_pre_ip_in/
 proj_ros2_main/
 proj_ros2_receiver/
 proj_ros2_sender/
+proj_pre_ip_in/
+proj_udp_ip_in/
 proj_ros2_main_au25p/
 proj_ros2_receiver_au25p/
 proj_ros2_sender_au25p/
+proj_pre_ip_in_au25p/
+proj_udp_ip_in_au25p/
 proj_ros2test/
 proj_test_input/
-proj_udp_ip_in/
 *.log
 *.jou
 *.CPINFO

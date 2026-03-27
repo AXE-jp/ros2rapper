@@ -3,26 +3,15 @@
 
 open_project -reset proj_ros2_receiver_au25p
 
-add_files hls/app.cpp
-add_files hls/checksum.cpp
+add_files hls/app_reader.cpp
 add_files hls/ip.cpp
-add_files hls/remove_endpoints.cpp
 add_files hls/ros2_receiver.cpp
 add_files hls/rtps.cpp
-add_files hls/sedp.cpp
-add_files hls/slip.cpp
-add_files hls/spdp.cpp
-add_files hls/udp.cpp
+add_files hls/rtps_sbm_data_in.cpp
+add_files hls/rtps_sbm_heartbeat_in.cpp
+add_files hls/sedp_reader.cpp
+add_files hls/spdp_reader.cpp
 
 set_top ros2_receiver
-
-open_solution -reset solution1
-
-set_part xcau25p-ffvb676-1-e
-config_rtl -reset all -reset_level low -reset_async
-create_clock -period 100MHz
-
-csynth_design
-#export_design -format ip_catalog
-
+source run_hls_au25p_common.tcl
 exit
