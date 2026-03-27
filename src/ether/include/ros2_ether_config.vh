@@ -10,11 +10,6 @@
   // Use BUFG for Ultrascale
   // Use BUFIO2 for Spartan-6
 
-  //`define XILINX_CLKIN_STYLE_BUFG
-  //`define XILINX_CLKIN_STYLE_BUFR
-  //`define XILINX_CLKIN_STYLE_BUFIO
-  //`define XILINX_CLKIN_STYLE_BUFIO2
-
   `ifndef XILINX_CLKIN_STYLE_BUFG
     `ifndef XILINX_CLKIN_STYLE_BUFR
       `ifndef XILINX_CLKIN_STYLE_BUFIO
@@ -37,4 +32,3 @@
 
 `define ROS2_MAX_RAW_ETH_TX_DATA_LEN 1600
 `define ROS2_MAX_RAW_ETH_RX_DATA_LEN 1600
-
