@@ -468,7 +468,6 @@ ros2rapper (
     .ros2_guid_prefix(ros2_guid_prefix),
     .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
     .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
-    .ros2_ignore_ip_checksum(1'b0),
 
     .ros2_pub_topic_name_0(ros2_pub_topic_name_0),
     .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len_0),

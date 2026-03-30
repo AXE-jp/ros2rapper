@@ -49,7 +49,6 @@ module ros2rapper #(
     input  wire [95:0] ros2_guid_prefix,
     input  wire [31:0] ros2_participant_lease_duration_seconds,
     input  wire [31:0] ros2_participant_lease_duration_fraction,
-    input  wire        ros2_ignore_ip_checksum,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0,
     input  wire [7:0] ros2_pub_topic_name_len_0,
