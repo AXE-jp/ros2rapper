@@ -26,8 +26,8 @@ struct pending_info {
 #define TOTAL_FRAGMENTS_UNKNOWN 0xff
 
 /* Cyber func=inline */
-void init_pending_info(pending_info *pending, uint16_t id,
-                       uint32_t fragment_expiration) {
+static void init_pending_info(pending_info *pending, uint16_t id,
+                              uint32_t fragment_expiration) {
 #pragma HLS inline
     pending->is_used = true;
     pending->id = id;
@@ -41,8 +41,8 @@ void init_pending_info(pending_info *pending, uint16_t id,
 #define purge_pending_info(p) ((p)->is_used = false)
 
 /* Cyber func=inline */
-pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
-                                  uint32_t fragment_expiration) {
+static pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
+                                         uint32_t fragment_expiration) {
 #pragma HLS inline
     pending_index_t found = INVALID_PENDING_INDEX;
     pending_index_t unused = INVALID_PENDING_INDEX;
@@ -83,7 +83,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
 }
 
 /* Cyber func=inline */
-void tick_pendings(pending_info *pendings) {
+static void tick_pendings(pending_info *pendings) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < MAX_PENDINGS; i++) {
@@ -103,7 +103,7 @@ void tick_pendings(pending_info *pendings) {
 }
 
 /* Cyber func=inline */
-int8_t get_fragment_index(uint16_t fragment_offset) {
+static int8_t get_fragment_index(uint16_t fragment_offset) {
 #pragma HLS inline
 #if MAX_IP_FRAGMENTS == 4
     switch (fragment_offset) {
@@ -140,7 +140,7 @@ int8_t get_fragment_index(uint16_t fragment_offset) {
 }
 
 /* Cyber func=inline */
-int8_t get_payload_offset(pending_index_t pindex) {
+static int8_t get_payload_offset(pending_index_t pindex) {
 #pragma HLS inline
 #if MAX_PENDINGS == 4
     switch (pindex) {
@@ -378,6 +378,7 @@ void udp_ip_in(
             offset++;
             if (offset == pendings[pending_index].len) {
                 out.write(0x100 | data);
+                purge_pending_info(&pendings[pending_index]);
                 reset_state();
                 TRACE("%s: state changed to HEADER.\n", __func__);
             } else {
