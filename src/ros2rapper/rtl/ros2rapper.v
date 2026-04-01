@@ -483,7 +483,7 @@ ros2_receiver (
     .conf_pub_topic_name_len_1(ros2_pub_topic_name_len_1),
     .conf_pub_topic_name_len_2(ros2_pub_topic_name_len_2),
     .conf_pub_topic_name_len_3(ros2_pub_topic_name_len_3),
-    
+
     .conf_pub_topic_type_name_0(ros2_pub_topic_type_name_0),
     .conf_pub_topic_type_name_1(ros2_pub_topic_type_name_1),
     .conf_pub_topic_type_name_2(ros2_pub_topic_type_name_2),
@@ -501,7 +501,7 @@ ros2_receiver (
     .conf_sub_topic_name_len_1(ros2_sub_topic_name_len_1),
     .conf_sub_topic_name_len_2(ros2_sub_topic_name_len_2),
     .conf_sub_topic_name_len_3(ros2_sub_topic_name_len_3),
-    
+
     .conf_sub_topic_type_name_0(ros2_sub_topic_type_name_0),
     .conf_sub_topic_type_name_1(ros2_sub_topic_type_name_1),
     .conf_sub_topic_type_name_2(ros2_sub_topic_type_name_2),
