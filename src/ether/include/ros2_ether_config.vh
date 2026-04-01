@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Target
@@ -9,11 +9,6 @@
   // Use BUFR for Virtex-5, Virtex-6, 7-series
   // Use BUFG for Ultrascale
   // Use BUFIO2 for Spartan-6
-
-  //`define XILINX_CLKIN_STYLE_BUFG
-  //`define XILINX_CLKIN_STYLE_BUFR
-  //`define XILINX_CLKIN_STYLE_BUFIO
-  //`define XILINX_CLKIN_STYLE_BUFIO2
 
   `ifndef XILINX_CLKIN_STYLE_BUFG
     `ifndef XILINX_CLKIN_STYLE_BUFR
@@ -37,4 +32,3 @@
 
 `define ROS2_MAX_RAW_ETH_TX_DATA_LEN 1600
 `define ROS2_MAX_RAW_ETH_RX_DATA_LEN 1600
-

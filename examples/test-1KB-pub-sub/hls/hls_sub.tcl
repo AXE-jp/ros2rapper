@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2025 AXE, Inc.
+# Copyright (c) 2021-2026 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 open_project -reset hls_sub

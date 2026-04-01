@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2026 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 `resetall
 `default_nettype wire
 `timescale 1ns / 1ps
@@ -14,7 +17,7 @@ module test();
 
     logic ap_start;
     logic ap_ready;
-    
+
     initial begin
         rst_n = 1'b0;
         #1000;
@@ -30,11 +33,11 @@ module test();
             end
         end
     end
-    
+
     logic [7:0] input_data;
     logic input_valid;
     logic input_ready;
-    
+
     test_input_0 test_input_inst (
         .ap_clk(clk),
         .ap_rst_n(rst_n),
