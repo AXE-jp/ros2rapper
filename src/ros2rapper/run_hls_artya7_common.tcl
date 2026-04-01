@@ -1,3 +1,6 @@
+# Copyright (c) 2021-2026 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 open_solution -reset solution1
 
 set_part xc7a100tcsg324-1

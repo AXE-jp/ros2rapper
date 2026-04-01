@@ -1,10 +1,12 @@
+// Copyright (c) 2021-2026 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "hls.hpp"
 #include "ip.hpp"
 #include "udp.hpp"
 #include "udp_ip_in.hpp"
 #include <cassert>
 #include <cstdint>
-#include <cstdio>
 
 constexpr uint8_t igmp_packet[]
     = {0x46, 0xc0, 0x00, 0x28, 0x00, 0x00, 0x40, 0x00, 0x01, 0x02,

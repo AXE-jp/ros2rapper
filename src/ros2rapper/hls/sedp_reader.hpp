@@ -1,4 +1,8 @@
-#pragma once
+// Copyright (c) 2021-2026 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#ifndef SEDP_READER_HPP
+#define SEDP_READER_HPP
 
 #include "endpoint.hpp"
 #include "hls.hpp"
@@ -20,3 +24,5 @@ void sedp_reader(
     const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
     const uint8_t sub_type_name_len[SUB_TOPICS_MAX],
     const uint8_t src_guid_prefix[GUID_PREFIX_SIZE]);
+
+#endif // !SEDP_READER_HPP

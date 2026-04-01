@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2026 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "rtps_sbm_heartbeat_in.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
