@@ -274,6 +274,8 @@ static void call_update_liveliness(const receiver_config_t *conf,
     hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
     hls_stream<uint64_t>     sub_app_data_recvinfo;
 
+    hls_uint<2> spdp_initial_send_counter = 0;
+
     for (auto j = 0; j < length; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (length - 1)) {
@@ -287,7 +289,8 @@ static void call_update_liveliness(const receiver_config_t *conf,
     }
 
     call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
+    assert(spdp_initial_send_counter == 0);
 }
 
 static int test_update_liveliness_1(const receiver_config_t *conf,

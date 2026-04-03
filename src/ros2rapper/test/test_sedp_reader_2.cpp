@@ -355,6 +355,7 @@ static void call_sedp_reader(sedp_reader_tbl_t       *sedp_reader_tbl,
     hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
     hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
     hls_stream<uint64_t>     sub_app_data_recvinfo;
+    hls_uint<2>              spdp_initial_send_counter = 0;
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
@@ -367,7 +368,8 @@ static void call_sedp_reader(sedp_reader_tbl_t       *sedp_reader_tbl,
                       sub_app_data_recvinfo, conf);
     }
     call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
+    assert(spdp_initial_send_counter == 0);
 }
 
 static void setup_topic_data_all(

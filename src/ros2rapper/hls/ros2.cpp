@@ -261,7 +261,8 @@ static void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
                          sedp_reader_tbl_t *tbl, bool is_matched,
                          sedp_reader_id_t matched_idx, bool is_full,
                          sedp_reader_id_t  unused_idx,
-                         sedp_reader_id_t *reader_cnt) {
+                         sedp_reader_id_t *reader_cnt,
+                         hls_uint<2>      *spdp_initial_send_counter) {
 #pragma HLS inline
     uint8_t ip_addr[4] /* Cyber array=EXPAND */;
 #pragma HLS array_partition variable = ip_addr complete dim = 1
@@ -277,6 +278,7 @@ static void ros2_in_spdp(const rtps_data_t &rtps_data, int64_t timestamp_i64,
         ros2_in_spdp_new(ip_addr, udp_port, rtps_data.guid_prefix,
                          lease_duration, timestamp_i64, tbl, unused_idx);
         (*reader_cnt)++;
+        *spdp_initial_send_counter = 3;
     }
 }
 
@@ -427,8 +429,8 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
              app_reader_tbl_t        *app_reader_tbl,
              hls_uint<PUB_TOPICS_MAX> pub_enable,
              hls_uint<SUB_TOPICS_MAX> sub_enable, int64_t timestamp_i64,
-             sedp_reader_id_t *sedp_reader_cnt,
-             app_reader_id_t  *app_reader_cnt) {
+             sedp_reader_id_t *sedp_reader_cnt, app_reader_id_t *app_reader_cnt,
+             hls_uint<2> *spdp_initial_send_counter) {
 #pragma HLS inline
 
     hls_uint<1> enable = (pub_enable != 0) || (sub_enable != 0);
@@ -482,7 +484,8 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
     case RTPS_TYPE_SPDP:
         ros2_in_spdp(rtps_data, timestamp_i64, sedp_reader_tbl,
                      is_participant_matched, sedp_matched_idx,
-                     is_sedp_reader_tbl_full, sedp_unused_idx, sedp_reader_cnt);
+                     is_sedp_reader_tbl_full, sedp_unused_idx, sedp_reader_cnt,
+                     spdp_initial_send_counter);
         break;
     case RTPS_TYPE_SEDP_HEARTBEAT_PUB:
         if (is_participant_matched) {
@@ -526,17 +529,6 @@ void ros2_in(hls_stream<rtps_data_t> &in, sedp_reader_tbl_t *sedp_reader_tbl,
         }
         break;
     }
-}
-
-/* Cyber func=inline */
-static bool get_ros2_out_spdp_info(const sedp_reader_tbl_t *tbl,
-                                   unsigned int             idx) {
-#pragma HLS inline
-    uint64_t data;
-    get_sedp_reader_tbl(&data, tbl, idx, 0);
-    bool        alive = ((data & SEDP_ENDPOINT_ALIVE) != 0);
-    hls_uint<2> initial_send_counter = ((data >> 8) & 3);
-    return alive && (initial_send_counter < 3);
 }
 
 /* Cyber func=inline */
@@ -951,7 +943,7 @@ static void ros2_out(
     hls_uint<1> cnt_sedp_sub_an_elapsed, VOLATILE uint8_t *cnt_sedp_sub_an_set,
     hls_uint<1> cnt_app_wr_elapsed, VOLATILE uint8_t *cnt_app_wr_set,
     int64_t timestamp_i64, sedp_reader_id_t *sedp_reader_cnt,
-    app_reader_id_t *app_reader_cnt) {
+    app_reader_id_t *app_reader_cnt, hls_uint<2> *spdp_initial_send_counter) {
     static const uint8_t
         app_writer_entity_id_list[PUB_TOPICS_MAX]
                                  [4] /* Cyber array=EXPAND, array_index=const */
@@ -1033,27 +1025,11 @@ static void ros2_out(
 
     if (!out.full() && cnt_interval_elapsed) {
         if (((pub_enable != 0) || (sub_enable != 0)) && next_packet_type == 0) {
-            // Send a SPDP message if
-            //   1. cnt_spdp_wr_elapsed is asserted.
-            //   2. there exists a living sedp_endpoint whose
-            //      initial_send_counter is less than three.
-            bool send = cnt_spdp_wr_elapsed;
-            if (!send) {
-#ifdef SEDP_READER_TBL_FF
-                /* Cyber unroll_times=all */
-#else  // !SEDP_READER_TBL_FF
-                /* Cyber folding=1 */
-#endif // SEDP_READER_TBL_FF
-                for (auto j = 0; j < SEDP_READER_MAX; j++) {
-#ifdef SEDP_READER_TBL_FF
-#pragma HLS unroll
-#endif // SEDP_READER_TBL_FF
-                    if (get_ros2_out_spdp_info(sedp_reader_tbl, j)) {
-                        send = true;
-                    }
+            bool is_counter_positive = (*spdp_initial_send_counter > 0);
+            if (cnt_spdp_wr_elapsed || is_counter_positive) {
+                if (is_counter_positive) {
+                    (*spdp_initial_send_counter)--;
                 }
-            }
-            if (send) {
                 SPDP_WRITER_OUT();
                 /* Cyber scheduling_block = non-transparent */
             cnt_reset_0: {
@@ -1455,6 +1431,8 @@ void ros2_main(
     static sedp_reader_id_t sedp_reader_cnt_reg;
     static app_reader_id_t  app_reader_cnt_reg;
 
+    static hls_uint<2> spdp_initial_send_counter = 0;
+
 #if defined(SEDP_READER_TBL_RAM) || defined(APP_READER_TBL_RAM)
     static bool reader_tables_initialized;
     if (!reader_tables_initialized) {
@@ -1482,7 +1460,7 @@ void ros2_main(
             app_reader_tbl,
 #endif // APP_READER_TBL_FF
             pub_enable, sub_enable, timestamp_i64, &sedp_reader_cnt_reg,
-            &app_reader_cnt_reg);
+            &app_reader_cnt_reg, &spdp_initial_send_counter);
 
     ros2_out(
         out,
@@ -1503,7 +1481,7 @@ void ros2_main(
         cnt_sedp_sub_hb_set, cnt_sedp_pub_an_elapsed, cnt_sedp_pub_an_set,
         cnt_sedp_sub_an_elapsed, cnt_sedp_sub_an_set, cnt_app_wr_elapsed,
         cnt_app_wr_set, timestamp_i64, &sedp_reader_cnt_reg,
-        &app_reader_cnt_reg);
+        &app_reader_cnt_reg, &spdp_initial_send_counter);
 
     *sedp_reader_cnt = sedp_reader_cnt_reg;
     *app_reader_cnt = app_reader_cnt_reg;

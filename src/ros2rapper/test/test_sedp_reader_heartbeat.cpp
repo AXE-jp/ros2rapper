@@ -139,6 +139,7 @@ int test_sedp_reader_heartbeat() {
 
     int64_t                 timestamp_i64 = 0;
     hls_stream<rtps_data_t> stream;
+    hls_uint<2>             spdp_initial_send_counter = 0;
 
     for (ii = 0; ii < sizeof(pkt22); ii++) {
         x = pkt22[ii];
@@ -152,7 +153,8 @@ int test_sedp_reader_heartbeat() {
                       sub_app_data_recvinfo, conf);
     }
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
+    assert(spdp_initial_send_counter == 0);
 
     unsigned int sedp_reader_cnt = 0;
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
