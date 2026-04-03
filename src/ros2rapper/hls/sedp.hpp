@@ -12,7 +12,7 @@
 #include "timestamp.hpp"
 #include <cstdint>
 
-#define SEDP_DATA_SIZE 328
+#define SEDP_DATA_SIZE (232 + MAX_TOPIC_NAME_LEN + MAX_TOPIC_TYPE_NAME_LEN)
 
 #define SEDP_WRITER_OCTETS_TO_NEXT_HEADER                                      \
     (SBM_DATA_HDR_SIZE + SP_HDR_SIZE + SEDP_DATA_SIZE)
