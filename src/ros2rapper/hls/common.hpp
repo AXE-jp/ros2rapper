@@ -7,7 +7,6 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) > (y) ? (y) : (x))
 
-#define TARGET_CLOCK_FREQ     80000000 // Arty A7-100T: 80 MHz
 #define TARGET_PARTICIPANT_ID 1
 
 #define ENTITYID_APP_WRITER_LIST                                               \
