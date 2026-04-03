@@ -4,6 +4,7 @@
 #ifndef ROS2_HPP
 #define ROS2_HPP
 
+#include "common.hpp"
 #include "duration.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
@@ -14,6 +15,13 @@
 #define MAX_TOPIC_NAME_LEN      32
 #define MAX_TOPIC_TYPE_NAME_LEN 64
 #define MAX_APP_DATA_LEN        1024
+
+static_assert((MAX_NODE_NAME_LEN % 4) == 0,
+              "MAX_NODE_NAME_LEN shoud be a multiple of 4");
+static_assert((MAX_TOPIC_NAME_LEN % 4) == 0,
+              "MAX_TOPIC_NAME_LEN shoud be a multiple of 4");
+static_assert((MAX_TOPIC_TYPE_NAME_LEN % 4) == 0,
+              "MAX_TOPIC_TYPE_NAME_LEN shoud be a multiple of 4");
 
 typedef hls_uint<11> app_data_len_t;
 static_assert(MAX_APP_DATA_LEN <= 2047,
@@ -27,8 +35,6 @@ static_assert(MAX_APP_DATA_LEN <= 2047,
 
 // #define APP_READER_TBL_FF
 #define APP_READER_TBL_RAM
-
-#include "common.hpp"
 
 typedef struct {
     uint8_t  ip_addr[4] /* Cyber array_reshape_factor=ALL */;
