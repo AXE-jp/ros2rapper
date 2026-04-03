@@ -43,7 +43,7 @@ static void init_pending_info(pending_info *pending, uint16_t id,
 
 static void purge_pending_info(pending_info *pending) {
 #pragma HLS inline
-    pending->used = false;
+    pending->is_used = false;
 }
 
 /* Cyber func=inline */
