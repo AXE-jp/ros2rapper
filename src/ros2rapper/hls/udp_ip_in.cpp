@@ -41,7 +41,10 @@ static void init_pending_info(pending_info *pending, uint16_t id,
     TRACE("%s: pending entry activated (id=%d)\n", __func__, id);
 }
 
-#define purge_pending_info(p) ((p)->is_used = false)
+static void purge_pending_info(pending_info *pending) {
+#pragma HLS inline
+    pending->used = false;
+}
 
 /* Cyber func=inline */
 static pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
