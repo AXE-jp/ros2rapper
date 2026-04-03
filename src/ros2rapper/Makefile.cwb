@@ -13,7 +13,7 @@ HDRS = $(wildcard $(HLSDIR)/*.hpp)
 .PHONY: synth clean format
 
 CPARS_FLAGS =
-BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -TC172 -o-P
+BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -TC172 -o-P -Zcse_limit=2
 VGEN_FLAGS = -mem_black_box=YES -case_default_x=NO
 
 synth: ros2_main_cwb.v ros2_receiver_cwb.v ros2_sender_cwb.v pre_ip_in_cwb.v udp_ip_in_cwb.v
