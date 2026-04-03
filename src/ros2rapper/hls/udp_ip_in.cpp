@@ -325,7 +325,6 @@ void udp_ip_in(
     case UDP_IP_IN_STATE_PAYLOAD:
         if (!out.full() && !in.empty()) {
             in.read_nb(x);
-            data = x & 0xff;
             end = x & 0x100;
             if (offset >= IP_HDR_SIZE + UDP_HDR_SIZE) {
                 out.write(x);
