@@ -944,7 +944,7 @@ ros2_sender (
   .conf_vendor_id_0_ds0_rd(ros2_vendor_id),
   .conf_node_name_00_ds00_rd(ros2_node_name),
   .conf_node_name_len(ros2_node_name_len),
-  .conf_node_udp_port_0_ds0_rd(ros2_node_udp_port),
+  .conf_node_udp_port_0_ds0_rd({ros2_node_udp_port[7:0], ros2_node_udp_port[15:8]}),
   .conf_guid_prefix_00_ds00_rd(ros2_guid_prefix),
 
   .conf_pub_topic_name_0_00_ds0_00_rd(ros2_pub_topic_name_0),
