@@ -14,13 +14,6 @@ add_files hls/udp.cpp
 
 set_top ros2_sender
 
-open_solution -reset solution1
-
-set_part xcau25p-ffvb676-1-e
-config_rtl -reset all -reset_level low -reset_async
-create_clock -period 100MHz
-
-csynth_design
-#export_design -format ip_catalog
+source run_hls_au25p_common.tcl
 
 exit

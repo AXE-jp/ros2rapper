@@ -34,16 +34,4 @@ void app_writer(const uint8_t vendor_id[2],
                 const uint32_t app_data[MAX_APP_DATA_LEN / 4],
                 uint32_t app_data_len, hls_stream<uint8_t> &out, timestamp now);
 
-void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
-                const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
-                hls_uint<SUB_TOPICS_MAX> sub_enabled,
-                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
-                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
-                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_grant,
-                uint8_t               sub_app_data_0[MAX_APP_DATA_LEN],
-                uint8_t               sub_app_data_1[MAX_APP_DATA_LEN],
-                uint8_t               sub_app_data_2[MAX_APP_DATA_LEN],
-                uint8_t               sub_app_data_3[MAX_APP_DATA_LEN],
-                hls_stream<uint64_t> &sub_app_data_recvinfo);
-
 #endif // !APP_HPP

@@ -7,7 +7,6 @@
 #include "endpoint.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
-#include "sedp.hpp"
 #include "test_utils.hpp"
 
 // Message from a publisher
@@ -338,35 +337,39 @@ static const uint8_t wrong_topic_name_2[] = "rt/ccc";
 static const uint8_t wrong_type_name_1[] = "std::msgs::msg::dds_::Uint8_";
 static const uint8_t wrong_type_name_2[] = "std::msgs::msg::dds_::Uint16_";
 
-static void call_sedp_reader(
-    sedp_reader_tbl_t *sedp_reader_tbl, app_reader_tbl_t *app_reader_tbl,
-    hls_uint<PUB_TOPICS_MAX> pub_enable, hls_uint<SUB_TOPICS_MAX> sub_enable,
-    const uint8_t ip_addr[4], const uint8_t subnet_mask[4],
-    uint16_t port_num_seed, const uint8_t guid_prefix[GUID_PREFIX_SIZE],
-    const uint8_t pub_topic_name[PUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
-    const uint8_t pub_topic_name_len[PUB_TOPICS_MAX],
-    const uint8_t pub_type_name[PUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
-    const uint8_t pub_type_name_len[PUB_TOPICS_MAX],
-    const uint8_t sub_topic_name[SUB_TOPICS_MAX][MAX_TOPIC_NAME_LEN],
-    const uint8_t sub_topic_name_len[SUB_TOPICS_MAX],
-    const uint8_t sub_type_name[SUB_TOPICS_MAX][MAX_TOPIC_TYPE_NAME_LEN],
-    const uint8_t sub_type_name_len[SUB_TOPICS_MAX], const uint8_t test_data[],
-    size_t test_data_len) {
-    hls_stream<rtps_data_t> stream;
-    int64_t                 timestamp_i64 = 0;
+static uint8_t sub_app_data_0[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_1[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_2[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_3[MAX_APP_DATA_LEN];
+
+static void call_sedp_reader(sedp_reader_tbl_t       *sedp_reader_tbl,
+                             app_reader_tbl_t        *app_reader_tbl,
+                             hls_uint<PUB_TOPICS_MAX> pub_enable,
+                             hls_uint<SUB_TOPICS_MAX> sub_enable,
+                             const receiver_config_t &conf,
+                             const uint8_t test_data[], size_t test_data_len) {
+    hls_stream<hls_uint<9>>  in;
+    hls_stream<rtps_data_t>  stream;
+    int64_t                  timestamp_i64 = 0;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_req;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
+    hls_stream<uint64_t>     sub_app_data_recvinfo;
+    hls_uint<2>              spdp_initial_send_counter = 0;
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
             x |= hls_uint<9>(0x100);
         }
-        sedp_reader(x, stream, pub_enable, sub_enable, ip_addr, subnet_mask,
-                    port_num_seed, guid_prefix, pub_topic_name,
-                    pub_topic_name_len, pub_type_name, pub_type_name_len,
-                    sub_topic_name, sub_topic_name_len, sub_type_name,
-                    sub_type_name_len);
+        in.write(x);
+        ros2_receiver(in, stream, pub_enable, sub_enable, &sub_app_data_req,
+                      &sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+                      sub_app_data_1, sub_app_data_2, sub_app_data_3,
+                      sub_app_data_recvinfo, conf);
     }
     call_ros2_in(stream, sedp_reader_tbl, app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
+    assert(spdp_initial_send_counter == 0);
 }
 
 static void setup_topic_data_all(
@@ -439,13 +442,7 @@ setup_reader_tables_with_default_value(sedp_reader_tbl_t *sedp_reader_tbl,
 
 #define CALL_SEDP_READER(pub_enable, sub_enable, test_data)                    \
     call_sedp_reader(&sedp_reader_tbl, &app_reader_tbl, pub_enable,            \
-                     sub_enable, conf.ip_addr, conf.subnet_mask,               \
-                     conf.port_num_seed, conf.guid_prefix,                     \
-                     conf.pub_topic_name, conf.pub_topic_name_len,             \
-                     conf.pub_topic_type_name, conf.pub_topic_type_name_len,   \
-                     conf.sub_topic_name, conf.sub_topic_name_len,             \
-                     conf.sub_topic_type_name, conf.sub_topic_type_name_len,   \
-                     test_data, sizeof(test_data))
+                     sub_enable, conf, test_data, sizeof(test_data))
 
 #define CALL_SEDP_READER_WITH_DEFAULT_ARGS(test_data)                          \
     do {                                                                       \

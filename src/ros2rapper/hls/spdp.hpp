@@ -7,12 +7,11 @@
 #include "duration.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
-#include "ros2_receiver.hpp"
 #include "rtps.hpp"
 #include "timestamp.hpp"
 #include <cstdint>
 
-#define SPDP_DATA_SIZE 156
+#define SPDP_DATA_SIZE (124 + MAX_NODE_NAME_LEN)
 
 #define SPDP_WRITER_OCTETS_TO_NEXT_HEADER                                      \
     (SBM_DATA_HDR_SIZE + SP_HDR_SIZE + SPDP_DATA_SIZE)
@@ -23,12 +22,6 @@
 #define SPDP_WRITER_RTPS_PKT_LEN SPDP_WRITER_TOT_LEN
 #define SPDP_WRITER_UDP_PKT_LEN  (UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
 #define SPDP_WRITER_IP_PKT_LEN   (IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
-
-void reset_sedp_endpoint_children(bool unmatched[APP_READER_MAX]);
-
-void spdp_reader(hls_uint<9> in, hls_stream<rtps_data_t> &out,
-                 hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed);
 
 void spdp_writer(const uint8_t vendor_id[2],
                  const uint8_t writer_guid_prefix[12],

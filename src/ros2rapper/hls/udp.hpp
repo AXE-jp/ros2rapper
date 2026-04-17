@@ -36,6 +36,4 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
 void udp_set_header(const uint8_t src_port[2], const uint8_t dst_port[2],
                     const uint16_t udp_data_len, hls_stream<uint8_t> &out);
 
-void udp_set_checksum(uint8_t buf[]);
-
 #endif // !UDP_HPP

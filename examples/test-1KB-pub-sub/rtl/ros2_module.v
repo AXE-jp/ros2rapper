@@ -448,7 +448,7 @@ module ros2_module #(
     wire cnt_sedp_sub_an_elapsed;
     wire cnt_app_wr_elapsed;
     ros2rapper_tx_counters #(
-        .PRESCALER_DIV(64),
+        .PRESCALER_DIV(PRESCALER_DIV),
         .TX_INTERVAL_COUNT          ((ROS2CLK_HZ / PRESCALER_DIV) / 100),
         .TX_PERIOD_SPDP_WR_COUNT    ((ROS2CLK_HZ / PRESCALER_DIV) * 3),
         .TX_PERIOD_SEDP_PUB_WR_COUNT((ROS2CLK_HZ / PRESCALER_DIV) * 3),

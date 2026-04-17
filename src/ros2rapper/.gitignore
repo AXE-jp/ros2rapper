@@ -1,9 +1,13 @@
 proj_ros2_main/
 proj_ros2_receiver/
 proj_ros2_sender/
+proj_pre_ip_in/
+proj_udp_ip_in/
 proj_ros2_main_au25p/
 proj_ros2_receiver_au25p/
 proj_ros2_sender_au25p/
+proj_pre_ip_in_au25p/
+proj_udp_ip_in_au25p/
 proj_ros2test/
 proj_test_input/
 *.log
@@ -34,3 +38,5 @@ proj_test_input/
 ros2_main_cwb.v
 ros2_receiver_cwb.v
 ros2_sender_cwb.v
+pre_ip_in_cwb.v
+udp_ip_in_cwb.v

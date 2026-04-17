@@ -4,25 +4,10 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
-#include "app.hpp"
-#include "ip.hpp"
-#include "sedp.hpp"
-#include "spdp.hpp"
-#include "udp.hpp"
-
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) > (y) ? (y) : (x))
 
-#define TARGET_CLOCK_FREQ     80000000 // Arty A7-100T: 80 MHz
 #define TARGET_PARTICIPANT_ID 1
-
-#define TX_BUF_LEN                                                             \
-    (MAX(MAX(MAX(MAX(SPDP_WRITER_IP_PKT_LEN, SEDP_WRITER_IP_PKT_LEN),          \
-                 SEDP_HEARTBEAT_IP_PKT_LEN),                                   \
-             SEDP_ACKNACK_IP_PKT_LEN),                                         \
-         APP_WRITER_IP_PKT_LEN(MAX_APP_DATA_LEN)))
-
-#define MAX_TX_UDP_PAYLOAD_LEN (TX_BUF_LEN - (IP_HDR_SIZE + UDP_HDR_SIZE))
 
 #define ENTITYID_APP_WRITER_LIST                                               \
     {                                                                          \

@@ -1,11 +1,11 @@
 // Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "endpoint.hpp"
+#include "ros2.hpp"
+#include "ros2_receiver.hpp"
 #include <cassert>
 #include <iostream>
-
-#include "app.hpp"
-#include "ros2.hpp"
 
 // The recipient's reader entity ID: {0x00, 0x00, 0x10, 0x04}.
 constexpr uint8_t app_reader_test_data_0[] = {
@@ -99,28 +99,34 @@ constexpr uint8_t app_reader_test_data_3[] = {
     // Payload
     0x05, 0x00, 0x00, 0x00, 0x44, 0x44, 0x44, 0x44, 0x00, 0x00, 0x00, 0x00};
 
-static void call_app_reader(
-    const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
-    const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][GUID_ENTITYID_SIZE],
-    hls_uint<SUB_TOPICS_MAX>  sub_enable,
-    hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
-    hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
-    hls_uint<SUB_TOPICS_MAX>  sub_app_data_grant,
-    uint8_t                   sub_app_data_0[MAX_APP_DATA_LEN],
-    uint8_t                   sub_app_data_1[MAX_APP_DATA_LEN],
-    uint8_t                   sub_app_data_2[MAX_APP_DATA_LEN],
-    uint8_t                   sub_app_data_3[MAX_APP_DATA_LEN],
-    hls_stream<uint64_t> &sub_app_data_recvinfo, const uint8_t test_data[],
-    size_t test_data_len) {
+static void call_app_reader(const uint8_t reader_guid_prefix[GUID_PREFIX_SIZE],
+                            hls_uint<SUB_TOPICS_MAX>  sub_enable,
+                            hls_uint<SUB_TOPICS_MAX> *sub_app_data_req,
+                            hls_uint<SUB_TOPICS_MAX> *sub_app_data_rel,
+                            hls_uint<SUB_TOPICS_MAX>  sub_app_data_grant,
+                            uint8_t sub_app_data_0[MAX_APP_DATA_LEN],
+                            uint8_t sub_app_data_1[MAX_APP_DATA_LEN],
+                            uint8_t sub_app_data_2[MAX_APP_DATA_LEN],
+                            uint8_t sub_app_data_3[MAX_APP_DATA_LEN],
+                            hls_stream<uint64_t> &sub_app_data_recvinfo,
+                            const uint8_t test_data[], size_t test_data_len) {
+    hls_stream<hls_uint<9>>  in;
+    hls_stream<rtps_data_t>  out;
+    receiver_config_t        conf;
+    hls_uint<PUB_TOPICS_MAX> pub_enable = 0;
+    for (auto j = 0; j < GUID_PREFIX_SIZE; j++) {
+        conf.guid_prefix[j] = reader_guid_prefix[j];
+    }
     for (auto j = 0; j < test_data_len; j++) {
         hls_uint<9> x = test_data[j];
         if (j == (test_data_len - 1)) {
             x |= hls_uint<9>(0x100);
         }
-        app_reader(x, reader_guid_prefix, reader_entity_id_list, sub_enable,
-                   sub_app_data_req, sub_app_data_rel, &sub_app_data_grant,
-                   sub_app_data_0, sub_app_data_1, sub_app_data_2,
-                   sub_app_data_3, sub_app_data_recvinfo);
+        in.write(x);
+        ros2_receiver(in, out, pub_enable, sub_enable, sub_app_data_req,
+                      sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+                      sub_app_data_1, sub_app_data_2, sub_app_data_3,
+                      sub_app_data_recvinfo, conf);
     }
 }
 
@@ -148,7 +154,11 @@ static int check_app_reader(hls_uint<SUB_TOPICS_MAX> sub_enable,
     }
 
     assert(sub_app_data_req == (sub_enable & flag));
-    assert(sub_app_data_rel == (sub_enable & sub_app_data_grant & flag));
+    if ((sub_enable & flag) != 0) {
+        assert(sub_app_data_rel == sub_app_data_grant);
+    } else {
+        assert(sub_app_data_rel == 0);
+    }
     if ((sub_enable & sub_app_data_grant & flag) != 0) {
         // The topic is enabled and granted.
         if (sub_app_data_len != test_data_payload_len) {
@@ -171,11 +181,10 @@ static int check_app_reader(hls_uint<SUB_TOPICS_MAX> sub_enable,
     do {                                                                       \
         sub_app_data_req = 0;                                                  \
         sub_app_data_rel = 0;                                                  \
-        call_app_reader(reader_guid_prefix, reader_entity_id_list, sub_enable, \
-                        &sub_app_data_req, &sub_app_data_rel,                  \
-                        sub_app_data_grant, sub_app_data_0, sub_app_data_1,    \
-                        sub_app_data_2, sub_app_data_3, sub_app_data_recvinfo, \
-                        test_data, sizeof(test_data));                         \
+        call_app_reader(reader_guid_prefix, sub_enable, &sub_app_data_req,     \
+                        &sub_app_data_rel, sub_app_data_grant, sub_app_data_0, \
+                        sub_app_data_1, sub_app_data_2, sub_app_data_3,        \
+                        sub_app_data_recvinfo, test_data, sizeof(test_data));  \
     } while (0)
 
 #define CHECK_APP_READER(flag, sub_app_data, test_data, test_data_payload_len, \
@@ -189,13 +198,6 @@ static int check_app_reader(hls_uint<SUB_TOPICS_MAX> sub_enable,
 static int test_app_reader() {
     constexpr uint8_t reader_guid_prefix[GUID_PREFIX_SIZE] = {
         0x01, 0x0f, 0x37, 0xad, 0xde, 0x09, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
-    constexpr uint8_t reader_entity_id_list[SUB_TOPICS_MAX][GUID_ENTITYID_SIZE]
-        = {
-            {0x00, 0x00, 0x10, 0x04},
-            {0x00, 0x00, 0x11, 0x04},
-            {0x00, 0x00, 0x12, 0x04},
-            {0x00, 0x00, 0x13, 0x04}
-    };
 
     hls_uint<SUB_TOPICS_MAX> sub_enable;
     hls_uint<SUB_TOPICS_MAX> sub_app_data_req;

@@ -67,9 +67,11 @@ add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/include/*.vh
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/rtl/*.v ]
 
 if {[string equal [lindex $argv 0] "vitis"]} {
-      add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
     add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_receiver/solution1/syn/verilog/*.v ]
     add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_sender/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_pre_ip_in/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_udp_ip_in/solution1/syn/verilog/*.v ]
 } elseif {[string equal [lindex $argv 0] "cwb"]} {
     add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/*.v ]
 }

@@ -9,6 +9,7 @@
 #include "ip.hpp"
 #include "message_metadata.hpp"
 #include "ros2.hpp"
+#include "sedp.hpp"
 #include "slip.hpp"
 #include "spdp.hpp"
 #include "udp.hpp"
@@ -207,7 +208,7 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_0[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array_reshape_factor=ALL, port_mode=shared, volatile=YES */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
@@ -224,7 +225,7 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_1[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array_reshape_factor=ALL, port_mode=shared, volatile=YES */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
@@ -241,7 +242,7 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_2[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array_reshape_factor=ALL, port_mode=shared, volatile=YES */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t
@@ -258,7 +259,7 @@ void ros2_sender(
 #endif // PUB_DATA_FF
     const uint32_t pub_app_data_3[MAX_APP_DATA_LEN / 4]
 #ifdef PUB_DATA_FF
-/* Cyber array=EXPAND, port_mode=shared, volatile=YES */
+/* Cyber array_reshape_factor=ALL, port_mode=shared, volatile=YES */
 #endif // PUB_DATA_FF
     ,
     VOLATILE const app_data_len_t

@@ -3,11 +3,11 @@
 
 #include "common.hpp"
 #include "duration.hpp"
+#include "endpoint.hpp"
 #include "hls.hpp"
 #include "ros2.hpp"
 #include "ros2_receiver.hpp"
 #include "rtps.hpp"
-#include "spdp.hpp"
 #include "test_utils.hpp"
 #include <cassert>
 #include <cstdio>
@@ -185,17 +185,46 @@ constexpr uint8_t test_spdp_reader_data_4[] = {
 constexpr uint8_t SOURCE_GUID_PREFIX[GUID_PREFIX_SIZE]
     = {0x01, 0x0f, 0x9c, 0x9d, 0x4a, 0x00, 0xcf, 0xe4, 0x00, 0x00, 0x00, 0x00};
 
+static uint8_t sub_app_data_0[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_1[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_2[MAX_APP_DATA_LEN];
+static uint8_t sub_app_data_3[MAX_APP_DATA_LEN];
+
 static void call_spdp_reader(hls_stream<rtps_data_t> &out,
                              const uint8_t            ip_addr[4],
                              const uint8_t            subnet_mask[4],
                              uint16_t port_num_seed, const uint8_t test_data[],
                              size_t test_data_size) {
+    hls_uint<PUB_TOPICS_MAX> pub_enable = 1;
+    hls_uint<SUB_TOPICS_MAX> sub_enable = 1;
+
+    receiver_config_t conf;
+    conf.ip_addr[0] = ip_addr[0];
+    conf.ip_addr[1] = ip_addr[1];
+    conf.ip_addr[2] = ip_addr[2];
+    conf.ip_addr[3] = ip_addr[3];
+    conf.subnet_mask[0] = subnet_mask[0];
+    conf.subnet_mask[1] = subnet_mask[1];
+    conf.subnet_mask[2] = subnet_mask[2];
+    conf.subnet_mask[3] = subnet_mask[3];
+    conf.port_num_seed = port_num_seed;
+
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_req;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_rel;
+    hls_uint<SUB_TOPICS_MAX> sub_app_data_grant;
+    hls_stream<uint64_t>     sub_app_data_recvinfo;
+
+    hls_stream<hls_uint<9>> in;
     for (auto j = 0; j < test_data_size; j++) {
-        hls_uint<9> data = test_data[j];
+        hls_uint<9> x = test_data[j];
         if (j == (test_data_size - 1)) {
-            data |= hls_uint<9>(0x100);
+            x |= hls_uint<9>(0x100);
         }
-        spdp_reader(data, out, true, ip_addr, subnet_mask, port_num_seed);
+        in.write(x);
+        ros2_receiver(in, out, pub_enable, sub_enable, &sub_app_data_req,
+                      &sub_app_data_rel, sub_app_data_grant, sub_app_data_0,
+                      sub_app_data_1, sub_app_data_2, sub_app_data_3,
+                      sub_app_data_recvinfo, conf);
     }
 }
 
@@ -337,6 +366,8 @@ static int test_spdp_reader_1() {
                      test_spdp_reader_data_1);
     rtps_data_t rtps_data_1 = stream.read();
 
+    hls_uint<2> spdp_initial_send_counter;
+
     // Test whether spdp_reader finds a new participant correctly.
     for (auto first_n_alive = 0; first_n_alive < SEDP_READER_MAX;
          first_n_alive++) {
@@ -357,9 +388,11 @@ static int test_spdp_reader_1() {
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
+        spdp_initial_send_counter = 0;
         call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                     sub_enable, timestamp_i64);
+                     sub_enable, timestamp_i64, &spdp_initial_send_counter);
         // Check sedp_reader_tbl
+        assert(spdp_initial_send_counter == 3);
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             // spdp_reader should find a new participant, and
             // sedp_reader_tbl[first_n_alive] should become alive.
@@ -383,9 +416,11 @@ static int test_spdp_reader_1() {
         }
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
+        spdp_initial_send_counter = 0;
         call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                     sub_enable, timestamp_i64);
+                     sub_enable, timestamp_i64, &spdp_initial_send_counter);
         // Check sedp_reader_tbl
+        assert(spdp_initial_send_counter == 0);
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             bool known = ((1 << j) & known_participants);
             assert(is_sedp_endpoint_alive(&sedp_reader_tbl, j) == known);
@@ -417,7 +452,8 @@ static int test_spdp_reader_2() {
             false, &sedp_reader_tbl, j);
     }
 
-    int64_t r_lease_duration, r_timestamp_i64;
+    int64_t     r_lease_duration, r_timestamp_i64;
+    hls_uint<2> spdp_initial_send_counter;
 
     // Test whether spdp_reader reads PID_PARTICIPANT_LEASE_DURATION and sets
     // timestamp correctly.
@@ -430,7 +466,7 @@ static int test_spdp_reader_2() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
     get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
@@ -449,7 +485,7 @@ static int test_spdp_reader_2() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
     get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
@@ -468,7 +504,7 @@ static int test_spdp_reader_2() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_2);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
     // Check sedp_reader_tbl.
     get_sedp_reader_tbl_lease_duration(&r_lease_duration, &sedp_reader_tbl, 0);
     get_sedp_reader_tbl_timestamp(&r_timestamp_i64, &sedp_reader_tbl, 0);
@@ -497,7 +533,8 @@ static int test_spdp_reader_3() {
                      test_spdp_reader_data_4);
     rtps_data_t rtps_data_4 = stream.read();
 
-    int64_t timestamp_i64 = 0;
+    int64_t     timestamp_i64 = 0;
+    hls_uint<2> spdp_initial_send_counter;
 
     for (auto j = 0; j < SEDP_READER_MAX; j++) {
         set_sedp_reader_tbl_liveliness_and_guid_prefix_unknown(
@@ -506,7 +543,7 @@ static int test_spdp_reader_3() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_3);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
     // Test
     assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
 
@@ -517,7 +554,7 @@ static int test_spdp_reader_3() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_4);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64);
+                 sub_enable, timestamp_i64, &spdp_initial_send_counter);
     // Test
     assert(is_sedp_endpoint_alive(&sedp_reader_tbl, 0));
 
@@ -539,6 +576,8 @@ static int test_spdp_reader_4() {
                      test_spdp_reader_data_1);
     rtps_data_t rtps_data_1 = stream.read();
 
+    hls_uint<2> spdp_initial_send_counter;
+
     // Initialize sedp_reader_tbl
     // Set dummy data at 0
     set_sedp_reader_tbl(0, &sedp_reader_tbl, 0, 0);
@@ -554,7 +593,7 @@ static int test_spdp_reader_4() {
     // Update sedp_reader_tbl
     stream.write(rtps_data_1);
     call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                 sub_enable, timestamp_i64_in);
+                 sub_enable, timestamp_i64_in, &spdp_initial_send_counter);
 
     // Check sedp_reader_tbl
     uint64_t rdata_0, rdata_1;
@@ -626,6 +665,8 @@ static int test_update_timestamp() {
                      test_spdp_reader_data_1);
     rtps_data_t rtps_data_1 = stream.read();
 
+    hls_uint<2> spdp_initial_send_counter;
+
     for (auto target = 0; target < SEDP_READER_MAX; target++) {
         int64_t timestamp_i64_orig = 0;
         int64_t timestamp_i64_new = static_cast<int64_t>(target + 1) << 32;
@@ -645,7 +686,7 @@ static int test_update_timestamp() {
         // Update sedp_reader_tbl
         stream.write(rtps_data_1);
         call_ros2_in(stream, &sedp_reader_tbl, &app_reader_tbl, pub_enable,
-                     sub_enable, timestamp_i64_new);
+                     sub_enable, timestamp_i64_new, &spdp_initial_send_counter);
         // Check sedp_reader_tbl.
         for (auto j = 0; j < SEDP_READER_MAX; j++) {
             int64_t timestamp_i64_out;
