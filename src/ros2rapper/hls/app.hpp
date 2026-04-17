@@ -1,10 +1,11 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef APP_HPP
 #define APP_HPP
 
 #include "endpoint.hpp"
+#include "hls.hpp"
 #include "ros2.hpp"
 #include "rtps.hpp"
 #include "timestamp.hpp"
@@ -22,22 +23,15 @@
 #define APP_WRITER_IP_PKT_LEN(app_data_len)                                    \
     (IP_HDR_SIZE + APP_WRITER_UDP_PKT_LEN(app_data_len))
 
-void app_writer(const uint8_t writer_guid_prefix[12],
+void app_writer(const uint8_t vendor_id[2],
+                const uint8_t writer_guid_prefix[12],
                 const uint8_t writer_entity_id[4],
                 const uint8_t reader_guid_prefix[12],
                 const uint8_t reader_entity_id[4], const int64_t seqnum,
-                VOLATILE const uint8_t app_data[MAX_APP_DATA_LEN],
-                uint32_t app_data_len, uint8_t buf[], timestamp now);
-
-void app_reader(hls_uint<9> in, const uint8_t reader_guid_prefix[12],
-                const uint8_t reader_entity_id_list[SUB_TOPICS_MAX][4],
-                hls_uint<SUB_TOPICS_MAX>           sub_enabled,
-                VOLATILE hls_uint<SUB_TOPICS_MAX> *sub_app_data_recv,
-                VOLATILE uint8_t                  *sub_app_data_req,
-                VOLATILE uint8_t                  *sub_app_data_rel,
-                VOLATILE uint8_t                  *sub_app_data_grant,
-                uint8_t            sub_app_data[MAX_APP_DATA_LEN],
-                VOLATILE uint8_t  *sub_app_data_len,
-                VOLATILE uint16_t *sub_app_data_rep_id);
+#ifdef PUB_DATA_FF
+                VOLATILE
+#endif // PUB_DATA_FF
+                const uint32_t app_data[MAX_APP_DATA_LEN / 4],
+                uint32_t app_data_len, hls_stream<uint8_t> &out, timestamp now);
 
 #endif // !APP_HPP

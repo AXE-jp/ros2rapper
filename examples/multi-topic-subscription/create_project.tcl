@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 AXE, Inc.
+# Copyright (c) 2021-2026 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # create_project.tcl  Tcl script for creating project
@@ -22,7 +22,11 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 }
 set obj [get_filesets sources_1]
 set_property -name "loop_count" -value "1000" -objects $obj
-set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1" -objects $obj
+if {[string equal [lindex $argv 0] "vitis"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_VITIS=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    set_property -name "verilog_define" -value "TARGET_XILINX=1 ROS2RAPPER_HLS_CWB=1 XILINX_CLKIN_STYLE_BUFR=1" -objects $obj
+}
 set_property -name "verilog_version" -value "verilog_2001" -objects $obj
 
 # Create fileset "constrs_1"
@@ -61,11 +65,24 @@ current_run -implementation [get_runs impl_1]
 add_files -norecurse -fileset sources_1 [ glob ./*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/rtl/*.v ]
-add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2/solution1/syn/verilog/*.v ]
+
+if {[string equal [lindex $argv 0] "vitis"]} {
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_main/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_receiver/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_ros2_sender/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_pre_ip_in/solution1/syn/verilog/*.v ]
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/proj_udp_ip_in/solution1/syn/verilog/*.v ]
+} elseif {[string equal [lindex $argv 0] "cwb"]} {
+    add_files -norecurse -fileset sources_1 [ glob ../../src/ros2rapper/*.v ]
+}
+
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/include/*.vh ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/rtl/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/lib/*.v ]
 add_files -norecurse -fileset sources_1 [ glob ../../src/ether/verilog-ethernet/*.v ]
+
+# Designate the top module
+set_property top top [get_filesets sources_1]
 
 # Import xdc files
 add_files -fileset constrs_1 -norecurse "./constrs/arty_a7_eth.xdc ./constrs/eth_mac_fifo.tcl ./constrs/axis_async_fifo.tcl ./constrs/sync_reset.tcl"

@@ -14,6 +14,19 @@
       </userTransports>
 
       <useBuiltinTransports>false</useBuiltinTransports>
+
+      <builtin>
+        <discovery_config>
+          <leaseDuration>
+            <sec>20</sec>
+            <nanosec>0</nanosec>
+          </leaseDuration>
+          <leaseAnnouncement>
+            <sec>3</sec>
+            <nanosec>0</nanosec>
+          </leaseAnnouncement>
+        </discovery_config>
+      </builtin>
     </rtps>
   </participant>
 </profiles>

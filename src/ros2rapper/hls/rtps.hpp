@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef RTPS_HPP
@@ -15,7 +15,7 @@
 #define RTPS_HDR_OFFSET_GUID_PREFIX      8
 
 #define RTPS_HDR_PROTOCOL_VERSION 0x0203 // 2.3
-#define RTPS_HDR_VENDOR_ID        0x010f // 01.15
+// #define RTPS_HDR_VENDOR_ID 0x0000 // VENDOR_ID_UNKNOWN
 
 #define SBM_HDR_SIZE 4
 
@@ -30,6 +30,7 @@
 #define SBM_ID_DATA      0x15
 
 #define SBM_FLAGS_ENDIANNESS 0x01
+#define SBM_FLAGS_FINAL      0x02
 #define SBM_FLAGS_INLINE_QOS 0x02
 #define SBM_FLAGS_DATA       0x04
 

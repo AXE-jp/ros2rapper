@@ -20,20 +20,24 @@ module verilog_ethernet (
     output wire        phy_tx_en,
     output wire        phy_reset_n,
 
-    input  wire        tx_ip_hdr_valid,
-    output wire        tx_ip_hdr_ready,
-    input  wire [5:0]  tx_ip_dscp,
-    input  wire [1:0]  tx_ip_ecn,
-    input  wire [15:0] tx_ip_length,
-    input  wire [7:0]  tx_ip_ttl,
-    input  wire [7:0]  tx_ip_protocol,
-    input  wire [31:0] tx_ip_source_ip,
-    input  wire [31:0] tx_ip_dest_ip,
-    input  wire [7:0]  tx_ip_payload_axis_tdata,
-    input  wire        tx_ip_payload_axis_tvalid,
-    output wire        tx_ip_payload_axis_tready,
-    input  wire        tx_ip_payload_axis_tlast,
-    input  wire        tx_ip_payload_axis_tuser,
+    input  wire        tx_udp_hdr_valid,
+    output wire        tx_udp_hdr_ready,
+    input  wire [5:0]  tx_udp_ip_dscp,
+    input  wire [1:0]  tx_udp_ip_ecn,
+    input  wire [15:0] tx_udp_ip_length,
+    input  wire [7:0]  tx_udp_ip_ttl,
+    input  wire [7:0]  tx_udp_ip_protocol,
+    input  wire [31:0] tx_udp_ip_source_ip,
+    input  wire [31:0] tx_udp_ip_dest_ip,
+    input  wire [15:0] tx_udp_source_port,
+    input  wire [15:0] tx_udp_dest_port,
+    input  wire [15:0] tx_udp_length,
+    input  wire [15:0] tx_udp_checksum,
+    input  wire [7:0]  tx_udp_payload_axis_tdata,
+    input  wire        tx_udp_payload_axis_tvalid,
+    output wire        tx_udp_payload_axis_tready,
+    input  wire        tx_udp_payload_axis_tlast,
+    input  wire        tx_udp_payload_axis_tuser,
 
     output wire        rx_ip_hdr_valid,
     input  wire        rx_ip_hdr_ready,
@@ -56,6 +60,34 @@ module verilog_ethernet (
     output wire        rx_ip_payload_axis_tlast,
     output wire        rx_ip_payload_axis_tuser,
 
+    input  wire [7:0]  tx_raw_eth_axis_tdata,
+    input  wire        tx_raw_eth_axis_tvalid,
+    output wire        tx_raw_eth_axis_tready,
+    input  wire        tx_raw_eth_axis_tlast,
+
+    input  wire        tx_raw_eth_ip_hdr_valid,
+    output wire        tx_raw_eth_ip_hdr_ready,
+    input  wire [5:0]  tx_raw_eth_ip_dscp,
+    input  wire [1:0]  tx_raw_eth_ip_ecn,
+    input  wire [15:0] tx_raw_eth_ip_length,
+    input  wire [7:0]  tx_raw_eth_ip_ttl,
+    input  wire [7:0]  tx_raw_eth_ip_protocol,
+    input  wire [31:0] tx_raw_eth_ip_source_ip,
+    input  wire [31:0] tx_raw_eth_ip_dest_ip,
+    input  wire [7:0]  tx_raw_eth_ip_payload_axis_tdata,
+    input  wire        tx_raw_eth_ip_payload_axis_tvalid,
+    output wire        tx_raw_eth_ip_payload_axis_tready,
+    input  wire        tx_raw_eth_ip_payload_axis_tlast,
+
+    input  wire        select_tx_raw_eth_axis,
+    input  wire        select_tx_raw_eth_ip,
+
+    output wire [7:0]  rx_raw_eth_axis_tdata,
+    output wire        rx_raw_eth_axis_tvalid,
+    input  wire        rx_raw_eth_axis_tready,
+    output wire        rx_raw_eth_axis_tlast,
+    output wire        rx_raw_eth_axis_tuser,
+
     input  wire [47:0] local_mac,
     input  wire [31:0] local_ip,
     input  wire [31:0] gateway_ip,
@@ -72,11 +104,23 @@ wire rx_axis_tready;
 wire rx_axis_tlast;
 wire rx_axis_tuser;
 
+wire [7:0] rx_ros2_axis_tdata;
+wire rx_ros2_axis_tvalid;
+wire rx_ros2_axis_tready;
+wire rx_ros2_axis_tlast;
+wire rx_ros2_axis_tuser;
+
 wire [7:0] tx_axis_tdata;
 wire tx_axis_tvalid;
 wire tx_axis_tready;
 wire tx_axis_tlast;
 wire tx_axis_tuser;
+
+wire [7:0] tx_ros2_axis_tdata;
+wire tx_ros2_axis_tvalid;
+wire tx_ros2_axis_tready;
+wire tx_ros2_axis_tlast;
+wire tx_ros2_axis_tuser;
 
 wire rx_eth_hdr_ready;
 wire rx_eth_hdr_valid;
@@ -157,12 +201,12 @@ eth_axis_rx_inst (
     .clk(clk),
     .rst_n(rst_n),
 
-    .s_axis_tdata(rx_axis_tdata),
+    .s_axis_tdata(rx_ros2_axis_tdata),
     .s_axis_tkeep(1'b1),
-    .s_axis_tvalid(rx_axis_tvalid),
-    .s_axis_tready(rx_axis_tready),
-    .s_axis_tlast(rx_axis_tlast),
-    .s_axis_tuser(rx_axis_tuser),
+    .s_axis_tvalid(rx_ros2_axis_tvalid),
+    .s_axis_tready(rx_ros2_axis_tready),
+    .s_axis_tlast(rx_ros2_axis_tlast),
+    .s_axis_tuser(rx_ros2_axis_tuser),
 
     .m_eth_hdr_valid(rx_eth_hdr_valid),
     .m_eth_hdr_ready(rx_eth_hdr_ready),
@@ -178,6 +222,42 @@ eth_axis_rx_inst (
 
     .busy(),
     .error_header_early_termination()
+);
+
+axis_broadcast #(
+    .M_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .LAST_ENABLE(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+axis_broadcast_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_axis_tdata(rx_axis_tdata),
+    .s_axis_tkeep(1'b1),
+    .s_axis_tvalid(rx_axis_tvalid),
+    .s_axis_tready(rx_axis_tready),
+    .s_axis_tlast(rx_axis_tlast),
+    .s_axis_tid(8'd0),
+    .s_axis_tdest(8'd0),
+    .s_axis_tuser(rx_axis_tuser),
+
+    .m_axis_tdata({rx_raw_eth_axis_tdata, rx_ros2_axis_tdata}),
+    .m_axis_tkeep(),
+    .m_axis_tvalid({rx_raw_eth_axis_tvalid, rx_ros2_axis_tvalid}),
+    .m_axis_tready({rx_raw_eth_axis_tready, rx_ros2_axis_tready}),
+    .m_axis_tlast({rx_raw_eth_axis_tlast, rx_ros2_axis_tlast}),
+    .m_axis_tid(),
+    .m_axis_tdest(),
+    .m_axis_tuser({rx_raw_eth_axis_tuser, rx_ros2_axis_tuser})
 );
 
 eth_axis_tx
@@ -197,14 +277,309 @@ eth_axis_tx_inst (
     .s_eth_payload_axis_tlast(tx_eth_payload_axis_tlast),
     .s_eth_payload_axis_tuser(tx_eth_payload_axis_tuser),
 
-    .m_axis_tdata(tx_axis_tdata),
-    .m_axis_tvalid(tx_axis_tvalid),
-    .m_axis_tready(tx_axis_tready),
-    .m_axis_tlast(tx_axis_tlast),
-    .m_axis_tuser(tx_axis_tuser),
+    .m_axis_tdata(tx_ros2_axis_tdata),
+    .m_axis_tvalid(tx_ros2_axis_tvalid),
+    .m_axis_tready(tx_ros2_axis_tready),
+    .m_axis_tlast(tx_ros2_axis_tlast),
+    .m_axis_tuser(tx_ros2_axis_tuser),
     .m_axis_tkeep(),
 
     .busy()
+);
+
+// 0: ROS2rapper, 1: raw ether
+axis_mux #(
+    .S_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+axis_mux_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_axis_tdata({tx_raw_eth_axis_tdata, tx_ros2_axis_tdata}),
+    .s_axis_tkeep(2'd0),
+    .s_axis_tvalid({tx_raw_eth_axis_tvalid, tx_ros2_axis_tvalid}),
+    .s_axis_tready({tx_raw_eth_axis_tready, tx_ros2_axis_tready}),
+    .s_axis_tlast({tx_raw_eth_axis_tlast, tx_ros2_axis_tlast}),
+    .s_axis_tid(16'd0),
+    .s_axis_tdest(16'd0),
+    .s_axis_tuser({1'b0, tx_ros2_axis_tuser}),
+
+    .m_axis_tdata(tx_axis_tdata),
+    .m_axis_tkeep(),
+    .m_axis_tvalid(tx_axis_tvalid),
+    .m_axis_tready(tx_axis_tready),
+    .m_axis_tlast(tx_axis_tlast),
+    .m_axis_tid(),
+    .m_axis_tdest(),
+    .m_axis_tuser(tx_axis_tuser),
+
+    .enable(enable),
+    .select(select_tx_raw_eth_axis)
+);
+
+wire        udp_hdr_valid;
+wire        udp_hdr_ready;
+wire [47:0] udp_eth_dest_mac;
+wire [47:0] udp_eth_src_mac;
+wire [15:0] udp_eth_type;
+wire [3:0]  udp_ip_version;
+wire [3:0]  udp_ip_ihl;
+wire [5:0]  udp_ip_dscp;
+wire [1:0]  udp_ip_ecn;
+wire [15:0] udp_ip_length;
+wire [15:0] udp_ip_identification;
+wire [2:0]  udp_ip_flags;
+wire [12:0] udp_ip_fragment_offset;
+wire [7:0]  udp_ip_ttl;
+wire [7:0]  udp_ip_protocol;
+wire [15:0] udp_ip_header_checksum;
+wire [31:0] udp_ip_source_ip;
+wire [31:0] udp_ip_dest_ip;
+wire [15:0] udp_source_port;
+wire [15:0] udp_dest_port;
+wire [15:0] udp_length;
+wire [15:0] udp_checksum;
+wire [7:0]  udp_payload_axis_tdata;
+wire        udp_payload_axis_tvalid;
+wire        udp_payload_axis_tready;
+wire        udp_payload_axis_tlast;
+wire        udp_payload_axis_tuser;
+
+wire        tx_ros2_ip_hdr_valid;
+wire        tx_ros2_ip_hdr_ready;
+wire [5:0]  tx_ros2_ip_dscp;
+wire [1:0]  tx_ros2_ip_ecn;
+wire [15:0] tx_ros2_ip_length;
+wire [7:0]  tx_ros2_ip_ttl;
+wire [7:0]  tx_ros2_ip_protocol;
+wire [31:0] tx_ros2_ip_source_ip;
+wire [31:0] tx_ros2_ip_dest_ip;
+wire [7:0]  tx_ros2_ip_payload_axis_tdata;
+wire        tx_ros2_ip_payload_axis_tvalid;
+wire        tx_ros2_ip_payload_axis_tready;
+wire        tx_ros2_ip_payload_axis_tlast;
+wire        tx_ros2_ip_payload_axis_tuser;
+
+wire        tx_ip_hdr_valid;
+wire        tx_ip_hdr_ready;
+wire [5:0]  tx_ip_dscp;
+wire [1:0]  tx_ip_ecn;
+wire [15:0] tx_ip_length;
+wire [7:0]  tx_ip_ttl;
+wire [7:0]  tx_ip_protocol;
+wire [31:0] tx_ip_source_ip;
+wire [31:0] tx_ip_dest_ip;
+wire [7:0]  tx_ip_payload_axis_tdata;
+wire        tx_ip_payload_axis_tvalid;
+wire        tx_ip_payload_axis_tready;
+wire        tx_ip_payload_axis_tlast;
+wire        tx_ip_payload_axis_tuser;
+
+udp_checksum_gen #(
+    .PAYLOAD_FIFO_DEPTH(`UDP_PAYLOAD_FIFO_DEPTH),
+    .HEADER_FIFO_DEPTH(`UDP_HEADER_FIFO_DEPTH)
+)
+udp_checksum_gen_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_udp_hdr_valid(tx_udp_hdr_valid),
+    .s_udp_hdr_ready(tx_udp_hdr_ready),
+    .s_eth_dest_mac(48'd0),
+    .s_eth_src_mac(48'd0),
+    .s_eth_type(16'd0),
+    .s_ip_version(4'd0),
+    .s_ip_ihl(4'd0),
+    .s_ip_dscp(tx_udp_ip_dscp),
+    .s_ip_ecn(tx_udp_ip_ecn),
+    .s_ip_identification(16'd0),
+    .s_ip_flags(3'd0),
+    .s_ip_fragment_offset(13'd0),
+    .s_ip_ttl(tx_udp_ip_ttl),
+    .s_ip_header_checksum(16'd0),
+    .s_ip_source_ip(tx_udp_ip_source_ip),
+    .s_ip_dest_ip(tx_udp_ip_dest_ip),
+    .s_udp_source_port(tx_udp_source_port),
+    .s_udp_dest_port(tx_udp_dest_port),
+    .s_udp_payload_axis_tdata(tx_udp_payload_axis_tdata),
+    .s_udp_payload_axis_tvalid(tx_udp_payload_axis_tvalid),
+    .s_udp_payload_axis_tready(tx_udp_payload_axis_tready),
+    .s_udp_payload_axis_tlast(tx_udp_payload_axis_tlast),
+    .s_udp_payload_axis_tuser(tx_udp_payload_axis_tuser),
+
+    .m_udp_hdr_valid(udp_hdr_valid),
+    .m_udp_hdr_ready(udp_hdr_ready),
+    .m_eth_dest_mac(udp_eth_dest_mac),
+    .m_eth_src_mac(udp_eth_src_mac),
+    .m_eth_type(udp_eth_type),
+    .m_ip_version(udp_ip_version),
+    .m_ip_ihl(udp_ip_ihl),
+    .m_ip_dscp(udp_ip_dscp),
+    .m_ip_ecn(udp_ip_ecn),
+    .m_ip_length(udp_ip_length),
+    .m_ip_identification(udp_ip_identification),
+    .m_ip_flags(udp_ip_flags),
+    .m_ip_fragment_offset(udp_ip_fragment_offset),
+    .m_ip_ttl(udp_ip_ttl),
+    .m_ip_protocol(udp_ip_protocol),
+    .m_ip_header_checksum(udp_ip_header_checksum),
+    .m_ip_source_ip(udp_ip_source_ip),
+    .m_ip_dest_ip(udp_ip_dest_ip),
+    .m_udp_source_port(udp_source_port),
+    .m_udp_dest_port(udp_dest_port),
+    .m_udp_length(udp_length),
+    .m_udp_checksum(udp_checksum),
+    .m_udp_payload_axis_tdata(udp_payload_axis_tdata),
+    .m_udp_payload_axis_tvalid(udp_payload_axis_tvalid),
+    .m_udp_payload_axis_tready(udp_payload_axis_tready),
+    .m_udp_payload_axis_tlast(udp_payload_axis_tlast),
+    .m_udp_payload_axis_tuser(udp_payload_axis_tuser),
+
+    .busy()
+);
+
+udp_ip_tx
+udp_ip_tx_inst(
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_udp_hdr_valid(udp_hdr_valid),
+    .s_udp_hdr_ready(udp_hdr_ready),
+    .s_eth_dest_mac(udp_eth_dest_mac),
+    .s_eth_src_mac(udp_eth_src_mac),
+    .s_eth_type(udp_eth_type),
+    .s_ip_version(udp_ip_version),
+    .s_ip_ihl(udp_ip_ihl),
+    .s_ip_dscp(udp_ip_dscp),
+    .s_ip_ecn(udp_ip_ecn),
+    .s_ip_identification(udp_ip_identification),
+    .s_ip_flags(udp_ip_flags),
+    .s_ip_fragment_offset(udp_ip_fragment_offset),
+    .s_ip_ttl(udp_ip_ttl),
+    .s_ip_protocol(udp_ip_protocol),
+    .s_ip_header_checksum(udp_ip_header_checksum),
+    .s_ip_source_ip(udp_ip_source_ip),
+    .s_ip_dest_ip(udp_ip_dest_ip),
+    .s_udp_source_port(udp_source_port),
+    .s_udp_dest_port(udp_dest_port),
+    .s_udp_length(udp_length),
+    .s_udp_checksum(udp_checksum),
+    .s_udp_payload_axis_tdata(udp_payload_axis_tdata),
+    .s_udp_payload_axis_tvalid(udp_payload_axis_tvalid),
+    .s_udp_payload_axis_tready(udp_payload_axis_tready),
+    .s_udp_payload_axis_tlast(udp_payload_axis_tlast),
+    .s_udp_payload_axis_tuser(udp_payload_axis_tuser),
+
+    .m_ip_hdr_valid(tx_ros2_ip_hdr_valid),
+    .m_ip_hdr_ready(tx_ros2_ip_hdr_ready),
+    .m_eth_dest_mac(),
+    .m_eth_src_mac(),
+    .m_eth_type(),
+    .m_ip_version(),
+    .m_ip_ihl(),
+    .m_ip_dscp(tx_ros2_ip_dscp),
+    .m_ip_ecn(tx_ros2_ip_ecn),
+    .m_ip_length(tx_ros2_ip_length),
+    .m_ip_identification(),
+    .m_ip_flags(),
+    .m_ip_fragment_offset(),
+    .m_ip_ttl(tx_ros2_ip_ttl),
+    .m_ip_protocol(tx_ros2_ip_protocol),
+    .m_ip_header_checksum(),
+    .m_ip_source_ip(tx_ros2_ip_source_ip),
+    .m_ip_dest_ip(tx_ros2_ip_dest_ip),
+    .m_ip_payload_axis_tdata(tx_ros2_ip_payload_axis_tdata),
+    .m_ip_payload_axis_tvalid(tx_ros2_ip_payload_axis_tvalid),
+    .m_ip_payload_axis_tready(tx_ros2_ip_payload_axis_tready),
+    .m_ip_payload_axis_tlast(tx_ros2_ip_payload_axis_tlast),
+    .m_ip_payload_axis_tuser(tx_ros2_ip_payload_axis_tuser),
+
+    .busy(),
+    .error_payload_early_termination()
+);
+
+// 0: ROS2rapper, 1: raw ether
+ip_mux #(
+    .S_COUNT(2),
+    .DATA_WIDTH(8),
+    .KEEP_ENABLE(0),
+    .KEEP_WIDTH(1),
+    .ID_ENABLE(0),
+    .ID_WIDTH(8),
+    .DEST_ENABLE(0),
+    .DEST_WIDTH(8),
+    .USER_ENABLE(1),
+    .USER_WIDTH(1)
+)
+ip_mux_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .s_ip_hdr_valid({tx_raw_eth_ip_hdr_valid, tx_ros2_ip_hdr_valid}),
+    .s_ip_hdr_ready({tx_raw_eth_ip_hdr_ready, tx_ros2_ip_hdr_ready}),
+    .s_eth_dest_mac(96'd0),
+    .s_eth_src_mac(96'd0),
+    .s_eth_type(32'd0),
+    .s_ip_version(8'd0),
+    .s_ip_ihl(8'd0),
+    .s_ip_dscp({tx_raw_eth_ip_dscp, tx_ros2_ip_dscp}),
+    .s_ip_ecn({tx_raw_eth_ip_ecn, tx_ros2_ip_ecn}),
+    .s_ip_length({tx_raw_eth_ip_length, tx_ros2_ip_length}),
+    .s_ip_identification(32'd0),
+    .s_ip_flags(6'd0),
+    .s_ip_fragment_offset(26'd0),
+    .s_ip_ttl({tx_raw_eth_ip_ttl, tx_ros2_ip_ttl}),
+    .s_ip_protocol({tx_raw_eth_ip_protocol, tx_ros2_ip_protocol}),
+    .s_ip_header_checksum(32'd0),
+    .s_ip_source_ip({tx_raw_eth_ip_source_ip, tx_ros2_ip_source_ip}),
+    .s_ip_dest_ip({tx_raw_eth_ip_dest_ip, tx_ros2_ip_dest_ip}),
+    .s_ip_payload_axis_tdata({tx_raw_eth_ip_payload_axis_tdata, tx_ros2_ip_payload_axis_tdata}),
+    .s_ip_payload_axis_tkeep(2'd0),
+    .s_ip_payload_axis_tvalid({tx_raw_eth_ip_payload_axis_tvalid, tx_ros2_ip_payload_axis_tvalid}),
+    .s_ip_payload_axis_tready({tx_raw_eth_ip_payload_axis_tready, tx_ros2_ip_payload_axis_tready}),
+    .s_ip_payload_axis_tlast({tx_raw_eth_ip_payload_axis_tlast, tx_ros2_ip_payload_axis_tlast}),
+    .s_ip_payload_axis_tid(16'd0),
+    .s_ip_payload_axis_tdest(16'd0),
+    .s_ip_payload_axis_tuser({1'b0, tx_ros2_ip_payload_axis_tuser}),
+
+    .m_ip_hdr_valid(tx_ip_hdr_valid),
+    .m_ip_hdr_ready(tx_ip_hdr_ready),
+    .m_eth_dest_mac(),
+    .m_eth_src_mac(),
+    .m_eth_type(),
+    .m_ip_version(),
+    .m_ip_ihl(),
+    .m_ip_dscp(tx_ip_dscp),
+    .m_ip_ecn(tx_ip_ecn),
+    .m_ip_length(tx_ip_length),
+    .m_ip_identification(),
+    .m_ip_flags(),
+    .m_ip_fragment_offset(),
+    .m_ip_ttl(tx_ip_ttl),
+    .m_ip_protocol(tx_ip_protocol),
+    .m_ip_header_checksum(),
+    .m_ip_source_ip(tx_ip_source_ip),
+    .m_ip_dest_ip(tx_ip_dest_ip),
+    .m_ip_payload_axis_tdata(tx_ip_payload_axis_tdata),
+    .m_ip_payload_axis_tkeep(),
+    .m_ip_payload_axis_tvalid(tx_ip_payload_axis_tvalid),
+    .m_ip_payload_axis_tready(tx_ip_payload_axis_tready),
+    .m_ip_payload_axis_tlast(tx_ip_payload_axis_tlast),
+    .m_ip_payload_axis_tid(),
+    .m_ip_payload_axis_tdest(),
+    .m_ip_payload_axis_tuser(tx_ip_payload_axis_tuser),
+
+    .enable(enable),
+    .select(select_tx_raw_eth_ip)
 );
 
 ip_complete #(

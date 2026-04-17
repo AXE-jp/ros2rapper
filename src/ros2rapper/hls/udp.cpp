@@ -1,9 +1,10 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "common.hpp"
 
 #include "checksum.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 #include "udp.hpp"
 
@@ -31,23 +32,16 @@
 
 #define UDP_IN_STATE_READ_HEADER 0
 #define UDP_IN_STATE_OUT_RTPS    1
-#define UDP_IN_STATE_OUT_UDP     2
-#define UDP_IN_STATE_DISCARD     3
-
-#define MAX_RAWUDP_RXBUF_PAYLOAD_LEN (RAWUDP_RXBUF_LEN - 8)
+#define UDP_IN_STATE_DISCARD     2
 
 #define QUAD_UINT8(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 
 /* Cyber func=inline */
 void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
-            hls_uint<1> &enable, const uint8_t rx_udp_port[2],
-            uint32_t          rawudp_rxbuf[RAWUDP_RXBUF_LEN / 4],
-            VOLATILE uint8_t *rawudp_rxbuf_rel,
-            VOLATILE uint8_t *rawudp_rxbuf_grant, bool &parity_error) {
+            hls_uint<1> &enable, bool &parity_error) {
 #pragma HLS inline
     static hls_uint<2> state;
     static uint16_t    offset;
-    static uint16_t    ram_offset;
     static uint16_t    sum = PRE_CHECKSUM;
     static uint8_t     src_addr[4];
     static uint8_t     src_port[2];
@@ -116,22 +110,10 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
         offset++;
         if (offset == IN_STREAM_HDR_SIZE + UDP_HDR_SIZE) {
-            if (dst_port[0] == rx_udp_port[0]
-                && dst_port[1] == rx_udp_port[1]) {
-                uint16_t payload_len
-                    = ((tot_len[0] << 8) | tot_len[1]) - UDP_HDR_SIZE;
-                if (*rawudp_rxbuf_grant == 1
-                    && payload_len <= MAX_RAWUDP_RXBUF_PAYLOAD_LEN) {
-                    state = UDP_IN_STATE_OUT_UDP;
-                } else {
-                    state = UDP_IN_STATE_DISCARD;
-                }
+            if (enable) {
+                state = UDP_IN_STATE_OUT_RTPS;
             } else {
-                if (enable) {
-                    state = UDP_IN_STATE_OUT_RTPS;
-                } else {
-                    state = UDP_IN_STATE_DISCARD;
-                }
+                state = UDP_IN_STATE_DISCARD;
             }
         }
         break;
@@ -140,29 +122,6 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
 
         out.write(x);
         offset++;
-        break;
-    case UDP_IN_STATE_OUT_UDP:
-        switch (ram_offset) {
-        case 0:
-            rawudp_rxbuf[ram_offset++] = QUAD_UINT8(src_addr[0], src_addr[1],
-                                                    src_addr[2], src_addr[3]);
-            return;
-        case 1:
-            rawudp_rxbuf[ram_offset++]
-                = QUAD_UINT8(src_port[1], src_port[0], tot_len[1], tot_len[0]);
-            return;
-        default:
-            READ_AND_CHECKSUM;
-
-            data_buf[data_pos] = data;
-            if (data_pos == 3 || end)
-                rawudp_rxbuf[ram_offset++] = QUAD_UINT8(
-                    data_buf[0], data_buf[1], data_buf[2], data_buf[3]);
-            data_pos++;
-
-            offset++;
-            break;
-        }
         break;
     case UDP_IN_STATE_DISCARD:
         READ_AND_CHECKSUM;
@@ -175,11 +134,7 @@ void udp_in(hls_stream<hls_uint<9>> &in, hls_stream<hls_uint<9>> &out,
         if (!no_checksum && sum != 0xffff)
             parity_error = true;
 
-        if (state == UDP_IN_STATE_OUT_UDP)
-            *rawudp_rxbuf_rel = 0; /*write dummy value to assert ap_vld*/
-
         offset = 0;
-        ram_offset = 0;
         data_buf[0] = 0;
         data_buf[1] = 0;
         data_buf[2] = 0;
@@ -262,9 +217,13 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
     udp_hdr[6] = sum_n >> 8;
     udp_hdr[7] = sum_n & 0xff;
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#endif // PUB_DATA_FF
     for (int i = 0; i < tot_process_len; i++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
+#endif // PUB_DATA_FF
         if (i < UDP_HDR_SIZE)
             buf[i] = udp_hdr[i];
         else
@@ -274,64 +233,16 @@ void udp_out(const uint8_t src_addr[4], const uint8_t src_port[2],
 
 /* Cyber func=inline */
 void udp_set_header(const uint8_t src_port[2], const uint8_t dst_port[2],
-                    const uint16_t udp_data_len, uint8_t udp_hdr[]) {
+                    const uint16_t udp_data_len, hls_stream<uint8_t> &out) {
 #pragma HLS inline
     uint16_t tot_len = UDP_HDR_SIZE + udp_data_len;
 
-    udp_hdr[0] = src_port[0];
-    udp_hdr[1] = src_port[1];
-    udp_hdr[2] = dst_port[0];
-    udp_hdr[3] = dst_port[1];
-    udp_hdr[4] = tot_len >> 8;
-    udp_hdr[5] = tot_len & 0xff;
-    udp_hdr[6] = 0;
-    udp_hdr[7] = 0;
-}
-
-/* Cyber func=inline */
-void udp_set_checksum(uint8_t buf[]) {
-#pragma HLS inline
-    uint32_t sum = 0;
-    uint16_t sum_n;
-
-    uint8_t pseudo_hdr[PSEUDO_HDR_SIZE] /* Cyber array=EXPAND */;
-#pragma HLS array_partition variable = pseudo_hdr complete dim = 0
-
-    pseudo_hdr[0] = buf[IP_HDR_OFFSET_SADDR + 0];
-    pseudo_hdr[1] = buf[IP_HDR_OFFSET_SADDR + 1];
-    pseudo_hdr[2] = buf[IP_HDR_OFFSET_SADDR + 2];
-    pseudo_hdr[3] = buf[IP_HDR_OFFSET_SADDR + 3];
-    pseudo_hdr[4] = buf[IP_HDR_OFFSET_DADDR + 0];
-    pseudo_hdr[5] = buf[IP_HDR_OFFSET_DADDR + 1];
-    pseudo_hdr[6] = buf[IP_HDR_OFFSET_DADDR + 2];
-    pseudo_hdr[7] = buf[IP_HDR_OFFSET_DADDR + 3];
-    pseudo_hdr[8] = 0;
-    pseudo_hdr[9] = PSEUDO_HDR_PROTOCOL;
-    pseudo_hdr[10] = buf[IP_HDR_SIZE + UDP_HDR_OFFSET_ULEN + 0];
-    pseudo_hdr[11] = buf[IP_HDR_SIZE + UDP_HDR_OFFSET_ULEN + 1];
-
-    /* Cyber unroll_times=all */
-    for (int i = 0; i < PSEUDO_HDR_SIZE; i++) {
-#pragma HLS unroll
-        if (i & 0x1)
-            sum += pseudo_hdr[i];
-        else
-            sum += pseudo_hdr[i] << 8;
-    }
-
-    /* Cyber unroll_times=all */
-    for (int i = IP_HDR_SIZE; i < TX_BUF_LEN; i++) {
-#pragma HLS unroll
-        if (i & 0x1)
-            sum += buf[i];
-        else
-            sum += buf[i] << 8;
-    }
-
-    sum = (sum & 0xffff) + (sum >> 16);
-    sum = (sum & 0xffff) + (sum >> 16);
-    sum_n = ~sum;
-
-    buf[IP_HDR_SIZE + UDP_HDR_OFFSET_SUM + 0] = sum_n >> 8;
-    buf[IP_HDR_SIZE + UDP_HDR_OFFSET_SUM + 1] = sum_n & 0xff;
+    out.write(src_port[0]);
+    out.write(src_port[1]);
+    out.write(dst_port[0]);
+    out.write(dst_port[1]);
+    out.write(tot_len >> 8);
+    out.write(tot_len & 0xff);
+    out.write(0);
+    out.write(0);
 }

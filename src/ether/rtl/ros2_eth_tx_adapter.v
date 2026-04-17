@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 `default_nettype none
@@ -19,6 +19,10 @@ module ros2_eth_tx_adapter (
   output wire [7:0]  o_tx_ip_protocol,
   output wire [31:0] o_tx_ip_source_ip,
   output wire [31:0] o_tx_ip_dest_ip,
+  output wire [15:0] o_tx_udp_source_port,
+  output wire [15:0] o_tx_udp_dest_port,
+  output wire [15:0] o_tx_udp_length,
+  output wire [15:0] o_tx_udp_checksum,
   output wire        o_tx_payload_tvalid,
   input  wire        i_tx_payload_tready,
   output wire [7:0]  o_tx_payload_tdata,
@@ -27,18 +31,24 @@ module ros2_eth_tx_adapter (
   output wire        o_tx_payload_tstrb
 );
 
-  localparam IP_HDR_SIZE = 20;
+  localparam IP_HDR_SIZE  = 20;
+  localparam UDP_HDR_SIZE = 8;
 
-  localparam IP_HDR_OFFSET_VERSION_IHL = 0;  // Version, IHL
-  localparam IP_HDR_OFFSET_TOS         = 1;  // Type of Service
-  localparam IP_HDR_OFFSET_TOT_LEN     = 2;  // Total Length
-  localparam IP_HDR_OFFSET_ID          = 4;  // Identification
-  localparam IP_HDR_OFFSET_FLAG_OFF    = 6;  // Flags, Fragment Offset
-  localparam IP_HDR_OFFSET_TTL         = 8;  // Time to Live
-  localparam IP_HDR_OFFSET_PROTOCOL    = 9;  // Protocol
-  localparam IP_HDR_OFFSET_CHECK       = 10; // Header Checksum
-  localparam IP_HDR_OFFSET_SADDR       = 12; // Source Address
-  localparam IP_HDR_OFFSET_DADDR       = 16; // Destination Address
+  localparam [15:0] IP_HDR_OFFSET_VERSION_IHL = 0;  // Version, IHL
+  localparam [15:0] IP_HDR_OFFSET_TOS         = 1;  // Type of Service
+  localparam [15:0] IP_HDR_OFFSET_TOT_LEN     = 2;  // Total Length
+  localparam [15:0] IP_HDR_OFFSET_ID          = 4;  // Identification
+  localparam [15:0] IP_HDR_OFFSET_FLAG_OFF    = 6;  // Flags, Fragment Offset
+  localparam [15:0] IP_HDR_OFFSET_TTL         = 8;  // Time to Live
+  localparam [15:0] IP_HDR_OFFSET_PROTOCOL    = 9;  // Protocol
+  localparam [15:0] IP_HDR_OFFSET_CHECK       = 10; // Header Checksum
+  localparam [15:0] IP_HDR_OFFSET_SADDR       = 12; // Source Address
+  localparam [15:0] IP_HDR_OFFSET_DADDR       = 16; // Destination Address
+
+  localparam UDP_HDR_OFFSET_SPORT    = IP_HDR_SIZE;     // Source Port
+  localparam UDP_HDR_OFFSET_DPORT    = IP_HDR_SIZE + 2; // Destination Port
+  localparam UDP_HDR_OFFSET_LENGTH   = IP_HDR_SIZE + 4; // UDP Packet Length
+  localparam UDP_HDR_OFFSET_CHECKSUM = IP_HDR_SIZE + 6; // UDP Checksum
 
   localparam [1:0] STATE_TX_READ_HDR = 2'd0,
                    STATE_TX_HDR      = 2'd1,
@@ -57,6 +67,11 @@ module ros2_eth_tx_adapter (
   reg [31:0] iphdr_source_ip;
   reg [31:0] iphdr_dest_ip;
 
+  reg [15:0] udphdr_source_port;
+  reg [15:0] udphdr_dest_port;
+  reg [15:0] udphdr_length;
+  reg [15:0] udphdr_checksum;
+
   assign o_din_rd_en = (state == STATE_TX_READ_HDR) | (state == STATE_TX_PAYLOAD & i_tx_payload_tready);
   assign o_tx_hdr_valid = (state == STATE_TX_HDR);
 
@@ -67,6 +82,11 @@ module ros2_eth_tx_adapter (
   assign o_tx_ip_protocol = iphdr_protocol;
   assign o_tx_ip_source_ip = iphdr_source_ip;
   assign o_tx_ip_dest_ip = iphdr_dest_ip;
+
+  assign o_tx_udp_source_port = udphdr_source_port;
+  assign o_tx_udp_dest_port = udphdr_dest_port;
+  assign o_tx_udp_length = udphdr_length;
+  assign o_tx_udp_checksum = udphdr_checksum;
 
   assign o_tx_payload_tvalid = (state == STATE_TX_PAYLOAD & i_din_empty_n);
   assign o_tx_payload_tdata = i_din_data;
@@ -87,6 +107,10 @@ module ros2_eth_tx_adapter (
       iphdr_protocol <= 0;
       iphdr_source_ip <= 0;
       iphdr_dest_ip <= 0;
+      udphdr_source_port <= 0;
+      udphdr_dest_port <= 0;
+      udphdr_length <= 0;
+      udphdr_checksum <= 0;
     end else begin
       if (!i_enable) begin
         state <= STATE_TX_READ_HDR;
@@ -124,8 +148,24 @@ module ros2_eth_tx_adapter (
               iphdr_dest_ip[15:8] <= i_din_data;
             IP_HDR_OFFSET_DADDR + 3:
               iphdr_dest_ip[7:0] <= i_din_data;
+            UDP_HDR_OFFSET_SPORT:
+              udphdr_source_port[15:8] <= i_din_data;
+            UDP_HDR_OFFSET_SPORT + 1:
+              udphdr_source_port[7:0] <= i_din_data;
+            UDP_HDR_OFFSET_DPORT:
+              udphdr_dest_port[15:8] <= i_din_data;
+            UDP_HDR_OFFSET_DPORT + 1:
+              udphdr_dest_port[7:0] <= i_din_data;
+            UDP_HDR_OFFSET_LENGTH:
+              udphdr_length[15:8] <= i_din_data;
+            UDP_HDR_OFFSET_LENGTH + 1:
+              udphdr_length[7:0] <= i_din_data;
+            UDP_HDR_OFFSET_CHECKSUM:
+              udphdr_checksum[15:8] <= i_din_data;
+            UDP_HDR_OFFSET_CHECKSUM + 1:
+              udphdr_checksum[7:0] <= i_din_data;
             endcase
-            if (offset + 1 == IP_HDR_SIZE)
+            if (offset + 1 == IP_HDR_SIZE + UDP_HDR_SIZE)
               state <= STATE_TX_HDR;
             else
               offset <= offset + 1;
@@ -133,9 +173,9 @@ module ros2_eth_tx_adapter (
         end
         STATE_TX_HDR: begin
           if (i_tx_hdr_ready) begin
-            state <= (iphdr_length == IP_HDR_SIZE) ? STATE_TX_READ_HDR : STATE_TX_PAYLOAD;
+            state <= (iphdr_length == IP_HDR_SIZE + UDP_HDR_SIZE) ? STATE_TX_READ_HDR : STATE_TX_PAYLOAD;
             counter <= 0;
-            len <= iphdr_length - IP_HDR_SIZE;
+            len <= iphdr_length - IP_HDR_SIZE - UDP_HDR_SIZE;
             offset <= 0;
           end
         end

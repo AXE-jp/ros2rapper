@@ -1,9 +1,10 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "common.hpp"
 
 #include "checksum.hpp"
+#include "hls.hpp"
 #include "ip.hpp"
 
 #ifdef __SYNTHESIS__
@@ -121,8 +122,8 @@ struct pending_info {
 #define TOTAL_FRAGMENTS_UNKNOWN 0xff
 
 /* Cyber func=inline */
-void init_pending_info(pending_info *pending, uint16_t id,
-                       uint32_t fragment_expiration) {
+static void init_pending_info(pending_info *pending, uint16_t id,
+                              uint32_t fragment_expiration) {
 #pragma HLS inline
     pending->is_used = true;
     pending->id = id;
@@ -136,8 +137,8 @@ void init_pending_info(pending_info *pending, uint16_t id,
 #define purge_pending_info(p) ((p)->is_used = false)
 
 /* Cyber func=inline */
-pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
-                                  uint32_t fragment_expiration) {
+static pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
+                                         uint32_t fragment_expiration) {
 #pragma HLS inline
     pending_index_t found = INVALID_PENDING_INDEX;
     pending_index_t unused = INVALID_PENDING_INDEX;
@@ -178,7 +179,7 @@ pending_index_t find_pending_info(pending_info *pendings, uint16_t id,
 }
 
 /* Cyber func=inline */
-void tick_pendings(pending_info *pendings) {
+static void tick_pendings(pending_info *pendings) {
 #pragma HLS inline
     /* Cyber unroll_times=all */
     for (int i = 0; i < MAX_PENDINGS; i++) {
@@ -198,7 +199,7 @@ void tick_pendings(pending_info *pendings) {
 }
 
 /* Cyber func=inline */
-int8_t get_fragment_index(uint16_t fragment_offset) {
+static int8_t get_fragment_index(uint16_t fragment_offset) {
 #pragma HLS inline
 #if MAX_IP_FRAGMENTS == 4
     switch (fragment_offset) {
@@ -235,7 +236,7 @@ int8_t get_fragment_index(uint16_t fragment_offset) {
 }
 
 /* Cyber func=inline */
-int8_t get_payload_offset(pending_index_t pindex) {
+static int8_t get_payload_offset(pending_index_t pindex) {
 #pragma HLS inline
 #if MAX_PENDINGS == 4
     switch (pindex) {
@@ -647,9 +648,16 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
     ip_hdr[10] = sum_n >> 8;
     ip_hdr[11] = sum_n & 0xff;
 
+#ifdef PUB_DATA_FF
     /* Cyber unroll_times=all */
+#endif // PUB_DATA_FF
     for (int i = 0; i < tot_process_len; i++) {
+#ifdef PUB_DATA_FF
 #pragma HLS unroll
+#endif // PUB_DATA_FF
+#ifdef PUB_DATA_RAM
+#pragma HLS unroll factor = 2
+#endif // PUB_DATA_RAM
         if (i < IP_HDR_SIZE)
             buf[i] = ip_hdr[i];
         else
@@ -662,32 +670,32 @@ void ip_out(const uint8_t src_addr[4], const uint8_t dst_addr[4],
 /* Cyber func=inline */
 void ip_set_header(const uint8_t src_addr[4], const uint8_t dst_addr[4],
                    const uint8_t ttl, const uint16_t ip_data_real_len,
-                   uint8_t ip_hdr[]) {
+                   hls_stream<uint8_t> &out) {
 #pragma HLS inline
     static uint16_t id;
 
     uint16_t tot_real_len = IP_HDR_SIZE + ip_data_real_len;
 
-    ip_hdr[0] = IP_HDR_VERSION_IHL;
-    ip_hdr[1] = IP_HDR_TOS;
-    ip_hdr[2] = tot_real_len >> 8;
-    ip_hdr[3] = tot_real_len & 0xff;
-    ip_hdr[4] = id >> 8;
-    ip_hdr[5] = id & 0xff;
-    ip_hdr[6] = IP_HDR_FLAG_OFF >> 8;
-    ip_hdr[7] = IP_HDR_FLAG_OFF & 0xff;
-    ip_hdr[8] = ttl;
-    ip_hdr[9] = IP_HDR_PROTOCOL;
-    ip_hdr[10] = 0;
-    ip_hdr[11] = 0;
-    ip_hdr[12] = src_addr[0];
-    ip_hdr[13] = src_addr[1];
-    ip_hdr[14] = src_addr[2];
-    ip_hdr[15] = src_addr[3];
-    ip_hdr[16] = dst_addr[0];
-    ip_hdr[17] = dst_addr[1];
-    ip_hdr[18] = dst_addr[2];
-    ip_hdr[19] = dst_addr[3];
+    out.write(IP_HDR_VERSION_IHL);
+    out.write(IP_HDR_TOS);
+    out.write(tot_real_len >> 8);
+    out.write(tot_real_len & 0xff);
+    out.write(id >> 8);
+    out.write(id & 0xff);
+    out.write(IP_HDR_FLAG_OFF >> 8);
+    out.write(IP_HDR_FLAG_OFF & 0xff);
+    out.write(ttl);
+    out.write(IP_HDR_PROTOCOL);
+    out.write(0);
+    out.write(0);
+    out.write(src_addr[0]);
+    out.write(src_addr[1]);
+    out.write(src_addr[2]);
+    out.write(src_addr[3]);
+    out.write(dst_addr[0]);
+    out.write(dst_addr[1]);
+    out.write(dst_addr[2]);
+    out.write(dst_addr[3]);
 
     id++;
 }

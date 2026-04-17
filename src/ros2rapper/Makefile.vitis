@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 AXE, Inc.
+# Copyright (c) 2021-2026 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 HLSDIR = hls
@@ -8,20 +8,50 @@ SRCS   = $(wildcard $(HLSDIR)/*.cpp)
 HDRS   = $(wildcard $(HLSDIR)/*.hpp)
 TBSRCS = $(wildcard $(TBDIR)/*.cpp)
 
-VERILOGTOP = proj_ros2/solution1/syn/verilog/ros2.v
+VERILOGTOP_MAIN = proj_ros2_main/solution1/syn/verilog/ros2_main.v
+VERILOGTOP_RECEIVER = proj_ros2_receiver/solution1/syn/verilog/ros2_receiver.v
+VERILOGTOP_SENDER = proj_ros2_sender/solution1/syn/verilog/ros2_sender.v
+VERILOGTOP_PRE_IP_IN = proj_pre_ip_in/solution1/syn/verilog/pre_ip_in.v
+VERILOGTOP_UDP_IP_IN = proj_udp_ip_in/solution1/syn/verilog/udp_ip_in.v
 
-.PHONY: synth clean csim format
-synth: $(VERILOGTOP)
+.PHONY: synth synth_main synth_sender synth_pre_ip_in synth_udp_ip_in clean csim format
+synth: synth_main synth_receiver synth_sender synth_pre_ip_in synth_udp_ip_in
+synth_main: $(VERILOGTOP_MAIN)
+synth_receiver: $(VERILOGTOP_RECEIVER)
+synth_sender: $(VERILOGTOP_SENDER)
+synth_pre_ip_in: $(VERILOGTOP_PRE_IP_IN)
+synth_udp_ip_in: $(VERILOGTOP_UDP_IP_IN)
 
-$(VERILOGTOP): $(SRCS) $(HDRS) run_hls.tcl
+$(VERILOGTOP_MAIN): $(SRCS) $(HDRS) run_hls.tcl
 	vitis_hls run_hls.tcl
-	./fix-hls-code-for-verilator.rb proj_ros2/solution1/syn/verilog
+	./fix-hls-code-for-verilator.rb proj_ros2_main/solution1/syn/verilog
+
+$(VERILOGTOP_RECEIVER): $(SRCS) $(HDRS) run_hls_receiver.tcl
+	vitis_hls run_hls_receiver.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_receiver/solution1/syn/verilog
+
+$(VERILOGTOP_SENDER): $(SRCS) $(HDRS) run_hls_sender.tcl
+	vitis_hls run_hls_sender.tcl
+	./fix-hls-code-for-verilator.rb proj_ros2_sender/solution1/syn/verilog
+
+$(VERILOGTOP_PRE_IP_IN): $(SRCS) $(HDRS) run_hls_pre_ip_in.tcl
+	vitis_hls run_hls_pre_ip_in.tcl
+	./fix-hls-code-for-verilator.rb proj_pre_ip_in/solution1/syn/verilog
+
+$(VERILOGTOP_UDP_IP_IN): $(SRCS) $(HDRS) run_hls_udp_ip_in.tcl
+	vitis_hls run_hls_udp_ip_in.tcl
+	./fix-hls-code-for-verilator.rb proj_udp_ip_in/solution1/syn/verilog
 
 csim: $(SRCS) $(HDRS) $(TBSRCS) run_csim.tcl
 	vitis_hls run_csim.tcl
 
 clean:
-	rm -rf proj_ros2
+	rm -rf proj_ros2_main
+	rm -rf proj_ros2_receiver
+	rm -rf proj_ros2_sender
+	rm -rf proj_pre_ip_in
+	rm -rf proj_udp_ip_in
+	rm -rf proj_ros2test
 	rm -rf *.log
 
 format:

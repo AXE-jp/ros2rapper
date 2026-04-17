@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) 2021-2026 AXE, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Fix read but never set variables (Spyglass List W123)
 
 declare -a vars=("RG_694" "RG_695" "RG_697" "RG_698" "RG_699" "RG_700" "RG_701" "RG_702" "RG_724" "RG_725" "RG_726" "RG_727" "RG_728" "RG_729" "RG_730" "RG_731" "RG_732" "RG_733" "RG_743")

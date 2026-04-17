@@ -1,16 +1,17 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef SPDP_HPP
 #define SPDP_HPP
 
+#include "duration.hpp"
 #include "endpoint.hpp"
 #include "hls.hpp"
 #include "rtps.hpp"
 #include "timestamp.hpp"
 #include <cstdint>
 
-#define SPDP_DATA_SIZE 156
+#define SPDP_DATA_SIZE (124 + MAX_NODE_NAME_LEN)
 
 #define SPDP_WRITER_OCTETS_TO_NEXT_HEADER                                      \
     (SBM_DATA_HDR_SIZE + SP_HDR_SIZE + SPDP_DATA_SIZE)
@@ -22,23 +23,13 @@
 #define SPDP_WRITER_UDP_PKT_LEN  (UDP_HDR_SIZE + SPDP_WRITER_RTPS_PKT_LEN)
 #define SPDP_WRITER_IP_PKT_LEN   (IP_HDR_SIZE + SPDP_WRITER_UDP_PKT_LEN)
 
-void compare_guid_prefix_of_sedp_endpoint(
-    const uint8_t x, const sedp_endpoint tbl[SEDP_READER_MAX], const int idx,
-    hls_uint<SEDP_READER_MAX> &unmatched);
-
-hls_uint<SEDP_READER_MAX>
-find_living_sedp_endpoints(const sedp_endpoint tbl[SEDP_READER_MAX]);
-
-void spdp_reader(hls_uint<9> in, sedp_endpoint reader_tbl[SEDP_READER_MAX],
-                 hls_uint<1> enable, const uint8_t ip_addr[4],
-                 const uint8_t subnet_mask[4], uint16_t port_num_seed,
-                 int64_t timestamp_i64);
-
-void spdp_writer(const uint8_t writer_guid_prefix[12],
+void spdp_writer(const uint8_t vendor_id[2],
+                 const uint8_t writer_guid_prefix[12],
                  const uint8_t metatraffic_addr[4],
                  const uint8_t metatraffic_port[2],
                  const uint8_t default_addr[4], const uint8_t default_port[2],
-                 uint8_t buf[SPDP_WRITER_TOT_LEN], const uint8_t entity_name[],
-                 uint8_t entity_name_len, timestamp now);
+                 duration lease_duration, hls_stream<uint8_t> &out,
+                 const uint8_t entity_name[], uint8_t entity_name_len,
+                 timestamp now);
 
 #endif // !SPDP_HPP

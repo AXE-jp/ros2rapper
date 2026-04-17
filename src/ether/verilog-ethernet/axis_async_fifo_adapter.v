@@ -179,7 +179,7 @@ wire [USER_WIDTH-1:0]  post_fifo_axis_tuser;
 
 generate
 
-if (M_KEEP_WIDTH == S_KEEP_WIDTH) begin
+if (M_KEEP_WIDTH == S_KEEP_WIDTH) begin : AXIS_ASYNC_FIFO_INST_BLOCK_0
 
     // same width, no adapter needed
 
@@ -202,7 +202,7 @@ if (M_KEEP_WIDTH == S_KEEP_WIDTH) begin
     assign m_axis_tuser = post_fifo_axis_tuser;
 
 
-end else if (EXPAND_BUS) begin
+end else if (EXPAND_BUS) begin : AXIS_ASYNC_FIFO_INST_BLOCK_1
 
     // output wider, adapt width before FIFO
 
@@ -252,7 +252,7 @@ end else if (EXPAND_BUS) begin
     assign m_axis_tdest = post_fifo_axis_tdest;
     assign m_axis_tuser = post_fifo_axis_tuser;
 
-end else begin
+end else begin : AXIS_ASYNC_FIFO_INST_BLOCK_2
 
     // input wider, adapt width after FIFO
 

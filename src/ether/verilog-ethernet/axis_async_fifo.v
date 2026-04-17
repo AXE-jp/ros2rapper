@@ -175,37 +175,37 @@ reg [ADDR_WIDTH:0] rd_ptr_gray_reg;
 
 (* SHREG_EXTRACT = "NO" *)
 reg [ADDR_WIDTH:0] wr_ptr_gray_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] wr_ptr_gray_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] rd_ptr_gray_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg [ADDR_WIDTH:0] rd_ptr_gray_sync2_reg;
 
 reg wr_ptr_update_valid_reg;
 reg wr_ptr_update_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *)
 reg wr_ptr_update_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_sync3_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_ack_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg wr_ptr_update_ack_sync2_reg;
 
 (* SHREG_EXTRACT = "NO" *)
 reg s_rst_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg s_rst_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg s_rst_sync3_reg;
 (* SHREG_EXTRACT = "NO" *)
 reg m_rst_sync1_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg m_rst_sync2_reg;
-(* SHREG_EXTRACT = "NO" *)
+(* SHREG_EXTRACT = "NO", ASYNC_REG = "TRUE" *) 
 reg m_rst_sync3_reg;
 
 (* ramstyle = "no_rw_check" *)
@@ -238,17 +238,17 @@ reg m_drop_frame_reg;
 reg m_terminate_frame_reg;
 
 reg overflow_sync1_reg;
-reg overflow_sync2_reg;
-reg overflow_sync3_reg;
-reg overflow_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg overflow_sync4_reg;
 reg bad_frame_sync1_reg;
-reg bad_frame_sync2_reg;
-reg bad_frame_sync3_reg;
-reg bad_frame_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg bad_frame_sync4_reg;
 reg good_frame_sync1_reg;
-reg good_frame_sync2_reg;
-reg good_frame_sync3_reg;
-reg good_frame_sync4_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync2_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync3_reg;
+(* ASYNC_REG = "TRUE" *) reg good_frame_sync4_reg;
 
 assign s_axis_tready = (FRAME_FIFO ? (!full_cur || (full_wr && DROP_OVERSIZE_FRAME) || DROP_WHEN_FULL) : !full) && s_rst_sync3_reg;
 
@@ -406,19 +406,19 @@ always @(posedge s_clk or negedge s_rst_n) begin
             if (!FRAME_FIFO) begin
                 // normal FIFO mode
                 mem[wr_ptr_reg[ADDR_WIDTH-1:0]] <= s_axis;
-                if (drop_frame_reg && LAST_ENABLE) begin
+                if ((drop_frame_reg || s_drop) && LAST_ENABLE) begin
                     // currently dropping frame
                     // (only for frame transfers interrupted by sink reset)
                     if (s_axis_tlast) begin
                         // end of frame, clear drop flag
-                        drop_frame_reg <= s_drop;
+                        drop_frame_reg <= 1'b0;
                     end
                 end else begin
                     // update pointers
                     wr_ptr_reg <= (wr_ptr_reg + 1);
                     wr_ptr_gray_reg <= calc_gray(wr_ptr_reg + 1);
                 end
-            end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg) begin
+            end else if ((full_cur && DROP_WHEN_FULL) || (full_wr && DROP_OVERSIZE_FRAME) || drop_frame_reg || s_drop) begin
                 // full, packet overflow, or currently dropping frame
                 // drop frame
                 drop_frame_reg <= 1'b1;
@@ -426,7 +426,7 @@ always @(posedge s_clk or negedge s_rst_n) begin
                     // end of frame, reset write pointer
                     wr_ptr_cur_reg <= wr_ptr_reg;
                     wr_ptr_cur_gray_reg <= calc_gray(wr_ptr_reg);
-                    drop_frame_reg <= s_drop;
+                    drop_frame_reg <= 1'b0;
                     overflow_reg <= 1'b1;
                 end
             end else begin

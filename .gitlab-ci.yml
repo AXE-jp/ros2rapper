@@ -15,9 +15,14 @@ hsynth:
 synth-examples:
   stage: build
   script:
-    - cd examples && ./synth-all.sh
+    - cd examples && ./synth-all-vitis.sh
 
 csim:
   stage: test
   script:
     - make -C src/ros2rapper -f Makefile.vitis csim
+
+rtlsim:
+  stage: test
+  script:
+    - make -C src/ether run_tb

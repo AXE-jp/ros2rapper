@@ -1,29 +1,46 @@
-# Copyright (c) 2021-2024 AXE, Inc.
+# Copyright (c) 2021-2026 AXE, Inc.
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 HLSDIR = hls
-SRCS = $(wildcard $(HLSDIR)/*.cpp)
+#SRCS = $(wildcard $(HLSDIR)/*.cpp)
+SRCS_MAIN = hls/endpoint.cpp hls/message_metadata.cpp hls/remove_endpoints.cpp hls/ros2.cpp hls/spdp.cpp
+SRCS_RECEIVER = hls/app_reader.cpp hls/ip.cpp hls/ros2_receiver.cpp hls/rtps.cpp hls/rtps_sbm_data_in.cpp hls/rtps_sbm_heartbeat_in.cpp hls/sedp_reader.cpp  hls/spdp_reader.cpp
+SRCS_SENDER = hls/app.cpp hls/ip.cpp hls/message_metadata.cpp hls/ros2_sender.cpp hls/sedp.cpp hls/slip.cpp hls/spdp.cpp hls/udp.cpp
+SRCS_PRE_IP_IN = hls/pre_ip_in.cpp
+SRCS_UDP_IP_IN = hls/udp_ip_in.cpp
 HDRS = $(wildcard $(HLSDIR)/*.hpp)
 
 .PHONY: synth clean format
 
 CPARS_FLAGS =
-BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -o-P
+BDLTRAN_FLAGS = -c10000 -s -Zresource_fcnt=GENERATE -Zresource_mcnt=GENERATE -Zport_optimize -Fc:clk+ -Fr:rst_n- -Zdup_reset=YES -Zreg_min_reset=NO -Zreset_enable_reg=YES -apI:o -Zmem_kind=RW1 -mrewe -Zmem_stall=data_hold_reg -Zmem_cs -Zshared_mem_re_gen=NO -Zfolding_sharing=inter_stage -OW-B -Wattr=error -lb ${CYBER_PATH}/packages/asic_90.BLIB -lfl ${CYBER_PATH}/packages/asic_90.FLIB -TC172 -o-P -Zcse_limit=2
 VGEN_FLAGS = -mem_black_box=YES -case_default_x=NO
 
-synth: ros2_cwb.v
+synth: ros2_main_cwb.v ros2_receiver_cwb.v ros2_sender_cwb.v pre_ip_in_cwb.v udp_ip_in_cwb.v
 
-ros2.IFF: $(SRCS) $(HDRS)
-	cpars $(CPARS_FLAGS) $(SRCS)
+ros2_main.IFF: $(SRCS_MAIN) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS_MAIN)
 
-ros2_E.IFF: ros2.IFF
+ros2_receiver.IFF: $(SRCS_RECEIVER) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS_RECEIVER)
+
+ros2_sender.IFF: $(SRCS_SENDER) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS_SENDER)
+
+pre_ip_in.IFF: $(SRCS_PRE_IP_IN) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS_PRE_IP_IN)
+
+udp_ip_in.IFF: $(SRCS_UDP_IP_IN) $(HDRS)
+	cpars $(CPARS_FLAGS) $(SRCS_UDP_IP_IN)
+
+%_E.IFF: %.IFF
 	bdltran $(BDLTRAN_FLAGS) $<
 
-ros2_cwb.v: ros2_E.IFF
+%_cwb.v: %_E.IFF
 	veriloggen $(VGEN_FLAGS) -o $@ $<
 
 clean:
-	rm -f *.CPINFO *.cperr *.xml *.FCNT *.FLIB *.MCNT *.MLIB *.CSV *.LMSPEC *.LOG.gz *.QOR *.QOR.HTML *.SR *.SUMM *.VSG *.err *.tips *.v *.LSInfo *.scuba *.vgerr *.warn *.IFF
+	rm -f *.CPINFO *.cperr *.xml *.FCNT *.FLIB *.MCNT *.MLIB *.CSV *.LMSPEC *.LOG.gz *.QOR *.QOR.HTML *.SR *.SUMM *.VSG *.err *.tips *.v *.LSInfo *.scuba *.vgerr *.warn *.IFF *.json
 
 format:
 	-clang-format -i hls/*.cpp

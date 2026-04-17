@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 AXE, Inc.
+// Copyright (c) 2021-2026 AXE, Inc.
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 `resetall
@@ -8,24 +8,26 @@
 `include "ros2_ether_config.vh"
 
 module ros2_ether #(
+    parameter SET_TX_PERIOD_BY_PARAMETER  = 0,
     parameter PRESCALER_DIV               = 64,
-    parameter TX_INTERVAL_COUNT           = (`ROS2CLK_HZ / PRESCALER_DIV) / 100,
-    parameter TX_PERIOD_SPDP_WR_COUNT     = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (`ROS2CLK_HZ / PRESCALER_DIV) * 3,
-    parameter TX_PERIOD_APP_WR_COUNT      = (`ROS2CLK_HZ / PRESCALER_DIV) * 3
+    parameter ROS2CLK_HZ                  = 100_000_000,
+    parameter TX_INTERVAL_COUNT           = (100_000_000 / PRESCALER_DIV) / 100,
+    parameter TX_PERIOD_SPDP_WR_COUNT     = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_WR_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_HB_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_PUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_SEDP_SUB_AN_COUNT = (100_000_000 / PRESCALER_DIV) * 3,
+    parameter TX_PERIOD_APP_WR_COUNT      = (100_000_000 / PRESCALER_DIV) * 3
 )
 (
     input  wire       clk,
     input  wire       rst_n,
 
     input  wire       ether_en,
-    input  wire       ros2pub_en,
-    input  wire [3:0] ros2sub_en,
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2pub_en,
+    input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2sub_en,
 
     input  wire       phy_rx_clk,
     input  wire [3:0] phy_rxd,
@@ -41,18 +43,35 @@ module ros2_ether #(
     input  wire [31:0] gateway_ip_addr,
     input  wire [31:0] subnet_mask,
 
+    input  wire [15:0] ros2_vendor_id,
     input  wire [`ROS2_MAX_NODE_NAME_LEN*8-1:0] ros2_node_name,
     input  wire [7:0] ros2_node_name_len,
     input  wire [15:0] ros2_node_udp_port,
-    input  wire [15:0] ros2_rx_udp_port,
     input  wire [15:0] ros2_port_num_seed,
     input  wire [31:0] ros2_fragment_expiration,
     input  wire [95:0] ros2_guid_prefix,
+    input  wire [31:0] ros2_participant_lease_duration_seconds,
+    input  wire [31:0] ros2_participant_lease_duration_fraction,
 
-    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name,
-    input  wire [7:0] ros2_pub_topic_name_len,
-    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name,
-    input  wire [7:0] ros2_pub_topic_type_name_len,
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_0,
+    input  wire [7:0] ros2_pub_topic_name_len_0,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_0,
+    input  wire [7:0] ros2_pub_topic_type_name_len_0,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_1,
+    input  wire [7:0] ros2_pub_topic_name_len_1,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_1,
+    input  wire [7:0] ros2_pub_topic_type_name_len_1,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_2,
+    input  wire [7:0] ros2_pub_topic_name_len_2,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_2,
+    input  wire [7:0] ros2_pub_topic_type_name_len_2,
+
+    input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_pub_topic_name_3,
+    input  wire [7:0] ros2_pub_topic_name_len_3,
+    input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_pub_topic_type_name_3,
+    input  wire [7:0] ros2_pub_topic_type_name_len_3,
 
     input  wire [`ROS2_MAX_TOPIC_NAME_LEN*8-1:0] ros2_sub_topic_name_0,
     input  wire [7:0] ros2_sub_topic_name_len_0,
@@ -74,35 +93,111 @@ module ros2_ether #(
     input  wire [`ROS2_MAX_TOPIC_TYPE_NAME_LEN*8-1:0] ros2_sub_topic_type_name_3,
     input  wire [7:0] ros2_sub_topic_type_name_len_3,
 
-    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data,
-    input  wire [7:0] ros2_pub_app_data_len,
-    input  wire ros2_pub_app_data_req,
-    input  wire ros2_pub_app_data_rel,
-    output wire ros2_pub_app_data_grant,
+`ifdef ROS2_PUB_DATA_FF
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_0,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_1,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_2,
+    input  wire [`ROS2_MAX_APP_DATA_LEN*8-1:0] ros2_pub_app_data_3,
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_0_addr,
+    output wire ros2_pub_app_data_0_ce,
+    input  wire [31:0] ros2_pub_app_data_0_rdata,
 
-    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_addr,
-    output wire ros2_sub_app_data_ce,
-    output wire ros2_sub_app_data_we,
-    output wire [7:0] ros2_sub_app_data_wdata,
-    output wire [7:0] ros2_sub_app_data_len,
-    output wire [15:0] ros2_sub_app_data_rep_id,
-    input  wire ros2_sub_app_data_req,
-    input  wire ros2_sub_app_data_rel,
-    output wire ros2_sub_app_data_grant,
-    output wire [3:0] ros2_sub_app_data_recv,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_1_addr,
+    output wire ros2_pub_app_data_1_ce,
+    input  wire [31:0] ros2_pub_app_data_1_rdata,
 
-    input  wire udp_rxbuf_rel,
-    output wire udp_rxbuf_grant,
-    output wire [`UDP_RXBUF_AWIDTH-1:0] udp_rxbuf_addr,
-    output wire udp_rxbuf_ce,
-    output wire udp_rxbuf_we,
-    output wire [31:0] udp_rxbuf_wdata,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_2_addr,
+    output wire ros2_pub_app_data_2_ce,
+    input  wire [31:0] ros2_pub_app_data_2_rdata,
 
-    input  wire udp_txbuf_rel,
-    output wire udp_txbuf_grant,
-    output wire [`UDP_TXBUF_AWIDTH-1:0] udp_txbuf_addr,
-    output wire udp_txbuf_ce,
-    input  wire [31:0] udp_txbuf_rdata,
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-3:0] ros2_pub_app_data_3_addr,
+    output wire ros2_pub_app_data_3_ce,
+    input  wire [31:0] ros2_pub_app_data_3_rdata,
+`endif
+
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len_0,
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len_1,
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len_2,
+    input  wire [`ROS2_APP_DATA_LEN_WIDTH-1:0] ros2_pub_app_data_len_3,
+
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_req,
+    input  wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_rel,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_ack,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_nack,
+    output wire [`ROS2_PUB_TOPICS_MAX-1:0] ros2_pub_app_data_grant,
+
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_0_addr,
+    output wire ros2_sub_app_data_0_ce,
+    output wire ros2_sub_app_data_0_we,
+    output wire [7:0] ros2_sub_app_data_0_wdata,
+
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_1_addr,
+    output wire ros2_sub_app_data_1_ce,
+    output wire ros2_sub_app_data_1_we,
+    output wire [7:0] ros2_sub_app_data_1_wdata,
+
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_2_addr,
+    output wire ros2_sub_app_data_2_ce,
+    output wire ros2_sub_app_data_2_we,
+    output wire [7:0] ros2_sub_app_data_2_wdata,
+
+    output wire [$clog2(`ROS2_MAX_APP_DATA_LEN)-1:0] ros2_sub_app_data_3_addr,
+    output wire ros2_sub_app_data_3_ce,
+    output wire ros2_sub_app_data_3_we,
+    output wire [7:0] ros2_sub_app_data_3_wdata,
+
+    output wire [63:0] ros2_sub_app_data_recvinfo_din,
+    input  wire ros2_sub_app_data_recvinfo_full_n,
+    output wire ros2_sub_app_data_recvinfo_write,
+
+    input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_req,
+    input  wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_rel,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_ack,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_nack,
+    output wire [`ROS2_SUB_TOPICS_MAX-1:0] ros2_sub_app_data_grant,
+
+    output wire ros2_cnt_interval_set,
+    output wire ros2_cnt_spdp_wr_set,
+    output wire ros2_cnt_sedp_pub_wr_set,
+    output wire ros2_cnt_sedp_sub_wr_set,
+    output wire ros2_cnt_sedp_pub_hb_set,
+    output wire ros2_cnt_sedp_sub_hb_set,
+    output wire ros2_cnt_sedp_pub_an_set,
+    output wire ros2_cnt_sedp_sub_an_set,
+    output wire ros2_cnt_app_wr_set,
+
+    input wire ros2_cnt_interval_elapsed,
+    input wire ros2_cnt_spdp_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_wr_elapsed,
+    input wire ros2_cnt_sedp_sub_wr_elapsed,
+    input wire ros2_cnt_sedp_pub_hb_elapsed,
+    input wire ros2_cnt_sedp_sub_hb_elapsed,
+    input wire ros2_cnt_sedp_pub_an_elapsed,
+    input wire ros2_cnt_sedp_sub_an_elapsed,
+    input wire ros2_cnt_app_wr_elapsed,
+
+    input wire [31:0] ros2_timestamp_increment,
+
+    output wire [$clog2(`ROS2_SEDP_READER_MAX+1)-1:0] ros2_sedp_reader_cnt,
+    output wire [$clog2(`ROS2_APP_READER_MAX+1)-1:0] ros2_app_reader_cnt,
+
+`ifdef ROS2_SEDP_READER_TBL_RAM
+    output wire [$clog2(`ROS2_SEDP_READER_MAX*11)-1:0] sedp_reader_tbl_mem_addr,
+    output wire sedp_reader_tbl_mem_ce,
+    output wire sedp_reader_tbl_mem_we,
+    output wire [63:0] sedp_reader_tbl_mem_wdata,
+    input  wire [63:0] sedp_reader_tbl_mem_rdata,
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+    output wire [$clog2(`ROS2_APP_READER_MAX)-1:0] app_reader_tbl_mem_addr,
+    output wire app_reader_tbl_mem_ce,
+    output wire app_reader_tbl_mem_we,
+    output wire [63:0] app_reader_tbl_mem_wdata,
+    input  wire [63:0] app_reader_tbl_mem_rdata,
+`endif
 
     output wire [`PAYLOADSMEM_AWIDTH-1:0] ip_payloadsmem_addr,
     output wire ip_payloadsmem_ce,
@@ -110,24 +205,41 @@ module ros2_ether #(
     output wire [7:0] ip_payloadsmem_wdata,
     input  wire [7:0] ip_payloadsmem_rdata,
 
+    output wire [$clog2(`ROS2_MAX_RAW_ETH_TX_DATA_LEN)-3:0] tx_raw_eth_data_addr,
+    output wire tx_raw_eth_data_ce,
+    input  wire [31:0] tx_raw_eth_data_rdata,
+    input  wire tx_raw_eth_frame_ready,
+    output wire tx_raw_eth_completed,
+
+    output wire [$clog2(`ROS2_MAX_RAW_ETH_RX_DATA_LEN)-3:0] rx_raw_eth_data_addr,
+    output wire rx_raw_eth_data_ce,
+    output wire [3:0] rx_raw_eth_data_we,
+    output wire [31:0] rx_raw_eth_data_wdata,
+    output wire rx_raw_eth_data_frame_ready,
+    input  wire rx_raw_eth_data_ack,
+
     input  wire [5:0] arp_req_retry_count,
     input  wire [35:0] arp_req_retry_interval,
     input  wire [35:0] arp_req_timeout
 );
 
-wire tx_ip_hdr_valid;
-wire tx_ip_hdr_ready;
-wire [5:0] tx_ip_dscp;
-wire [1:0] tx_ip_ecn;
-wire [15:0] tx_ip_length;
-wire [7:0] tx_ip_ttl;
-wire [7:0] tx_ip_protocol;
-wire [31:0] tx_ip_source_ip;
-wire [31:0] tx_ip_dest_ip;
-wire [7:0] tx_ip_payload_axis_tdata;
-wire tx_ip_payload_axis_tvalid;
-wire tx_ip_payload_axis_tready;
-wire tx_ip_payload_axis_tlast;
+wire tx_udp_hdr_valid;
+wire tx_udp_hdr_ready;
+wire [5:0] tx_udp_ip_dscp;
+wire [1:0] tx_udp_ip_ecn;
+wire [15:0] tx_udp_ip_length;
+wire [7:0] tx_udp_ip_ttl;
+wire [7:0] tx_udp_ip_protocol;
+wire [31:0] tx_udp_ip_source_ip;
+wire [31:0] tx_udp_ip_dest_ip;
+wire [15:0] tx_udp_source_port;
+wire [15:0] tx_udp_dest_port;
+wire [15:0] tx_udp_length;
+wire [15:0] tx_udp_checksum;
+wire [7:0] tx_udp_payload_axis_tdata;
+wire tx_udp_payload_axis_tvalid;
+wire tx_udp_payload_axis_tready;
+wire tx_udp_payload_axis_tlast;
 
 wire rx_ip_hdr_valid;
 wire rx_ip_hdr_ready;
@@ -149,6 +261,33 @@ wire rx_ip_payload_axis_tvalid;
 wire rx_ip_payload_axis_tready;
 wire rx_ip_payload_axis_tlast;
 
+wire [7:0] tx_raw_eth_axis_tdata;
+wire tx_raw_eth_axis_tvalid;
+wire tx_raw_eth_axis_tready;
+wire tx_raw_eth_axis_tlast;
+
+wire tx_raw_eth_ip_hdr_valid;
+wire tx_raw_eth_ip_hdr_ready;
+wire [5:0]  tx_raw_eth_ip_dscp;
+wire [1:0]  tx_raw_eth_ip_ecn;
+wire [15:0] tx_raw_eth_ip_length;
+wire [7:0]  tx_raw_eth_ip_ttl;
+wire [7:0]  tx_raw_eth_ip_protocol;
+wire [31:0] tx_raw_eth_ip_source_ip;
+wire [31:0] tx_raw_eth_ip_dest_ip;
+wire [7:0]  tx_raw_eth_ip_payload_axis_tdata;
+wire tx_raw_eth_ip_payload_axis_tvalid;
+wire tx_raw_eth_ip_payload_axis_tready;
+wire tx_raw_eth_ip_payload_axis_tlast;
+
+wire select_tx_raw_eth_axis;
+wire select_tx_raw_eth_ip;
+
+wire [7:0] rx_raw_eth_axis_tdata;
+wire rx_raw_eth_axis_tvalid;
+wire rx_raw_eth_axis_tready;
+wire rx_raw_eth_axis_tlast;
+
 verilog_ethernet verilog_ethernet_inst (
     .clk(clk),
     .rst_n(rst_n),
@@ -163,20 +302,24 @@ verilog_ethernet verilog_ethernet_inst (
     .phy_tx_en(phy_tx_en),
     .phy_reset_n(phy_rst_n),
 
-    .tx_ip_hdr_valid(tx_ip_hdr_valid),
-    .tx_ip_hdr_ready(tx_ip_hdr_ready),
-    .tx_ip_dscp(tx_ip_dscp),
-    .tx_ip_ecn(tx_ip_ecn),
-    .tx_ip_length(tx_ip_length),
-    .tx_ip_ttl(tx_ip_ttl),
-    .tx_ip_protocol(tx_ip_protocol),
-    .tx_ip_source_ip(tx_ip_source_ip),
-    .tx_ip_dest_ip(tx_ip_dest_ip),
-    .tx_ip_payload_axis_tdata(tx_ip_payload_axis_tdata),
-    .tx_ip_payload_axis_tvalid(tx_ip_payload_axis_tvalid),
-    .tx_ip_payload_axis_tready(tx_ip_payload_axis_tready),
-    .tx_ip_payload_axis_tlast(tx_ip_payload_axis_tlast),
-    .tx_ip_payload_axis_tuser(1'b0),
+    .tx_udp_hdr_valid(tx_udp_hdr_valid),
+    .tx_udp_hdr_ready(tx_udp_hdr_ready),
+    .tx_udp_ip_dscp(tx_udp_ip_dscp),
+    .tx_udp_ip_ecn(tx_udp_ip_ecn),
+    .tx_udp_ip_length(tx_udp_ip_length),
+    .tx_udp_ip_ttl(tx_udp_ip_ttl),
+    .tx_udp_ip_protocol(tx_udp_ip_protocol),
+    .tx_udp_ip_source_ip(tx_udp_ip_source_ip),
+    .tx_udp_ip_dest_ip(tx_udp_ip_dest_ip),
+    .tx_udp_source_port(tx_udp_source_port),
+    .tx_udp_dest_port(tx_udp_dest_port),
+    .tx_udp_length(tx_udp_length),
+    .tx_udp_checksum(tx_udp_checksum),
+    .tx_udp_payload_axis_tdata(tx_udp_payload_axis_tdata),
+    .tx_udp_payload_axis_tvalid(tx_udp_payload_axis_tvalid),
+    .tx_udp_payload_axis_tready(tx_udp_payload_axis_tready),
+    .tx_udp_payload_axis_tlast(tx_udp_payload_axis_tlast),
+    .tx_udp_payload_axis_tuser(1'b0),
 
     .rx_ip_hdr_valid(rx_ip_hdr_valid),
     .rx_ip_hdr_ready(rx_ip_hdr_ready),
@@ -198,6 +341,34 @@ verilog_ethernet verilog_ethernet_inst (
     .rx_ip_payload_axis_tready(rx_ip_payload_axis_tready),
     .rx_ip_payload_axis_tlast(rx_ip_payload_axis_tlast),
     .rx_ip_payload_axis_tuser(),
+
+    .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
+    .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
+    .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
+    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+
+    .tx_raw_eth_ip_hdr_valid(tx_raw_eth_ip_hdr_valid),
+    .tx_raw_eth_ip_hdr_ready(tx_raw_eth_ip_hdr_ready),
+    .tx_raw_eth_ip_dscp(tx_raw_eth_ip_dscp),
+    .tx_raw_eth_ip_ecn(tx_raw_eth_ip_ecn),
+    .tx_raw_eth_ip_length(tx_raw_eth_ip_length),
+    .tx_raw_eth_ip_ttl(tx_raw_eth_ip_ttl),
+    .tx_raw_eth_ip_protocol(tx_raw_eth_ip_protocol),
+    .tx_raw_eth_ip_source_ip(tx_raw_eth_ip_source_ip),
+    .tx_raw_eth_ip_dest_ip(tx_raw_eth_ip_dest_ip),
+    .tx_raw_eth_ip_payload_axis_tdata(tx_raw_eth_ip_payload_axis_tdata),
+    .tx_raw_eth_ip_payload_axis_tvalid(tx_raw_eth_ip_payload_axis_tvalid),
+    .tx_raw_eth_ip_payload_axis_tready(tx_raw_eth_ip_payload_axis_tready),
+    .tx_raw_eth_ip_payload_axis_tlast(tx_raw_eth_ip_payload_axis_tlast),
+
+    .select_tx_raw_eth_axis(select_tx_raw_eth_axis),
+    .select_tx_raw_eth_ip(select_tx_raw_eth_ip),
+
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
+    .rx_raw_eth_axis_tuser(),
 
     .local_mac({48{ether_en}} & {mac_addr[7:0], mac_addr[15:8], mac_addr[23:16], mac_addr[31:24], mac_addr[39:32], mac_addr[47:40]}),
     .local_ip({32{ether_en}} & {ip_addr[7:0], ip_addr[15:8], ip_addr[23:16], ip_addr[31:24]}),
@@ -256,7 +427,9 @@ rx_fifo (
 );
 
 ros2rapper #(
+    .SET_TX_PERIOD_BY_PARAMETER (SET_TX_PERIOD_BY_PARAMETER ),
     .PRESCALER_DIV              (PRESCALER_DIV              ),
+    .ROS2CLK_HZ                 (ROS2CLK_HZ                 ),
     .TX_INTERVAL_COUNT          (TX_INTERVAL_COUNT          ),
     .TX_PERIOD_SPDP_WR_COUNT    (TX_PERIOD_SPDP_WR_COUNT    ),
     .TX_PERIOD_SEDP_PUB_WR_COUNT(TX_PERIOD_SEDP_PUB_WR_COUNT),
@@ -286,19 +459,35 @@ ros2rapper (
     .ip_addr(ip_addr),
     .subnet_mask(subnet_mask),
 
+    .ros2_vendor_id(ros2_vendor_id),
     .ros2_node_name(ros2_node_name),
     .ros2_node_name_len(ros2_node_name_len),
     .ros2_node_udp_port(ros2_node_udp_port),
-    .ros2_rx_udp_port(ros2_rx_udp_port),
     .ros2_port_num_seed(ros2_port_num_seed),
     .ros2_fragment_expiration(ros2_fragment_expiration),
     .ros2_guid_prefix(ros2_guid_prefix),
-    .ros2_ignore_ip_checksum(1'b0),
+    .ros2_participant_lease_duration_seconds(ros2_participant_lease_duration_seconds),
+    .ros2_participant_lease_duration_fraction(ros2_participant_lease_duration_fraction),
 
-    .ros2_pub_topic_name(ros2_pub_topic_name),
-    .ros2_pub_topic_name_len(ros2_pub_topic_name_len),
-    .ros2_pub_topic_type_name(ros2_pub_topic_type_name),
-    .ros2_pub_topic_type_name_len(ros2_pub_topic_type_name_len),
+    .ros2_pub_topic_name_0(ros2_pub_topic_name_0),
+    .ros2_pub_topic_name_len_0(ros2_pub_topic_name_len_0),
+    .ros2_pub_topic_type_name_0(ros2_pub_topic_type_name_0),
+    .ros2_pub_topic_type_name_len_0(ros2_pub_topic_type_name_len_0),
+
+    .ros2_pub_topic_name_1(ros2_pub_topic_name_1),
+    .ros2_pub_topic_name_len_1(ros2_pub_topic_name_len_1),
+    .ros2_pub_topic_type_name_1(ros2_pub_topic_type_name_1),
+    .ros2_pub_topic_type_name_len_1(ros2_pub_topic_type_name_len_1),
+
+    .ros2_pub_topic_name_2(ros2_pub_topic_name_2),
+    .ros2_pub_topic_name_len_2(ros2_pub_topic_name_len_2),
+    .ros2_pub_topic_type_name_2(ros2_pub_topic_type_name_2),
+    .ros2_pub_topic_type_name_len_2(ros2_pub_topic_type_name_len_2),
+
+    .ros2_pub_topic_name_3(ros2_pub_topic_name_3),
+    .ros2_pub_topic_name_len_3(ros2_pub_topic_name_len_3),
+    .ros2_pub_topic_type_name_3(ros2_pub_topic_type_name_3),
+    .ros2_pub_topic_type_name_len_3(ros2_pub_topic_type_name_len_3),
 
     .ros2_sub_topic_name_0(ros2_sub_topic_name_0),
     .ros2_sub_topic_name_len_0(ros2_sub_topic_name_len_0),
@@ -320,35 +509,111 @@ ros2rapper (
     .ros2_sub_topic_type_name_3(ros2_sub_topic_type_name_3),
     .ros2_sub_topic_type_name_len_3(ros2_sub_topic_type_name_len_3),
 
-    .ros2_pub_app_data(ros2_pub_app_data),
-    .ros2_pub_app_data_len(ros2_pub_app_data_len),
+`ifdef ROS2_PUB_DATA_FF
+    .ros2_pub_app_data_0(ros2_pub_app_data_0),
+    .ros2_pub_app_data_1(ros2_pub_app_data_1),
+    .ros2_pub_app_data_2(ros2_pub_app_data_2),
+    .ros2_pub_app_data_3(ros2_pub_app_data_3),
+`endif
+`ifdef ROS2_PUB_DATA_RAM
+    .ros2_pub_app_data_0_addr(ros2_pub_app_data_0_addr),
+    .ros2_pub_app_data_0_ce(ros2_pub_app_data_0_ce),
+    .ros2_pub_app_data_0_rdata(ros2_pub_app_data_0_rdata),
+
+    .ros2_pub_app_data_1_addr(ros2_pub_app_data_1_addr),
+    .ros2_pub_app_data_1_ce(ros2_pub_app_data_1_ce),
+    .ros2_pub_app_data_1_rdata(ros2_pub_app_data_1_rdata),
+
+    .ros2_pub_app_data_2_addr(ros2_pub_app_data_2_addr),
+    .ros2_pub_app_data_2_ce(ros2_pub_app_data_2_ce),
+    .ros2_pub_app_data_2_rdata(ros2_pub_app_data_2_rdata),
+
+    .ros2_pub_app_data_3_addr(ros2_pub_app_data_3_addr),
+    .ros2_pub_app_data_3_ce(ros2_pub_app_data_3_ce),
+    .ros2_pub_app_data_3_rdata(ros2_pub_app_data_3_rdata),
+`endif
+
+    .ros2_pub_app_data_len_0(ros2_pub_app_data_len_0),
+    .ros2_pub_app_data_len_1(ros2_pub_app_data_len_1),
+    .ros2_pub_app_data_len_2(ros2_pub_app_data_len_2),
+    .ros2_pub_app_data_len_3(ros2_pub_app_data_len_3),
+
     .ros2_pub_app_data_req(ros2_pub_app_data_req),
     .ros2_pub_app_data_rel(ros2_pub_app_data_rel),
+    .ros2_pub_app_data_ack(ros2_pub_app_data_ack),
+    .ros2_pub_app_data_nack(ros2_pub_app_data_nack),
     .ros2_pub_app_data_grant(ros2_pub_app_data_grant),
 
-    .ros2_sub_app_data_addr(ros2_sub_app_data_addr),
-    .ros2_sub_app_data_ce(ros2_sub_app_data_ce),
-    .ros2_sub_app_data_we(ros2_sub_app_data_we),
-    .ros2_sub_app_data_wdata(ros2_sub_app_data_wdata),
-    .ros2_sub_app_data_len(ros2_sub_app_data_len),
-    .ros2_sub_app_data_rep_id(ros2_sub_app_data_rep_id),
+    .ros2_sub_app_data_0_addr(ros2_sub_app_data_0_addr),
+    .ros2_sub_app_data_0_ce(ros2_sub_app_data_0_ce),
+    .ros2_sub_app_data_0_we(ros2_sub_app_data_0_we),
+    .ros2_sub_app_data_0_wdata(ros2_sub_app_data_0_wdata),
+
+    .ros2_sub_app_data_1_addr(ros2_sub_app_data_1_addr),
+    .ros2_sub_app_data_1_ce(ros2_sub_app_data_1_ce),
+    .ros2_sub_app_data_1_we(ros2_sub_app_data_1_we),
+    .ros2_sub_app_data_1_wdata(ros2_sub_app_data_1_wdata),
+
+    .ros2_sub_app_data_2_addr(ros2_sub_app_data_2_addr),
+    .ros2_sub_app_data_2_ce(ros2_sub_app_data_2_ce),
+    .ros2_sub_app_data_2_we(ros2_sub_app_data_2_we),
+    .ros2_sub_app_data_2_wdata(ros2_sub_app_data_2_wdata),
+
+    .ros2_sub_app_data_3_addr(ros2_sub_app_data_3_addr),
+    .ros2_sub_app_data_3_ce(ros2_sub_app_data_3_ce),
+    .ros2_sub_app_data_3_we(ros2_sub_app_data_3_we),
+    .ros2_sub_app_data_3_wdata(ros2_sub_app_data_3_wdata),
+
+    .ros2_sub_app_data_recvinfo_din(ros2_sub_app_data_recvinfo_din),
+    .ros2_sub_app_data_recvinfo_full_n(ros2_sub_app_data_recvinfo_full_n),
+    .ros2_sub_app_data_recvinfo_write(ros2_sub_app_data_recvinfo_write),
+
     .ros2_sub_app_data_req(ros2_sub_app_data_req),
     .ros2_sub_app_data_rel(ros2_sub_app_data_rel),
+    .ros2_sub_app_data_ack(ros2_sub_app_data_ack),
+    .ros2_sub_app_data_nack(ros2_sub_app_data_nack),
     .ros2_sub_app_data_grant(ros2_sub_app_data_grant),
-    .ros2_sub_app_data_recv(ros2_sub_app_data_recv),
 
-    .udp_rxbuf_rel(udp_rxbuf_rel),
-    .udp_rxbuf_grant(udp_rxbuf_grant),
-    .udp_rxbuf_addr(udp_rxbuf_addr),
-    .udp_rxbuf_ce(udp_rxbuf_ce),
-    .udp_rxbuf_we(udp_rxbuf_we),
-    .udp_rxbuf_wdata(udp_rxbuf_wdata),
+    .ros2_cnt_interval_set(ros2_cnt_interval_set),
+    .ros2_cnt_spdp_wr_set(ros2_cnt_spdp_wr_set),
+    .ros2_cnt_sedp_pub_wr_set(ros2_cnt_sedp_pub_wr_set),
+    .ros2_cnt_sedp_sub_wr_set(ros2_cnt_sedp_sub_wr_set),
+    .ros2_cnt_sedp_pub_hb_set(ros2_cnt_sedp_pub_hb_set),
+    .ros2_cnt_sedp_sub_hb_set(ros2_cnt_sedp_sub_hb_set),
+    .ros2_cnt_sedp_pub_an_set(ros2_cnt_sedp_pub_an_set),
+    .ros2_cnt_sedp_sub_an_set(ros2_cnt_sedp_sub_an_set),
+    .ros2_cnt_app_wr_set(ros2_cnt_app_wr_set),
 
-    .udp_txbuf_rel(udp_txbuf_rel),
-    .udp_txbuf_grant(udp_txbuf_grant),
-    .udp_txbuf_addr(udp_txbuf_addr),
-    .udp_txbuf_ce(udp_txbuf_ce),
-    .udp_txbuf_rdata(udp_txbuf_rdata),
+    .ros2_cnt_interval_elapsed(ros2_cnt_interval_elapsed),
+    .ros2_cnt_spdp_wr_elapsed(ros2_cnt_spdp_wr_elapsed),
+    .ros2_cnt_sedp_pub_wr_elapsed(ros2_cnt_sedp_pub_wr_elapsed),
+    .ros2_cnt_sedp_sub_wr_elapsed(ros2_cnt_sedp_sub_wr_elapsed),
+    .ros2_cnt_sedp_pub_hb_elapsed(ros2_cnt_sedp_pub_hb_elapsed),
+    .ros2_cnt_sedp_sub_hb_elapsed(ros2_cnt_sedp_sub_hb_elapsed),
+    .ros2_cnt_sedp_pub_an_elapsed(ros2_cnt_sedp_pub_an_elapsed),
+    .ros2_cnt_sedp_sub_an_elapsed(ros2_cnt_sedp_sub_an_elapsed),
+    .ros2_cnt_app_wr_elapsed(ros2_cnt_app_wr_elapsed),
+
+    .ros2_timestamp_increment(ros2_timestamp_increment),
+
+    .ros2_sedp_reader_cnt(ros2_sedp_reader_cnt),
+    .ros2_app_reader_cnt(ros2_app_reader_cnt),
+
+`ifdef ROS2_SEDP_READER_TBL_RAM
+    .sedp_reader_tbl_mem_addr(sedp_reader_tbl_mem_addr),
+    .sedp_reader_tbl_mem_ce(sedp_reader_tbl_mem_ce),
+    .sedp_reader_tbl_mem_we(sedp_reader_tbl_mem_we),
+    .sedp_reader_tbl_mem_wdata(sedp_reader_tbl_mem_wdata),
+    .sedp_reader_tbl_mem_rdata(sedp_reader_tbl_mem_rdata),
+`endif
+
+`ifdef ROS2_APP_READER_TBL_RAM
+    .app_reader_tbl_mem_addr(app_reader_tbl_mem_addr),
+    .app_reader_tbl_mem_ce(app_reader_tbl_mem_ce),
+    .app_reader_tbl_mem_we(app_reader_tbl_mem_we),
+    .app_reader_tbl_mem_wdata(app_reader_tbl_mem_wdata),
+    .app_reader_tbl_mem_rdata(app_reader_tbl_mem_rdata),
+`endif
 
     .ip_payloadsmem_addr(ip_payloadsmem_addr),
     .ip_payloadsmem_ce(ip_payloadsmem_ce),
@@ -365,19 +630,23 @@ ros2_eth_tx_adapter (
     .i_din_data(tx_fifo_dout),
     .i_din_empty_n(~tx_fifo_empty),
     .o_din_rd_en(tx_fifo_rd_en),
-    .o_tx_hdr_valid(tx_ip_hdr_valid),
-    .i_tx_hdr_ready(tx_ip_hdr_ready),
-    .o_tx_ip_dest_ip(tx_ip_dest_ip),
-    .o_tx_ip_source_ip(tx_ip_source_ip),
-    .o_tx_ip_protocol(tx_ip_protocol),
-    .o_tx_ip_ttl(tx_ip_ttl),
-    .o_tx_ip_length(tx_ip_length),
-    .o_tx_ip_ecn(tx_ip_ecn),
-    .o_tx_ip_dscp(tx_ip_dscp),
-    .o_tx_payload_tvalid(tx_ip_payload_axis_tvalid),
-    .i_tx_payload_tready(tx_ip_payload_axis_tready),
-    .o_tx_payload_tdata(tx_ip_payload_axis_tdata),
-    .o_tx_payload_tlast(tx_ip_payload_axis_tlast),
+    .o_tx_hdr_valid(tx_udp_hdr_valid),
+    .i_tx_hdr_ready(tx_udp_hdr_ready),
+    .o_tx_ip_dest_ip(tx_udp_ip_dest_ip),
+    .o_tx_ip_source_ip(tx_udp_ip_source_ip),
+    .o_tx_ip_protocol(tx_udp_ip_protocol),
+    .o_tx_ip_ttl(tx_udp_ip_ttl),
+    .o_tx_ip_length(tx_udp_ip_length),
+    .o_tx_ip_ecn(tx_udp_ip_ecn),
+    .o_tx_ip_dscp(tx_udp_ip_dscp),
+    .o_tx_udp_source_port(tx_udp_source_port),
+    .o_tx_udp_dest_port(tx_udp_dest_port),
+    .o_tx_udp_length(tx_udp_length),
+    .o_tx_udp_checksum(tx_udp_checksum),
+    .o_tx_payload_tvalid(tx_udp_payload_axis_tvalid),
+    .i_tx_payload_tready(tx_udp_payload_axis_tready),
+    .o_tx_payload_tdata(tx_udp_payload_axis_tdata),
+    .o_tx_payload_tlast(tx_udp_payload_axis_tlast),
     .o_tx_payload_tkeep(),
     .o_tx_payload_tstrb()
 );
@@ -411,6 +680,56 @@ ros2_eth_rx_adapter (
     .i_rx_payload_tlast(rx_ip_payload_axis_tlast),
     .i_rx_payload_tkeep(1'b1),
     .i_rx_payload_tstrb(1'b1)
+);
+
+raw_eth_tx_adapter
+raw_eth_tx_adapter_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .enable(ether_en),
+    .tx_raw_eth_data_addr(tx_raw_eth_data_addr),
+    .tx_raw_eth_data_ce(tx_raw_eth_data_ce),
+    .tx_raw_eth_data_rdata(tx_raw_eth_data_rdata),
+    .tx_raw_eth_frame_ready(tx_raw_eth_frame_ready),
+    .tx_raw_eth_completed(tx_raw_eth_completed),
+    .tx_raw_eth_axis_tdata(tx_raw_eth_axis_tdata),
+    .tx_raw_eth_axis_tvalid(tx_raw_eth_axis_tvalid),
+    .tx_raw_eth_axis_tready(tx_raw_eth_axis_tready),
+    .tx_raw_eth_axis_tlast(tx_raw_eth_axis_tlast),
+    .tx_raw_eth_ip_hdr_valid(tx_raw_eth_ip_hdr_valid),
+    .tx_raw_eth_ip_hdr_ready(tx_raw_eth_ip_hdr_ready),
+    .tx_raw_eth_ip_dscp(tx_raw_eth_ip_dscp),
+    .tx_raw_eth_ip_ecn(tx_raw_eth_ip_ecn),
+    .tx_raw_eth_ip_length(tx_raw_eth_ip_length),
+    .tx_raw_eth_ip_ttl(tx_raw_eth_ip_ttl),
+    .tx_raw_eth_ip_protocol(tx_raw_eth_ip_protocol),
+    .tx_raw_eth_ip_source_ip(tx_raw_eth_ip_source_ip),
+    .tx_raw_eth_ip_dest_ip(tx_raw_eth_ip_dest_ip),
+    .tx_raw_eth_ip_payload_axis_tdata(tx_raw_eth_ip_payload_axis_tdata),
+    .tx_raw_eth_ip_payload_axis_tvalid(tx_raw_eth_ip_payload_axis_tvalid),
+    .tx_raw_eth_ip_payload_axis_tready(tx_raw_eth_ip_payload_axis_tready),
+    .tx_raw_eth_ip_payload_axis_tlast(tx_raw_eth_ip_payload_axis_tlast),
+    .select_tx_raw_eth_axis(select_tx_raw_eth_axis),
+    .select_tx_raw_eth_ip(select_tx_raw_eth_ip)
+);
+
+raw_eth_rx_adapter
+raw_eth_rx_adapter_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .enable(ether_en),
+    .rx_raw_eth_data_addr(rx_raw_eth_data_addr),
+    .rx_raw_eth_data_ce(rx_raw_eth_data_ce),
+    .rx_raw_eth_data_we(rx_raw_eth_data_we),
+    .rx_raw_eth_data_wdata(rx_raw_eth_data_wdata),
+    .rx_raw_eth_data_frame_ready(rx_raw_eth_data_frame_ready),
+    .rx_raw_eth_data_ack(rx_raw_eth_data_ack),
+    .rx_raw_eth_axis_tdata(rx_raw_eth_axis_tdata),
+    .rx_raw_eth_axis_tvalid(rx_raw_eth_axis_tvalid),
+    .rx_raw_eth_axis_tready(rx_raw_eth_axis_tready),
+    .rx_raw_eth_axis_tlast(rx_raw_eth_axis_tlast),
+    .ip_addr(ip_addr),
+    .subnet_mask(subnet_mask)
 );
 
 endmodule
