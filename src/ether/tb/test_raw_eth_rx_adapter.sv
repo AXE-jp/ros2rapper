@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2026 AXE, Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 `resetall
 `timescale 1ns / 1ps
 `default_nettype none
